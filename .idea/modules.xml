@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$USER_HOME$/opt/anaconda3/envs/testenv/lib/python3.7/site-packages/arpys/.idea/arpys.iml" filepath="$USER_HOME$/opt/anaconda3/envs/testenv/lib/python3.7/site-packages/arpys/.idea/arpys.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../coded_nano_arpes/.idea/coded_nano_arpes.iml" filepath="$PROJECT_DIR$/../coded_nano_arpes/.idea/coded_nano_arpes.iml" />
+      <module fileurl="file://$USER_HOME$/opt/anaconda3/envs/testenv/lib/python3.7/site-packages/data_slicer/.idea/data_slicer.iml" filepath="$USER_HOME$/opt/anaconda3/envs/testenv/lib/python3.7/site-packages/data_slicer/.idea/data_slicer.iml" />
+      <module fileurl="file://$USER_HOME$/opt/anaconda3/envs/testenv/lib/python3.7/site-packages/ds_arpes_plugin/.idea/ds_arpes_plugin.iml" filepath="$USER_HOME$/opt/anaconda3/envs/testenv/lib/python3.7/site-packages/ds_arpes_plugin/.idea/ds_arpes_plugin.iml" />
+      <module fileurl="file://$USER_HOME$/switchdrive/ipynbs/.idea/ipynbs.iml" filepath="$USER_HOME$/switchdrive/ipynbs/.idea/ipynbs.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pyta.iml" filepath="$PROJECT_DIR$/.idea/pyta.iml" />
+    </modules>
+  </component>
+</project>

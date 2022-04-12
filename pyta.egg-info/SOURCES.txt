@@ -1,0 +1,10 @@
+LICENSE
+README.md
+setup.py
+pyta.egg-info/PKG-INFO
+pyta.egg-info/SOURCES.txt
+pyta.egg-info/dependency_links.txt
+pyta.egg-info/entry_points.txt
+pyta.egg-info/requires.txt
+pyta.egg-info/top_level.txt
+pyta_pkg/__init__.py

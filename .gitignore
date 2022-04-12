@@ -1,0 +1,20 @@
+# ignore 'mg' autosaved files
+*~
+
+# ignore some hidden files
+.DS_Store
+.idea/
+
+# ignore installation stuff
+build/
+__pycache__/
+dist/
+venv/
+pytapkg/
+pyta.egg-info/
+*.pyc
+
+# ignore unnecessary stuff
+tss*
+some_stuff*
+
