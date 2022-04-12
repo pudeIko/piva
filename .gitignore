@@ -10,7 +10,8 @@ build/
 __pycache__/
 dist/
 venv/
-pytapkg/
+pyta_pkg/
+pytapkgs
 pyta.egg-info/
 *.pyc
 

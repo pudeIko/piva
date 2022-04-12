@@ -1,7 +1,0 @@
-[console_scripts]
-db = main:db
-h5_to_pickle = main:pickle_h5
-pyta2d = main:open2D
-pyta3d = main:open3D
-reshape_pickled = main:reshape_pickled
-
