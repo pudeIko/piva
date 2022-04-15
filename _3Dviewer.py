@@ -2,12 +2,11 @@
 Data handler and main window creator for 3D data inspection
 """
 import time
-start_time = time.time()
 from PyQt5.QtWidgets import QMainWindow
 import matplotlib.pyplot as plt
+import numpy as np
 import warnings
 from imageplot import *
-from numpy import roll, moveaxis, concatenate
 from cmaps import cmaps
 import arpys_wp as wp
 
@@ -82,7 +81,6 @@ class DataHandler:
               are used.
         ====  ==================================================================
         """
-        logger.debug('prepare_data()')
 
         self.data = TracedVariable(data, name='data')
         self.axes = array(axes, dtype="object")
@@ -161,7 +159,6 @@ class DataHandler:
 
     def on_data_change(self):
         """ Update self.main_window.image_data and replot. """
-        logger.debug('on_data_change()')
         self.update_image_data()
         self.main_window.redraw_plots()
         # Also need to recalculate the intensity plot
@@ -173,7 +170,6 @@ class DataHandler:
         <data_slicer.pit.PITDataHandler.roll_axes>`).
         Update the z range and the integrated intensity plot.
         """
-        logger.debug('on_z_dim_change()')
         self.update_z_range()
 
         # Get a shorthand for the integrated intensity plot
@@ -204,16 +200,13 @@ class DataHandler:
         Skip this if the z value happens to be out of range, which can happen
         if the image data changes and the z scale hasn't been updated yet.
         """
-        logger.debug('update_image_data()')
         z = self.z.get_value()
         integrate_z = self.main_window.plot_z.width
         data = self.get_data()
         try:
             self.main_window.image_data = self.make_slice(data, dim=2, index=z, integrate=integrate_z)
         except IndexError:
-            logger.debug(('update_image_data(): z index {} out of range for '
-                          'data of length {}.').format(
-                z, self.image_data.shape[0]))
+            pass
         self.main_window.util_panel.energy_main.setValue(z)
         self.main_window.util_panel.energy_main_value.setText('({:.4f})'.format(self.axes[erg_ax][z]))
 
@@ -285,16 +278,16 @@ class DataHandler:
 
         # Roll the original data such that the specified dimension comes first
         i_original = arange(ndim)
-        i_rolled = roll(i_original, dim)
-        data = moveaxis(data, i_original, i_rolled)
+        i_rolled = np.roll(i_original, dim)
+        data = np.moveaxis(data, i_original, i_rolled)
         # Take the slice
         sliced = data[start:stop].sum(0)
         # Bring back to more intuitive form. For that we have to remove the now
         # lost dimension from the index arrays and shift all indices.
-        i_original = concatenate((i_original[:dim], i_original[dim + 1:]))
+        i_original = np.concatenate((i_original[:dim], i_original[dim + 1:]))
         i_original[i_original > dim] -= 1
-        i_rolled = roll(i_original, dim)
-        return moveaxis(sliced, i_rolled, i_original)
+        i_rolled = np.roll(i_original, dim)
+        return np.moveaxis(sliced, i_rolled, i_original)
 
     def lineplot(self, plot='main', dim=0, ax=None, n=10, offset=0.2, lw=0.5,
                  color='k', label_fmt='{:.2f}', n_ticks=5, **getlines_kwargs):
@@ -465,20 +458,25 @@ class MainWindow3D(QMainWindow):
         self.plot_z.slider_width.sig_value_changed.connect(lambda: self.update_main_plot(emit=False))
         self.plot_z.slider_width.sig_value_changed.connect(self.set_axes)
 
-        # Create utilities panel
+        # Connect signals to utilities panel
         self.util_panel.close_button.clicked.connect(self.close_mw)
-        # and connect signals
         self.util_panel.cmaps.currentIndexChanged.connect(self.set_cmap)
         self.util_panel.invert_colors.stateChanged.connect(self.set_cmap)
         self.util_panel.gamma.valueChanged.connect(self.set_gamma)
         self.util_panel.colorscale.valueChanged.connect(self.set_colorscale)
-        self.util_panel.bin_z.stateChanged.connect(self.update_binning_lines)
-        self.util_panel.bin_z_nbins.valueChanged.connect(self.update_binning_lines)
+        # self.util_panel.bin_x.stateChanged.connect(self.update_mw_binning_lines)
+        # self.util_panel.bin_x_nbins.valueChanged.connect(self.update_mw_binning_lines)
+        # self.util_panel.bin_y.stateChanged.connect(self.update_mw_binning_lines)
+        # self.util_panel.bin_y_nbins.valueChanged.connect(self.update_mw_binning_lines)
+        self.util_panel.bin_z.stateChanged.connect(self.update_z_binning_lines)
+        self.util_panel.bin_z_nbins.valueChanged.connect(self.update_z_binning_lines)
         self.util_panel.energy_main.valueChanged.connect(self.set_main_energy_slider)
         self.util_panel.energy_hor.valueChanged.connect(self.set_hor_energy_slider)
         self.util_panel.energy_vert.valueChanged.connect(self.set_vert_energy_slider)
         self.util_panel.momentum_hor.valueChanged.connect(self.set_hor_momentum_slider)
         self.util_panel.momentum_vert.valueChanged.connect(self.set_vert_momentum_slider)
+        self.util_panel.bin_x_nbins.setValue(5)
+        self.util_panel.bin_y_nbins.setValue(10)
         self.util_panel.bin_z_nbins.setValue(10)
 
         # Align all the gui elements
@@ -541,17 +539,16 @@ class MainWindow3D(QMainWindow):
         the slice of *self.data_handler.data* corresponding to the current
         value of *self.z*.
         """
-        logger.debug('update_main_plot()')
-
+        slider_pos = self.get_sliders_positions()
         self.data_handler.update_image_data()
-
-        logger.debug('self.image_data.shape={}'.format(self.image_data.shape))
 
         if image_kwargs != {}:
             self.image_kwargs = image_kwargs
 
         # Add image to main_plot
         self.set_image(self.image_data, **image_kwargs)
+        self.set_sliders_postions(slider_pos)
+        self.update_mw_binning_lines()
 
     def set_axes(self):
         """ Set the x- and y-scales of the plots. The :class:`ImagePlot
@@ -561,8 +558,6 @@ class MainWindow3D(QMainWindow):
         xaxis = self.data_handler.axes[scan_ax]
         yaxis = self.data_handler.axes[slit_ax]
         zaxis = self.data_handler.axes[erg_ax]
-        logger.debug(('set_axes(): len(xaxis), len(yaxis)={}, ' +
-                      '{}').format(len(xaxis), len(yaxis)))
         # self.main_plot.set_xscale(xaxis)
         self.main_plot.set_xscale(range(0, len(xaxis)))
         self.main_plot.set_ticks(xaxis[0], xaxis[-1], self.main_plot.main_xaxis)
@@ -584,7 +579,6 @@ class MainWindow3D(QMainWindow):
         # self.cut_y.sig_axes_changed.emit()
 
     def update_plot_x(self):
-        logger.debug('update_x_plot()')
         # Get shorthands for plot
         xp = self.plot_x
         try:
@@ -601,8 +595,6 @@ class MainWindow3D(QMainWindow):
             i_x = int(min(pos.get_value(), pos.allowed_values.max() - 1))
         else:
             i_x = 0
-        logger.debug(('xp.pos.get_value()={}; i_x: '
-                      '{}').format(xp.pos.get_value(), i_x))
         # print(self.main_plot.transposed.get_value())
         if not self.main_plot.transposed.get_value():
             y = self.data_handler.cut_x_data[:, i_x]
@@ -617,7 +609,6 @@ class MainWindow3D(QMainWindow):
         """ Take a cut of *self.data_handler.data* along *self.cutline*. This
         is used to update only the cut plot without affecting the main plot.
         """
-        logger.debug('update_cut()')
         data = self.data_handler.get_data()
         # axes = self.data_handler.displayed_axes
         # Transpose, if necessary
@@ -626,19 +617,11 @@ class MainWindow3D(QMainWindow):
             i_x = int(min(pos.get_value(), pos.allowed_values.max() - 1))
         else:
             i_x = 0
-        # print('i_x for x = {}'.format(i_x))
-        # if self.main_plot.transposed.get_value():
-        #     axes = axes[::-1]
         try:
             # cut = data[:, i_x, :]
             cut = data[:, i_x, :]
         except Exception as e:
-            logger.error(e)
             return
-
-        # # print('cut x shape = {}'.format(cut.shape))
-        # scan_ax = self.scan_ax
-        # erg_ax = self.erg_ax
 
         self.data_handler.cut_x_data = cut
         self.cut_x.xlim_rescaled = self.data_handler.axes[scan_ax][0], self.data_handler.axes[scan_ax][-1]
@@ -668,6 +651,7 @@ class MainWindow3D(QMainWindow):
         # update values of momentum at utilities panel
         self.util_panel.momentum_hor.setValue(i_x)
         self.util_panel.momentum_hor_value.setText('({:.3f})'.format(self.data_handler.axes[slit_ax][i_x]))
+        # self.update_mw_binning_lines()
 
         # update EDC at crossing point
         if self.sp_EDC is not None:
@@ -677,7 +661,6 @@ class MainWindow3D(QMainWindow):
         """ Take a cut of *self.data_handler.data* along *self.cutline*. This
         is used to update only the cut plot without affecting the main plot.
         """
-        logger.debug('update_cut()')
         data = self.data_handler.get_data()
         # axes = self.data_handler.displayed_axes
         # Transpose, if necessary
@@ -690,8 +673,7 @@ class MainWindow3D(QMainWindow):
         #     axes = axes[::-1]
         try:
             cut = data[i_x, :, :]
-        except Exception as e:
-            logger.error(e)
+        except Exception:
             return
 
         self.data_handler.cut_y_data = cut
@@ -704,7 +686,7 @@ class MainWindow3D(QMainWindow):
         self.cut_y.set_bounds_y(0, len(self.data_handler.axes[slit_ax]))
         # ('dh.data.shape = {}'.format(self.data_handler.data.shape))
 
-        # self.cut_y.fix_viewrange()
+        self.cut_y.fix_viewrange()
 
         # set sliders back to previous positions
         if self.main_plot.crosshair.hpos.allowed_values is not None:
@@ -725,7 +707,6 @@ class MainWindow3D(QMainWindow):
             self.set_sp_EDC_data()
 
     def update_plot_y(self):
-        logger.debug('update_x_plot()')
         # Get shorthands for plot
         yp = self.plot_y
         try:
@@ -736,14 +717,10 @@ class MainWindow3D(QMainWindow):
 
         # Get the correct position indicator
         pos = self.cut_y.pos_x
-        # print(pos)
         if pos.allowed_values is not None:
             i_x = int(min(pos.get_value(), pos.allowed_values.max() - 1))
         else:
             i_x = 0
-        # print('i_x for y = {}'.format(i_x))
-        logger.debug(('xp.pos.get_value()={}; i_x: '
-                      '{}').format(yp.pos.get_value(), i_x))
         if not self.main_plot.transposed.get_value():
             y = self.data_handler.cut_y_data[:, i_x]
         else:
@@ -755,7 +732,6 @@ class MainWindow3D(QMainWindow):
 
     def update_xy_plots(self):
         """ Update the x and y profile plots. """
-        logger.debug('update_xy_plots()')
         self.update_x_plot()
         self.update_y_plot()
 
@@ -765,7 +741,57 @@ class MainWindow3D(QMainWindow):
         data = self.data_handler.get_data()[xpos, ypos, :]
         self.sp_EDC.setData(wp.normalize(data), pen=self.plot_z.sp_EDC_pen)
 
-    def update_binning_lines(self):
+    def update_mw_binning_lines(self):
+        """ Update binning lines accordingly. """
+        # movable along analyzer slit
+        if self.util_panel.bin_y.isChecked():
+            try:
+                half_width = self.util_panel.bin_y_nbins.value()
+                pos = self.main_plot.pos[1].get_value()
+                self.main_plot.add_binning_lines(pos, half_width)
+                # self.plot_y.add_binning_lines(pos, half_width)
+                ymin = 0 + half_width
+                ymax = len(self.data_handler.axes[1]) - half_width
+                new_range = np.arange(ymin, ymax)
+                self.main_plot.pos[1].set_allowed_values(new_range)
+                # self.plot_y.pos.set_allowed_values(new_range)
+            except AttributeError:
+                pass
+        else:
+            try:
+                self.main_plot.remove_binning_lines()
+                # self.plot_y.remove_binning_lines()
+                org_range = np.arange(0, len(self.data_handler.axes[1]))
+                self.main_plot.pos[1].set_allowed_values(org_range)
+                # self.plot_y.pos.set_allowed_values(org_range)
+            except AttributeError:
+                pass
+
+        # movable along scanned dim
+        if self.util_panel.bin_x.isChecked():
+            try:
+                half_width = self.util_panel.bin_x_nbins.value()
+                pos = self.main_plot.pos[0].get_value()
+                self.main_plot.add_binning_lines(pos, half_width, orientation='vertical')
+                # self.plot_x.add_binning_lines(pos, half_width)
+                ymin = 0 + half_width
+                ymax = len(self.data_handler.axes[0]) - half_width
+                new_range = np.arange(ymin, ymax)
+                self.main_plot.pos[0].set_allowed_values(new_range)
+                # self.plot_x.pos.set_allowed_values(new_range)
+            except AttributeError:
+                pass
+        else:
+            try:
+                self.main_plot.remove_binning_lines(orientation='vertical')
+                # self.plot_x.remove_binning_lines()
+                org_range = np.arange(0, len(self.data_handler.axes[0]))
+                self.main_plot.pos[0].set_allowed_values(org_range)
+                # self.plot_x.pos.set_allowed_values(org_range)
+            except AttributeError:
+                pass
+
+    def update_z_binning_lines(self):
         """ Update binning lines accordingly. """
         if self.util_panel.bin_z.isChecked():
             try:
@@ -774,7 +800,6 @@ class MainWindow3D(QMainWindow):
                 self.plot_z.add_binning_lines(z_pos, half_width)
                 zmin = 0 + half_width
                 zmax = len(self.data_handler.axes[2]) - half_width
-                print(zmin, zmax)
                 new_range = arange(zmin, zmax)
                 self.plot_z.width = half_width
                 self.plot_z.n_bins = half_width
@@ -815,7 +840,7 @@ class MainWindow3D(QMainWindow):
         sliders_pos = self.get_sliders_positions()
         self.cmap_changed()
         self.set_sliders_postions(sliders_pos)
-        self.update_binning_lines()
+        self.update_z_binning_lines()
 
     def cmap_changed(self):
         """ Recalculate the lookup table and redraw the plots such that the
@@ -826,17 +851,14 @@ class MainWindow3D(QMainWindow):
 
     def redraw_plots(self, image=None):
         """ Redraw plotted data to reflect changes in data or its colors. """
-        logger.debug('redraw_plots()')
         try:
             # Redraw main plot
             self.set_image(image,
                            displayed_axes=self.data_handler.displayed_axes)
             # Redraw cut plot
             self.update_cut()
-        except AttributeError as e:
-            # In some cases (namely initialization) the mainwindow is not
-            # defined yet
-            logger.debug('AttributeError: {}'.format(e))
+        except AttributeError:
+            pass
 
     def set_image(self, image=None, *args, **kwargs):
         """ Wraps the underlying ImagePlot3d's set_image method.
@@ -883,7 +905,8 @@ class MainWindow3D(QMainWindow):
         self.cmap.set_alpha(alpha)
         self.cmap_changed()
         self.set_sliders_postions(sliders_pos)
-        self.update_binning_lines()
+        self.update_z_binning_lines()
+        self.update_mw_binning_lines()
 
     def set_gamma(self):
         """ Set the exponent for the power-law norm that maps the colors to
@@ -896,8 +919,9 @@ class MainWindow3D(QMainWindow):
         sliders_pos = self.get_sliders_positions()
         self.cmap.set_gamma(gamma)
         self.cmap_changed()
+        self.update_z_binning_lines()
         self.set_sliders_postions(sliders_pos)
-        self.update_binning_lines()
+        self.update_mw_binning_lines()
 
     def set_colorscale(self):
         """ Set the relative maximum of the colormap. I.e. the colors are
@@ -910,6 +934,7 @@ class MainWindow3D(QMainWindow):
         self.cmap.set_vmax(vmax)
         self.cmap_changed()
         self.set_sliders_postions(sliders_pos)
+        self.update_mw_binning_lines()
 
     def set_main_energy_slider(self):
         energy = self.util_panel.energy_main.value()

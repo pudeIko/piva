@@ -1,4 +1,3 @@
-#!/usr/bin/python
 """
 Provides several Dataloader objects which open different kinds of data files 
 - typically acquired at different sources (i.e. beamlines at various 
@@ -47,10 +46,6 @@ hv      float or 1D np.array; the used photon energy in the scan(s). In Case
 Note that any change in the output structure has consequences for all 
 programs and routines that receive from a dataloader (which is pretty much 
 everything in this module) and previously pickled files.
-"""
-import arpys_wp
-
-"""
     Quick description on how to read stuff from .h5 files using h5py
     =================================================================================
     file = h5py.File(fname, 'r')   read from file 'fname', 'r' stands for 'read only'
@@ -86,7 +81,7 @@ from numpy import linspace, frombuffer, reshape, moveaxis, array, rollaxis, zero
 import numpy as np
 import astropy.io.fits as pyfits
 from igor import binarywave, igorpy
-import time
+# import time
 
 
 # Fcn to build the x, y (, z) ranges (maybe outsource this fcn definition)
@@ -122,7 +117,7 @@ class Dataloader:
         print(s, *messages)
 
 
-class Dataloader_Pickle(Dataloader):
+class DataloaderPickle(Dataloader):
     """ 
     Load data that has been saved using python's `pickle` module. ARPES 
     pickle files are assumed to just contain the data namespace the way it 
@@ -130,6 +125,7 @@ class Dataloader_Pickle(Dataloader):
     """
     name = 'Pickle'
 
+    @staticmethod
     def load_data(self, filename):
         # Open the file and get a handle for it
         with open(filename, 'rb') as f:
@@ -137,7 +133,7 @@ class Dataloader_Pickle(Dataloader):
         return filedata
 
 
-class Dataloader_i05(Dataloader):
+class Dataloaderi05(Dataloader):
     """
     Dataloader object for the i05 beamline at the Diamond Light Source.
     """
@@ -236,7 +232,7 @@ class Dataloader_i05(Dataloader):
         return res
 
 
-class Dataloader_ALS(Dataloader):
+class DataloaderALS(Dataloader):
     """
     Object that allows loading and saving of ARPES data from the MAESTRO
     beamline at ALS, Berkely, in the newer .h5 format
@@ -334,7 +330,7 @@ class Dataloader_ALS(Dataloader):
         hv = float(hv)
 
         # Build x-, y- and zscales
-        # TODO Detect cuts (i.e. factual 2D Datasets)
+        # TO DO Detect cuts (i.e. factual 2D Datasets)
         nz, ny, nx = data.shape
         # xscale is the outer loop (if present)
         x_group = h5file['Headers/Low_Level_Scan']
@@ -352,7 +348,7 @@ class Dataloader_ALS(Dataloader):
         zscale = start_step_n(z_start, z_step, nz)
 #        zscale, yscale, xscale = [np.arange(s) for s in shape]
 
-        # TODO pixel to angle conversion
+        # TO DO pixel to angle conversion
         yscale *= 0.193/2
 
         # Get theta and phi
@@ -371,7 +367,7 @@ class Dataloader_ALS(Dataloader):
         return res
 
 
-class Dataloader_ALS_fits(Dataloader):
+class DataloaderALSFits(Dataloader):
     """
     Object that allows loading and saving of ARPES data from the MAESTRO
     beamline at ALS, Berkely, which is in .fits format.
@@ -521,7 +517,7 @@ class Dataloader_ALS_fits(Dataloader):
         E_b = energies.min()
 
         # Extract some additional metadata (mostly for angles->k conversion)
-        # TODO Special cases for different scan types
+        # TO DO Special cases for different scan types
         # Get relevant metadata from header
         theta = header['LMOTOR3']
         # beta in LMOTOR4
@@ -636,7 +632,7 @@ class Dataloader_ALS_fits(Dataloader):
         return data
 
 
-class Dataloader_SIS(Dataloader):
+class DataloaderSIS(Dataloader):
     """ 
     Object that allows loading and saving of ARPES data from the SIS 
     beamline at PSI which is in hd5 format. 
@@ -962,7 +958,7 @@ class Dataloader_SIS(Dataloader):
         return res
 
 
-class Dataloader_ADRESS(Dataloader):
+class DataloaderADRESS(Dataloader):
     """ ADRESS beamline at SLS, PSI. """
     name = 'ADRESS'
 
@@ -1062,7 +1058,7 @@ class Dataloader_ADRESS(Dataloader):
         return metadata
 
 
-class Dataloader_CASSIOPEE(Dataloader):
+class DataloaderCASSIOPEE(Dataloader):
     """ CASSIOPEE beamline at SOLEIL synchrotron, Paris. """
     name = 'CASSIOPEE'
     date = '18.07.2018'
@@ -1474,13 +1470,13 @@ class Dataloader_CASSIOPEE(Dataloader):
 
 # List containing all reasonably defined dataloaders
 all_dls = [
-    Dataloader_Pickle,
-    Dataloader_SIS,
-    Dataloader_ADRESS,
-    Dataloader_i05,
-    Dataloader_CASSIOPEE,
-    Dataloader_ALS,
-    Dataloader_ALS_fits]
+    DataloaderPickle,
+    DataloaderSIS,
+    DataloaderADRESS,
+    Dataloaderi05,
+    DataloaderCASSIOPEE,
+    DataloaderALS,
+    DataloaderALSFits]
 
 
 # Function to try all dataloaders in all_dls
@@ -1617,7 +1613,7 @@ def add_attributes(filename, *attributes):
                 to add. Where `name` is a str and value any python object.
     ==========  ================================================================
     """
-    dataloader = Dataloader_Pickle()
+    dataloader = DataloaderPickle()
     data = dataloader.load_data(filename)
     
     update_namespace(data, *attributes)
@@ -1650,12 +1646,3 @@ def reshape_pickled(fname):
         scan.data = tmp.data.T
         dump(scan, (fname + '_rs'))
 
-
-# # +---------+ #
-# # | Testing | # ================================================================
-# # +---------+ #
-#
-# if __name__ == '__main__':
-#     D = Dataloader_SIS().load_data('/home/kevin/qmap/experiments/2020_09_SIS/PrFeP_3P/PrFeP_3P_0001.zip')
-#     print(D.data.shape)
-#     print(D.xscale.shape)

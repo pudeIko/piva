@@ -2,7 +2,6 @@
 Data handler and main window creator for 2D data inspection
 """
 import time
-start_time = time.time()
 from PyQt5.QtWidgets import QMainWindow
 import numpy as np
 from imageplot import *
@@ -73,7 +72,6 @@ class DataHandler:
               are used.
         ====  ==================================================================
         """
-        logger.debug('prepare_data()')
 
         self.data = TracedVariable(data, name='data')
         self.axes = np.array(axes, dtype="object")
@@ -96,7 +94,6 @@ class DataHandler:
 
     def on_data_change(self):
         """ Update self.main_window.image_data and replot. """
-        logger.debug('on_data_change()')
         self.update_image_data()
         # self.main_window.redraw_plots()
         # Also need to recalculate the intensity plot
@@ -108,7 +105,6 @@ class DataHandler:
         <data_slicer.pit.PITDataHandler.roll_axes>`).
         Update the z range and the integrated intensity plot.
         """
-        logger.debug('on_z_dim_change()')
 
         # Calculate the integrated intensity and plot it
         self.calculate_integrated_intensity()
@@ -123,15 +119,13 @@ class DataHandler:
         Skip this if the z value happens to be out of range, which can happen
         if the image data changes and the z scale hasn't been updated yet.
         """
-        logger.debug('update_image_data()')
         # z = self.z.get_value()
         # integrate_z = self.main_window.plot_z.width
         data = self.get_data()
         try:
             self.main_window.image_data = data
         except IndexError:
-            logger.debug(('update_image_data(): z index {} out of range for '
-                          'data of length {}.'))
+            print(('update_image_data(): z index {} out of range for data of length {}.'))
 
 
 class MainWindow2D(QMainWindow):
@@ -209,7 +203,8 @@ class MainWindow2D(QMainWindow):
         # Create a "central widget" and its layout
         self.central_widget.setLayout(self.layout)
         self.setCentralWidget(self.central_widget)
-        self.util_panel.bin_z_nbins.setValue(10)
+        self.util_panel.bin_y_nbins.setValue(10)
+        self.util_panel.bin_z_nbins.setValue(5)
 
         # Create plot_x
         self.plot_x.register_traced_variable(self.main_plot.pos[0])
@@ -226,6 +221,8 @@ class MainWindow2D(QMainWindow):
         self.util_panel.invert_colors.stateChanged.connect(self.set_cmap)
         self.util_panel.gamma.valueChanged.connect(self.set_gamma)
         self.util_panel.colorscale.valueChanged.connect(self.set_alpha)
+        self.util_panel.bin_y.stateChanged.connect(self.update_binning_lines)
+        self.util_panel.bin_y_nbins.valueChanged.connect(self.update_binning_lines)
         self.util_panel.bin_z.stateChanged.connect(self.update_binning_lines)
         self.util_panel.bin_z_nbins.valueChanged.connect(self.update_binning_lines)
         self.util_panel.energy_vert.valueChanged.connect(self.set_vert_energy_slider)
@@ -302,11 +299,8 @@ class MainWindow2D(QMainWindow):
         the slice of *self.data_handler.data* corresponding to the current
         value of *self.z*.
         """
-        logger.debug('update_main_plot()')
 
         self.data_handler.update_image_data()
-
-        logger.debug('self.image_data.shape={}'.format(self.image_data.shape))
 
         if image_kwargs != {}:
             self.image_kwargs = image_kwargs
@@ -320,10 +314,6 @@ class MainWindow2D(QMainWindow):
         """
         xaxis = self.data_handler.axes[1]
         yaxis = self.data_handler.axes[0]
-        # zaxis = self.data_handler.axes[2]
-        logger.debug(('set_axes(): len(xaxis), len(yaxis)={}, ' +
-                      '{}').format(len(xaxis), len(yaxis)))
-        # self.main_plot.set_xscale(xaxis)
         self.main_plot.set_xscale(range(0, len(xaxis)))
         self.main_plot.set_ticks(xaxis[0], xaxis[-1], self.main_plot.main_xaxis)
         self.plot_x.set_ticks(xaxis[0], xaxis[-1], self.plot_x.main_xaxis)
@@ -334,12 +324,7 @@ class MainWindow2D(QMainWindow):
         self.plot_y.set_secondary_axis(0, len(yaxis))
         self.main_plot.fix_viewrange()
 
-        # Kind of a hack to get the crosshair to the right position...
-        # self.cut_x.sig_axes_changed.emit()
-        # self.cut_y.sig_axes_changed.emit()
-
     def update_plot_x(self):
-        logger.debug('update_x_plot()')
         # Get shorthands for plot
         xp = self.plot_x
         try:
@@ -350,17 +335,15 @@ class MainWindow2D(QMainWindow):
 
         # Get the correct position indicator
         pos = self.main_plot.pos[1]
-        binning =  self.util_panel.bin_z.isChecked()
+        binning = self.util_panel.bin_y.isChecked()
         if binning:
-            width = self.util_panel.bin_z_nbins.value()
+            width = self.util_panel.bin_y_nbins.value()
         else:
             width = 0
         if pos.allowed_values is not None:
             i_x = int(min(pos.get_value(), pos.allowed_values.max() - 1))
         else:
             i_x = 0
-        logger.debug(('xp.pos.get_value()={}; i_x: '
-                      '{}').format(xp.pos.get_value(), i_x))
         data = self.data_handler.get_data()
         if width == 0:
             y = data[:, i_x]
@@ -368,7 +351,7 @@ class MainWindow2D(QMainWindow):
             start = i_x - width
             stop = i_x + width
             y = np.sum(data[:, start:stop], axis=1)
-            y = wp.normalize(y)
+            # y = wp.normalize(y)
         x = np.arange(0, len(self.data_handler.axes[1]))
         xp.plot(x, y)
         self.util_panel.momentum_hor.setValue(i_x)
@@ -378,7 +361,6 @@ class MainWindow2D(QMainWindow):
             self.plot_y.right_line.setValue(i_x + width)
 
     def update_plot_y(self):
-        logger.debug('update_x_plot()')
         # Get shorthands for plot
         yp = self.plot_y
         try:
@@ -389,30 +371,43 @@ class MainWindow2D(QMainWindow):
 
         # Get the correct position indicator
         pos = self.main_plot.pos[0]
-        if pos.allowed_values is not None:
-            i_x = int(min(pos.get_value(), pos.allowed_values.max() - 1))
+        binning = self.util_panel.bin_z.isChecked()
+        if binning:
+            width = self.util_panel.bin_z_nbins.value()
         else:
-            i_x = 0
-        logger.debug(('xp.pos.get_value()={}; i_x: '
-                      '{}').format(yp.pos.get_value(), i_x))
+            width = 0
+        if pos.allowed_values is not None:
+            i_y = int(min(pos.get_value(), pos.allowed_values.max() - 1))
+        else:
+            i_y = 0
         data = self.data_handler.get_data()
-        y = data[i_x, :]
+        if width == 0:
+            y = data[i_y, :]
+        else:
+            start = i_y - width
+            stop = i_y + width
+            y = np.sum(data[start:stop, :], axis=0)
+            # y = wp.normalize(y)
+        # y = data[i_y, :]
         x = np.arange(0, len(self.data_handler.axes[0]))
         yp.plot(y, x)
-        self.util_panel.energy_vert.setValue(i_x)
-        self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.data_handler.axes[1][i_x]))
+        self.util_panel.energy_vert.setValue(i_y)
+        self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.data_handler.axes[1][i_y]))
+        if binning:
+            self.plot_x.left_line.setValue(i_y - width)
+            self.plot_x.right_line.setValue(i_y + width)
 
     def update_xy_plots(self):
         """ Update the x and y profile plots. """
-        logger.debug('update_xy_plots()')
         self.update_x_plot()
         self.update_y_plot()
 
     def update_binning_lines(self):
         """ Update binning lines accordingly. """
-        if self.util_panel.bin_z.isChecked():
+        # edc plot
+        if self.util_panel.bin_y.isChecked():
             try:
-                half_width = self.util_panel.bin_z_nbins.value()
+                half_width = self.util_panel.bin_y_nbins.value()
                 pos = self.main_plot.pos[1].get_value()
                 self.main_plot.add_binning_lines(pos, half_width)
                 self.plot_y.add_binning_lines(pos, half_width)
@@ -430,6 +425,30 @@ class MainWindow2D(QMainWindow):
                 org_range = np.arange(0, len(self.data_handler.axes[0]))
                 self.main_plot.pos[1].set_allowed_values(org_range)
                 self.plot_y.pos.set_allowed_values(org_range)
+            except AttributeError:
+                pass
+
+        # mdc plot
+        if self.util_panel.bin_z.isChecked():
+            try:
+                half_width = self.util_panel.bin_z_nbins.value()
+                pos = self.main_plot.pos[0].get_value()
+                self.main_plot.add_binning_lines(pos, half_width, orientation='vertical')
+                self.plot_x.add_binning_lines(pos, half_width)
+                ymin = 0 + half_width
+                ymax = len(self.data_handler.axes[1]) - half_width
+                new_range = np.arange(ymin, ymax)
+                self.main_plot.pos[0].set_allowed_values(new_range)
+                self.plot_x.pos.set_allowed_values(new_range)
+            except AttributeError:
+                pass
+        else:
+            try:
+                self.main_plot.remove_binning_lines(orientation='vertical')
+                self.plot_x.remove_binning_lines()
+                org_range = np.arange(0, len(self.data_handler.axes[0]))
+                self.main_plot.pos[0].set_allowed_values(org_range)
+                self.plot_x.pos.set_allowed_values(org_range)
             except AttributeError:
                 pass
 
@@ -470,17 +489,15 @@ class MainWindow2D(QMainWindow):
 
     def redraw_plots(self, image=None):
         """ Redraw plotted data to reflect changes in data or its colors. """
-        logger.debug('redraw_plots()')
         try:
             # Redraw main plot
-            self.set_image(image,
-                           displayed_axes=self.data_handler.displayed_axes)
+            self.set_image(image, displayed_axes=self.data_handler.displayed_axes)
             # Redraw cut plot
             self.update_cut()
         except AttributeError as e:
-            # In some cases (namely initialization) the mainwindow is not
-            # defined yet
-            logger.debug('AttributeError: {}'.format(e))
+            # In some cases (namely initialization) the mainwindow is not defined yet
+            pass
+            # print('AttributeError: {}'.format(e))
 
     def set_image(self, image=None, *args, **kwargs):
         """ Wraps the underlying ImagePlot3d's set_image method.
