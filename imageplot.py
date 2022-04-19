@@ -28,25 +28,36 @@ PMESHITEM = False
 
 class Crosshair:
     """ Crosshair made up of two InfiniteLines. """
-    def __init__(self, image_plot, pos=(0, 0)):
+    def __init__(self, image_plot, pos=(0, 0), mainplot=True, orientation='horizontal'):
         self.image_plot = image_plot
+        self.orientation = orientation
+
         # Store the positions in TracedVariables
         self.hpos = TracedVariable(pos[1], name='hpos')
         self.vpos = TracedVariable(pos[0], name='vpos')
 
         # Initialize the InfiniteLines
-        self.hline = InfiniteLine(pos[1], movable=True, angle=0)
-        self.vline = InfiniteLine(pos[0], movable=True, angle=90)
+        if orientation == 'horizontal':
+            self.hline = InfiniteLine(pos[1], movable=True, angle=0)
+            self.vline = InfiniteLine(pos[0], movable=True, angle=90)
+        elif orientation == 'vertical':
+            self.hline = InfiniteLine(pos[1], movable=True, angle=90)
+            self.vline = InfiniteLine(pos[0], movable=True, angle=0)
 
         # Set the color
         self.set_color(BASE_LINECOLOR, HOVER_COLOR)
 
-        # Register some callbacks
-        self.hpos.sig_value_changed.connect(self.update_position_h)
-        self.vpos.sig_value_changed.connect(self.update_position_v)
+        if mainplot:
+            # Register some callbacks
+            self.hpos.sig_value_changed.connect(self.update_position_h)
+            self.vpos.sig_value_changed.connect(self.update_position_v)
 
-        self.hline.sigDragged.connect(self.on_dragged_h)
-        self.vline.sigDragged.connect(self.on_dragged_v)
+            self.hline.sigDragged.connect(self.on_dragged_h)
+            self.vline.sigDragged.connect(self.on_dragged_v)
+        else:
+            # Register some callbacks
+            self.hpos.sig_value_changed.connect(self.update_position_h)
+            self.hline.sigDragged.connect(self.on_dragged_h)
 
     def add_to(self, widget):
         """ Add this crosshair to a Qt widget. """
@@ -116,8 +127,24 @@ class Crosshair:
 
     def set_bounds(self, xmin, xmax, ymin, ymax):
         """ Set the area in which the infinitelines can be dragged. """
-        self.hline.setBounds([ymin, ymax])
-        self.vline.setBounds([xmin, xmax])
+        if self.orientation == 'horizontal':
+            self.hline.setBounds([ymin, ymax])
+            self.vline.setBounds([xmin, xmax])
+        else:
+            self.vline.setBounds([ymin, ymax])
+            self.hline.setBounds([xmin, xmax])
+
+    def set_for_main_plot(self, pos):
+        # Store the positions in TracedVariables
+        self.hpos = TracedVariable(pos[1], name='hpos')
+        self.vpos = TracedVariable(pos[0], name='vpos')
+
+        # Register some callbacks
+        self.hpos.sig_value_changed.connect(self.update_position_h)
+        self.vpos.sig_value_changed.connect(self.update_position_v)
+
+        self.hline.sigDragged.connect(self.on_dragged_h)
+        self.vline.sigDragged.connect(self.on_dragged_v)
 
 
 class ImagePlot(PlotWidget):
@@ -141,7 +168,8 @@ class ImagePlot(PlotWidget):
     sig_axes_changed = qt.QtCore.Signal()
     sig_clicked = qt.QtCore.Signal(object)
 
-    def __init__(self, image=None, parent=None, background=BGR_COLOR, name=None, crosshair=False, **kwargs):
+    def __init__(self, image=None, parent=None, background=BGR_COLOR, name=None, mainplot=True,
+                 orientation='horizontal', **kwargs):
         """ Allows setting of the image upon initialization. 
         
         **Parameters**
@@ -169,52 +197,37 @@ class ImagePlot(PlotWidget):
         self.yscale = None
         self.yscale_rescaled = None
         self.transform_factors = []
-        self.transposed = TracedVariable(False, name='transposed')
         self.crosshair_cursor_visible = False
         self.binning = False
+        self.orientation = orientation
+        self.transposed = TracedVariable(False, name='transposed')
 
         super().__init__(parent=parent, background=background, **kwargs)
 
         self.name = name
 
-        # Show top and tight axes by default, but without ticklabels
-        self.showAxis('top')
-        self.showAxis('right')
-        self.getAxis('top').setStyle(showValues=False)
-        self.getAxis('right').setStyle(showValues=False)
-        self.main_xaxis = 'bottom'
-        self.main_xaxis_grid = (255, 1)
-        self.main_yaxis = 'left'
-        self.main_yaxis_grid = (2, 0)
-
-        # moved here to get rid of warnings:
-        self.right_axis = 'top'
-        self.secondary_axis = 'right'
-        self.secondary_axis_grid = (2, 2)
-        self.angle = 0
-        self.slider_axis_index = 1
+        self.orientate()
 
         if image is not None:
             self.set_image(image)
 
-        if crosshair:
-            # Initiliaze a crosshair and add it to this widget
-            self.crosshair = Crosshair(self)
-            self.crosshair.add_to(self)
+        # Initiliaze a crosshair and add it to this widget
+        self.crosshair = Crosshair(self, mainplot=mainplot, orientation=orientation)
+        self.crosshair.add_to(self)
 
-            self.pos = (self.crosshair.vpos, self.crosshair.hpos)
+        self.pos = (self.crosshair.vpos, self.crosshair.hpos)
 
-            # Initialize range to [0, 1]x[0, 1]
-            self.set_bounds(0, 1, 0, 1)
+        # Initialize range to [0, 1]x[0, 1]
+        self.set_bounds(0, 1, 0, 1)
 
-            # Disable mouse scrolling, panning and zooming for both axes
-            self.setMouseEnabled(False, False)
+        # Disable mouse scrolling, panning and zooming for both axes
+        self.setMouseEnabled(False, False)
 
-            # Connect a slot (callback) to dragging and clicking events
-            self.sig_axes_changed.connect(
-                lambda: self.set_bounds(*[x for lst in self.get_limits() for x in lst]))
+        # Connect a slot (callback) to dragging and clicking events
+        self.sig_axes_changed.connect(
+            lambda: self.set_bounds(*[x for lst in self.get_limits() for x in lst]))
 
-            self.sig_image_changed.connect(self.update_allowed_values)
+        self.sig_image_changed.connect(self.update_allowed_values)
 
     # functions added to make crosshairs work
     def update_allowed_values(self):
@@ -223,8 +236,12 @@ class ImagePlot(PlotWidget):
         sets the allowed values to the available pixels.
         """
         [[xmin, xmax], [ymin, ymax]] = self.get_limits()
-        self.pos[0].set_allowed_values(arange(xmin, xmax+1, 1))
-        self.pos[1].set_allowed_values(arange(ymin, ymax+1, 1))
+        if self.orientation == 'horizontal':
+            self.pos[0].set_allowed_values(arange(xmin, xmax + 1, 1))
+            self.pos[1].set_allowed_values(arange(ymin, ymax + 1, 1))
+        else:
+            self.pos[1].set_allowed_values(arange(xmin, xmax + 1, 1))
+            self.pos[0].set_allowed_values(arange(ymin, ymax + 1, 1))
 
     def set_bounds(self, xmin, xmax, ymin, ymax):
         """ Set both, the displayed area of the axis as well as the the range
@@ -236,9 +253,41 @@ class ImagePlot(PlotWidget):
 
         self.crosshair.set_bounds(xmin, xmax, ymin, ymax)
 
-        # Put the crosshair in the center
-        self.pos[0].set_value(0.5*(xmax+xmin))
-        self.pos[1].set_value(0.5*(ymax+ymin))
+    def orientate(self):
+        if self.orientation == 'horizontal':
+            # Show top and tight axes by default, but without ticklabels
+            self.showAxis('top')
+            self.showAxis('right')
+            self.getAxis('top').setStyle(showValues=False)
+            self.getAxis('right').setStyle(showValues=False)
+            self.main_xaxis = 'bottom'
+            self.main_xaxis_grid = (255, 1)
+            self.main_yaxis = 'left'
+            self.main_yaxis_grid = (2, 0)
+
+            # moved here to get rid of warnings:
+            self.right_axis = 'top'
+            self.secondary_axis = 'right'
+            self.secondary_axis_grid = (2, 2)
+            self.angle = 0
+            self.slider_axis_index = 1
+        elif self.orientation == 'vertical':
+            # Show top and tight axes by default, but without ticklabels
+            self.showAxis('right')
+            self.showAxis('top')
+            self.getAxis('right').setStyle(showValues=False)
+            self.getAxis('top').setStyle(showValues=False)
+            self.main_xaxis = 'left'
+            self.main_xaxis_grid = (255, 1)
+            self.main_yaxis = 'bottom'
+            self.main_yaxis_grid = (2, 0)
+
+            # moved here to get rid of warnings:
+            self.right_axis = 'right'
+            self.secondary_axis = 'top'
+            self.secondary_axis_grid = (2, 2)
+            self.angle = 90
+            self.slider_axis_index = 1
 
     def remove_image(self):
         """ Removes the current image using the parent's :meth:`removeItem 
@@ -305,7 +354,7 @@ class ImagePlot(PlotWidget):
         """ Set the xscale of the plot. *xscale* is an array of the length 
         ``len(self.image_item.shape[0])``.
         """
-        if self.transposed.get_value():
+        if self.orientation == 'vertical':
             self._set_yscale(xscale, update)
         else:
             self._set_xscale(xscale, update)
@@ -314,7 +363,7 @@ class ImagePlot(PlotWidget):
         """ Set the yscale of the plot. *yscale* is an array of the length 
         ``len(self.image_item.image.shape[1])``.
         """
-        if self.transposed.get_value():
+        if self.orientation == 'vertical':
             self._set_xscale(yscale, update)
         else:
             self._set_yscale(yscale, update)
@@ -324,8 +373,12 @@ class ImagePlot(PlotWidget):
         used to bypass the length checking.
         """
         # Sanity check
-        if not force and self.image_item is not None and (len(xscale) != self.image_data.shape[0]):
-            raise TypeError('Shape of xscale does not match data dimensions.')
+        if self.orientation == 'horizontal':
+            if not force and self.image_item is not None and (len(xscale) != self.image_data.shape[0]):
+                raise TypeError('Shape of xscale does not match data dimensions.')
+        else:
+            if not force and self.image_item is not None and (len(xscale) != self.image_data.shape[1]):
+                raise TypeError('Shape of xscale does not match data dimensions.')
 
         self.xscale = xscale
         # 'Autoscale' the image to the xscale
@@ -339,8 +392,12 @@ class ImagePlot(PlotWidget):
         used to bypass the length checking.
         """
         # Sanity check
-        if not force and self.image_item is not None and (len(yscale) != self.image_data.shape[1]):
-            raise TypeError('Shape of yscale does not match data dimensions.')
+        if self.orientation == 'horizontal':
+            if not force and self.image_item is not None and (len(yscale) != self.image_data.shape[1]):
+                raise TypeError('Shape of yscale does not match data dimensions.')
+        else:
+            if not force and self.image_item is not None and (len(yscale) != self.image_data.shape[0]):
+                raise TypeError('Shape of yscale does not match data dimensions.')
 
         self.yscale = yscale
         # 'Autoscale' the image to the xscale
@@ -443,16 +500,16 @@ class ImagePlot(PlotWidget):
             x, y = 1, 1
 
         # Set the limits to image pixels if they are not defined
-        if self.xlim is None:
-            if self.xlim_rescaled is None:
-                self.set_xscale(arange(0, x))
-            else:
-                # self.set_xscale(self.xscale_rescaled)
-                self.set_xscale(arange(0, x))
-        x_min, x_max = self.xlim
-        if self.ylim is None:
+        if self.xlim is None or self.ylim is None:
+            self.set_xscale(arange(0, x))
             self.set_yscale(arange(0, y))
-        y_min, y_max = self.ylim
+
+        if self.orientation == 'horizontal':
+            x_min, x_max = self.xlim
+            y_min, y_max = self.ylim
+        else:
+            x_min, x_max = self.ylim
+            y_min, y_max = self.xlim
 
         return [[x_min, x_max], [y_min, y_max]]
 
@@ -526,182 +583,29 @@ class ImagePlot(PlotWidget):
             self.removeItem(self.left_ver_line)
             self.removeItem(self.right_ver_line)
 
-
-class CutImagePlot(ImagePlot):
-    """ An imageplot with a draggable sliders. """
-
-    hover_color = HOVER_COLOR
-    # hover_color = (195, 255, 0, 255)
-
-    def __init__(self, background=BGR_COLOR, name=None,
-                 orientation='vertical', slider_width=1, **kwargs):
-        """ Initialize the slider and set up the visual tweaks to make a
-        PlotWidget look more like a scalebar.
-
-        **Parameters**
-
-        ===========  ============================================================
-        parent       QtWidget instance; parent widget of this widget
-        background   str; confer PyQt documentation
-        name         str; allows giving a name for debug purposes
-        orientation  str, `horizontal` or `vertical`; orientation of the cursor
-        ===========  ============================================================
-        """
-        super().__init__(background=background, **kwargs)
-
-        # Whether to allow changing the slider width with arrow keys
-        self.change_width_enabled = False
-
-        if orientation not in ['horizontal', 'vertical']:
-            raise ValueError('Only `horizontal` or `vertical` are allowed for '
-                             'orientation.')
-        self.orientation = orientation
-        self.orientate()
-
-        if name is not None:
-            self.name = name
-        else:
-            self.name = 'Unnamed'
-
-        # Hide the pyqtgraph auto-rescale button
-        self.getPlotItem().buttonsHidden = True
-
-        # Display the right (or top) axis without ticklabels
-        self.showAxis(self.right_axis)
-        self.getAxis(self.right_axis).setStyle(showValues=False)
-        self.main_xaxis = 'bottom'
-        self.main_xaxis_grid = (255, 1)
-        self.main_yaxis = 'left'
-        self.main_yaxis_grid = (2, 0)
-
-        # The position of the slider is stored with a TracedVariable
-        initial_pos = 0
-        self.pos_x = None
-        self.pos_y = None
-        pos_x = TracedVariable(initial_pos, name='pos_x')
-        pos_y = TracedVariable(initial_pos, name='pos_y')
-
-        # Set up the sliders
-        self.slider_width = TracedVariable(slider_width, name='{}.slider_width'.format(self.name))
-
-        self.slider_x = InfiniteLine(initial_pos, movable=True, angle=self.angle)
-        self.slider_y = InfiniteLine(initial_pos, movable=True, angle=abs(90-self.angle))
-        self.set_slider_pen(slider=self.slider_x, color=(255, 255, 0, 255), width=slider_width)
-        self.set_slider_pen(slider=self.slider_y, color=(255, 255, 0, 255), width=slider_width)
-
-        self.register_pos_x_as_traced_variable(pos_x)
-        self.register_pos_y_as_traced_variable(pos_y)
-
-        # Add a marker. Args are (style, position (from 0-1), size #NOTE seems broken
-        self.addItem(self.slider_x)
-        self.addItem(self.slider_y)
-
-        # Disable mouse scrolling, panning and zooming for both axes
-        self.setMouseEnabled(False, False)
-
-        # Initialize range to [0, 1]
-        self.set_bounds_x(initial_pos, initial_pos + 1)
-        self.set_bounds_y(initial_pos, 20 + 1)
-
-        # Connect a slot (callback) to dragging and clicking events
-        self.slider_x.sigDragged.connect(self.on_position_x_change)
-        self.slider_y.sigDragged.connect(self.on_position_y_change)
-
-        # moved to get rid of warnings
-        self.wheel_frames = None
-        self.pen_width = None
-        self.cursor_color = None
-
-    def get_data(self):
-        """ Get the currently displayed data as a tuple of arrays, one
-        containing the x values and the other the y values.
-
-        **Returns**
-
-        =  =====================================================================
-        x  array containing the x values.
-        y  array containing the y values.
-        =  =====================================================================
-        """
-        pdi = self.listDataItems()[0]
-        return pdi.getData()
-
-    def orientate(self):
-        """ Define all aspects that are dependent on the orientation. """
-        if self.orientation == 'vertical':
-            self.right_axis = 'right'
-            self.secondary_axis = 'top'
-            self.secondary_axis_grid = (1, 1)
-            self.angle = 90
-            self.slider_axis_index = 0
-        else:
-            self.right_axis = 'top'
-            self.secondary_axis = 'right'
-            self.secondary_axis_grid = (2, 2)
-            self.angle = 0
-            self.slider_axis_index = 1
-
-    def reinitialize_sliders(self, init_pos_x, init_pos_y):
-        self.removeItem(self.slider_x)
-        self.removeItem(self.slider_y)
-        if self.orientation == 'vertical':
-            self.slider_x = InfiniteLine(init_pos_x, movable=True, angle=self.angle)
-            self.slider_y = InfiniteLine(init_pos_y, movable=True, angle=abs(90-self.angle))
-        else:
-            self.slider_x = InfiniteLine(init_pos_x, movable=True, angle=self.angle)
-            self.slider_y = InfiniteLine(init_pos_y, movable=True, angle=abs(90-self.angle))
-        self.set_slider_pen(slider=self.slider_x, color=(255, 255, 0, 255), width=1)
-        self.set_slider_pen(slider=self.slider_y, color=(255, 255, 0, 255), width=1)
-        self.addItem(self.slider_x)
-        self.addItem(self.slider_y)
-        self.slider_x.sigDragged.connect(self.on_position_x_change)
-        self.slider_y.sigDragged.connect(self.on_position_y_change)
-
-    def register_pos_x_as_traced_variable(self, traced_variable):
+    def register_momentum_slider(self, traced_variable):
         """ Set self.pos to the given TracedVariable instance and connect the
         relevant slots to the signals. This can be used to share a
         TracedVariable among widgets.
         """
-        self.pos_x = traced_variable
-        self.pos_x.sig_value_changed.connect(self.set_position_x)
-        self.pos_x.sig_allowed_values_changed.connect(self.on_allowed_values_change_x)
+        self.crosshair.vpos = traced_variable
+        self.crosshair.vpos.sig_value_changed.connect(self.set_position)
+        self.crosshair.vpos.sig_allowed_values_changed.connect(self.on_allowed_values_change)
 
-    def register_pos_y_as_traced_variable(self, traced_variable):
-        """ Set self.pos to the given TracedVariable instance and connect the
-        relevant slots to the signals. This can be used to share a
-        TracedVariable among widgets.
+    def set_position(self):
+        """ Callback for the :signal:`sig_value_changed
+        <data_slicer.utilities.TracedVariable.sig_value_changed>`. Whenever the
+        value of this TracedVariable is updated (possibly from outside this
+        Scalebar object), put the slider to the appropriate position.
         """
-        self.pos_y = traced_variable
-        self.pos_y.sig_value_changed.connect(self.set_position_y)
-        self.pos_y.sig_allowed_values_changed.connect(self.on_allowed_values_change_y)
+        if self.orientation == 'horizontal':
+            new_pos = self.crosshair.vpos.get_value()
+            self.crosshair.vline.setValue(new_pos)
+        elif self.orientation == 'vertical':
+            new_pos = self.crosshair.vpos.get_value()
+            self.crosshair.hline.setValue(new_pos)
 
-    def on_position_x_change(self):
-        """ Callback for the :signal:`sigDragged
-        <pyqtgraph.InfiniteLine.sigDragged>`. Set the value of the
-        TracedVariable instance self.pos to the current slider position.
-        """
-        current_pos = self.slider_x.value()
-        # NOTE pos.set_value emits signal sig_value_changed which may lead to duplicate processing of the position
-        # change.
-        if self.orientation == 'vertical':
-            self.pos_x.set_value(current_pos)
-        else:
-            self.pos_y.set_value(current_pos)
-
-    def on_position_y_change(self):
-        """ Callback for the :signal:`sigDragged
-        <pyqtgraph.InfiniteLine.sigDragged>`. Set the value of the
-        TracedVariable instance self.pos to the current slider position.
-        """
-        current_pos = self.slider_y.value()
-        # NOTE pos.set_value emits signal sig_value_changed which may lead to
-        # duplicate processing of the position change.
-        if self.orientation == 'vertical':
-            self.pos_y.set_value(current_pos)
-        else:
-            self.pos_x.set_value(current_pos)
-
-    def on_allowed_values_change_x(self):
+    def on_allowed_values_change(self):
         """ Callback for the :signal:`sig_allowed_values_changed
         <data_slicer.utilities.TracedVariable.sig_allowed_values_changed>`.
         With a change of the allowed values in the TracedVariable, we should
@@ -710,293 +614,15 @@ class CutImagePlot(ImagePlot):
         maximal width for the slider.
         """
         # If the allowed values were reset, just exit
-        if self.pos_x.allowed_values is None:
+        if self.crosshair.vpos.allowed_values is None:
             return
 
-        lower = self.pos_x.min_allowed
-        upper = self.pos_x.max_allowed
-        # print('allowed values: {}, {}'.format(lower, upper))
-        if self.orientation == 'vertical':
-            self.set_bounds_x(lower, upper)
-        else:
-            self.set_bounds_y(lower, upper)
+        lower = self.crosshair.vpos.min_allowed# - self.width
+        upper = self.crosshair.vpos.max_allowed# + self.width
+        self.set_momentum_slider_bounds(lower, upper)
 
-        # Define a max width of the slider and the resulting set of allowed
-        # widths
-        max_width = int(len(self.pos_x.allowed_values)/2)
-        allowed_widths = [2*i + 1 for i in range(max_width+1)]
-        self.slider_width.set_allowed_values(allowed_widths)
-
-    def on_allowed_values_change_y(self):
-        """ Callback for the :signal:`sig_allowed_values_changed
-        <data_slicer.utilities.TracedVariable.sig_allowed_values_changed>`.
-        With a change of the allowed values in the TracedVariable, we should
-        update our bounds accordingly.
-        The number of allowed values can also give us a hint for a reasonable
-        maximal width for the slider.
-        """
-        # If the allowed values were reset, just exit
-        if self.pos_y.allowed_values is None:
-            return
-
-        lower = self.pos_y.min_allowed
-        upper = self.pos_y.max_allowed
-        # print('allowed values: {}, {}'.format(lower, upper))
-        if self.orientation == 'vertical':
-            self.set_bounds_y(lower, upper)
-        else:
-            self.set_bounds_x(lower, upper)
-
-        # Define a max width of the slider and the resulting set of allowed
-        # widths
-        max_width = int(len(self.pos_y.allowed_values)/2)
-        allowed_widths = [2*i + 1 for i in range(max_width+1)]
-        self.slider_width.set_allowed_values(allowed_widths)
-
-    def set_position_x(self):
-        """ Callback for the :signal:`sig_value_changed
-        <data_slicer.utilities.TracedVariable.sig_value_changed>`. Whenever the
-        value of this TracedVariable is updated (possibly from outside this
-        Scalebar object), put the slider to the appropriate position.
-        """
-        if self.orientation == 'vertical':
-            new_pos = self.pos_x.get_value()
-        else:
-            new_pos = self.pos_y.get_value()
-        self.slider_x.setValue(new_pos)
-
-    def set_position_y(self):
-        """ Callback for the :signal:`sig_value_changed
-        <data_slicer.utilities.TracedVariable.sig_value_changed>`. Whenever the
-        value of this TracedVariable is updated (possibly from outside this
-        Scalebar object), put the slider to the appropriate position.
-        """
-
-        if self.orientation == 'vertical':
-            new_pos = self.pos_y.get_value()
-        else:
-            new_pos = self.pos_x.get_value()
-        self.slider_y.setValue(new_pos)
-
-    def set_xscale(self, xscale, update=False):
-        """ Set the xscale of the plot. *xscale* is an array of the length
-        ``len(self.image_item.shape[0])``.
-        """
-        if self.transposed.get_value():
-            self._set_yscale(xscale, update)
-        else:
-            self._set_xscale(xscale, update)
-
-    def set_yscale(self, yscale, update=False):
-        """ Set the yscale of the plot. *yscale* is an array of the length
-        ``len(self.image_item.image.shape[1])``.
-        """
-        if self.transposed.get_value():
-            self._set_xscale(yscale, update)
-        else:
-            self._set_yscale(yscale, update)
-
-    def _set_xscale(self, xscale, update=False, force=False):
-        """ Set the scale of the horizontal axis of the plot. *force* can be
-        used to bypass the length checking.
-        """
-        # Sanity check
-        if not force and self.image_item is not None and len(xscale) != self.image_data.shape[0]:
-            raise TypeError('Shape of xscale does not match data dimensions.')
-
-        self.xscale = xscale
-        # 'Autoscale' the image to the xscale
-        self.xlim = (xscale[0], xscale[-1])
-
-        if update:
-            self._set_axes_scales(emit=True)
-
-    def _set_yscale(self, yscale, update=False, force=False):
-        """ Set the scale of the vertical axis of the plot. *force* can be
-        used to bypass the length checking.
-        """
-        # Sanity check
-        if not force and self.image_item is not None and len(yscale) != self.image_data.shape[1]:
-            raise TypeError('Shape of yscale does not match data dimensions.')
-
-        self.yscale = yscale
-        # 'Autoscale' the image to the xscale
-        self.ylim = (yscale[0], yscale[-1])
-
-        if update:
-            self._set_axes_scales(emit=True)
-
-    def set_ticks(self, min_val, max_val, axis):
-        plotItem = self.plotItem
-
-        # Remove the old top-axis
-        plotItem.layout.removeItem(plotItem.getAxis(axis))
-        # Create the new axis and set its range
-        new_axis = AxisItem(orientation=axis)
-        new_axis.setRange(min_val, max_val)
-        # Attach it internally to the plotItem and its layout (The arguments
-        # `*(1, 1)` or `*(2, 2)` refers to the axis' position in the GridLayout)
-        plotItem.axes[axis]['item'] = new_axis
-        if axis == 'bottom':
-            plotItem.layout.addItem(new_axis, *self.main_xaxis_grid)
-        else:
-            plotItem.layout.addItem(new_axis, *self.main_yaxis_grid)
-
-    def fix_viewrange(self):
-        """ Prevent zooming out by fixing the limits of the ViewBox. """
-        [[x_min, x_max], [y_min, y_max]] = self.get_limits()
-        # print(self.get_limits())
-        self.setLimits(xMin=x_min, xMax=x_max, yMin=y_min, yMax=y_max, maxXRange=x_max-x_min, maxYRange=y_max-y_min)
-
-    def set_image(self, image, emit=True, *args, **kwargs):
-        """ Expects either np.arrays or pg.ImageItems as input and sets them
-        correctly to this PlotWidget's Image with `addItem`. Also makes sure
-        there is only one Image by deleting the previous image.
-
-        Emits :signal:`sig_image_changed`
-
-        **Parameters**
-
-        ========  ==============================================================
-        image     np.ndarray or pyqtgraph.ImageItem instance; the image to be
-                  displayed.
-        emit      bool; whether or not to emit :signal:`sig_image_changed`
-        (kw)args  positional and keyword arguments that are passed on to
-                  :class:`pyqtgraph.ImageItem`
-        ========  ==============================================================
-        """
-        # Convert array to ImageItem
-        if isinstance(image, ndarray):
-            if 0 not in image.shape:
-                if PMESHITEM:
-                    image_item = PColorMeshItem(image)
-                else:
-                    image_item = ImageItem(image, *args, **kwargs)
-            else:
-                return
-        else:
-            image_item = image
-
-        # Transpose if necessary
-        if self.transposed.get_value():
-            image_item = ImageItem(image_item.image.T, *args, **kwargs)
-
-        # Replace the image
-        self.remove_image()
-        self.image_item = image_item
-        self.image_data = image
-        self.addItem(image_item)
-        # Reset limits if necessary
-        if self.xscale is not None and self.yscale is not None:
-            axes_shape = (len(self.xscale), len(self.yscale))
-            if axes_shape != self.image_data.shape:
-                self.xlim = None
-                self.ylim = None
-        self._set_axes_scales(emit=emit)
-
-        if emit:
-            self.sig_image_changed.emit()
-
-    def _set_axes_scales(self, emit=False):
-        """ Transform the image such that it matches the desired x and y
-        scales.
-        """
-        # Get image dimensions and requested origin (x0,y0) and top right corner (x1, y1)
-        nx, ny = self.image_data.shape
-        [[x0, x1], [y0, y1]] = self.get_limits()
-        # Calculate the scaling factors
-        sx = (x1-x0)/nx
-        sy = (y1-y0)/ny
-        # Ensure nonzero
-        sx = 1 if sx == 0 else sx
-        sy = 1 if sy == 0 else sy
-        # Define a transformation matrix that scales and translates the image
-        # such that it appears at the coordinates that match our x and y axes.
-        transform = qt.QtGui.QTransform()
-        transform.scale(sx, sy)
-        # Carry out the translation in scaled coordinates
-        transform.translate(x0/sx, y0/sy)
-        # Finally, apply the transformation to the imageItem
-        self.image_item.setTransform(transform)
-        self._update_transform_factors()
-
-        if emit:
-            self.sig_axes_changed.emit()
-
-    def _update_transform_factors(self):
-        """ Create a copy of the parameters that are necessary to reproduce
-        the current transform. This is necessary e.g. for the calculation of
-        the transform in :meth:`rotate
-        <data_slicer.imageplot.ImagePlot.rotate>`.
-        """
-        transform = self.image_item.transform()
-        dx = transform.dx()
-        dy = transform.dy()
-        sx = transform.m11()
-        sy = transform.m22()
-        wx = self.image_item.width()
-        wy = self.image_item.height()
-        self.transform_factors = [dx, dy, sx, sy, wx, wy]
-
-    def set_bounds_x(self, lower, upper):
-        """ Set both, the displayed area of the axis as well as the the range
-        in which the slider (InfiniteLine) can be dragged to the interval
-        [lower, upper].
-        """
-        self.setXRange(lower, upper, padding=0.01)
-        self.slider_x.setBounds([lower, upper])
-
-    def set_bounds_y(self, lower, upper):
-        """ Set both, the displayed area of the axis as well as the the range
-        in which the slider (InfiniteLine) can be dragged to the interval
-        [lower, upper].
-        """
-        self.setYRange(lower, upper, padding=0.01)
-        self.slider_y.setBounds([lower, upper])
-
-    def set_secondary_axis(self, min_val, max_val):
-        """ Create (or replace) a second x-axis on the top which ranges from
-        `min_val` to `max_val`.
-        This is the right axis in case of the horizontal orientation.
-        """
-        # Get a handle on the underlying plotItem
-        plotItem = self.plotItem
-
-        # Remove the old top-axis
-        plotItem.layout.removeItem(plotItem.getAxis(self.secondary_axis))
-        # Create the new axis and set its range
-        new_axis = AxisItem(orientation=self.secondary_axis)
-        new_axis.setRange(min_val, max_val)
-        # Attach it internally to the plotItem and its layout (The arguments
-        # `*(1, 1)` or `*(2, 2)` refers to the axis' position in the GridLayout)
-        plotItem.axes[self.secondary_axis]['item'] = new_axis
-        plotItem.layout.addItem(new_axis, *self.secondary_axis_grid)
-
-    def set_slider_pen(self, slider=None, color=None, width=None, hover_color=None):
-        """ Define the color and thickness of the slider (InfiniteLine
-        object :class:`pyqtgraph.InfiniteLine`) and store these attribute
-        in `self.slider_width` and `self.cursor_color`).
-        """
-        # Default to the current values if none are given
-        if color is None:
-            color = self.cursor_color
-        else:
-            self.cursor_color = color
-
-        if width is None:
-            # width = self.slider_width.get_value()
-            width = self.pen_width
-        else:
-            self.pen_width = width
-
-        if hover_color is None:
-            hover_color = self.hover_color
-        else:
-            self.hover_color = hover_color
-
-        slider.setPen(color=color, width=width)
-        # Keep the hoverPen-size consistent
-        slider.setHoverPen(color=hover_color, width=width)
+    def set_momentum_slider_bounds(self, xmin, xmax):
+        self.crosshair.vline.setBounds([xmin, xmax])
 
 
 class CursorPlot(PlotWidget):
@@ -1432,16 +1058,12 @@ class UtilitiesPanel(QWidget):
         # binning option
         self.bin_z = QCheckBox('bin E')
         self.bin_z_nbins = QSpinBox()
-        # TODO connect signals
         self.bin_x = QCheckBox('bin kx')
         self.bin_x_nbins = QSpinBox()
-        # TODO connect signals
         self.bin_y = QCheckBox('bin ky')
         self.bin_y_nbins = QSpinBox()
-        # TODO connect signals
         self.bin_zx = QCheckBox('bin E (kx)')
         self.bin_zx_nbins = QSpinBox()
-        # TODO connect signals
         self.bin_zy = QCheckBox('bin E (ky)')
         self.bin_zy_nbins = QSpinBox()
 
@@ -1458,28 +1080,16 @@ class UtilitiesPanel(QWidget):
         self.energy_vert_value = QLabel('eV')
 
         self.positions_momentum_label = QLabel('Momentum sliders')
-        self.momentum_hor_label = QLabel('kx:')
+        self.momentum_hor_label = QLabel('ky:')
         self.momentum_hor = QSpinBox()
         self.momentum_hor_value = QLabel('deg')
-        self.momentum_vert_label = QLabel('ky:')
+        self.momentum_vert_label = QLabel('kx:')
         self.momentum_vert = QSpinBox()
         self.momentum_vert_value = QLabel('deg')
 
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
         col = 0
-        vtl.addWidget(self.bin_z,                     0 * sd, col * sd)
-        vtl.addWidget(self.bin_z_nbins,               0 * sd, (col+1) * sd)
-        vtl.addWidget(self.bin_x,                     1 * sd, col * sd)
-        vtl.addWidget(self.bin_x_nbins,               1 * sd, (col+1) * sd)
-        vtl.addWidget(self.bin_y,                     2 * sd, col * sd)
-        vtl.addWidget(self.bin_y_nbins,               2 * sd, (col+1) * sd)
-        vtl.addWidget(self.bin_zx,                    3 * sd, col * sd)
-        vtl.addWidget(self.bin_zx_nbins,              3 * sd, (col+1) * sd)
-        vtl.addWidget(self.bin_zy,                    4 * sd, col * sd)
-        vtl.addWidget(self.bin_zy_nbins,              4 * sd, (col+1) * sd)
-
-        col = 3
         vtl.addWidget(self.positions_energies_label,  0 * sd, col * sd, 1, 3)
         vtl.addWidget(self.energy_main_label,         1 * sd, col * sd)
         vtl.addWidget(self.energy_main,               1 * sd, (col+1) * sd)
@@ -1491,14 +1101,26 @@ class UtilitiesPanel(QWidget):
         vtl.addWidget(self.energy_vert,               3 * sd, (col+1) * sd)
         vtl.addWidget(self.energy_vert_value,         3 * sd, (col+2) * sd)
 
-        col = 6
+        col = 3
         vtl.addWidget(self.positions_momentum_label,  0 * sd, col * sd, 1, 3)
-        vtl.addWidget(self.momentum_hor_label,        1 * sd, col * sd)
-        vtl.addWidget(self.momentum_hor,              1 * sd, (col+1) * sd)
-        vtl.addWidget(self.momentum_hor_value,        1 * sd, (col+2) * sd)
-        vtl.addWidget(self.momentum_vert_label,       2 * sd, col * sd)
-        vtl.addWidget(self.momentum_vert,             2 * sd, (col+1) * sd)
-        vtl.addWidget(self.momentum_vert_value,       2 * sd, (col+2) * sd)
+        vtl.addWidget(self.momentum_vert_label,       1 * sd, col * sd)
+        vtl.addWidget(self.momentum_vert,             1 * sd, (col + 1) * sd)
+        vtl.addWidget(self.momentum_vert_value,       1 * sd, (col + 2) * sd)
+        vtl.addWidget(self.momentum_hor_label,        2 * sd, col * sd)
+        vtl.addWidget(self.momentum_hor,              2 * sd, (col + 1) * sd)
+        vtl.addWidget(self.momentum_hor_value,        2 * sd, (col + 2) * sd)
+
+        col = 6
+        vtl.addWidget(self.bin_z,                     0 * sd, col * sd)
+        vtl.addWidget(self.bin_z_nbins,               0 * sd, (col+1) * sd)
+        vtl.addWidget(self.bin_x,                     1 * sd, col * sd)
+        vtl.addWidget(self.bin_x_nbins,               1 * sd, (col+1) * sd)
+        vtl.addWidget(self.bin_y,                     2 * sd, col * sd)
+        vtl.addWidget(self.bin_y_nbins,               2 * sd, (col+1) * sd)
+        vtl.addWidget(self.bin_zx,                    3 * sd, col * sd)
+        vtl.addWidget(self.bin_zx_nbins,              3 * sd, (col+1) * sd)
+        vtl.addWidget(self.bin_zy,                    4 * sd, col * sd)
+        vtl.addWidget(self.bin_zy_nbins,              4 * sd, (col+1) * sd)
 
         # dummy lbl
         # dummy_lbl = QLabel('')
@@ -1624,7 +1246,7 @@ class TracedVariable(qt.QtCore.QObject):
         """
         self.sig_value_read.connect(callback)
 
-    def set_allowed_values(self, values=None):
+    def set_allowed_values(self, values=None, binning=0):
         """ Define a set/range/list of values that are allowed for this
         Variable. Once set, all future calls to set_value will automatically
         try to pick the most reasonable of the allowed values to assign.
@@ -1648,7 +1270,10 @@ class TracedVariable(qt.QtCore.QObject):
         else:
             # Convert to sorted numpy array
             try:
-                values = array(values)
+                if binning == 0:
+                    values = array(values)
+                else:
+                    values = array(values)[binning:-binning]
             except TypeError:
                 message = 'Could not convert allowed values to np.array.'
                 raise TypeError(message)

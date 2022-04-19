@@ -12,6 +12,9 @@ os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
 
 def db():
+    print('++++++++++++++++++++++++++++++++++++')
+    print('\tdevelopement version')
+    print('++++++++++++++++++++++++++++++++++++')
     app = QApplication(sys.argv)
     window = DataBrowser()
     sys.exit(app.exec_())

@@ -397,10 +397,10 @@ class MainWindow2D(QMainWindow):
             self.plot_x.left_line.setValue(i_y - width)
             self.plot_x.right_line.setValue(i_y + width)
 
-    def update_xy_plots(self):
-        """ Update the x and y profile plots. """
-        self.update_x_plot()
-        self.update_y_plot()
+    # def update_xy_plots(self):
+    #     """ Update the x and y profile plots. """
+    #     self.update_x_plot()
+    #     self.update_y_plot()
 
     def update_binning_lines(self):
         """ Update binning lines accordingly. """
@@ -446,7 +446,7 @@ class MainWindow2D(QMainWindow):
             try:
                 self.main_plot.remove_binning_lines(orientation='vertical')
                 self.plot_x.remove_binning_lines()
-                org_range = np.arange(0, len(self.data_handler.axes[0]))
+                org_range = np.arange(0, len(self.data_handler.axes[1]))
                 self.main_plot.pos[0].set_allowed_values(org_range)
                 self.plot_x.pos.set_allowed_values(org_range)
             except AttributeError:

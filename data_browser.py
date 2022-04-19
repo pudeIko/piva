@@ -98,18 +98,18 @@ class DataBrowser(QMainWindow):
 
         data_set = dl.load_data(fname)
         title = fname.split('/')[-1]
-        # try:
-        if data_set.xscale.size == 1:
-            self.data_viewers[str(self.thread_count)] = \
-                MainWindow2D(self, data_set=data_set, title=title, index=self.thread_count)
-        else:
-            self.data_viewers[str(self.thread_count)] = \
-                MainWindow3D(self, data_set=data_set, title=title, index=self.thread_count)
-        # except Exception:
-        #     self.sb.showMessage('Couldn\'t load data,  format not supported.', self.sb_timeout)
-        #     self.thread[self.thread_count].stop()
-        # finally:
-        self.thread_count += 1
+        try:
+            if data_set.xscale.size == 1:
+                self.data_viewers[str(self.thread_count)] = \
+                    MainWindow2D(self, data_set=data_set, title=title, index=self.thread_count)
+            else:
+                self.data_viewers[str(self.thread_count)] = \
+                    MainWindow3D(self, data_set=data_set, title=title, index=self.thread_count)
+        except Exception:
+            self.sb.showMessage('Couldn\'t load data,  format not supported.', self.sb_timeout)
+            self.thread[self.thread_count].stop()
+        finally:
+            self.thread_count += 1
 
     def remove_dir_string(self, dir_str, files):
         res = []
