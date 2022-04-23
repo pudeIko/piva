@@ -2,12 +2,14 @@
 Data handler and main window creator for 2D data inspection
 """
 import time
-from PyQt5.QtWidgets import QMainWindow
+import os
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog
 import numpy as np
 from imageplot import *
 from cmaps import cmaps
 import arpys_wp as wp
 from copy import deepcopy
+import data_loader as dl
 
 app_style = """
 QMainWindow{background-color: rgb(64,64,64);}
@@ -130,9 +132,10 @@ class DataHandler:
 
 class MainWindow2D(QMainWindow):
 
-    def __init__(self, data_browser, data_set=None, title=None, index=0):
+    def __init__(self, data_browser, data_set=None, fname=None, index=0):
         super(MainWindow2D, self).__init__()
-        self.title = title
+        self.title = fname.split('/')[-1]
+        self.fname = fname
         self.central_widget = QtGui.QWidget()
         self.layout = QtGui.QGridLayout()
 
@@ -163,7 +166,7 @@ class MainWindow2D(QMainWindow):
         # Create cut of cut_x
         self.plot_x = CursorPlot(name='plot_x')
         # Create cut of cut_y
-        self.plot_y = CursorPlot(name='plot_y', orientation='horizontal')
+        self.plot_y = CursorPlot(name='plot_y', orientation='vertical')
         # Create utilities panel
         self.util_panel = UtilitiesPanel(self, name='utilities_panel', dim=2)
         self.util_panel.positions_momentum_label.setText('Sliders')
@@ -197,6 +200,7 @@ class MainWindow2D(QMainWindow):
         self.util_panel.momentum_hor.setRange(0, len(self.data_handler.axes[0]))
 
         self.put_sliders_in_the_middle()
+        self.load_saved_corrections(data_set)
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -214,9 +218,7 @@ class MainWindow2D(QMainWindow):
         self.plot_y.register_traced_variable(self.main_plot.pos[1])
         self.plot_y.pos.sig_value_changed.connect(self.update_plot_x)
 
-        # Create utilities panel
-        self.util_panel.close_button.clicked.connect(self.close_mw)
-        # and connect signals
+        # Create utilities panel and connect signals
         self.util_panel.cmaps.currentIndexChanged.connect(self.set_cmap)
         self.util_panel.invert_colors.stateChanged.connect(self.set_cmap)
         self.util_panel.gamma.valueChanged.connect(self.set_gamma)
@@ -227,6 +229,15 @@ class MainWindow2D(QMainWindow):
         self.util_panel.bin_z_nbins.valueChanged.connect(self.update_binning_lines)
         self.util_panel.energy_vert.valueChanged.connect(self.set_vert_energy_slider)
         self.util_panel.momentum_hor.valueChanged.connect(self.set_hor_momentum_slider)
+
+        # buttons
+        self.util_panel.close_button.clicked.connect(self.close_mw)
+        self.util_panel.save_button.clicked.connect(self.save_to_pickle)
+
+        # energy and k-space concersion
+        self.util_panel.conv_energy_Ef.valueChanged.connect(self.apply_energy_correction)
+        self.util_panel.conv_energy_hv.valueChanged.connect(self.apply_energy_correction)
+        self.util_panel.conv_energy_wf.valueChanged.connect(self.apply_energy_correction)
 
         # Align all the gui elements
         self._align()
@@ -396,11 +407,6 @@ class MainWindow2D(QMainWindow):
         if binning:
             self.plot_x.left_line.setValue(i_y - width)
             self.plot_x.right_line.setValue(i_y + width)
-
-    # def update_xy_plots(self):
-    #     """ Update the x and y profile plots. """
-    #     self.update_x_plot()
-    #     self.update_y_plot()
 
     def update_binning_lines(self):
         """ Update binning lines accordingly. """
@@ -572,7 +578,81 @@ class MainWindow2D(QMainWindow):
         self.main_plot.pos[0].set_value(mid_energy)
         self.main_plot.pos[1].set_value(mid_angle)
 
+    def apply_energy_correction(self):
+        Ef = self.util_panel.conv_energy_Ef.value() * 0.001
+        hv = self.util_panel.conv_energy_hv.value()
+        wf = self.util_panel.conv_energy_wf.value()
+        new_energy_axis = self.data_handler.axes[1] + Ef - hv + wf
+        self.new_energy_axis = new_energy_axis
+        new_range = [new_energy_axis[0], new_energy_axis[-1]]
+        self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_range)
+        self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_range)
+
     def close_mw(self):
         self.destroy()
         self.db.thread[self.index].stop()
+
+    def save_to_pickle(self):
+        dataset = dl.load_data(self.fname)
+        dir = self.fname[:-len(self.title)]
+        file_selection = True
+        init_fname = ''
+
+        while file_selection:
+            fname, fname_return_value = QInputDialog.getText(self, '', 'File name:', QLineEdit.Normal, init_fname)
+            if not fname_return_value:
+                return
+
+            # check if there is no fname colosions
+            if fname in os.listdir(dir):
+                fname_colision_box = QMessageBox()
+                fname_colision_box.setIcon(QMessageBox.Question)
+                fname_colision_box.setWindowTitle('File name already used.')
+                fname_colision_box.setText('File {} already exists.\nDo you want to overwrite it?'.format(fname))
+                fname_colision_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                if fname_colision_box.exec() == QMessageBox.Ok:
+                    file_selection = False
+                else:
+                    init_fname = fname
+            else:
+                file_selection = False
+
+        if self.util_panel.conv_energy_Ef.value() != 0 or self.util_panel.conv_gamma_y.value() != 0 or \
+                self.util_panel.conv_gamma_x.value() != 0:
+            save_cor_box = QMessageBox()
+            save_cor_box.setIcon(QMessageBox.Question)
+            save_cor_box.setWindowTitle('Save data')
+            save_cor_box.setText("Do you want to save applied corrections?")
+            save_cor_box.setStandardButtons(QMessageBox.No | QMessageBox.Ok | QMessageBox.Cancel)
+
+            box_return_value = save_cor_box.exec()
+            if box_return_value == QMessageBox.Ok:
+                attrs = {}
+                if self.util_panel.conv_energy_Ef.value() != 0:
+                    attrs['Ef'] = self.util_panel.conv_energy_Ef.value()
+                if self.util_panel.conv_gamma_x.value() != 0:
+                    attrs['gamma_x'] = self.util_panel.conv_gamma_x.value()
+                if self.util_panel.conv_angle_off.value() != 0:
+                    attrs['angle_offset'] = self.util_panel.conv_angle_off.value()
+                dl.update_namespace(dataset, ['saved', attrs])
+            elif box_return_value == QMessageBox.No:
+                pass
+            elif box_return_value == QMessageBox.Cancel:
+                return
+        else:
+            pass
+
+        dl.dump(dataset, (dir + fname), force=True)
+
+    def load_saved_corrections(self, data_set):
+        if hasattr(data_set, 'saved'):
+            saved = data_set.saved
+            if 'Ef' in saved.keys():
+                self.util_panel.conv_energy_Ef.setValue(saved['Ef'])
+            if 'gamma_x' in saved.keys():
+                self.util_panel.conv_gamma_x.setValue(saved['gamma_x'])
+            if 'angle_offset' in saved.keys():
+                self.util_panel.conv_angle_off.setValue(saved['angle_offset'])
+        else:
+            return
 
