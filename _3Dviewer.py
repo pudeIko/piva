@@ -1,19 +1,22 @@
 """
 Data handler and main window creator for 3D data inspection
 """
+import os
 import time
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
 from imageplot import *
 from cmaps import cmaps
 import arpys_wp as wp
+import data_loader as dl
 
 app_style = """
 QMainWindow{background-color: rgb(64,64,64);}
 """
 DEFAULT_CMAP = 'viridis'
+ORIENTLINES_LINECOLOR = (164, 37, 22, 255)
 NDIM = 3
 erg_ax = 2
 slit_ax = 1
@@ -185,7 +188,8 @@ class DataHandler:
         zscale = self.axes[erg_ax]
         zmin = zscale[0]
         zmax = zscale[-1]
-        ip.set_secondary_axis(zmin, zmax)
+        ip.set_secondary_axis(0, len(zscale))
+        ip.set_ticks(zmin, zmax, ip.main_xaxis)
 
     def calculate_integrated_intensity(self):
         self.integrated = self.get_data().sum(0).sum(0)
@@ -204,7 +208,11 @@ class DataHandler:
         except IndexError:
             pass
         self.main_window.util_panel.energy_main.setValue(z)
-        self.main_window.util_panel.energy_main_value.setText('({:.4f})'.format(self.axes[erg_ax][z]))
+        if self.main_window.new_energy_axis is None:
+            self.main_window.util_panel.energy_main_value.setText('({:.4f})'.format(self.axes[erg_ax][z]))
+        else:
+            self.main_window.util_panel.energy_main_value.setText(
+                '({:.4f})'.format(self.main_window.new_energy_axis[z]))
 
     @staticmethod
     def make_slice(data, dim, index, integrate=0, silent=True):
@@ -348,9 +356,10 @@ class DataHandler:
 
 class MainWindow3D(QMainWindow):
 
-    def __init__(self, data_browser, data_set=None, title=None, index=0):
+    def __init__(self, data_browser, data_set=None, fname=None, index=0):
         super(MainWindow3D, self).__init__()
-        self.title = title
+        self.title = fname.split('/')[-1]
+        self.fname = fname
         self.central_widget = QtGui.QWidget()
         self.layout = QtGui.QGridLayout()
 
@@ -361,6 +370,7 @@ class MainWindow3D(QMainWindow):
         self.lut = None
         self.db = data_browser
         self.index = index
+        self.new_energy_axis = None
 
         # Initialize instance variables
         # Plot transparency alpha
@@ -382,7 +392,7 @@ class MainWindow3D(QMainWindow):
         # Create cut plot along y
         self.cut_y = ImagePlot(name='cut_y', orientation='vertical')
         # Create cut of cut_y
-        self.plot_y = CursorPlot(name='plot_y', orientation='horizontal')
+        self.plot_y = CursorPlot(name='plot_y', orientation='vertical')
         # Create the integrated intensity plot
         self.plot_z = CursorPlot(name='plot_z', z_plot=True)
         # Create utilities panel
@@ -413,12 +423,15 @@ class MainWindow3D(QMainWindow):
         self.util_panel.energy_vert.setRange(0, len(self.data_handler.axes[erg_ax]))
         self.util_panel.momentum_hor.setRange(0, len(self.data_handler.axes[slit_ax]))
         self.util_panel.momentum_vert.setRange(0, len(self.data_handler.axes[scan_ax]))
+        self.util_panel.orientate_init_x.setRange(0, self.data_handler.axes[scan_ax].size)
+        self.util_panel.orientate_init_y.setRange(0, self.data_handler.axes[slit_ax].size)
 
         # create a single point EDC at crossing point of momentum sliders
         self.sp_EDC = self.plot_z.plot()
         self.set_sp_EDC_data()
 
         self.put_sliders_in_initial_positions()
+        self.load_saved_corrections(data_set)
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -447,7 +460,6 @@ class MainWindow3D(QMainWindow):
         self.plot_z.change_width_enabled = True
 
         # Connect signals to utilities panel
-        self.util_panel.close_button.clicked.connect(self.close_mw)
         self.util_panel.cmaps.currentIndexChanged.connect(self.set_cmap)
         self.util_panel.invert_colors.stateChanged.connect(self.set_cmap)
         self.util_panel.gamma.valueChanged.connect(self.set_gamma)
@@ -464,6 +476,8 @@ class MainWindow3D(QMainWindow):
         self.util_panel.bin_zx_nbins.valueChanged.connect(self.set_zx_binning_line)
         self.util_panel.bin_zy.stateChanged.connect(self.set_zy_binning_line)
         self.util_panel.bin_zy_nbins.valueChanged.connect(self.set_zy_binning_line)
+
+        # sliders signals
         self.util_panel.energy_main.valueChanged.connect(self.set_main_energy_slider)
         self.util_panel.energy_hor.valueChanged.connect(self.set_hor_energy_slider)
         self.util_panel.energy_vert.valueChanged.connect(self.set_vert_energy_slider)
@@ -474,6 +488,25 @@ class MainWindow3D(QMainWindow):
         self.util_panel.bin_z_nbins.setValue(10)
         self.util_panel.bin_zx_nbins.setValue(5)
         self.util_panel.bin_zy_nbins.setValue(5)
+
+        # buttons
+        self.util_panel.close_button.clicked.connect(self.close_mw)
+        self.util_panel.save_button.clicked.connect(self.save_to_pickle)
+
+        # energy and k-space concersion
+        self.util_panel.conv_energy_Ef.valueChanged.connect(self.apply_energy_correction)
+        self.util_panel.conv_energy_hv.valueChanged.connect(self.apply_energy_correction)
+        self.util_panel.conv_energy_wf.valueChanged.connect(self.apply_energy_correction)
+        self.util_panel.do_kspace_conv.clicked.connect(self.convert_to_kspace)
+
+        # orientating options
+        self.util_panel.orientate_init_x.valueChanged.connect(self.set_orientating_lines)
+        self.util_panel.orientate_init_y.valueChanged.connect(self.set_orientating_lines)
+        self.util_panel.orientate_find_gamma.clicked.connect(self.find_gamma)
+        self.util_panel.orientate_copy_coords.clicked.connect(self.copy_coords_values)
+        self.util_panel.orientate_hor_line.stateChanged.connect(self.set_orientating_lines)
+        self.util_panel.orientate_ver_line.stateChanged.connect(self.set_orientating_lines)
+        self.util_panel.orientate_angle.valueChanged.connect(self.set_orientating_lines)
 
         # Align all the gui elements
         self._align()
@@ -525,10 +558,6 @@ class MainWindow3D(QMainWindow):
             l.setColumnMinimumWidth(i, 50)
             l.setColumnStretch(i, 1)
 
-    # def print_to_console(self, message):
-    #     """ Print a *message* to the embedded ipython console. """
-    #     self.console.kernel.stdout.write(str(message) + '\n')
-
     def update_main_plot(self, **image_kwargs):
         """ Change *self.main_plot*`s currently displayed
         :class:`image_item <data_slicer.imageplot.ImagePlot.image_item>` to
@@ -570,10 +599,6 @@ class MainWindow3D(QMainWindow):
         self.plot_y.set_secondary_axis(0, len(yaxis))
         self.main_plot.fix_viewrange()
 
-        # Kind of a hack to get the crosshair to the right position...
-        # self.cut_x.sig_axes_changed.emit()
-        # self.cut_y.sig_axes_changed.emit()
-
     def update_plot_x(self):
         # Get shorthands for plot
         xp = self.plot_x
@@ -598,7 +623,10 @@ class MainWindow3D(QMainWindow):
         x = arange(0, len(self.data_handler.axes[scan_ax]))
         xp.plot(x, y)
         self.util_panel.energy_hor.setValue(i_x)
-        self.util_panel.energy_hor_value.setText('({:.4f})'.format(self.data_handler.axes[erg_ax][i_x]))
+        if self.new_energy_axis is None:
+            self.util_panel.energy_hor_value.setText('({:.4f})'.format(self.data_handler.axes[erg_ax][i_x]))
+        else:
+            self.util_panel.energy_hor_value.setText('({:.4f})'.format(self.new_energy_axis[i_x]))
         self.update_zx_zy_binning_line()
 
     def update_plot_y(self):
@@ -625,7 +653,10 @@ class MainWindow3D(QMainWindow):
         x = arange(0, len(self.data_handler.axes[slit_ax]))
         yp.plot(y, x)
         self.util_panel.energy_vert.setValue(i_x)
-        self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.data_handler.axes[erg_ax][i_x]))
+        if self.new_energy_axis is None:
+            self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.data_handler.axes[erg_ax][i_x]))
+        else:
+            self.util_panel.energy_hor_value.setText('({:.4f})'.format(self.new_energy_axis[i_x]))
         self.update_zx_zy_binning_line()
 
     def update_cut_x(self):
@@ -742,6 +773,7 @@ class MainWindow3D(QMainWindow):
         if image is None:
             image = self.image_data
         self.main_plot.set_image(image, *args, lut=self.lut, **kwargs)
+        self.set_orientating_lines()
 
     def set_cut_x_image(self, image=None, *args, **kwargs):
         """ Wraps the underlying ImagePlot3d's set_image method.
@@ -1074,6 +1106,190 @@ class MainWindow3D(QMainWindow):
         else:
             return
 
+    def apply_energy_correction(self):
+        Ef = self.util_panel.conv_energy_Ef.value() * 0.001
+        hv = self.util_panel.conv_energy_hv.value()
+        wf = self.util_panel.conv_energy_wf.value()
+        new_energy_axis = self.data_handler.axes[erg_ax] + Ef - hv + wf
+        self.new_energy_axis = new_energy_axis
+        new_range = [new_energy_axis[0], new_energy_axis[-1]]
+        self.cut_x.plotItem.getAxis(self.cut_x.main_yaxis).setRange(*new_range)
+        self.cut_y.plotItem.getAxis(self.cut_y.main_yaxis).setRange(*new_range)
+        self.plot_z.plotItem.getAxis(self.plot_z.main_xaxis).setRange(*new_range)
+
+        # update energy labels
+        main_erg_idx = self.plot_z.pos.get_value()
+        cut_x_erg_idx = self.cut_x.crosshair.hpos.get_value()
+        cut_y_erg_idx = self.cut_y.crosshair.hpos.get_value()
+        self.util_panel.energy_main_value.setText('({:.4f})'.format(self.new_energy_axis[main_erg_idx]))
+        self.util_panel.energy_hor_value.setText('({:.4f})'.format(self.new_energy_axis[cut_x_erg_idx]))
+        self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.new_energy_axis[cut_y_erg_idx]))
+
+    # analysis options
+    def find_gamma(self):
+        fs = self.image_data.T
+        # z_pos = self.plot_z.pos.get_value()
+        # z_bins = self.util_panel.bin_z_nbins.value()
+        # z_start, z_stop = z_pos - z_bins, z_pos + z_bins
+        # fs = np.sum(wp.normalize(self.data_handler.get_data())[:, :, z_start:z_stop], axis=2).T
+        # print(fs.shape, norm_data.shape)
+        x_init = self.util_panel.orientate_init_x.value()
+        y_init = self.util_panel.orientate_init_y.value()
+        res = wp.find_gamma(fs, x_init, y_init)
+        if res.success:
+            self.util_panel.orientate_find_gamma_message.setText(
+                'Values found! x: {},  y: {}.'.format(int(res.x[0]), int(res.x[1])))
+        else:
+            self.util_panel.orientate_find_gamma_message.setText('Couldn\'t find center of rotation.')
+
+    def copy_coords_values(self):
+        self.util_panel.conv_gamma_x.setValue(self.util_panel.orientate_init_x.value())
+        self.util_panel.conv_gamma_y.setValue(self.util_panel.orientate_init_y.value())
+
+    def set_orientating_lines(self):
+
+        x0 = self.util_panel.orientate_init_x.value()
+        y0 = self.util_panel.orientate_init_y.value()
+
+        try:
+            self.main_plot.removeItem(self.orient_hor_line)
+        except AttributeError:
+            pass
+        if self.util_panel.orientate_hor_line.isChecked():
+            angle = self.transform_angle(self.util_panel.orientate_angle.value())
+            if (-180 < angle < 90) and (angle != -90):
+                beta = np.deg2rad(angle)
+                if angle == 0:
+                    y_pos = y0
+                else:
+                    y_pos = y0 + (x0 * np.tan(beta))
+                angle = -angle
+            elif (angle == 90) or (angle == -90):
+                self.orient_hor_line = InfiniteLine(x0, movable=False)
+                self.orient_hor_line.setPen(color=ORIENTLINES_LINECOLOR, width=3)
+                self.main_plot.addItem(self.orient_hor_line)
+                return
+            elif 90 < angle < 180:
+                beta = np.pi - np.deg2rad(angle)
+                y_pos = y0 - (x0 * np.tan(beta))
+                angle = -angle
+            elif (angle == -180) or (angle == 180):
+                y_pos = y0
+                angle = 0
+            self.orient_hor_line = InfiniteLine(y_pos, movable=False, angle=0)
+            self.orient_hor_line.setPen(color=ORIENTLINES_LINECOLOR, width=3)
+            self.orient_hor_line.setAngle(angle)
+            self.main_plot.addItem(self.orient_hor_line)
+
+        try:
+            self.main_plot.removeItem(self.orient_ver_line)
+        except AttributeError:
+            pass
+        if self.util_panel.orientate_ver_line.isChecked():
+            angle = self.transform_angle(self.util_panel.orientate_angle.value(), orientation='vertical')
+            if (-180 < angle < 90) and (angle != -90) and (angle != 90):
+                beta = 0.5 * np.pi - np.deg2rad(angle)
+                x_pos = x0 - (y0 / np.tan(beta))
+                angle = 90 - angle
+            elif (angle == 90) or (angle == -90):
+                self.orient_ver_line = InfiniteLine(y0, movable=False, angle=0)
+                self.orient_ver_line.setPen(color=ORIENTLINES_LINECOLOR, width=3)
+                self.main_plot.addItem(self.orient_ver_line)
+                return
+            elif 90 < angle < 180:
+                beta = np.deg2rad(angle) - 0.5 * np.pi
+                x_pos = x0 + (y0 / np.tan(beta))
+                angle = 90 - angle
+            elif (angle == -180) or (angle == 180):
+                x_pos = x0
+                angle = 90
+            self.orient_ver_line = InfiniteLine(x_pos, movable=False)
+            self.orient_ver_line.setPen(color=ORIENTLINES_LINECOLOR, width=3)
+            self.orient_ver_line.setAngle(angle)
+            self.main_plot.addItem(self.orient_ver_line)
+
+    def transform_angle(self, angle, orientation='horizontal'):
+        coeff = wp.get_step(self.data_handler.axes[scan_ax]) / wp.get_step(self.data_handler.axes[slit_ax])
+        if orientation == 'horizontal':
+            return np.rad2deg(np.arctan(np.tan(np.deg2rad(angle)) * coeff))
+        else:
+            return np.rad2deg(np.arctan(np.tan(np.deg2rad(angle)) / coeff))
+
+    def convert_to_kspace(self):
+        print('Not working yet.')
+
+    # main buttons' actions
     def close_mw(self):
         self.destroy()
         self.db.thread[self.index].stop()
+
+    def save_to_pickle(self):
+        dataset = dl.load_data(self.fname)
+        dir = self.fname[:-len(self.title)]
+        up = self.util_panel
+        file_selection = True
+        init_fname = ''
+
+        while file_selection:
+            fname, fname_return_value = QInputDialog.getText(self, '', 'File name:', QLineEdit.Normal, init_fname)
+            if not fname_return_value:
+                return
+
+            # check if there is no fname colosions
+            if fname in os.listdir(dir):
+                fname_colision_box = QMessageBox()
+                fname_colision_box.setIcon(QMessageBox.Question)
+                fname_colision_box.setWindowTitle('File name already used.')
+                fname_colision_box.setText('File {} already exists.\nDo you want to overwrite it?'.format(fname))
+                fname_colision_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                if fname_colision_box.exec() == QMessageBox.Ok:
+                    file_selection = False
+                else:
+                    init_fname = fname
+            else:
+                file_selection = False
+
+        conditions = [up.conv_energy_Ef.value() != 0, up.conv_gamma_y.value() != 0, up.conv_gamma_x.value() != 0]
+
+        if np.any(conditions):
+            save_cor_box = QMessageBox()
+            save_cor_box.setIcon(QMessageBox.Question)
+            save_cor_box.setWindowTitle('Save data')
+            save_cor_box.setText("Do you want to save applied corrections?")
+            save_cor_box.setStandardButtons(QMessageBox.No | QMessageBox.Ok | QMessageBox.Cancel)
+
+            box_return_value = save_cor_box.exec()
+            if box_return_value == QMessageBox.Ok:
+                attrs = {}
+                if up.conv_energy_Ef.value() != 0:
+                    attrs['Ef'] = up.conv_energy_Ef.value()
+                if up.conv_gamma_x.value() != 0:
+                    attrs['gamma_x'] = up.conv_gamma_x.value()
+                if up.conv_gamma_y.value() != 0:
+                    attrs['gamma_y'] = up.conv_gamma_y.value()
+                dl.update_namespace(dataset, ['saved', attrs])
+            elif box_return_value == QMessageBox.No:
+                pass
+            elif box_return_value == QMessageBox.Cancel:
+                return
+        else:
+            pass
+
+        dl.dump(dataset, (dir + fname), force=True)
+
+    def load_saved_corrections(self, data_set):
+        if hasattr(data_set, 'saved'):
+            saved = data_set.saved
+            if 'Ef' in saved.keys():
+                self.util_panel.conv_energy_Ef.setValue(saved['Ef'])
+            if 'gamma_x' in saved.keys():
+                self.util_panel.conv_gamma_x.setValue(saved['gamma_x'])
+                self.util_panel.orientate_init_x.setValue(saved['gamma_x'])
+                self.util_panel.orientate_find_gamma_message.setText('Values already loaded.')
+            if 'gamma_y' in saved.keys():
+                self.util_panel.conv_gamma_y.setValue(saved['gamma_y'])
+                self.util_panel.orientate_init_y.setValue(saved['gamma_y'])
+                self.util_panel.orientate_find_gamma_message.setText('Values loaded from file.')
+        else:
+            return
+

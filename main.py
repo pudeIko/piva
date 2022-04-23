@@ -10,6 +10,7 @@ import sys
 # to fix bugs in Big Siur
 os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
+# TODO DOCUMANTATION !!!!!!!!!!!
 
 def db():
     print('++++++++++++++++++++++++++++++++++++')

@@ -3,7 +3,8 @@ matplotlib pcolormesh equivalent in pyqtgraph (more or less) """
 
 import logging
 from PyQt5.QtWidgets import QFrame, QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, \
-    QPushButton
+    QPushButton, QVBoxLayout, QLineEdit, QHBoxLayout
+from PyQt5.QtGui import QFont
 from pyqtgraph.Qt import QtGui
 from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen#, PColorMeshItem
 from numpy import arange, array, clip, inf, linspace, ndarray, abs
@@ -13,6 +14,7 @@ from cmaps import cmaps, my_cmaps
 
 BASE_LINECOLOR = (255, 255, 0, 255)
 BINLINES_LINECOLOR = (168, 168, 104, 255)
+ORIENTLINES_LINECOLOR = (164, 37, 22, 255)
 HOVER_COLOR = (195, 155, 0, 255)
 BGR_COLOR = (64, 64, 64)
 util_panel_style = """
@@ -24,6 +26,9 @@ SIGNALS = 5
 MY_CMAPS = True
 DEFAULT_CMAP = 'viridis'
 PMESHITEM = False
+
+bold_font = QFont()
+bold_font.setBold(True)
 
 
 class Crosshair:
@@ -636,7 +641,7 @@ class CursorPlot(PlotWidget):
     hover_color = HOVER_COLOR
 
     def __init__(self, parent=None, background=BGR_COLOR, name=None,
-                 orientation='vertical', slider_width=1, z_plot=False, **kwargs):
+                 orientation='horizontal', slider_width=1, z_plot=False, **kwargs):
         """ Initialize the slider and set up the visual tweaks to make a
         PlotWidget look more like a scalebar.
 
@@ -730,7 +735,7 @@ class CursorPlot(PlotWidget):
 
     def orientate(self):
         """ Define all aspects that are dependent on the orientation. """
-        if self.orientation == 'vertical':
+        if self.orientation == 'horizontal':
             self.right_axis = 'right'
             self.left_axis = 'left'
             self.secondary_axis = 'top'
@@ -739,7 +744,7 @@ class CursorPlot(PlotWidget):
             self.secondary_axis_grid = (1, 1)
             self.angle = 90
             self.slider_axis_index = 1
-        else:
+        elif self.orientation == 'vertical':
             self.right_axis = 'top'
             self.left_axis = 'bottom'
             self.secondary_axis = 'right'
@@ -833,7 +838,7 @@ class CursorPlot(PlotWidget):
         in which the slider (InfiniteLine) can be dragged to the interval
         [lower, upper].
         """
-        if self.orientation == 'vertical':
+        if self.orientation == 'horizontal':
             self.setXRange(lower, upper, padding=0.01)
         else:
             self.setYRange(lower, upper, padding=0.01)
@@ -904,7 +909,6 @@ class UtilitiesPanel(QWidget):
     # TODO k-space conversion, Ef correction
     # TODO BZ shape
     # TODO rotatable lines
-    # TODO saving options
     # TODO ROI
 
     def __init__(self, main_window, name=None, dim=3):
@@ -913,61 +917,55 @@ class UtilitiesPanel(QWidget):
         self.mw = main_window
         self.layout = QtGui.QGridLayout()
         self.tabs = QTabWidget()
+        self.dim = dim
 
         self.close_button = QPushButton('close')
+        self.save_button = QPushButton('save')
 
         if name is not None:
             self.name = name
         else:
             self.name = 'Unnamed'
 
-        self.initUI(dim=dim)
+        self.initUI()
 
-    def initUI(self, dim=3):
+    def initUI(self):
 
         self.setStyleSheet(util_panel_style)
         momentum_labels_width = 80
         energy_labels_width = 80
-        tabs_rows_span = 5
+        tabs_rows_span = 4
         tabs_cols_span = 9
 
-        if dim == 2:
-            self.align2D()
-            # self.energy_main_value.setFixedWidth(energy_labels_width)
-            # self.energy_hor_value.setFixedWidth(energy_labels_width)
-            self.energy_vert_value.setFixedWidth(energy_labels_width)
+        self.align()
 
+        if self.dim == 2:
+            self.energy_vert_value.setFixedWidth(energy_labels_width)
             self.momentum_hor_value.setFixedWidth(momentum_labels_width)
-            # self.momentum_vert_value.setFixedWidth(momentum_labels_width)
-        elif dim == 3:
-            self.align3D()
+        elif self.dim == 3:
             self.energy_main_value.setFixedWidth(energy_labels_width)
             self.energy_hor_value.setFixedWidth(energy_labels_width)
             self.energy_vert_value.setFixedWidth(energy_labels_width)
-
             self.momentum_hor_value.setFixedWidth(momentum_labels_width)
             self.momentum_vert_value.setFixedWidth(momentum_labels_width)
 
         self.layout.addWidget(self.tabs, 0, 0, tabs_rows_span, tabs_cols_span)
         self.layout.addWidget(self.close_button, 1, tabs_cols_span + 1)
+        self.layout.addWidget(self.save_button, 2, tabs_cols_span + 1)
         self.setLayout(self.layout)
-
-        # cross' hairs positions
 
         self.setup_cmaps()
         self.setup_gamma()
         self.setup_colorscale()
         self.setup_bin_z()
 
-    def align2D(self):
+    def align(self):
 
+        self.set_sliders_tab()
         self.set_color_tab()
-        self.set_volume2D_tab()
-
-    def align3D(self):
-
-        self.set_color_tab()
-        self.set_volume3D_tab()
+        self.set_conversion_tab()
+        if self.dim == 3:
+            self.set_orientate_tab()
 
     def set_color_tab(self):
 
@@ -986,149 +984,301 @@ class UtilitiesPanel(QWidget):
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
         col = 0
-        ctl.addWidget(self.cmaps_label, 0 * sd, col * sd)
-        ctl.addWidget(self.cmaps, 0 * sd, (col + 1) * sd)
-        ctl.addWidget(self.invert_colors, 1 * sd, col * sd, 1, 2)
+        ctl.addWidget(self.cmaps_label,         0 * sd, col * sd)
+        ctl.addWidget(self.cmaps,               0 * sd, (col + 1) * sd)
+        ctl.addWidget(self.gamma_label,         1 * sd, col * sd)
+        ctl.addWidget(self.gamma,               1 * sd, (col + 1) * sd)
 
-        ctl.addWidget(self.gamma_label, 2 * sd, col * sd)
-        ctl.addWidget(self.gamma, 2 * sd, (col + 1) * sd)
-        ctl.addWidget(self.colorscale_label, 3 * sd, col * sd)
-        ctl.addWidget(self.colorscale, 3 * sd, (col + 1) * sd)
+        col = 2
+        ctl.addWidget(self.invert_colors,       0 * sd, col * sd, 1, 2)
+        ctl.addWidget(self.colorscale_label,    1 * sd, col * sd)
+        ctl.addWidget(self.colorscale,          1 * sd, (col + 1) * sd)
 
         # dummy item
         dummy_lbl = QLabel('')
-        ctl.addWidget(dummy_lbl, 0, 2, 5, 5)
+        ctl.addWidget(dummy_lbl, 0, 5, 4, 3)
 
         self.color_tab.layout = ctl
         self.color_tab.setLayout(ctl)
         self.tabs.addTab(self.color_tab, 'Colors')
 
-    def set_volume2D_tab(self):
+    def set_sliders_tab(self):
 
-        self.volume_tab = QWidget()
+        self.sliders_tab = QWidget()
         vtl = QtGui.QGridLayout()
 
-        # binning option
-        self.bins_label = QLabel('Integrate')
-        self.bin_y = QCheckBox('bin EDCs')
-        self.bin_y_nbins = QSpinBox()
-        self.bin_z = QCheckBox('bin MDCs')
-        self.bin_z_nbins = QSpinBox()
+        if self.dim == 2:
+            # binning option
+            self.bins_label = QLabel('Integrate')
+            self.bins_label.setFont(bold_font)
+            self.bin_y = QCheckBox('bin EDCs')
+            self.bin_y_nbins = QSpinBox()
+            self.bin_z = QCheckBox('bin MDCs')
+            self.bin_z_nbins = QSpinBox()
 
-        # cross' hairs positions
-        self.positions_momentum_label = QLabel('Momentum sliders')
-        self.energy_vert_label = QLabel('E:')
-        self.energy_vert = QSpinBox()
-        self.energy_vert_value = QLabel('eV')
-        self.momentum_hor_label = QLabel('kx:')
-        self.momentum_hor = QSpinBox()
-        self.momentum_hor_value = QLabel('deg')
+            # cross' hairs positions
+            self.positions_momentum_label = QLabel('Momentum sliders')
+            self.positions_momentum_label.setFont(bold_font)
+            self.energy_vert_label = QLabel('E:')
+            self.energy_vert = QSpinBox()
+            self.energy_vert_value = QLabel('eV')
+            self.momentum_hor_label = QLabel('kx:')
+            self.momentum_hor = QSpinBox()
+            self.momentum_hor_value = QLabel('deg')
+
+            sd = 1
+            # addWidget(widget, row, column, rowSpan, columnSpan)
+            col = 0
+            vtl.addWidget(self.bins_label,                0 * sd, col, 1, 3)
+            vtl.addWidget(self.bin_y,                     1 * sd, col * sd)
+            vtl.addWidget(self.bin_y_nbins,               1 * sd, (col+1) * sd)
+            vtl.addWidget(self.bin_z,                     2 * sd, col * sd)
+            vtl.addWidget(self.bin_z_nbins,               2 * sd, (col+1) * sd)
+
+            col = 3
+            vtl.addWidget(self.positions_momentum_label,  0 * sd, col, 1, 3)
+            vtl.addWidget(self.energy_vert_label,         1 * sd, col)
+            vtl.addWidget(self.energy_vert,               1 * sd, (col+1) * sd)
+            vtl.addWidget(self.energy_vert_value,         1 * sd, (col+2) * sd)
+            vtl.addWidget(self.momentum_hor_label,        2 * sd, col)
+            vtl.addWidget(self.momentum_hor,              2 * sd, (col+1) * sd)
+            vtl.addWidget(self.momentum_hor_value,        2 * sd, (col+2) * sd)
+
+            # dummy lbl
+            dummy_lbl = QLabel('')
+            vtl.addWidget(dummy_lbl, 0, 6, 5, 2)
+
+        elif self.dim == 3:
+            # binning option
+            self.bin_z = QCheckBox('bin E')
+            self.bin_z_nbins = QSpinBox()
+            self.bin_x = QCheckBox('bin kx')
+            self.bin_x_nbins = QSpinBox()
+            self.bin_y = QCheckBox('bin ky')
+            self.bin_y_nbins = QSpinBox()
+            self.bin_zx = QCheckBox('bin E (kx)')
+            self.bin_zx_nbins = QSpinBox()
+            self.bin_zy = QCheckBox('bin E (ky)')
+            self.bin_zy_nbins = QSpinBox()
+
+            # cross' hairs positions
+            self.positions_energies_label = QLabel('Energy sliders')
+            self.positions_energies_label.setFont(bold_font)
+            self.energy_main_label = QLabel('main:')
+            self.energy_main = QSpinBox()
+            self.energy_main_value = QLabel('eV')
+            self.energy_hor_label = QLabel('kx:')
+            self.energy_hor = QSpinBox()
+            self.energy_hor_value = QLabel('eV')
+            self.energy_vert_label = QLabel('ky:')
+            self.energy_vert = QSpinBox()
+            self.energy_vert_value = QLabel('eV')
+
+            self.positions_momentum_label = QLabel('Momentum sliders')
+            self.positions_momentum_label.setFont(bold_font)
+            self.momentum_hor_label = QLabel('ky:')
+            self.momentum_hor = QSpinBox()
+            self.momentum_hor_value = QLabel('deg')
+            self.momentum_vert_label = QLabel('kx:')
+            self.momentum_vert = QSpinBox()
+            self.momentum_vert_value = QLabel('deg')
+
+            sd = 1
+            # addWidget(widget, row, column, rowSpan, columnSpan)
+            col = 0
+            vtl.addWidget(self.positions_energies_label, 0 * sd, col * sd, 1, 3)
+            vtl.addWidget(self.energy_main_label, 1 * sd, col * sd)
+            vtl.addWidget(self.energy_main, 1 * sd, (col + 1) * sd)
+            vtl.addWidget(self.energy_main_value, 1 * sd, (col + 2) * sd)
+            vtl.addWidget(self.energy_hor_label, 2 * sd, col * sd)
+            vtl.addWidget(self.energy_hor, 2 * sd, (col + 1) * sd)
+            vtl.addWidget(self.energy_hor_value, 2 * sd, (col + 2) * sd)
+            vtl.addWidget(self.energy_vert_label, 3 * sd, col * sd)
+            vtl.addWidget(self.energy_vert, 3 * sd, (col + 1) * sd)
+            vtl.addWidget(self.energy_vert_value, 3 * sd, (col + 2) * sd)
+
+            col = 3
+            vtl.addWidget(self.positions_momentum_label, 0 * sd, col * sd, 1, 3)
+            vtl.addWidget(self.momentum_vert_label, 1 * sd, col * sd)
+            vtl.addWidget(self.momentum_vert, 1 * sd, (col + 1) * sd)
+            vtl.addWidget(self.momentum_vert_value, 1 * sd, (col + 2) * sd)
+            vtl.addWidget(self.momentum_hor_label, 2 * sd, col * sd)
+            vtl.addWidget(self.momentum_hor, 2 * sd, (col + 1) * sd)
+            vtl.addWidget(self.momentum_hor_value, 2 * sd, (col + 2) * sd)
+
+            col = 6
+            vtl.addWidget(self.bin_z, 0 * sd, col * sd)
+            vtl.addWidget(self.bin_z_nbins, 0 * sd, (col + 1) * sd)
+            vtl.addWidget(self.bin_x, 1 * sd, col * sd)
+            vtl.addWidget(self.bin_x_nbins, 1 * sd, (col + 1) * sd)
+            vtl.addWidget(self.bin_y, 2 * sd, col * sd)
+            vtl.addWidget(self.bin_y_nbins, 2 * sd, (col + 1) * sd)
+            vtl.addWidget(self.bin_zx, 3 * sd, col * sd)
+            vtl.addWidget(self.bin_zx_nbins, 3 * sd, (col + 1) * sd)
+            vtl.addWidget(self.bin_zy, 4 * sd, col * sd)
+            vtl.addWidget(self.bin_zy_nbins, 4 * sd, (col + 1) * sd)
+
+        self.sliders_tab.layout = vtl
+        self.sliders_tab.setLayout(vtl)
+        self.tabs.addTab(self.sliders_tab, 'Volume')
+
+    def set_conversion_tab(self):
+        self.dimensions_tab = QWidget()
+        dtl = QtGui.QGridLayout()
+
+        self.conv_energy_main_lbl = QLabel('Energy correction')
+        self.conv_energy_main_lbl.setFont(bold_font)
+        self.conv_energy_Ef_lbl = QLabel('Ef (meV):')
+        self.conv_energy_Ef = QDoubleSpinBox()
+        self.conv_energy_Ef.setRange(-5000., 5000)
+        self.conv_energy_Ef.setDecimals(3)
+        self.conv_energy_Ef.setSingleStep(0.001)
+        self.conv_energy_hv_lbl = QLabel('h\u03BD (eV):')
+        self.conv_energy_hv = QDoubleSpinBox()
+        self.conv_energy_hv.setRange(-2000., 2000)
+        self.conv_energy_hv.setDecimals(3)
+        self.conv_energy_hv.setSingleStep(0.001)
+        self.conv_energy_wf_lbl = QLabel('wf (eV):')
+        self.conv_energy_wf = QDoubleSpinBox()
+        self.conv_energy_wf.setRange(0, 5)
+        self.conv_energy_wf.setDecimals(3)
+        self.conv_energy_wf.setSingleStep(0.001)
+
+        self.conv_momentum_main_lbl = QLabel('k-space conversion')
+        self.conv_momentum_main_lbl.setFont(bold_font)
+        self.conv_gamma_x_lbl = QLabel('\u0393 x0')
+        self.conv_gamma_x = QSpinBox()
+        self.conv_gamma_x.setRange(0, 5000)
+
+        if self.dim == 2:
+
+            self.conv_angle_off_lbl = QLabel('angle offset')
+            self.conv_angle_off = QDoubleSpinBox()
+            self.conv_angle_off.setDecimals(4)
+            self.conv_angle_off.setSingleStep(0.0001)
+
+            self.do_kspace_conv = QPushButton('Convert to k-space')
+
+            sd = 1
+            # addWidget(widget, row, column, rowSpan, columnSpan)
+            row = 0
+            dtl.addWidget(self.conv_energy_main_lbl,    row * sd, 0 * sd, 1, 2)
+            dtl.addWidget(self.conv_energy_Ef_lbl,      (row + 1) * sd, 0 * sd)
+            dtl.addWidget(self.conv_energy_Ef,          (row + 1) * sd, 1 * sd)
+            dtl.addWidget(self.conv_energy_hv_lbl,      (row + 1) * sd, 2 * sd)
+            dtl.addWidget(self.conv_energy_Ef,          (row + 1) * sd, 3 * sd)
+            dtl.addWidget(self.conv_energy_wf_lbl,      (row + 1) * sd, 4 * sd)
+            dtl.addWidget(self.conv_energy_wf,          (row + 1) * sd, 5 * sd)
+
+            row = 2
+            dtl.addWidget(self.conv_momentum_main_lbl,  row * sd, 0 * sd, 1, 2)
+            dtl.addWidget(self.conv_gamma_x_lbl,        (row + 1) * sd, 0 * sd)
+            dtl.addWidget(self.conv_gamma_x,            (row + 1) * sd, 1 * sd)
+            dtl.addWidget(self.conv_angle_off_lbl,      (row + 1) * sd, 2 * sd)
+            dtl.addWidget(self.conv_angle_off,          (row + 1) * sd, 3 * sd)
+
+            row = 5
+            dtl.addWidget(self.do_kspace_conv,          row * sd, 0 * sd, 1, 2)
+
+            # dummy item
+            self.conv_massage_lbl = QLabel('')
+            dtl.addWidget(self.conv_massage_lbl, 6, 0, 1, 9)
+
+        elif self.dim == 3:
+
+            self.conv_gamma_y_lbl = QLabel('\u0393 y0')
+            self.conv_gamma_y = QSpinBox()
+            self.conv_gamma_y.setRange(0, 5000)
+
+            self.do_kspace_conv = QPushButton('Convert to k-space')
+
+            sd = 1
+            # addWidget(widget, row, column, rowSpan, columnSpan)
+            row = 0
+            dtl.addWidget(self.conv_energy_main_lbl,    row * sd, 0 * sd, 1, 2)
+            dtl.addWidget(self.conv_energy_Ef_lbl,      (row + 1) * sd, 0 * sd)
+            dtl.addWidget(self.conv_energy_Ef,          (row + 1) * sd, 1 * sd)
+            dtl.addWidget(self.conv_energy_hv_lbl,      (row + 1) * sd, 2 * sd)
+            dtl.addWidget(self.conv_energy_hv,          (row + 1) * sd, 3 * sd)
+            dtl.addWidget(self.conv_energy_wf_lbl,      (row + 1) * sd, 4 * sd)
+            dtl.addWidget(self.conv_energy_wf,          (row + 1) * sd, 5 * sd)
+
+            row = 2
+            dtl.addWidget(self.conv_momentum_main_lbl,  row * sd, 0 * sd, 1, 2)
+            dtl.addWidget(self.conv_gamma_x_lbl,        (row + 1) * sd, 0 * sd)
+            dtl.addWidget(self.conv_gamma_x,            (row + 1) * sd, 1 * sd)
+            dtl.addWidget(self.conv_gamma_y_lbl,        (row + 1) * sd, 2 * sd)
+            dtl.addWidget(self.conv_gamma_y,            (row + 1) * sd, 3 * sd)
+
+            row = 4
+            dtl.addWidget(self.do_kspace_conv,          row * sd, 0 * sd, 1, 2)
+
+            # dummy item
+            self.conv_massage_lbl = QLabel('')
+            dtl.addWidget(self.conv_massage_lbl, 5, 0, 1, 9)
+
+        self.dimensions_tab.layout = dtl
+        self.dimensions_tab.setLayout(dtl)
+        self.tabs.addTab(self.dimensions_tab, 'Dimensions')
+
+    def set_orientate_tab(self):
+
+        self.orientate_tab = QWidget()
+        otl = QtGui.QGridLayout()
+
+        self.orientate_init_cooradinates_lbl = QLabel('Give initial coordinates')
+        self.orientate_init_cooradinates_lbl.setFont(bold_font)
+        self.orientate_init_x_lbl = QLabel('scanned axis:')
+        self.orientate_init_x = QSpinBox()
+        self.orientate_init_x.setRange(0, 1000)
+        self.orientate_init_y_lbl = QLabel('slit axis:')
+        self.orientate_init_y = QSpinBox()
+        self.orientate_init_y.setRange(0, 1000)
+
+        self.orientate_find_gamma = QPushButton('Find \t \u0393')
+        self.orientate_copy_coords = QPushButton('Copy to \'Dimensions\'')
+
+        self.orientate_find_gamma_message = QLineEdit('NOTE: algorythm will process main plot image.')
+        self.orientate_find_gamma_message.setReadOnly(True)
+
+        self.orientate_lines_lbl = QLabel('Show rotatable lines')
+        self.orientate_lines_lbl.setFont(bold_font)
+        self.orientate_hor_line = QCheckBox('horizontal line')
+        self.orientate_hor_line
+        self.orientate_ver_line = QCheckBox('vertical line')
+        self.orientate_angle_lbl = QLabel('rotation angle (deg):')
+        self.orientate_angle = QDoubleSpinBox()
+        self.orientate_angle.setRange(-180, 180)
+        self.orientate_angle.setSingleStep(0.5)
 
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
-        col = 0
-        vtl.addWidget(self.bins_label,                0 * sd, col, 1, 3)
-        vtl.addWidget(self.bin_y,                     1 * sd, col * sd)
-        vtl.addWidget(self.bin_y_nbins,               1 * sd, (col+1) * sd)
-        vtl.addWidget(self.bin_z,                     2 * sd, col * sd)
-        vtl.addWidget(self.bin_z_nbins,               2 * sd, (col+1) * sd)
+        row = 0
+        otl.addWidget(self.orientate_init_cooradinates_lbl,   row * sd, 0 * sd, 1, 2)
+        otl.addWidget(self.orientate_init_x_lbl,              (row + 1) * sd, 0 * sd)
+        otl.addWidget(self.orientate_init_x,                  (row + 1) * sd, 1 * sd)
+        otl.addWidget(self.orientate_init_y_lbl,              (row + 1) * sd, 2 * sd)
+        otl.addWidget(self.orientate_init_y,                  (row + 1) * sd, 3 * sd)
 
-        col = 3
-        vtl.addWidget(self.positions_momentum_label,  0 * sd, col, 1, 3)
-        vtl.addWidget(self.energy_vert_label,         1 * sd, col)
-        vtl.addWidget(self.energy_vert,               1 * sd, (col+1) * sd)
-        vtl.addWidget(self.energy_vert_value,         1 * sd, (col+2) * sd)
-        vtl.addWidget(self.momentum_hor_label,        2 * sd, col)
-        vtl.addWidget(self.momentum_hor,              2 * sd, (col+1) * sd)
-        vtl.addWidget(self.momentum_hor_value,        2 * sd, (col+2) * sd)
+        row = 2
+        otl.addWidget(self.orientate_find_gamma,              row * sd, 0 * sd, 1, 2)
+        otl.addWidget(self.orientate_copy_coords,             row * sd, 2 * sd, 1, 2)
+        otl.addWidget(self.orientate_find_gamma_message,      (row + 1) * sd, 0 * sd, 1, 4)
+
+        col = 4
+        otl.addWidget(self.orientate_lines_lbl,               0 * sd, col * sd, 1, 2)
+        otl.addWidget(self.orientate_hor_line,                1 * sd, col * sd)
+        otl.addWidget(self.orientate_ver_line,                1 * sd, (col + 1) * sd)
+        otl.addWidget(self.orientate_angle_lbl,               2 * sd, col * sd)
+        otl.addWidget(self.orientate_angle,                   2 * sd, (col + 1) * sd)
 
         # dummy lbl
         dummy_lbl = QLabel('')
-        vtl.addWidget(dummy_lbl, 0, 6, 5, 2)
+        otl.addWidget(dummy_lbl, 4, 0, 2, 8)
 
-        self.volume_tab.layout = vtl
-        self.volume_tab.setLayout(vtl)
-        self.tabs.addTab(self.volume_tab, 'Volume')
-
-    def set_volume3D_tab(self):
-
-        self.volume_tab = QWidget()
-        vtl = QtGui.QGridLayout()
-
-        # binning option
-        self.bin_z = QCheckBox('bin E')
-        self.bin_z_nbins = QSpinBox()
-        self.bin_x = QCheckBox('bin kx')
-        self.bin_x_nbins = QSpinBox()
-        self.bin_y = QCheckBox('bin ky')
-        self.bin_y_nbins = QSpinBox()
-        self.bin_zx = QCheckBox('bin E (kx)')
-        self.bin_zx_nbins = QSpinBox()
-        self.bin_zy = QCheckBox('bin E (ky)')
-        self.bin_zy_nbins = QSpinBox()
-
-        # cross' hairs positions
-        self.positions_energies_label = QLabel('Energy sliders')
-        self.energy_main_label = QLabel('main:')
-        self.energy_main = QSpinBox()
-        self.energy_main_value = QLabel('eV')
-        self.energy_hor_label = QLabel('kx:')
-        self.energy_hor = QSpinBox()
-        self.energy_hor_value = QLabel('eV')
-        self.energy_vert_label = QLabel('ky:')
-        self.energy_vert = QSpinBox()
-        self.energy_vert_value = QLabel('eV')
-
-        self.positions_momentum_label = QLabel('Momentum sliders')
-        self.momentum_hor_label = QLabel('ky:')
-        self.momentum_hor = QSpinBox()
-        self.momentum_hor_value = QLabel('deg')
-        self.momentum_vert_label = QLabel('kx:')
-        self.momentum_vert = QSpinBox()
-        self.momentum_vert_value = QLabel('deg')
-
-        sd = 1
-        # addWidget(widget, row, column, rowSpan, columnSpan)
-        col = 0
-        vtl.addWidget(self.positions_energies_label,  0 * sd, col * sd, 1, 3)
-        vtl.addWidget(self.energy_main_label,         1 * sd, col * sd)
-        vtl.addWidget(self.energy_main,               1 * sd, (col+1) * sd)
-        vtl.addWidget(self.energy_main_value,         1 * sd, (col+2) * sd)
-        vtl.addWidget(self.energy_hor_label,          2 * sd, col * sd)
-        vtl.addWidget(self.energy_hor,                2 * sd, (col+1) * sd)
-        vtl.addWidget(self.energy_hor_value,          2 * sd, (col+2) * sd)
-        vtl.addWidget(self.energy_vert_label,         3 * sd, col * sd)
-        vtl.addWidget(self.energy_vert,               3 * sd, (col+1) * sd)
-        vtl.addWidget(self.energy_vert_value,         3 * sd, (col+2) * sd)
-
-        col = 3
-        vtl.addWidget(self.positions_momentum_label,  0 * sd, col * sd, 1, 3)
-        vtl.addWidget(self.momentum_vert_label,       1 * sd, col * sd)
-        vtl.addWidget(self.momentum_vert,             1 * sd, (col + 1) * sd)
-        vtl.addWidget(self.momentum_vert_value,       1 * sd, (col + 2) * sd)
-        vtl.addWidget(self.momentum_hor_label,        2 * sd, col * sd)
-        vtl.addWidget(self.momentum_hor,              2 * sd, (col + 1) * sd)
-        vtl.addWidget(self.momentum_hor_value,        2 * sd, (col + 2) * sd)
-
-        col = 6
-        vtl.addWidget(self.bin_z,                     0 * sd, col * sd)
-        vtl.addWidget(self.bin_z_nbins,               0 * sd, (col+1) * sd)
-        vtl.addWidget(self.bin_x,                     1 * sd, col * sd)
-        vtl.addWidget(self.bin_x_nbins,               1 * sd, (col+1) * sd)
-        vtl.addWidget(self.bin_y,                     2 * sd, col * sd)
-        vtl.addWidget(self.bin_y_nbins,               2 * sd, (col+1) * sd)
-        vtl.addWidget(self.bin_zx,                    3 * sd, col * sd)
-        vtl.addWidget(self.bin_zx_nbins,              3 * sd, (col+1) * sd)
-        vtl.addWidget(self.bin_zy,                    4 * sd, col * sd)
-        vtl.addWidget(self.bin_zy_nbins,              4 * sd, (col+1) * sd)
-
-        # dummy lbl
-        # dummy_lbl = QLabel('')
-        # vtl.addWidget(dummy_lbl, 0, 8, 5, 2)
-
-        self.volume_tab.layout = vtl
-        self.volume_tab.setLayout(vtl)
-        self.tabs.addTab(self.volume_tab, 'Volume')
+        self.orientate_tab.layout = otl
+        self.orientate_tab.setLayout(otl)
+        self.tabs.addTab(self.orientate_tab, 'Orientate')
 
     def setup_cmaps(self):
 

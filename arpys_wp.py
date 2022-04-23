@@ -1813,7 +1813,7 @@ def find_gamma(FS, x0, y0, method='Nelder-Mead', print_output=False):
         pd.set_option('display.max_columns', 50)
         print(df)
 
-    return res.x
+    return res
 
 
 def rotate_around_xy(init_guess, data_org):

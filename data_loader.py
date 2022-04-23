@@ -126,10 +126,11 @@ class DataloaderPickle(Dataloader):
     name = 'Pickle'
 
     @staticmethod
-    def load_data(self, filename):
+    def load_data(filename):
         # Open the file and get a handle for it
         with open(filename, 'rb') as f:
             filedata = pickle.load(f)
+
         return filedata
 
 
