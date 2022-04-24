@@ -985,6 +985,13 @@ class UtilitiesPanel(QWidget):
         self.image_other_lbl.setFont(bold_font)
         self.image_normalize_edcs = QCheckBox('normalize by each EDC')
         self.image_show_BZ = QCheckBox('Show BZ contour')
+        self.image_symmetry_label = QLabel('symmetry:')
+        self.image_symmetry = QSpinBox()
+        self.image_symmetry.setRange(4, 6)
+        self.image_rotate_BZ_label = QLabel('rotate:')
+        self.image_rotate_BZ = QDoubleSpinBox()
+        self.image_rotate_BZ.setRange(-90, 90)
+        self.image_rotate_BZ.setSingleStep(0.5)
 
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
@@ -1004,11 +1011,15 @@ class UtilitiesPanel(QWidget):
         itl.addWidget(self.image_other_lbl,             row * sd, 0)
         itl.addWidget(self.image_normalize_edcs,        (row + 1) * sd, 0, 1, 2)
         if self.dim == 3:
-            itl.addWidget(self.image_show_BZ,               (row + 2) * sd, 0, 1, 2)
+            itl.addWidget(self.image_show_BZ,           (row + 2) * sd, 0, 1, 2)
+            itl.addWidget(self.image_symmetry_label,    (row + 3) * sd, 0)
+            itl.addWidget(self.image_symmetry,          (row + 3) * sd, 1)
+            itl.addWidget(self.image_rotate_BZ_label,   (row + 3) * sd, 2)
+            itl.addWidget(self.image_rotate_BZ,         (row + 3) * sd, 3)
 
         # dummy item
         dummy_lbl = QLabel('')
-        itl.addWidget(dummy_lbl, 6, 0, 1, 8)
+        itl.addWidget(dummy_lbl, 7, 0, 1, 8)
 
         self.image_tab.layout = itl
         self.image_tab.setLayout(itl)
@@ -1214,6 +1225,7 @@ class UtilitiesPanel(QWidget):
         self.axes_slit_orient_lbl = QLabel('Slit:')
         self.axes_slit_orient = QComboBox()
         self.axes_slit_orient.addItems(['horizontal', 'vertical'])
+        self.axes_copy_values = QPushButton('Copy from \'Orientate\'')
         self.axes_do_kspace_conv = QPushButton('Convert to k-space')
         self.axes_reset_conv = QPushButton('Reset conversion')
 
@@ -1296,8 +1308,9 @@ class UtilitiesPanel(QWidget):
             atl.addWidget(self.axes_slit_orient,        row * sd, 5 * sd)
 
             row = 5
-            atl.addWidget(self.axes_do_kspace_conv,     row * sd, 0 * sd, 1, 2)
-            atl.addWidget(self.axes_reset_conv,         row * sd, 2 * sd, 1, 2)
+            atl.addWidget(self.axes_copy_values,        row * sd, 0 * sd, 1, 2)
+            atl.addWidget(self.axes_do_kspace_conv,     row * sd, 2 * sd, 1, 2)
+            atl.addWidget(self.axes_reset_conv,         row * sd, 4 * sd, 1, 2)
 
             # # dummy item
             # self.axes_massage_lbl = QLabel('')

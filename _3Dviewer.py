@@ -438,8 +438,8 @@ class MainWindow3D(QMainWindow):
         self.sp_EDC = self.plot_z.plot()
         self.set_sp_EDC_data()
 
-        self.put_sliders_in_initial_positions()
         self.load_saved_corrections(data_set)
+        self.put_sliders_in_initial_positions()
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -474,6 +474,8 @@ class MainWindow3D(QMainWindow):
         self.util_panel.image_colorscale.valueChanged.connect(self.set_colorscale)
         self.util_panel.image_normalize_edcs.stateChanged.connect(self.update_main_plot)
         self.util_panel.image_show_BZ.stateChanged.connect(self.update_main_plot)
+        self.util_panel.image_symmetry.valueChanged.connect(self.update_main_plot)
+        self.util_panel.image_rotate_BZ.valueChanged.connect(self.update_main_plot)
 
         # binning signals
         self.util_panel.bin_x.stateChanged.connect(self.set_x_binning_lines)
@@ -507,6 +509,8 @@ class MainWindow3D(QMainWindow):
         self.util_panel.axes_energy_Ef.valueChanged.connect(self.apply_energy_correction)
         self.util_panel.axes_energy_hv.valueChanged.connect(self.apply_energy_correction)
         self.util_panel.axes_energy_wf.valueChanged.connect(self.apply_energy_correction)
+        self.util_panel.axes_conv_lc.valueChanged.connect(self.update_main_plot)
+        self.util_panel.axes_copy_values.clicked.connect(self.copy_values_orientate_to_axes)
         self.util_panel.axes_do_kspace_conv.clicked.connect(self.convert_to_kspace)
         self.util_panel.axes_reset_conv.clicked.connect(self.reset_kspace_conversion)
 
@@ -514,7 +518,7 @@ class MainWindow3D(QMainWindow):
         self.util_panel.orientate_init_x.valueChanged.connect(self.set_orientating_lines)
         self.util_panel.orientate_init_y.valueChanged.connect(self.set_orientating_lines)
         self.util_panel.orientate_find_gamma.clicked.connect(self.find_gamma)
-        self.util_panel.orientate_copy_coords.clicked.connect(self.copy_coords_values)
+        self.util_panel.orientate_copy_coords.clicked.connect(self.copy_values_volume_to_orientate)
         self.util_panel.orientate_hor_line.stateChanged.connect(self.set_orientating_lines)
         self.util_panel.orientate_ver_line.stateChanged.connect(self.set_orientating_lines)
         self.util_panel.orientate_angle.valueChanged.connect(self.set_orientating_lines)
@@ -1090,12 +1094,32 @@ class MainWindow3D(QMainWindow):
         self.main_plot.pos[0].set_value(angle)
 
     def put_sliders_in_initial_positions(self):
-        if self.data_handler.axes[erg_ax].min() < 0:
-            mid_energy = wp.indexof(-0.01, self.data_handler.axes[erg_ax])
+        if self.new_energy_axis is None:
+            e_ax = self.data_handler.axes[erg_ax]
         else:
-            mid_energy = int(len(self.data_handler.axes[erg_ax]) / 2)
-        mid_hor_angle = int(len(self.data_handler.axes[scan_ax]) / 2)
-        mid_vert_angle = int(len(self.data_handler.axes[slit_ax]) / 2)
+            e_ax = self.new_energy_axis
+        if e_ax.min() < 0:
+            mid_energy = wp.indexof(-0.01, e_ax)
+        else:
+            mid_energy = int(len(e_ax) / 2)
+
+        if self.new_energy_axis is None:
+            mh_ax = self.data_handler.axes[scan_ax]
+        else:
+            mh_ax = self.new_hor_momentum_axis
+        if mh_ax.min() < 0:
+            mid_hor_angle = wp.indexof(0, mh_ax)
+        else:
+            mid_hor_angle = int(len(mh_ax) / 2)
+
+        if self.new_energy_axis is None:
+            mv_ax = self.data_handler.axes[slit_ax]
+        else:
+            mv_ax = self.new_ver_momentum_axis
+        if mv_ax.min() < 0:
+            mid_vert_angle = wp.indexof(0, mv_ax)
+        else:
+            mid_vert_angle = int(len(mv_ax) / 2)
 
         self.data_handler.z.set_value(mid_energy)
         self.cut_x.crosshair.hpos.set_value(mid_energy)
@@ -1159,14 +1183,19 @@ class MainWindow3D(QMainWindow):
         y_init = self.util_panel.orientate_init_y.value()
         res = wp.find_gamma(fs, x_init, y_init)
         if res.success:
-            self.util_panel.orientate_find_gamma_message.setText(
-                'Values found! x: {},  y: {}.'.format(int(res.x[0]), int(res.x[1])))
+            self.util_panel.orientate_find_gamma_message.setText('Values found.')
+            self.util_panel.orientate_init_x.setValue(int(res.x[0]))
+            self.util_panel.orientate_init_y.setValue(int(res.x[1]))
         else:
             self.util_panel.orientate_find_gamma_message.setText('Couldn\'t find center of rotation.')
 
-    def copy_coords_values(self):
+    def copy_values_volume_to_orientate(self):
         self.util_panel.orientate_init_x.setValue(self.util_panel.momentum_vert.value())
         self.util_panel.orientate_init_y.setValue(self.util_panel.momentum_hor.value())
+
+    def copy_values_orientate_to_axes(self):
+        self.util_panel.axes_gamma_x.setValue(self.util_panel.orientate_init_x.value())
+        self.util_panel.axes_gamma_y.setValue(self.util_panel.orientate_init_y.value())
 
     def set_orientating_lines(self):
 
@@ -1297,12 +1326,80 @@ class MainWindow3D(QMainWindow):
             self.data_handler.axes[scan_ax][self.main_plot.pos[0].get_value()]))
 
     def show_BZ_contour(self):
-        if self.util_panel.image_show_BZ.isChecked():
-            x = [10, 100]
-            y = [10, 100]
+        if not self.util_panel.image_show_BZ.isChecked():
+            return
+
+        if (self.new_hor_momentum_axis is None) or (self.new_ver_momentum_axis is None):
+            warning_box = QMessageBox()
+            warning_box.setIcon(QMessageBox.Information)
+            warning_box.setText('Data must be converted to k-space.')
+            warning_box.setStandardButtons(QMessageBox.Ok)
+            if warning_box.exec() == QMessageBox.Ok:
+                self.util_panel.image_show_BZ.setChecked(False)
+                return
+
+        symmetry = self.util_panel.image_symmetry.value()
+        if not ((symmetry == 4) or (symmetry == 6)):
+            warning_box = QMessageBox()
+            warning_box.setIcon(QMessageBox.Information)
+            warning_box.setText('Only 4- and 6-fold symmetry supported.')
+            warning_box.setStandardButtons(QMessageBox.Ok)
+            if warning_box.exec() == QMessageBox.Ok:
+                self.util_panel.image_show_BZ.setChecked(False)
+                return
+
+        a = self.util_panel.axes_conv_lc.value()
+        if symmetry == 4:
+            G = np.pi / a
+            # b = 2 * G / np.sqrt(3)
+            raw_pts = np.array([[-G, G], [G, G], [G, -G], [-G, -G]])
+        elif symmetry == 6:
+            G = np.pi / a
+            b = 2 * G / np.sqrt(3)
+            raw_pts = np.array([[-b / 2, -G], [b / 2, -G], [b, 0], [b / 2, G], [-b / 2, G], [-b, 0]])
+
+        rotation_angle = self.util_panel.image_rotate_BZ.value()
+        raw_pts = self.transform_points(raw_pts, rotation_angle)
+        pts = self.find_index_coords(raw_pts)
+        self.plot_between_points(pts)
+
+    def plot_between_points(self, pts):
+        for idx in range(len(pts) - 1):
+            x = [pts[idx][0], pts[idx + 1][0]]
+            y = [pts[idx][1], pts[idx + 1][1]]
             self.main_plot.plot(x, y)
-        else:
-            pass
+        x = [pts[0][0], pts[-1][0]]
+        y = [pts[0][1], pts[-1][1]]
+        self.main_plot.plot(x, y)
+
+    @staticmethod
+    def transform_points(pts, angle):
+        theta = np.deg2rad(angle)
+        transform_matrix = np.array([[np.cos(theta), -np.sin(theta)],
+                                     [np.sin(theta), np.cos(theta)]])
+        res_pts = []
+        for pt in pts:
+            res_pts.append(np.array(pt) @ transform_matrix)
+        return res_pts
+
+    def find_index_coords(self, raw_pts):
+
+        x0, dx = self.new_hor_momentum_axis[0], wp.get_step(self.new_hor_momentum_axis)
+        y0, dy = self.new_ver_momentum_axis[0], wp.get_step(self.new_ver_momentum_axis)
+        res_pts = []
+
+        for rp in raw_pts:
+            if rp[0] > x0:
+                x = int(np.abs((x0 - rp[0])) / dx)
+            else:
+                x = -int(np.abs((x0 - rp[0])) / dx)
+            if rp[1] > y0:
+                y = int(np.abs((y0 - rp[1])) / dy)
+            else:
+                y = -int(np.abs((y0 - rp[1])) / dy)
+            res_pts.append([x, y])
+
+        return res_pts
 
     # main buttons' actions
     def close_mw(self):
