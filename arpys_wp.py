@@ -2196,12 +2196,15 @@ def a2k_single_axis(alpha, hv, beta=0, dalpha=0, work_func=4.5, a=np.pi, Eb=0, o
     beta = np.deg2rad(beta)
 
     # Prepare containers
-    nkx = len(alpha)
-    KX = np.empty(nkx)
+    KX = np.empty(len(alpha))
 
     slit = orientation.lower()[0]
     if slit == 'h':
         KX = np.sin(alpha) * np.cos(beta)
+    elif slit == 'v':
+        cos_da = np.cos(dalpha)
+        sin_theta_cos_beta = np.sin(dalpha) * np.cos(beta)
+        KX = sin_theta_cos_beta + cos_da * np.cos(alpha) * np.sin(beta)
 
     return k0 * KX
 

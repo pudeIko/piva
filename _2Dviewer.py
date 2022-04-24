@@ -53,7 +53,10 @@ class DataHandler:
         """ Convenience `getter` method. Allows writing ``self.get_data()``
         instead of ``self.data.get_value()``.
         """
-        return self.data.get_value()[0, :, :]
+        if self.main_window.util_panel.image_normalize_edcs.isChecked():
+            return self.norm_data
+        else:
+            return self.data.get_value()[0, :, :]
 
     def set_data(self, data):
         """ Convenience `setter` method. Allows writing ``self.set_data(d)``
@@ -77,6 +80,7 @@ class DataHandler:
 
         self.data = TracedVariable(data, name='data')
         self.axes = np.array(axes, dtype="object")
+        self.norm_data = wp.normalize(self.data.get_value()[0, :, :])
 
         self.prepare_axes()
         self.on_z_dim_change()
@@ -147,6 +151,8 @@ class MainWindow2D(QMainWindow):
         self.db = data_browser
         self.index = index
         self.slider_pos = [0, 0]
+        self.new_energy_axis = None
+        self.new_momentum_axis = None
 
         # Initialize instance variables
         # Plot transparency alpha
@@ -187,6 +193,7 @@ class MainWindow2D(QMainWindow):
         else:
             raw_data = data_set
 
+        # self.data_set = data_set
         D = self.swap_axes_aroud(raw_data)
 
         # print(f'data shape = {D.data.shape}')
@@ -219,10 +226,13 @@ class MainWindow2D(QMainWindow):
         self.plot_y.pos.sig_value_changed.connect(self.update_plot_x)
 
         # Create utilities panel and connect signals
-        self.util_panel.cmaps.currentIndexChanged.connect(self.set_cmap)
-        self.util_panel.invert_colors.stateChanged.connect(self.set_cmap)
-        self.util_panel.gamma.valueChanged.connect(self.set_gamma)
-        self.util_panel.colorscale.valueChanged.connect(self.set_alpha)
+        self.util_panel.image_cmaps.currentIndexChanged.connect(self.set_cmap)
+        self.util_panel.image_invert_colors.stateChanged.connect(self.set_cmap)
+        self.util_panel.image_gamma.valueChanged.connect(self.set_gamma)
+        self.util_panel.image_colorscale.valueChanged.connect(self.set_alpha)
+        self.util_panel.image_normalize_edcs.stateChanged.connect(self.update_main_plot)
+
+        # binning utilities
         self.util_panel.bin_y.stateChanged.connect(self.update_binning_lines)
         self.util_panel.bin_y_nbins.valueChanged.connect(self.update_binning_lines)
         self.util_panel.bin_z.stateChanged.connect(self.update_binning_lines)
@@ -235,9 +245,11 @@ class MainWindow2D(QMainWindow):
         self.util_panel.save_button.clicked.connect(self.save_to_pickle)
 
         # energy and k-space concersion
-        self.util_panel.conv_energy_Ef.valueChanged.connect(self.apply_energy_correction)
-        self.util_panel.conv_energy_hv.valueChanged.connect(self.apply_energy_correction)
-        self.util_panel.conv_energy_wf.valueChanged.connect(self.apply_energy_correction)
+        self.util_panel.axes_energy_Ef.valueChanged.connect(self.apply_energy_correction)
+        self.util_panel.axes_energy_hv.valueChanged.connect(self.apply_energy_correction)
+        self.util_panel.axes_energy_wf.valueChanged.connect(self.apply_energy_correction)
+        self.util_panel.axes_do_kspace_conv.clicked.connect(self.convert_to_kspace)
+        self.util_panel.axes_reset_conv.clicked.connect(self.reset_kspace_conversion)
 
         # Align all the gui elements
         self._align()
@@ -366,7 +378,11 @@ class MainWindow2D(QMainWindow):
         x = np.arange(0, len(self.data_handler.axes[1]))
         xp.plot(x, y)
         self.util_panel.momentum_hor.setValue(i_x)
-        self.util_panel.momentum_hor_value.setText('({:.3f})'.format(self.data_handler.axes[0][i_x]))
+        if self.new_momentum_axis is None:
+            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.data_handler.axes[0][i_x]))
+        else:
+            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.new_momentum_axis[i_x]))
+
         if binning:
             self.plot_y.left_line.setValue(i_x - width)
             self.plot_y.right_line.setValue(i_x + width)
@@ -399,11 +415,15 @@ class MainWindow2D(QMainWindow):
             stop = i_y + width
             y = np.sum(data[start:stop, :], axis=0)
             # y = wp.normalize(y)
-        # y = data[i_y, :]
         x = np.arange(0, len(self.data_handler.axes[0]))
         yp.plot(y, x)
         self.util_panel.energy_vert.setValue(i_y)
-        self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.data_handler.axes[1][i_y]))
+
+        if self.new_energy_axis is None:
+            self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.data_handler.axes[1][i_y]))
+        else:
+            self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.new_energy_axis[i_y]))
+
         if binning:
             self.plot_x.left_line.setValue(i_y - width)
             self.plot_x.right_line.setValue(i_y + width)
@@ -466,8 +486,8 @@ class MainWindow2D(QMainWindow):
         by using 'invert_colors' checkBox
         """
         try:
-            cmap = self.util_panel.cmaps.currentText()
-            if self.util_panel.invert_colors.isChecked() and MY_CMAPS:
+            cmap = self.util_panel.image_cmaps.currentText()
+            if self.util_panel.image_invert_colors.isChecked() and MY_CMAPS:
                 cmap = cmap + '_r'
         except AttributeError:
             cmap = DEFAULT_CMAP
@@ -534,7 +554,7 @@ class MainWindow2D(QMainWindow):
         ``y=x**gamma``.
         WP: changed to work with applied QDoubleSpinBox
         """
-        gamma = self.util_panel.gamma.value()
+        gamma = self.util_panel.image_gamma.value()
         self.gamma = gamma
         sliders_pos = self.get_sliders_positions()
         self.cmap.set_gamma(gamma)
@@ -547,7 +567,7 @@ class MainWindow2D(QMainWindow):
         mapped to the range `min(data)` - `vmax*max(data)`.
         WP: changed to work with applied QDoubleSpinBox
         """
-        vmax = self.util_panel.colorscale.value()
+        vmax = self.util_panel.image_colorscale.value()
         self.vmax = vmax
         self.cmap.set_vmax(vmax)
         self.cmap_changed()
@@ -579,14 +599,58 @@ class MainWindow2D(QMainWindow):
         self.main_plot.pos[1].set_value(mid_angle)
 
     def apply_energy_correction(self):
-        Ef = self.util_panel.conv_energy_Ef.value() * 0.001
-        hv = self.util_panel.conv_energy_hv.value()
-        wf = self.util_panel.conv_energy_wf.value()
+        Ef = self.util_panel.axes_energy_Ef.value() * 0.001
+        hv = self.util_panel.axes_energy_hv.value()
+        wf = self.util_panel.axes_energy_wf.value()
         new_energy_axis = self.data_handler.axes[1] + Ef - hv + wf
         self.new_energy_axis = new_energy_axis
         new_range = [new_energy_axis[0], new_energy_axis[-1]]
         self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_range)
         self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_range)
+
+        # update energy labels
+        erg_idx = self.main_plot.crosshair.hpos.get_value()
+        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.new_energy_axis[erg_idx]))
+
+    def convert_to_kspace(self):
+        axis = self.data_handler.axes[0]
+        beta = self.util_panel.axes_angle_off.value()
+        dalpha = self.data_handler.axes[0][self.util_panel.axes_gamma_x.value()]
+        hv = self.util_panel.axes_conv_hv.value()
+        wf = self.util_panel.axes_conv_wf.value()
+        a = self.util_panel.axes_conv_lc.value()
+        orientation = self.util_panel.axes_slit_orient.currentText()
+
+        if hv == 0 or wf == 0:
+            warning_box = QMessageBox()
+            warning_box.setIcon(QMessageBox.Information)
+            warning_box.setWindowTitle('Wrong conversion values.')
+            if hv == 0 and wf == 0:
+                msg = 'Photon energy and work fonction values not given.'
+            elif hv == 0:
+                msg = 'Photon energy value not given.'
+            elif wf == 0:
+                msg = 'Work fonction value not given.'
+            warning_box.setText(msg)
+            warning_box.setStandardButtons(QMessageBox.Ok)
+            if warning_box.exec() == QMessageBox.Ok:
+                return
+
+        nma = wp.a2k_single_axis(axis, hv, beta=beta, dalpha=dalpha, work_func=wf, a=a, orientation=orientation)
+        self.new_momentum_axis = nma
+        new_range = [nma[0], nma[-1]]
+        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_range)
+        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
+        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+            self.new_momentum_axis[self.main_plot.pos[1].get_value()]))
+
+    def reset_kspace_conversion(self):
+        self.new_momentum_axis = None
+        org_range = [self.data_handler.axes[0][0], self.data_handler.axes[0][-1]]
+        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*org_range)
+        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*org_range)
+        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+            self.data_handler.axes[0][self.main_plot.pos[1].get_value()]))
 
     def close_mw(self):
         self.destroy()
@@ -595,6 +659,7 @@ class MainWindow2D(QMainWindow):
     def save_to_pickle(self):
         dataset = dl.load_data(self.fname)
         dir = self.fname[:-len(self.title)]
+        up = self.util_panel
         file_selection = True
         init_fname = ''
 
@@ -617,8 +682,10 @@ class MainWindow2D(QMainWindow):
             else:
                 file_selection = False
 
-        if self.util_panel.conv_energy_Ef.value() != 0 or self.util_panel.conv_gamma_y.value() != 0 or \
-                self.util_panel.conv_gamma_x.value() != 0:
+        conditions = [up.axes_energy_Ef.value() != 0, up.axes_energy_hv.value() != 0, up.axes_energy_wf.value() != 0,
+                      up.axes_angle_off.value() != 0, up.axes_gamma_x.value() != 0]
+
+        if np.any(conditions):
             save_cor_box = QMessageBox()
             save_cor_box.setIcon(QMessageBox.Question)
             save_cor_box.setWindowTitle('Save data')
@@ -628,12 +695,14 @@ class MainWindow2D(QMainWindow):
             box_return_value = save_cor_box.exec()
             if box_return_value == QMessageBox.Ok:
                 attrs = {}
-                if self.util_panel.conv_energy_Ef.value() != 0:
-                    attrs['Ef'] = self.util_panel.conv_energy_Ef.value()
-                if self.util_panel.conv_gamma_x.value() != 0:
-                    attrs['gamma_x'] = self.util_panel.conv_gamma_x.value()
-                if self.util_panel.conv_angle_off.value() != 0:
-                    attrs['angle_offset'] = self.util_panel.conv_angle_off.value()
+                if up.axes_energy_Ef.value() != 0:
+                    attrs['Ef'] = up.axes_energy_Ef.value()
+                if up.axes_energy_hv.value() != 0:
+                    attrs['hv'] = up.axes_energy_hv.value()
+                if up.axes_energy_wf.value() != 0:
+                    attrs['wf'] = up.axes_energy_wf.value()
+                if not (self.new_momentum_axis is None):
+                    attrs['k_axis'] = self.new_momentum_axis
                 dl.update_namespace(dataset, ['saved', attrs])
             elif box_return_value == QMessageBox.No:
                 pass
@@ -645,14 +714,29 @@ class MainWindow2D(QMainWindow):
         dl.dump(dataset, (dir + fname), force=True)
 
     def load_saved_corrections(self, data_set):
+
         if hasattr(data_set, 'saved'):
             saved = data_set.saved
             if 'Ef' in saved.keys():
-                self.util_panel.conv_energy_Ef.setValue(saved['Ef'])
-            if 'gamma_x' in saved.keys():
-                self.util_panel.conv_gamma_x.setValue(saved['gamma_x'])
-            if 'angle_offset' in saved.keys():
-                self.util_panel.conv_angle_off.setValue(saved['angle_offset'])
-        else:
-            return
+                self.util_panel.axes_energy_Ef.setValue(saved['Ef'])
+            if 'hv' in saved.keys():
+                self.util_panel.axes_energy_hv.setValue(saved['hv'])
+            if 'wf' in saved.keys():
+                self.util_panel.axes_energy_wf.setValue(saved['wf'])
+            if 'k_axis' in saved.keys():
+                self.new_momentum_axis = saved['k_axis']
+                new_range = [self.new_momentum_axis[0], self.new_momentum_axis[-1]]
+                self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_range)
+                self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
+                self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+                    self.new_momentum_axis[self.main_plot.pos[1].get_value()]))
 
+            if np.any('Ef' in saved.keys(), 'hv' in saved.keys(), 'wf' in saved.keys()):
+                self.apply_energy_correction()
+        else:
+            pass
+
+        if hasattr(data_set, 'hv'):
+            self.util_panel.axes_conv_hv.setValue(data_set.hv)
+        if hasattr(data_set, 'wf'):
+            self.util_panel.axes_conv_wf.setValue(data_set.wf)

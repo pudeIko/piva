@@ -906,9 +906,8 @@ class UtilitiesPanel(QWidget):
     handled in 'MainWidow' """
     # TODO EDCs fitting
     # TODO MDCs fitting
-    # TODO k-space conversion, Ef correction
+    # TODO k-space conversion
     # TODO BZ shape
-    # TODO rotatable lines
     # TODO ROI
 
     def __init__(self, main_window, name=None, dim=3):
@@ -962,50 +961,66 @@ class UtilitiesPanel(QWidget):
     def align(self):
 
         self.set_sliders_tab()
-        self.set_color_tab()
-        self.set_conversion_tab()
+        self.set_image_tab()
+        self.set_axes_tab()
         if self.dim == 3:
             self.set_orientate_tab()
 
-    def set_color_tab(self):
+    def set_image_tab(self):
 
         # create elements
-        self.color_tab = QWidget()
-        ctl = QtGui.QGridLayout()
-        self.colors_label = QLabel('Colors')
-        self.cmaps_label = QLabel('cmaps:')
-        self.cmaps = QComboBox()
-        self.invert_colors = QCheckBox('invert colors')
-        self.gamma_label = QLabel('gamma:')
-        self.gamma = QDoubleSpinBox()
-        self.colorscale_label = QLabel('color scale:')
-        self.colorscale = QDoubleSpinBox()
+        self.image_tab = QWidget()
+        itl = QtGui.QGridLayout()
+        self.image_colors_label = QLabel('Colors')
+        self.image_colors_label.setFont(bold_font)
+        self.image_cmaps_label = QLabel('cmaps:')
+        self.image_cmaps = QComboBox()
+        self.image_invert_colors = QCheckBox('invert colors')
+        self.image_gamma_label = QLabel('gamma:')
+        self.image_gamma = QDoubleSpinBox()
+        self.image_colorscale_label = QLabel('color scale:')
+        self.image_colorscale = QDoubleSpinBox()
+
+        self.image_other_lbl = QLabel('Other')
+        self.image_other_lbl.setFont(bold_font)
+        self.image_normalize_edcs = QCheckBox('normalize by each EDC')
+        self.image_show_BZ = QCheckBox('Show BZ contour')
 
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
         col = 0
-        ctl.addWidget(self.cmaps_label,         0 * sd, col * sd)
-        ctl.addWidget(self.cmaps,               0 * sd, (col + 1) * sd)
-        ctl.addWidget(self.gamma_label,         1 * sd, col * sd)
-        ctl.addWidget(self.gamma,               1 * sd, (col + 1) * sd)
+        itl.addWidget(self.image_colors_label,          0 * sd, col * sd)
+        itl.addWidget(self.image_cmaps_label,           1 * sd, col * sd)
+        itl.addWidget(self.image_cmaps,                 1 * sd, (col + 1) * sd)
+        itl.addWidget(self.image_gamma_label,           2 * sd, col * sd)
+        itl.addWidget(self.image_gamma,                 2 * sd, (col + 1) * sd)
 
         col = 2
-        ctl.addWidget(self.invert_colors,       0 * sd, col * sd, 1, 2)
-        ctl.addWidget(self.colorscale_label,    1 * sd, col * sd)
-        ctl.addWidget(self.colorscale,          1 * sd, (col + 1) * sd)
+        itl.addWidget(self.image_invert_colors,         1 * sd, col * sd, 1, 2)
+        itl.addWidget(self.image_colorscale_label,      2 * sd, col * sd)
+        itl.addWidget(self.image_colorscale,            2 * sd, (col + 1) * sd)
+
+        row = 3
+        itl.addWidget(self.image_other_lbl,             row * sd, 0)
+        itl.addWidget(self.image_normalize_edcs,        (row + 1) * sd, 0, 1, 2)
+        if self.dim == 3:
+            itl.addWidget(self.image_show_BZ,               (row + 2) * sd, 0, 1, 2)
 
         # dummy item
         dummy_lbl = QLabel('')
-        ctl.addWidget(dummy_lbl, 0, 5, 4, 3)
+        itl.addWidget(dummy_lbl, 6, 0, 1, 8)
 
-        self.color_tab.layout = ctl
-        self.color_tab.setLayout(ctl)
-        self.tabs.addTab(self.color_tab, 'Colors')
+        self.image_tab.layout = itl
+        self.image_tab.setLayout(itl)
+        self.tabs.addTab(self.image_tab, 'Image')
 
     def set_sliders_tab(self):
 
         self.sliders_tab = QWidget()
         vtl = QtGui.QGridLayout()
+        max_lbl_w = 40
+        bin_box_w = 50
+        coords_box_w = 70
 
         if self.dim == 2:
             # binning option
@@ -1052,35 +1067,50 @@ class UtilitiesPanel(QWidget):
             # binning option
             self.bin_z = QCheckBox('bin E')
             self.bin_z_nbins = QSpinBox()
+            self.bin_z_nbins.setMaximumWidth(bin_box_w)
             self.bin_x = QCheckBox('bin kx')
             self.bin_x_nbins = QSpinBox()
+            self.bin_x_nbins.setMaximumWidth(bin_box_w)
             self.bin_y = QCheckBox('bin ky')
             self.bin_y_nbins = QSpinBox()
+            self.bin_y_nbins.setMaximumWidth(bin_box_w)
             self.bin_zx = QCheckBox('bin E (kx)')
             self.bin_zx_nbins = QSpinBox()
+            self.bin_zx_nbins.setMaximumWidth(bin_box_w)
             self.bin_zy = QCheckBox('bin E (ky)')
             self.bin_zy_nbins = QSpinBox()
+            self.bin_zy_nbins.setMaximumWidth(bin_box_w)
 
             # cross' hairs positions
             self.positions_energies_label = QLabel('Energy sliders')
             self.positions_energies_label.setFont(bold_font)
             self.energy_main_label = QLabel('main:')
+            self.energy_main_label.setMaximumWidth(max_lbl_w)
             self.energy_main = QSpinBox()
+            self.energy_main.setMaximumWidth(coords_box_w)
             self.energy_main_value = QLabel('eV')
             self.energy_hor_label = QLabel('kx:')
+            self.energy_hor_label.setMaximumWidth(max_lbl_w)
             self.energy_hor = QSpinBox()
+            self.energy_hor.setMaximumWidth(coords_box_w)
             self.energy_hor_value = QLabel('eV')
             self.energy_vert_label = QLabel('ky:')
+            self.energy_vert_label.setMaximumWidth(max_lbl_w)
             self.energy_vert = QSpinBox()
+            self.energy_vert.setMaximumWidth(coords_box_w)
             self.energy_vert_value = QLabel('eV')
 
             self.positions_momentum_label = QLabel('Momentum sliders')
             self.positions_momentum_label.setFont(bold_font)
             self.momentum_hor_label = QLabel('ky:')
+            self.momentum_hor_label.setMaximumWidth(max_lbl_w)
             self.momentum_hor = QSpinBox()
+            self.momentum_hor.setMaximumWidth(coords_box_w)
             self.momentum_hor_value = QLabel('deg')
             self.momentum_vert_label = QLabel('kx:')
+            self.momentum_vert_label.setMaximumWidth(max_lbl_w)
             self.momentum_vert = QSpinBox()
+            self.momentum_vert.setMaximumWidth(coords_box_w)
             self.momentum_vert_value = QLabel('deg')
 
             sd = 1
@@ -1122,104 +1152,160 @@ class UtilitiesPanel(QWidget):
         self.sliders_tab.setLayout(vtl)
         self.tabs.addTab(self.sliders_tab, 'Volume')
 
-    def set_conversion_tab(self):
-        self.dimensions_tab = QWidget()
-        dtl = QtGui.QGridLayout()
+    def set_axes_tab(self):
+        self.axes_tab = QWidget()
+        atl = QtGui.QGridLayout()
+        box_max_w = 70
 
-        self.conv_energy_main_lbl = QLabel('Energy correction')
-        self.conv_energy_main_lbl.setFont(bold_font)
-        self.conv_energy_Ef_lbl = QLabel('Ef (meV):')
-        self.conv_energy_Ef = QDoubleSpinBox()
-        self.conv_energy_Ef.setRange(-5000., 5000)
-        self.conv_energy_Ef.setDecimals(3)
-        self.conv_energy_Ef.setSingleStep(0.001)
-        self.conv_energy_hv_lbl = QLabel('h\u03BD (eV):')
-        self.conv_energy_hv = QDoubleSpinBox()
-        self.conv_energy_hv.setRange(-2000., 2000)
-        self.conv_energy_hv.setDecimals(3)
-        self.conv_energy_hv.setSingleStep(0.001)
-        self.conv_energy_wf_lbl = QLabel('wf (eV):')
-        self.conv_energy_wf = QDoubleSpinBox()
-        self.conv_energy_wf.setRange(0, 5)
-        self.conv_energy_wf.setDecimals(3)
-        self.conv_energy_wf.setSingleStep(0.001)
+        self.axes_energy_main_lbl = QLabel('Energy correction')
+        self.axes_energy_main_lbl.setFont(bold_font)
+        self.axes_energy_Ef_lbl = QLabel('Ef (meV):')
+        # self.axes_energy_Ef_lbl.setMaximumWidth(max_lbl_w)
+        self.axes_energy_Ef = QDoubleSpinBox()
+        self.axes_energy_Ef.setMaximumWidth(box_max_w)
+        self.axes_energy_Ef.setRange(-5000., 5000)
+        self.axes_energy_Ef.setDecimals(3)
+        self.axes_energy_Ef.setSingleStep(0.001)
 
-        self.conv_momentum_main_lbl = QLabel('k-space conversion')
-        self.conv_momentum_main_lbl.setFont(bold_font)
-        self.conv_gamma_x_lbl = QLabel('\u0393 x0')
-        self.conv_gamma_x = QSpinBox()
-        self.conv_gamma_x.setRange(0, 5000)
+        self.axes_energy_hv_lbl = QLabel('h\u03BD (eV):')
+        # self.axes_energy_hv_lbl.setMaximumWidth(max_w)
+        self.axes_energy_hv = QDoubleSpinBox()
+        self.axes_energy_hv.setMaximumWidth(box_max_w)
+        self.axes_energy_hv.setRange(-2000., 2000)
+        self.axes_energy_hv.setDecimals(3)
+        self.axes_energy_hv.setSingleStep(0.001)
+
+        self.axes_energy_wf_lbl = QLabel('wf (eV):')
+        # self.axes_energy_wf_lbl.setMaximumWidth(max_w)
+        self.axes_energy_wf = QDoubleSpinBox()
+        self.axes_energy_wf.setMaximumWidth(box_max_w)
+        self.axes_energy_wf.setRange(0, 5)
+        self.axes_energy_wf.setDecimals(3)
+        self.axes_energy_wf.setSingleStep(0.001)
+
+        self.axes_momentum_main_lbl = QLabel('k-space conversion')
+        self.axes_momentum_main_lbl.setFont(bold_font)
+        self.axes_gamma_x_lbl = QLabel('\u0393 x0:')
+        self.axes_gamma_x = QSpinBox()
+        self.axes_gamma_x.setRange(0, 5000)
+
+        self.axes_conv_hv_lbl = QLabel('hv (eV):')
+        self.axes_conv_hv = QDoubleSpinBox()
+        self.axes_conv_hv.setMaximumWidth(box_max_w)
+        self.axes_conv_hv.setRange(-2000., 2000)
+        self.axes_conv_hv.setDecimals(3)
+        self.axes_conv_hv.setSingleStep(0.001)
+
+        self.axes_conv_wf_lbl = QLabel('wf (eV):')
+        self.axes_conv_wf = QDoubleSpinBox()
+        self.axes_conv_wf.setMaximumWidth(box_max_w)
+        self.axes_conv_wf.setRange(0, 5)
+        self.axes_conv_wf.setDecimals(3)
+        self.axes_conv_wf.setSingleStep(0.001)
+
+        self.axes_conv_lc_lbl = QLabel('a (1/\u212B):')
+        self.axes_conv_lc = QDoubleSpinBox()
+        self.axes_conv_lc.setMaximumWidth(box_max_w)
+        self.axes_conv_lc.setRange(0, 10)
+        self.axes_conv_lc.setDecimals(3)
+        self.axes_conv_lc.setSingleStep(0.001)
+        self.axes_conv_lc.setValue(3.142)
+
+        self.axes_slit_orient_lbl = QLabel('Slit:')
+        self.axes_slit_orient = QComboBox()
+        self.axes_slit_orient.addItems(['horizontal', 'vertical'])
+        self.axes_do_kspace_conv = QPushButton('Convert to k-space')
+        self.axes_reset_conv = QPushButton('Reset conversion')
 
         if self.dim == 2:
 
-            self.conv_angle_off_lbl = QLabel('angle offset')
-            self.conv_angle_off = QDoubleSpinBox()
-            self.conv_angle_off.setDecimals(4)
-            self.conv_angle_off.setSingleStep(0.0001)
-
-            self.do_kspace_conv = QPushButton('Convert to k-space')
+            self.axes_angle_off_lbl = QLabel('angle offset:')
+            self.axes_angle_off = QDoubleSpinBox()
+            self.axes_angle_off.setMaximumWidth(box_max_w)
+            self.axes_angle_off.setDecimals(4)
+            self.axes_angle_off.setSingleStep(0.0001)
 
             sd = 1
             # addWidget(widget, row, column, rowSpan, columnSpan)
             row = 0
-            dtl.addWidget(self.conv_energy_main_lbl,    row * sd, 0 * sd, 1, 2)
-            dtl.addWidget(self.conv_energy_Ef_lbl,      (row + 1) * sd, 0 * sd)
-            dtl.addWidget(self.conv_energy_Ef,          (row + 1) * sd, 1 * sd)
-            dtl.addWidget(self.conv_energy_hv_lbl,      (row + 1) * sd, 2 * sd)
-            dtl.addWidget(self.conv_energy_Ef,          (row + 1) * sd, 3 * sd)
-            dtl.addWidget(self.conv_energy_wf_lbl,      (row + 1) * sd, 4 * sd)
-            dtl.addWidget(self.conv_energy_wf,          (row + 1) * sd, 5 * sd)
+            atl.addWidget(self.axes_energy_main_lbl,    row * sd, 0 * sd, 1, 2)
+            atl.addWidget(self.axes_energy_Ef_lbl,      (row + 1) * sd, 0 * sd)
+            atl.addWidget(self.axes_energy_Ef,          (row + 1) * sd, 1 * sd)
+            atl.addWidget(self.axes_energy_hv_lbl,      (row + 1) * sd, 2 * sd)
+            atl.addWidget(self.axes_energy_hv,          (row + 1) * sd, 3 * sd)
+            atl.addWidget(self.axes_energy_wf_lbl,      (row + 1) * sd, 4 * sd)
+            atl.addWidget(self.axes_energy_wf,          (row + 1) * sd, 5 * sd)
 
             row = 2
-            dtl.addWidget(self.conv_momentum_main_lbl,  row * sd, 0 * sd, 1, 2)
-            dtl.addWidget(self.conv_gamma_x_lbl,        (row + 1) * sd, 0 * sd)
-            dtl.addWidget(self.conv_gamma_x,            (row + 1) * sd, 1 * sd)
-            dtl.addWidget(self.conv_angle_off_lbl,      (row + 1) * sd, 2 * sd)
-            dtl.addWidget(self.conv_angle_off,          (row + 1) * sd, 3 * sd)
+            atl.addWidget(self.axes_momentum_main_lbl,  row * sd, 0 * sd, 1, 2)
+            atl.addWidget(self.axes_gamma_x_lbl,        (row + 1) * sd, 0 * sd)
+            atl.addWidget(self.axes_gamma_x,            (row + 1) * sd, 1 * sd)
+            atl.addWidget(self.axes_angle_off_lbl,      (row + 1) * sd, 2 * sd)
+            atl.addWidget(self.axes_angle_off,          (row + 1) * sd, 3 * sd)
+            atl.addWidget(self.axes_conv_hv_lbl,        (row + 1) * sd, 4 * sd)
+            atl.addWidget(self.axes_conv_hv,            (row + 1) * sd, 5 * sd)
+
+            row = 4
+            atl.addWidget(self.axes_conv_wf_lbl,        row * sd, 0 * sd)
+            atl.addWidget(self.axes_conv_wf,            row * sd, 1 * sd)
+            atl.addWidget(self.axes_conv_lc_lbl,        row * sd, 2 * sd)
+            atl.addWidget(self.axes_conv_lc,            row * sd, 3 * sd)
+            atl.addWidget(self.axes_slit_orient_lbl,    row * sd, 4 * sd)
+            atl.addWidget(self.axes_slit_orient,        row * sd, 5 * sd)
 
             row = 5
-            dtl.addWidget(self.do_kspace_conv,          row * sd, 0 * sd, 1, 2)
+            atl.addWidget(self.axes_do_kspace_conv,     row * sd, 0 * sd, 1, 2)
+            atl.addWidget(self.axes_reset_conv,         row * sd, 2 * sd, 1, 2)
 
-            # dummy item
-            self.conv_massage_lbl = QLabel('')
-            dtl.addWidget(self.conv_massage_lbl, 6, 0, 1, 9)
+            # # dummy item
+            # self.axes_massage_lbl = QLabel('')
+            # atl.addWidget(self.axes_massage_lbl, 6, 0, 1, 9)
 
         elif self.dim == 3:
 
-            self.conv_gamma_y_lbl = QLabel('\u0393 y0')
-            self.conv_gamma_y = QSpinBox()
-            self.conv_gamma_y.setRange(0, 5000)
-
-            self.do_kspace_conv = QPushButton('Convert to k-space')
+            self.axes_gamma_y_lbl = QLabel('\u0393 y0')
+            self.axes_gamma_y = QSpinBox()
+            self.axes_gamma_y.setRange(0, 5000)
 
             sd = 1
             # addWidget(widget, row, column, rowSpan, columnSpan)
             row = 0
-            dtl.addWidget(self.conv_energy_main_lbl,    row * sd, 0 * sd, 1, 2)
-            dtl.addWidget(self.conv_energy_Ef_lbl,      (row + 1) * sd, 0 * sd)
-            dtl.addWidget(self.conv_energy_Ef,          (row + 1) * sd, 1 * sd)
-            dtl.addWidget(self.conv_energy_hv_lbl,      (row + 1) * sd, 2 * sd)
-            dtl.addWidget(self.conv_energy_hv,          (row + 1) * sd, 3 * sd)
-            dtl.addWidget(self.conv_energy_wf_lbl,      (row + 1) * sd, 4 * sd)
-            dtl.addWidget(self.conv_energy_wf,          (row + 1) * sd, 5 * sd)
+            atl.addWidget(self.axes_energy_main_lbl,    row * sd, 0 * sd, 1, 2)
+            atl.addWidget(self.axes_energy_Ef_lbl,      (row + 1) * sd, 0 * sd)
+            atl.addWidget(self.axes_energy_Ef,          (row + 1) * sd, 1 * sd)
+            atl.addWidget(self.axes_energy_hv_lbl,      (row + 1) * sd, 2 * sd)
+            atl.addWidget(self.axes_energy_hv,          (row + 1) * sd, 3 * sd)
+            atl.addWidget(self.axes_energy_wf_lbl,      (row + 1) * sd, 4 * sd)
+            atl.addWidget(self.axes_energy_wf,          (row + 1) * sd, 5 * sd)
 
             row = 2
-            dtl.addWidget(self.conv_momentum_main_lbl,  row * sd, 0 * sd, 1, 2)
-            dtl.addWidget(self.conv_gamma_x_lbl,        (row + 1) * sd, 0 * sd)
-            dtl.addWidget(self.conv_gamma_x,            (row + 1) * sd, 1 * sd)
-            dtl.addWidget(self.conv_gamma_y_lbl,        (row + 1) * sd, 2 * sd)
-            dtl.addWidget(self.conv_gamma_y,            (row + 1) * sd, 3 * sd)
+            atl.addWidget(self.axes_momentum_main_lbl,  row * sd, 0 * sd, 1, 2)
+            atl.addWidget(self.axes_gamma_x_lbl,        (row + 1) * sd, 0 * sd)
+            atl.addWidget(self.axes_gamma_x,            (row + 1) * sd, 1 * sd)
+            atl.addWidget(self.axes_gamma_y_lbl,        (row + 1) * sd, 2 * sd)
+            atl.addWidget(self.axes_gamma_y,            (row + 1) * sd, 3 * sd)
+            atl.addWidget(self.axes_conv_hv_lbl,        (row + 1) * sd, 4 * sd)
+            atl.addWidget(self.axes_conv_hv,            (row + 1) * sd, 5 * sd)
 
             row = 4
-            dtl.addWidget(self.do_kspace_conv,          row * sd, 0 * sd, 1, 2)
+            atl.addWidget(self.axes_conv_wf_lbl,        row * sd, 0 * sd)
+            atl.addWidget(self.axes_conv_wf,            row * sd, 1 * sd)
+            atl.addWidget(self.axes_conv_lc_lbl,        row * sd, 2 * sd)
+            atl.addWidget(self.axes_conv_lc,            row * sd, 3 * sd)
+            atl.addWidget(self.axes_slit_orient_lbl,    row * sd, 4 * sd)
+            atl.addWidget(self.axes_slit_orient,        row * sd, 5 * sd)
 
-            # dummy item
-            self.conv_massage_lbl = QLabel('')
-            dtl.addWidget(self.conv_massage_lbl, 5, 0, 1, 9)
+            row = 5
+            atl.addWidget(self.axes_do_kspace_conv,     row * sd, 0 * sd, 1, 2)
+            atl.addWidget(self.axes_reset_conv,         row * sd, 2 * sd, 1, 2)
 
-        self.dimensions_tab.layout = dtl
-        self.dimensions_tab.setLayout(dtl)
-        self.tabs.addTab(self.dimensions_tab, 'Dimensions')
+            # # dummy item
+            # self.axes_massage_lbl = QLabel('')
+            # atl.addWidget(self.axes_massage_lbl, 5, 0, 1, 9)
+
+        self.axes_tab.layout = atl
+        self.axes_tab.setLayout(atl)
+        self.tabs.addTab(self.axes_tab, 'Axes')
 
     def set_orientate_tab(self):
 
@@ -1236,7 +1322,7 @@ class UtilitiesPanel(QWidget):
         self.orientate_init_y.setRange(0, 1000)
 
         self.orientate_find_gamma = QPushButton('Find \t \u0393')
-        self.orientate_copy_coords = QPushButton('Copy to \'Dimensions\'')
+        self.orientate_copy_coords = QPushButton('Copy from \'Volume\'')
 
         self.orientate_find_gamma_message = QLineEdit('NOTE: algorythm will process main plot image.')
         self.orientate_find_gamma_message.setReadOnly(True)
@@ -1282,7 +1368,7 @@ class UtilitiesPanel(QWidget):
 
     def setup_cmaps(self):
 
-        cm = self.cmaps
+        cm = self.image_cmaps
         if MY_CMAPS:
             cm.addItems(my_cmaps)
         else:
@@ -1292,14 +1378,14 @@ class UtilitiesPanel(QWidget):
 
     def setup_gamma(self):
 
-        g = self.gamma
+        g = self.image_gamma
         g.setRange(0, 10)
         g.setValue(1)
         g.setSingleStep(0.05)
 
     def setup_colorscale(self):
 
-        cs = self.colorscale
+        cs = self.image_colorscale
         cs.setRange(0, 2)
         cs.setValue(1)
         cs.setSingleStep(0.1)
