@@ -3,8 +3,9 @@ matplotlib pcolormesh equivalent in pyqtgraph (more or less) """
 
 import logging
 from PyQt5.QtWidgets import QFrame, QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, \
-    QPushButton, QVBoxLayout, QLineEdit, QHBoxLayout
+    QPushButton, QVBoxLayout, QLineEdit, QHBoxLayout, QMainWindow, QDialogButtonBox
 from PyQt5.QtGui import QFont
+from PyQt5 import QtCore
 from pyqtgraph.Qt import QtGui
 from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen#, PColorMeshItem
 from numpy import arange, array, clip, inf, linspace, ndarray, abs
@@ -1350,6 +1351,8 @@ class UtilitiesPanel(QWidget):
         self.orientate_angle.setRange(-180, 180)
         self.orientate_angle.setSingleStep(0.5)
 
+        self.orientate_info_button = QPushButton('info')
+
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
         row = 0
@@ -1370,6 +1373,7 @@ class UtilitiesPanel(QWidget):
         otl.addWidget(self.orientate_ver_line,                1 * sd, (col + 1) * sd)
         otl.addWidget(self.orientate_angle_lbl,               2 * sd, col * sd)
         otl.addWidget(self.orientate_angle,                   2 * sd, (col + 1) * sd)
+        otl.addWidget(self.orientate_info_button,                    3 * sd, (col + 1) * sd)
 
         # dummy lbl
         dummy_lbl = QLabel('')
@@ -1378,6 +1382,8 @@ class UtilitiesPanel(QWidget):
         self.orientate_tab.layout = otl
         self.orientate_tab.setLayout(otl)
         self.tabs.addTab(self.orientate_tab, 'Orientate')
+
+        self.set_orientation_info_window()
 
     def setup_cmaps(self):
 
@@ -1408,6 +1414,79 @@ class UtilitiesPanel(QWidget):
         bz = self.bin_z_nbins
         bz.setRange(0, 100)
         bz.setValue(0)
+
+    def set_orientation_info_window(self):
+        self.orient_info_window = QWidget()
+        oiw = QtGui.QGridLayout()
+
+        self.oi_window_lbl = QLabel('pyta -> beamline coordinates translator')
+        self.oi_window_lbl.setFont(bold_font)
+        self.oi_beamline_lbl = QLabel('Beamline')
+        self.oi_beamline_lbl.setFont(bold_font)
+        self.oi_azimuth_lbl = QLabel('Azimuth (clockwise)')
+        self.oi_azimuth_lbl.setFont(bold_font)
+        self.oi_analyzer_lbl = QLabel('Analyzer (U -> D)')
+        self.oi_analyzer_lbl.setFont(bold_font)
+        self.oi_scanned_lbl = QLabel('Scanned (L -> R)')
+        self.oi_scanned_lbl.setFont(bold_font)
+
+        entries = [['SIS (SIStem)', 'phi -> ?', 'theta -> ?', 'tilt -> ?'],
+                   ['SIS (SES)', 'phi -> +', 'theta -> ?', 'tilt -> ?'],
+                   ['Bloch (MaxIV)', '-', '-', '-'],
+                   ['CASSIOPEE (SOLEIL)', '-', '-', '-'],
+                   ['I05 (Diamond)', '-', '-', '-'],
+                   ['-', '-', '-', '-'],
+                   ['-', '-', '-', '-']]
+        labels = {}
+
+        sd = 1
+        row = 0
+        oiw.addWidget(self.oi_beamline_lbl,     row * sd, 0 * sd)
+        oiw.addWidget(self.oi_azimuth_lbl,      row * sd, 1 * sd)
+        oiw.addWidget(self.oi_analyzer_lbl,     row * sd, 2 * sd)
+        oiw.addWidget(self.oi_scanned_lbl,      row * sd, 3 * sd)
+
+        for entry in entries:
+            row += 1
+            labels[str(row)] = {}
+            labels[str(row)]['beamline'] = QLabel(entry[0])
+            labels[str(row)]['azimuth'] = QLabel(entry[1])
+            labels[str(row)]['azimuth'].setAlignment(QtCore.Qt.AlignCenter)
+            labels[str(row)]['analyzer'] = QLabel(entry[2])
+            labels[str(row)]['analyzer'].setAlignment(QtCore.Qt.AlignCenter)
+            labels[str(row)]['scanned'] = QLabel(entry[3])
+            labels[str(row)]['scanned'].setAlignment(QtCore.Qt.AlignCenter)
+
+            oiw.addWidget(labels[str(row)]['beamline'],    row * sd, 0 * sd)
+            oiw.addWidget(labels[str(row)]['azimuth'],     row * sd, 1 * sd)
+            oiw.addWidget(labels[str(row)]['analyzer'],    row * sd, 2 * sd)
+            oiw.addWidget(labels[str(row)]['scanned'],     row * sd, 3 * sd)
+
+        self.orient_info_window.layout = oiw
+        self.orient_info_window.setLayout(oiw)
+
+
+class InfoWindow(QMainWindow):
+
+    def __init__(self, info_widget, title):
+        super(InfoWindow, self).__init__()
+
+        self.central_widget = QWidget()
+        self.info_window_layout = QtGui.QGridLayout()
+        self.central_widget.setLayout(self.info_window_layout)
+
+        QBtn = QDialogButtonBox.Ok
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.clicked.connect(self.close)
+
+        self.info_window_layout.addWidget(info_widget)
+        self.info_window_layout.addWidget(self.buttonBox)
+        self.setCentralWidget(self.central_widget)
+        self.setWindowTitle(title)
+        # self.show()
+
+    # def close_info_window(self):
+    #     self.close()
 
 
 class TracedVariable(qt.QtCore.QObject):

@@ -3,7 +3,7 @@ Data handler and main window creator for 3D data inspection
 """
 import os
 import time
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog, QDialog, QDialogButtonBox
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
@@ -522,6 +522,7 @@ class MainWindow3D(QMainWindow):
         self.util_panel.orientate_hor_line.stateChanged.connect(self.set_orientating_lines)
         self.util_panel.orientate_ver_line.stateChanged.connect(self.set_orientating_lines)
         self.util_panel.orientate_angle.valueChanged.connect(self.set_orientating_lines)
+        self.util_panel.orientate_info_button.clicked.connect(self.show_orientation_info)
 
         # Align all the gui elements
         self._align()
@@ -1371,6 +1372,15 @@ class MainWindow3D(QMainWindow):
         x = [pts[0][0], pts[-1][0]]
         y = [pts[0][1], pts[-1][1]]
         self.main_plot.plot(x, y)
+
+    def show_orientation_info(self):
+
+        # self.util_panel.orientate_info_button.setDisabled(True)
+        title = 'pyta -> beamline coordinates translator'
+        self.info_box = InfoWindow(self.util_panel.orient_info_window, title)
+        self.info_box.show()
+        # if self.info_box.buttonBox.Ok:
+        #     print('elo')
 
     @staticmethod
     def transform_points(pts, angle):
