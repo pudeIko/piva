@@ -2,8 +2,8 @@
 matplotlib pcolormesh equivalent in pyqtgraph (more or less) """
 
 import logging
-from PyQt5.QtWidgets import QFrame, QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, \
-    QPushButton, QVBoxLayout, QLineEdit, QHBoxLayout, QMainWindow, QDialogButtonBox
+from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, \
+    QLineEdit, QMainWindow, QDialogButtonBox
 from PyQt5.QtGui import QFont
 from PyQt5 import QtCore
 from pyqtgraph.Qt import QtGui
@@ -53,15 +53,14 @@ class Crosshair:
         # Set the color
         self.set_color(BASE_LINECOLOR, HOVER_COLOR)
 
+        # Register some callbacks depending on plot type
         if mainplot:
-            # Register some callbacks
             self.hpos.sig_value_changed.connect(self.update_position_h)
             self.vpos.sig_value_changed.connect(self.update_position_v)
 
             self.hline.sigDragged.connect(self.on_dragged_h)
             self.vline.sigDragged.connect(self.on_dragged_v)
         else:
-            # Register some callbacks
             self.hpos.sig_value_changed.connect(self.update_position_h)
             self.hline.sigDragged.connect(self.on_dragged_h)
 
@@ -106,12 +105,12 @@ class Crosshair:
         """ Callback for the :signal:`sig_value_changed
         <data_slicer.utilities.TracedVariable.sig_value_changed>`. Whenever the
         value of this TracedVariable is updated (possibly from outside this
-        Crosshair object), put the crosshair to the appropriate position.
+        Crosshair object), put the crosshair to the correct position.
         """
         self.hline.setValue(self.hpos.get_value())
 
     def update_position_v(self):
-        """ Confer update_position_h. """
+        """ Confer update_position_v. """
         self.vline.setValue(self.vpos.get_value())
 
     def on_dragged_h(self):
@@ -141,6 +140,10 @@ class Crosshair:
             self.hline.setBounds([xmin, xmax])
 
     def set_for_main_plot(self, pos):
+        """
+        Set crosshair for a main plot
+        :param pos:         list; positions of horizontal and vertical crosshairs
+        """
         # Store the positions in TracedVariables
         self.hpos = TracedVariable(pos[1], name='hpos')
         self.vpos = TracedVariable(pos[0], name='vpos')
@@ -235,7 +238,7 @@ class ImagePlot(PlotWidget):
 
         self.sig_image_changed.connect(self.update_allowed_values)
 
-    # functions added to make crosshairs work
+    # methods added to make crosshairs work
     def update_allowed_values(self):
         """ Update the allowed values silently.
         This assumes that the displayed image is in pixel coordinates and
@@ -260,6 +263,9 @@ class ImagePlot(PlotWidget):
         self.crosshair.set_bounds(xmin, xmax, ymin, ymax)
 
     def orientate(self):
+        """
+        Configure plot's layout depending on an orientation
+        """
         if self.orientation == 'horizontal':
             # Show top and tight axes by default, but without ticklabels
             self.showAxis('top')
@@ -433,6 +439,12 @@ class ImagePlot(PlotWidget):
         axis.setLabel(label)
 
     def set_ticks(self, min_val, max_val, axis):
+        """
+        Set customized to reflect the dimensions of the physical data
+        :param min_val:     float; first axis' value
+        :param max_val:     float; last axis' value
+        :param axis:        str; axis of which ticks should be put
+        """
         plotItem = self.plotItem
 
         # Remove the old top-axis
@@ -498,7 +510,10 @@ class ImagePlot(PlotWidget):
         plotItem.layout.addItem(new_axis, *self.secondary_axis_grid)
 
     def get_limits(self):
-        """ Return ``[[x_min, x_max], [y_min, y_max]]``. """
+        """
+        Get limits of the image data.
+        :return:    list; [[x_min, x_max], [y_min, y_max]]
+        """
         # Default to current viewrange but try to get more accurate values if possible
         if self.image_item is not None:
             x, y = self.image_data.shape
@@ -540,8 +555,13 @@ class ImagePlot(PlotWidget):
         self.transform_factors = [dx, dy, sx, sy, wx, wy]
 
     def add_binning_lines(self, pos, width, orientation='horizontal'):
-        """ Callback for the :signal:`stateChanged and valueChanged. Called whenever the
-        binning checkBox is set to True or number of bins changes.
+        """
+        Add unmovable lines to an ImagePlot around a specified crosshair.
+        The lines indicate integration area fro a respective cut
+        :param pos:             int; position of the crosshair
+        :param width:           int; number of left and right steps from the crosshair
+                                    position
+        :param orientation:     str; orientation of the crosshair
         """
         # delete binning lines if exist
         if orientation == 'horizontal':
@@ -576,7 +596,10 @@ class ImagePlot(PlotWidget):
             self.addItem(self.right_ver_line)
 
     def remove_binning_lines(self, orientation='horizontal'):
-        """ Callback for the :signal:`stateChanged. Called whenever the binning checkBox is set to False.
+        """
+        Remove unmovable binning lines from an ImagePlot.
+        :param orientation:
+        :return:
         """
         if orientation == 'horizontal':
             self.binning_hor = False
@@ -602,7 +625,7 @@ class ImagePlot(PlotWidget):
         """ Callback for the :signal:`sig_value_changed
         <data_slicer.utilities.TracedVariable.sig_value_changed>`. Whenever the
         value of this TracedVariable is updated (possibly from outside this
-        Scalebar object), put the slider to the appropriate position.
+        Scalebar object), put the slider to the correct position.
         """
         if self.orientation == 'horizontal':
             new_pos = self.crosshair.vpos.get_value()
@@ -628,6 +651,9 @@ class ImagePlot(PlotWidget):
         self.set_momentum_slider_bounds(lower, upper)
 
     def set_momentum_slider_bounds(self, xmin, xmax):
+        """
+        Set bounds of the vertical crosshair.
+        """
         self.crosshair.vline.setBounds([xmin, xmax])
 
 
@@ -908,10 +934,10 @@ class UtilitiesPanel(QWidget):
     # TODO EDCs fitting
     # TODO MDCs fitting
     # TODO k-space conversion
-    # TODO BZ shape
     # TODO ROI
 
     def __init__(self, main_window, name=None, dim=3):
+
         super().__init__()
 
         self.mw = main_window
@@ -1483,10 +1509,6 @@ class InfoWindow(QMainWindow):
         self.info_window_layout.addWidget(self.buttonBox)
         self.setCentralWidget(self.central_widget)
         self.setWindowTitle(title)
-        # self.show()
-
-    # def close_info_window(self):
-    #     self.close()
 
 
 class TracedVariable(qt.QtCore.QObject):
