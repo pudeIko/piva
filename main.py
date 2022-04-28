@@ -11,6 +11,11 @@ import sys
 os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
 # TODO DOCUMANTATION !!!!!!!!!!!
+# TODO Show metadata
+# TODO add attribute
+# TODO sum scans
+# TODO glue scans
+
 
 def db():
     print('++++++++++++++++++++++++++++++++++++')

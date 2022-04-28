@@ -378,7 +378,7 @@ class DataBrowser(QMainWindow):
             # create labels
             dp_bl_col1_width = 35
             dp_bl_col2_width = 75
-            dp_bl_hv_lbl = QLabel('hv:')
+            dp_bl_hv_lbl = QLabel('h\u03BD:')
             dp_bl_hv_lbl.setFixedWidth(dp_bl_col1_width)
             dp_bl_polar_lbl = QLabel('polarization:')
             dp_bl_polar_lbl.setFixedWidth(dp_bl_col2_width)

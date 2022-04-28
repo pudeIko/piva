@@ -165,6 +165,8 @@ class MainWindow2D(QMainWindow):
         # Need to store original transformation information for `rotate()`
         self._transform_factors = []
 
+        self.data_set = deepcopy(data_set)
+        self.org_dataset = None
         self.data_handler = DataHandler(self)
 
         # Create the 3D (main) and cut ImagePlots
@@ -188,12 +190,11 @@ class MainWindow2D(QMainWindow):
         time_dl_b = time.time()
         # Set the loaded data in PIT
         if data_set is None:
-            print('Data set to open not defined.')
+            print('Data set not defined.')
             self.close_mw()
         else:
             raw_data = data_set
 
-        # self.data_set = data_set
         D = self.swap_axes_aroud(raw_data)
 
         # print(f'data shape = {D.data.shape}')
@@ -201,13 +202,13 @@ class MainWindow2D(QMainWindow):
         # print(f'y shape = {D.yscale.shape}')
         # print(f'z shape = {D.zscale.shape}')
         self.data_handler.prepare_data(D.data, [D.xscale, D.yscale, D.zscale])
-        # print('data shape = {}'.format(D.data.shape))
 
         self.util_panel.energy_vert.setRange(0, len(self.data_handler.axes[1]))
         self.util_panel.momentum_hor.setRange(0, len(self.data_handler.axes[0]))
 
-        self.put_sliders_in_the_middle()
         self.load_saved_corrections(data_set)
+        self.util_panel.set_metadata_window(raw_data)
+        self.put_sliders_in_the_middle()
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -609,7 +610,7 @@ class MainWindow2D(QMainWindow):
         self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_range)
 
         # update energy labels
-        erg_idx = self.main_plot.crosshair.hpos.get_value()
+        erg_idx = self.main_plot.crosshair.vpos.get_value()
         self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.new_energy_axis[erg_idx]))
 
     def convert_to_kspace(self):
@@ -657,7 +658,7 @@ class MainWindow2D(QMainWindow):
         self.db.thread[self.index].stop()
 
     def save_to_pickle(self):
-        dataset = dl.load_data(self.fname)
+        dataset = self.data_set
         dir = self.fname[:-len(self.title)]
         up = self.util_panel
         file_selection = True
@@ -730,9 +731,6 @@ class MainWindow2D(QMainWindow):
                 self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
                 self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
                     self.new_momentum_axis[self.main_plot.pos[1].get_value()]))
-
-            if np.any('Ef' in saved.keys(), 'hv' in saved.keys(), 'wf' in saved.keys()):
-                self.apply_energy_correction()
         else:
             pass
 

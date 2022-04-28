@@ -69,7 +69,8 @@ class DataHandler:
         instead of ``self.data.set_value(d)``.
         """
         self.data.set_value(data)
-        self.norm_data = wp.normalize(data)
+        with warnings.catch_warnings():
+            self.norm_data = wp.normalize(data)
 
     def prepare_data(self, data, axes=3 * [None]):
         """ Load the specified data and prepare the corresponding z range.
@@ -87,7 +88,8 @@ class DataHandler:
 
         self.data = TracedVariable(data, name='data')
         self.axes = array(axes, dtype="object")
-        self.norm_data = wp.normalize(data)
+        with warnings.catch_warnings():
+            self.norm_data = wp.normalize(data)
 
         # Retain a copy of the original data and axes so that we can reset later
         # NOTE: this effectively doubles the used memory!
@@ -187,7 +189,8 @@ class DataHandler:
 
         # Calculate the integrated intensity and plot it
         self.calculate_integrated_intensity()
-        ip.plot(wp.normalize(self.integrated))
+        with warnings.catch_warnings():
+            ip.plot(wp.normalize(self.integrated))
 
         # Also display the actual data values in the top axis
         zscale = self.axes[erg_ax]
@@ -412,7 +415,6 @@ class MainWindow3D(QMainWindow):
         self.setWindowTitle(self.title)
         self.sp_EDC = None
 
-        time_dl_b = time.time()
         if data_set is None:
             print('No dataset to open.')
             self.close_mw()
@@ -423,6 +425,7 @@ class MainWindow3D(QMainWindow):
         self.initUI()
 
         self.data_set = data_set
+        self.org_dataset = None
         self.data_handler.prepare_data(D.data, [D.xscale, D.yscale, D.zscale])
         self.set_sliders_labels(D)
 
@@ -549,29 +552,30 @@ class MainWindow3D(QMainWindow):
         sd = 1
         # Get a short handle
         l = self.layout
-        # addWIdget(row, column, rowSpan, columnSpan)
+        # addWidget(row, column, rowSpan, columnSpan)
         # utilities bar
-        # l.addWidget(self.b0, 0, 0, 1 * sd, 5 * sd)
-        l.addWidget(self.util_panel, 0, 0, 1 * sd, 5 * sd)
-        # Main plot
-        l.addWidget(self.main_plot, 3 * sd, 0, 2 * sd, 2 * sd)
+        l.addWidget(self.util_panel,    0,      0,          2 * sd, 5 * sd)
         # X cut and mdc
-        l.addWidget(self.cut_x, 2 * sd, 0, 1 * sd, 2 * sd)
-        l.addWidget(self.plot_x, 1 * sd, 0, 1 * sd, 2 * sd)
+        l.addWidget(self.plot_x,        2 * sd, 0,          1 * sd, 2 * sd)
+        l.addWidget(self.cut_x,         3 * sd, 0,          1 * sd, 2 * sd)
+        # Main plot
+        l.addWidget(self.main_plot,     4 * sd, 0,          2 * sd, 2 * sd)
         # Y cut and mdc
-        l.addWidget(self.cut_y, 3 * sd, 2, 2 * sd, 1 * sd)
-        l.addWidget(self.plot_y, 3 * sd, 3 * sd, 2 * sd, 1 * sd)
+        l.addWidget(self.cut_y,         4 * sd, 2,          2 * sd, 1 * sd)
+        l.addWidget(self.plot_y,        4 * sd, 3 * sd,     2 * sd, 1 * sd)
         # EDC (integrated)
-        l.addWidget(self.plot_z, 1 * sd, 2 * sd, 2 * sd, 2 * sd)
+        l.addWidget(self.plot_z,        2 * sd, 2 * sd,     2 * sd, 2 * sd)
 
-        nrows = 5 * sd
+        nrows = 6 * sd
         ncols = 4 * sd
         # Need to manually set all row- and columnspans as well as min-sizes
         for i in range(nrows):
             l.setRowMinimumHeight(i, 50)
+            # l.setRowMaximumHeight(i, 51)
             l.setRowStretch(i, 1)
         for i in range(ncols):
             l.setColumnMinimumWidth(i, 50)
+            # l.setColumnMaximumWidth(i, 51)
             l.setColumnStretch(i, 1)
 
     def update_main_plot(self, **image_kwargs):
@@ -634,7 +638,8 @@ class MainWindow3D(QMainWindow):
         if self.util_panel.bin_zx.isChecked():
             bins = self.util_panel.bin_zx_nbins.value()
             start, stop = i_x - bins, i_x + bins
-            y = wp.normalize(np.sum(self.data_handler.cut_x_data[:, start:stop], axis=1))
+            with warnings.catch_warnings():
+                y = wp.normalize(np.sum(self.data_handler.cut_x_data[:, start:stop], axis=1))
         else:
             y = self.data_handler.cut_x_data[:, i_x]
         x = arange(0, len(self.data_handler.axes[scan_ax]))
@@ -664,7 +669,8 @@ class MainWindow3D(QMainWindow):
         if self.util_panel.bin_zy.isChecked():
             bins = self.util_panel.bin_zy_nbins.value()
             start, stop = i_x - bins, i_x + bins
-            y = wp.normalize(np.sum(self.data_handler.cut_y_data[start:stop, :], axis=0))
+            with warnings.catch_warnings():
+                y = wp.normalize(np.sum(self.data_handler.cut_y_data[start:stop, :], axis=0))
         else:
             y = self.data_handler.cut_y_data[i_x, :]
         x = arange(0, len(self.data_handler.axes[slit_ax]))
@@ -774,7 +780,9 @@ class MainWindow3D(QMainWindow):
         xpos = self.main_plot.crosshair.vpos.get_value()
         ypos = self.main_plot.crosshair.hpos.get_value()
         data = self.data_handler.get_data()[xpos, ypos, :]
-        self.sp_EDC.setData(wp.normalize(data), pen=self.plot_z.sp_EDC_pen)
+        with warnings.catch_warnings():
+            data = wp.normalize(data)
+        self.sp_EDC.setData(data, pen=self.plot_z.sp_EDC_pen)
 
     def redraw_plots(self, image=None):
         """ Redraw plotted data to reflect changes in data or its colors. """
@@ -1100,11 +1108,11 @@ class MainWindow3D(QMainWindow):
         else:
             e_ax = self.new_energy_axis
         if e_ax.min() < 0:
-            mid_energy = wp.indexof(-0.01, e_ax)
+            mid_energy = wp.indexof(-0.005, e_ax)
         else:
             mid_energy = int(len(e_ax) / 2)
 
-        if self.new_energy_axis is None:
+        if self.new_hor_momentum_axis is None:
             mh_ax = self.data_handler.axes[scan_ax]
         else:
             mh_ax = self.new_hor_momentum_axis
@@ -1113,7 +1121,7 @@ class MainWindow3D(QMainWindow):
         else:
             mid_hor_angle = int(len(mh_ax) / 2)
 
-        if self.new_energy_axis is None:
+        if self.new_ver_momentum_axis is None:
             mv_ax = self.data_handler.axes[slit_ax]
         else:
             mv_ax = self.new_ver_momentum_axis
@@ -1175,16 +1183,11 @@ class MainWindow3D(QMainWindow):
     # analysis options
     def find_gamma(self):
         fs = self.image_data.T
-        # z_pos = self.plot_z.pos.get_value()
-        # z_bins = self.util_panel.bin_z_nbins.value()
-        # z_start, z_stop = z_pos - z_bins, z_pos + z_bins
-        # fs = np.sum(wp.normalize(self.data_handler.get_data())[:, :, z_start:z_stop], axis=2).T
-        # print(fs.shape, norm_data.shape)
         x_init = self.util_panel.orientate_init_x.value()
         y_init = self.util_panel.orientate_init_y.value()
         res = wp.find_gamma(fs, x_init, y_init)
         if res.success:
-            self.util_panel.orientate_find_gamma_message.setText('Values found.')
+            self.util_panel.orientate_find_gamma_message.setText('Success,  values found!')
             self.util_panel.orientate_init_x.setValue(int(res.x[0]))
             self.util_panel.orientate_init_y.setValue(int(res.x[1]))
         else:
@@ -1375,12 +1378,9 @@ class MainWindow3D(QMainWindow):
 
     def show_orientation_info(self):
 
-        # self.util_panel.orientate_info_button.setDisabled(True)
         title = 'pyta -> beamline coordinates translator'
         self.info_box = InfoWindow(self.util_panel.orient_info_window, title)
         self.info_box.show()
-        # if self.info_box.buttonBox.Ok:
-        #     print('elo')
 
     @staticmethod
     def transform_points(pts, angle):
@@ -1417,7 +1417,7 @@ class MainWindow3D(QMainWindow):
         self.db.thread[self.index].stop()
 
     def save_to_pickle(self):
-        dataset = dl.load_data(self.fname)
+        dataset = self.data_set
         dir = self.fname[:-len(self.title)]
         up = self.util_panel
         file_selection = True

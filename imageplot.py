@@ -2,16 +2,22 @@
 matplotlib pcolormesh equivalent in pyqtgraph (more or less) """
 
 import logging
+
+import numpy as np
 from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, \
-    QLineEdit, QMainWindow, QDialogButtonBox
+    QLineEdit, QMainWindow, QDialogButtonBox, QMessageBox
 from PyQt5.QtGui import QFont
 from PyQt5 import QtCore
 from pyqtgraph.Qt import QtGui
 from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen#, PColorMeshItem
-from numpy import arange, array, clip, inf, linspace, ndarray, abs
+from numpy import arange, array, clip, inf, linspace, ndarray, abs, ones, allclose, where, all
 from pyqtgraph import Qt as qt
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
+
+import arpys_wp as wp
 from cmaps import cmaps, my_cmaps
+import data_loader as dl
+from copy import deepcopy
 
 BASE_LINECOLOR = (255, 255, 0, 255)
 BINLINES_LINECOLOR = (168, 168, 104, 255)
@@ -943,10 +949,19 @@ class UtilitiesPanel(QWidget):
         self.mw = main_window
         self.layout = QtGui.QGridLayout()
         self.tabs = QTabWidget()
+        self.tabs_visible = True
         self.dim = dim
 
         self.close_button = QPushButton('close')
         self.save_button = QPushButton('save')
+        self.hide_button = QPushButton('hide tabs')
+
+        self.buttons = QWidget()
+        self.buttons_layout = QtGui.QGridLayout()
+        self.buttons_layout.addWidget(self.close_button,    1, 0)
+        self.buttons_layout.addWidget(self.save_button,     2, 0)
+        self.buttons_layout.addWidget(self.hide_button,     3, 0)
+        self.buttons.setLayout(self.buttons_layout)
 
         if name is not None:
             self.name = name
@@ -960,8 +975,8 @@ class UtilitiesPanel(QWidget):
         self.setStyleSheet(util_panel_style)
         momentum_labels_width = 80
         energy_labels_width = 80
-        tabs_rows_span = 4
-        tabs_cols_span = 9
+        self.tabs_rows_span = 4
+        self.tabs_cols_span = 9
 
         self.align()
 
@@ -975,10 +990,18 @@ class UtilitiesPanel(QWidget):
             self.momentum_hor_value.setFixedWidth(momentum_labels_width)
             self.momentum_vert_value.setFixedWidth(momentum_labels_width)
 
-        self.layout.addWidget(self.tabs, 0, 0, tabs_rows_span, tabs_cols_span)
-        self.layout.addWidget(self.close_button, 1, tabs_cols_span + 1)
-        self.layout.addWidget(self.save_button, 2, tabs_cols_span + 1)
+        self.layout.addWidget(self.tabs,            0, 0, self.tabs_rows_span, self.tabs_cols_span)
+        self.layout.addWidget(self.buttons,         0, self.tabs_cols_span + 1)
         self.setLayout(self.layout)
+        # file options
+        self.file_show_md_button.clicked.connect(self.show_metadata_window)
+        self.file_add_md_button.clicked.connect(self.add_metadata)
+        self.file_remove_md_button.clicked.connect(self.remove_metadata)
+        self.file_sum_datasets_sum_button.clicked.connect(self.sum_datasets)
+        self.file_sum_datasets_reset_button.clicked.connect(self.reset_summation)
+
+        # connect callbacks
+        self.hide_button.clicked.connect(self.hidde_tabs)
 
         self.setup_cmaps()
         self.setup_gamma()
@@ -992,6 +1015,15 @@ class UtilitiesPanel(QWidget):
         self.set_axes_tab()
         if self.dim == 3:
             self.set_orientate_tab()
+        self.set_file_tab()
+
+    def hidde_tabs(self):
+        self.tabs_visible = not self.tabs_visible
+        self.tabs.setVisible(self.tabs_visible)
+        if self.tabs_visible:
+            self.hide_button.setText('hide tabs')
+        else:
+            self.hide_button.setText('show tabs')
 
     def set_image_tab(self):
 
@@ -1193,16 +1225,19 @@ class UtilitiesPanel(QWidget):
     def set_axes_tab(self):
         self.axes_tab = QWidget()
         atl = QtGui.QGridLayout()
-        box_max_w = 70
+        box_max_w = 100
+        lbl_max_h = 30
 
         self.axes_energy_main_lbl = QLabel('Energy correction')
         self.axes_energy_main_lbl.setFont(bold_font)
+        self.axes_energy_main_lbl.setMaximumHeight(lbl_max_h)
         self.axes_energy_Ef_lbl = QLabel('Ef (meV):')
         # self.axes_energy_Ef_lbl.setMaximumWidth(max_lbl_w)
         self.axes_energy_Ef = QDoubleSpinBox()
         self.axes_energy_Ef.setMaximumWidth(box_max_w)
         self.axes_energy_Ef.setRange(-5000., 5000)
-        self.axes_energy_Ef.setDecimals(3)
+        self.axes_energy_Ef.setDecimals(6)
+        # self.axes_energy_Ef.setMinimumWidth(100)
         self.axes_energy_Ef.setSingleStep(0.001)
 
         self.axes_energy_hv_lbl = QLabel('h\u03BD (eV):')
@@ -1210,7 +1245,7 @@ class UtilitiesPanel(QWidget):
         self.axes_energy_hv = QDoubleSpinBox()
         self.axes_energy_hv.setMaximumWidth(box_max_w)
         self.axes_energy_hv.setRange(-2000., 2000)
-        self.axes_energy_hv.setDecimals(3)
+        self.axes_energy_hv.setDecimals(6)
         self.axes_energy_hv.setSingleStep(0.001)
 
         self.axes_energy_wf_lbl = QLabel('wf (eV):')
@@ -1223,11 +1258,12 @@ class UtilitiesPanel(QWidget):
 
         self.axes_momentum_main_lbl = QLabel('k-space conversion')
         self.axes_momentum_main_lbl.setFont(bold_font)
+        self.axes_momentum_main_lbl.setMaximumHeight(lbl_max_h)
         self.axes_gamma_x_lbl = QLabel('\u0393 x0:')
         self.axes_gamma_x = QSpinBox()
         self.axes_gamma_x.setRange(0, 5000)
 
-        self.axes_conv_hv_lbl = QLabel('hv (eV):')
+        self.axes_conv_hv_lbl = QLabel('h\u03BD (eV):')
         self.axes_conv_hv = QDoubleSpinBox()
         self.axes_conv_hv.setMaximumWidth(box_max_w)
         self.axes_conv_hv.setRange(-2000., 2000)
@@ -1411,6 +1447,59 @@ class UtilitiesPanel(QWidget):
 
         self.set_orientation_info_window()
 
+    def set_file_tab(self):
+
+        self.file_tab = QWidget()
+        ftl = QtGui.QGridLayout()
+
+        self.file_add_md_lbl = QLabel('Add/remove entry')
+        self.file_add_md_lbl.setFont(bold_font)
+        self.file_md_name_lbl = QLabel('name:')
+        self.file_md_name = QLineEdit()
+        self.file_md_value_lbl = QLabel('value:')
+        self.file_md_value = QLineEdit()
+        self.file_add_md_button = QPushButton('add')
+        self.file_remove_md_button = QPushButton('remove')
+
+        self.file_show_md_button = QPushButton('show metadata')
+
+        self.file_sum_datasets_lbl = QLabel('Sum data sets')
+        self.file_sum_datasets_lbl.setFont(bold_font)
+        self.file_sum_datasets_fname_lbl = QLabel('file name:')
+        self.file_sum_datasets_fname = QLineEdit('Works only for *.h5 files')
+        self.file_sum_datasets_fname = QLineEdit('sistem_cut_2.h5')
+        self.file_sum_datasets_sum_button = QPushButton('sum')
+        self.file_sum_datasets_reset_button = QPushButton('reset')
+
+        sd = 1
+        # addWidget(widget, row, column, rowSpan, columnSpan)
+        row = 0
+        ftl.addWidget(self.file_add_md_lbl,                     row * sd, 0 * sd, 1, 2)
+        ftl.addWidget(self.file_show_md_button,                 row * sd, 8 * sd, 1, 2)
+
+        row = 1
+        ftl.addWidget(self.file_md_name_lbl,                    row * sd, 0 * sd)
+        ftl.addWidget(self.file_md_name,                        row * sd, 1 * sd, 1, 3)
+        ftl.addWidget(self.file_md_value_lbl,                   row * sd, 4 * sd)
+        ftl.addWidget(self.file_md_value,                       row * sd, 5 * sd, 1, 3)
+        ftl.addWidget(self.file_add_md_button,                  row * sd, 8 * sd)
+        ftl.addWidget(self.file_remove_md_button,               row * sd, 9 * sd)
+
+        row = 2
+        ftl.addWidget(self.file_sum_datasets_lbl,               row * sd, 0 * sd, 1, 2)
+        ftl.addWidget(self.file_sum_datasets_fname_lbl,         row * sd, 2 * sd)
+        ftl.addWidget(self.file_sum_datasets_fname,             row * sd, 3 * sd, 1, 5)
+        ftl.addWidget(self.file_sum_datasets_sum_button,        row * sd, 8 * sd)
+        ftl.addWidget(self.file_sum_datasets_reset_button,      row * sd, 9 * sd)
+
+        # dummy lbl
+        dummy_lbl = QLabel('')
+        ftl.addWidget(dummy_lbl, 3, 0, 2, 9)
+
+        self.file_tab.layout = ftl
+        self.file_tab.setLayout(ftl)
+        self.tabs.addTab(self.file_tab, 'File')
+
     def setup_cmaps(self):
 
         cm = self.image_cmaps
@@ -1456,13 +1545,15 @@ class UtilitiesPanel(QWidget):
         self.oi_scanned_lbl = QLabel('Scanned (L -> R)')
         self.oi_scanned_lbl.setFont(bold_font)
 
-        entries = [['SIS (SIStem)', 'phi -> ?', 'theta -> ?', 'tilt -> ?'],
-                   ['SIS (SES)', 'phi -> +', 'theta -> ?', 'tilt -> ?'],
-                   ['Bloch (MaxIV)', '-', '-', '-'],
-                   ['CASSIOPEE (SOLEIL)', '-', '-', '-'],
-                   ['I05 (Diamond)', '-', '-', '-'],
-                   ['-', '-', '-', '-'],
-                   ['-', '-', '-', '-']]
+        entries = [['SIS (SLS)',            'phi -> +',     'theta -> +',   'tilt -> +'],
+                   ['Bloch (MaxIV)',        'azimuth -> +', 'tilt -> ?',    'polar -> +'],
+                   ['CASSIOPEE (SOLEIL)',   '-',            '-',            '-'],
+                   ['I05 (Diamond)',        '-',            '-',            '-'],
+                   ['UARPES (SOLARIS)',     '-',            '-',            '-'],
+                   ['APE (Elettra)',        '-',            '-',            '-'],
+                   ['ADDRES (SLS)',         '-',            '-',            '-'],
+                   ['-',                    '-',            '-',            '-'],
+                   ['-',                    '-',            '-',            '-']]
         labels = {}
 
         sd = 1
@@ -1490,6 +1581,298 @@ class UtilitiesPanel(QWidget):
 
         self.orient_info_window.layout = oiw
         self.orient_info_window.setLayout(oiw)
+
+    def set_metadata_window(self, dataset):
+
+        self.md_window = QWidget()
+        mdw = QtGui.QGridLayout()
+
+        attribute_name_lbl = QLabel('Attribute')
+        attribute_name_lbl.setFont(bold_font)
+        attribute_value_lbl = QLabel('Value')
+        attribute_value_lbl.setFont(bold_font)
+        attribute_value_lbl.setAlignment(QtCore.Qt.AlignCenter)
+        attribute_saved_lbl = QLabel('user saved')
+        attribute_saved_lbl.setFont(bold_font)
+        attribute_saved_lbl.setAlignment(QtCore.Qt.AlignCenter)
+
+        dataset = vars(dataset)
+        entries = {}
+
+        sd = 1
+        row = 0
+        mdw.addWidget(attribute_name_lbl,   row * sd, 0 * sd)
+        mdw.addWidget(attribute_value_lbl,  row * sd, 1 * sd)
+
+        row = 1
+        for key in dataset.keys():
+            if key == 'ekin' or key == 'saved':
+                continue
+            elif key == 'data':
+                s = dataset[key].shape
+                value = '(' + str(s[0]) + ',  ' + str(s[1]) + ',  ' + str(s[2]) + ')'
+                entries[str(row)] = {}
+                entries[str(row)]['name'] = QLabel(key)
+                entries[str(row)]['value'] = QLabel(str(value))
+                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+            elif key == 'xscale':
+                value = '({:.2f}  :  {:.2f})'.format(dataset[key][0], dataset[key][-1])
+                entries[str(row)] = {}
+                entries[str(row)]['name'] = QLabel(key)
+                entries[str(row)]['value'] = QLabel(str(value))
+                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+            elif key == 'yscale':
+                value = '({:.4f}  :  {:.4f})'.format(dataset[key][0], dataset[key][-1])
+                entries[str(row)] = {}
+                entries[str(row)]['name'] = QLabel(key)
+                entries[str(row)]['value'] = QLabel(str(value))
+                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+            elif key == 'zscale':
+                value = '({:.4f}  :  {:.4f})'.format(dataset[key][0], dataset[key][-1])
+                entries[str(row)] = {}
+                entries[str(row)]['name'] = QLabel(key)
+                entries[str(row)]['value'] = QLabel(str(value))
+                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+            else:
+                entries[str(row)] = {}
+                entries[str(row)]['name'] = QLabel(key)
+                entries[str(row)]['value'] = QLabel(str(dataset[key]))
+                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+
+            mdw.addWidget(entries[str(row)]['name'],    row * sd, 0 * sd)
+            mdw.addWidget(entries[str(row)]['value'],   row * sd, 1 * sd)
+            row += 1
+
+        if 'saved' in dataset.keys():
+            mdw.addWidget(attribute_saved_lbl,   row * sd, 0 * sd, 1, 2)
+            for key in dataset['saved'].keys():
+                row += 1
+                entries[str(row)] = {}
+                entries[str(row)]['name'] = QLabel(key)
+                entries[str(row)]['value'] = QLabel(str(dataset['saved'][key]))
+                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+
+                mdw.addWidget(entries[str(row)]['name'],    row * sd, 0 * sd)
+                mdw.addWidget(entries[str(row)]['value'],   row * sd, 1 * sd)
+
+        self.md_window.layout = mdw
+        self.md_window.setLayout(mdw)
+
+    def show_metadata_window(self):
+
+        self.set_metadata_window(self.mw.data_set)
+        title = self.mw.title + ' - metadata'
+        self.info_box = InfoWindow(self.md_window, title)
+        self.info_box.setMinimumWidth(350)
+        self.info_box.show()
+
+    def add_metadata(self):
+
+        name = self.file_md_name.text()
+        value = self.file_md_value.text()
+        try:
+            value = float(value)
+        except ValueError:
+            pass
+
+        if name == '':
+            empty_name_box = QMessageBox()
+            empty_name_box.setIcon(QMessageBox.Information)
+            empty_name_box.setText('Attribute\'s name not given.')
+            empty_name_box.setStandardButtons(QMessageBox.Ok)
+            if empty_name_box.exec() == QMessageBox.Ok:
+                return
+
+        message = 'Sure to add attribute \'{}\' with value <{}> (type: {}) to the file?'.format(
+            name, value, type(value))
+        sanity_check_box = QMessageBox()
+        sanity_check_box.setIcon(QMessageBox.Question)
+        sanity_check_box.setText(message)
+        sanity_check_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        if sanity_check_box.exec() == QMessageBox.Ok:
+            if hasattr(self.mw.data_set, name):
+                attr_conflict_box = QMessageBox()
+                attr_conflict_box.setIcon(QMessageBox.Question)
+                attr_conflict_box.setText(f'Data set already has attribute \'{name}\'.  Overwrite?')
+                attr_conflict_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                if attr_conflict_box.exec() == QMessageBox.Ok:
+                    setattr(self.mw.data_set, name, value)
+            else:
+                dl.update_namespace(self.mw.data_set, [name, value])
+        else:
+            return
+
+    def remove_metadata(self):
+
+        name = self.file_md_name.text()
+
+        if not hasattr(self.mw.data_set, name):
+            no_attr_box = QMessageBox()
+            no_attr_box.setIcon(QMessageBox.Information)
+            no_attr_box.setText(f'Data set has no attribute \'{name}\'.')
+            no_attr_box.setStandardButtons(QMessageBox.Ok)
+            if no_attr_box.exec() == QMessageBox.Ok:
+                return
+
+        message = 'Sure to remove attribute \'{}\' from data set?'.format(name)
+        sanity_check_box = QMessageBox()
+        sanity_check_box.setIcon(QMessageBox.Question)
+        sanity_check_box.setText(message)
+        sanity_check_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        if sanity_check_box.exec() == QMessageBox.Ok:
+            delattr(self.mw.data_set, name)
+        else:
+            return
+
+    def sum_datasets(self):
+
+        if self.dim == 3:
+            no_map_box = QMessageBox()
+            no_map_box.setIcon(QMessageBox.Information)
+            no_map_box.setText('Summing feature works only on cuts.')
+            no_map_box.setStandardButtons(QMessageBox.Ok)
+            if no_map_box.exec() == QMessageBox.Ok:
+                return
+
+        file_path = self.mw.fname[:-len(self.mw.title)] + self.file_sum_datasets_fname.text()
+        org_dataset = dl.load_data(self.mw.fname)
+        new_dataset = dl.load_data(file_path)
+        check_result = self.check_conflicts([org_dataset, new_dataset])
+
+        if check_result == 0:
+            data_mismatch_box = QMessageBox()
+            data_mismatch_box.setIcon(QMessageBox.Information)
+            data_mismatch_box.setText('Data sets\' shapes don\'t match.\nConnot proceed.')
+            data_mismatch_box.setStandardButtons(QMessageBox.Ok)
+            if data_mismatch_box.exec() == QMessageBox.Ok:
+                return
+
+        check_result_box = QMessageBox()
+        check_result_box.setMinimumWidth(600)
+        check_result_box.setMaximumWidth(1000)
+        check_result_box.setIcon(QMessageBox.Information)
+        check_result_box.setText(check_result)
+        check_result_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        if check_result_box.exec() == QMessageBox.Ok:
+            self.mw.org_dataset = org_dataset
+            self.mw.data_set.data += new_dataset.data
+            self.mw.data_set.n_sweeps += new_dataset.n_sweeps
+            d = np.swapaxes(self.mw.data_set.data, 1, 2)
+            self.mw.data_handler.set_data(d)
+            self.mw.update_main_plot()
+        else:
+            return
+
+    def reset_summation(self):
+
+        if self.mw.org_dataset is None:
+            no_summing_yet_box = QMessageBox()
+            no_summing_yet_box.setIcon(QMessageBox.Information)
+            no_summing_yet_box.setText('No summing done yet.')
+            no_summing_yet_box.setStandardButtons(QMessageBox.Ok)
+            if no_summing_yet_box.exec() == QMessageBox.Ok:
+                return
+
+        reset_summation_box = QMessageBox()
+        reset_summation_box.setMinimumWidth(600)
+        reset_summation_box.setMaximumWidth(1000)
+        reset_summation_box.setIcon(QMessageBox.Question)
+        reset_summation_box.setText('Want to reset summation?')
+        reset_summation_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        if reset_summation_box.exec() == QMessageBox.Ok:
+            self.mw.data_set.data = self.mw.org_dataset.data
+            self.mw.data_set.n_sweeps = self.mw.org_dataset.n_sweeps
+            d = np.swapaxes(self.mw.data_set.data, 1, 2)
+            self.mw.data_handler.set_data(d)
+            self.mw.update_main_plot()
+        else:
+            return
+
+    @staticmethod
+    def check_conflicts(datasets):
+
+        labels = ['fname', 'data', 'T', 'hv', 'polarization', 'PE', 'FE', 'exit', 'x', 'y', 'z', 'theta', 'phi', 'tilt',
+                  'lens_mode', 'acq_mode', 'e_start', 'e_stop', 'e_step']
+        to_check = [[] for _ in range(len(labels))]
+
+        to_check[0] = ['original', 'new']
+        for ds in datasets:
+            to_check[1].append(ds.data.shape)
+            to_check[2].append(ds.temp)
+            to_check[3].append(ds.hv)
+            to_check[4].append(ds.polarization)
+            to_check[5].append(ds.PE)
+            to_check[6].append(ds.FE)
+            to_check[7].append(ds.exit_slit)
+            to_check[8].append(ds.x)
+            to_check[9].append(ds.y)
+            to_check[10].append(ds.z)
+            to_check[11].append(ds.theta)
+            to_check[12].append(ds.phi)
+            to_check[13].append(ds.tilt)
+            to_check[14].append(ds.lens_mode)
+            to_check[15].append(ds.acq_mode)
+            to_check[16].append(ds.zscale[0])
+            to_check[17].append(ds.zscale[-1])
+            to_check[18].append(wp.get_step(ds.zscale))
+
+        # check if imporatnt stuff match
+        check_result = []
+        for idx, lbl in enumerate(labels):
+            if lbl == 'fname' or lbl == 'data':
+                check_result.append(True)
+            # temperature
+            elif lbl == 'T':
+                err = 1
+                par = array(to_check[idx])
+                to_compare = ones(par.size) * par[0]
+                check_result.append(allclose(par, to_compare, atol=err))
+            # photon energy
+            elif lbl == 'hv':
+                err = 0.1
+                par = array(to_check[idx])
+                to_compare = ones(par.size) * par[0]
+                check_result.append(allclose(par, to_compare, atol=err))
+            # e_min of analyzer
+            elif lbl == 'e_start':
+                err = to_check[-1][0]
+                par = array(to_check[idx])
+                to_compare = ones(par.size) * par[0]
+                check_result.append(allclose(par, to_compare, atol=err))
+            # e_max of analyzer
+            elif lbl == 'e_stop':
+                err = to_check[-1][0]
+                par = array(to_check[idx])
+                to_compare = ones(par.size) * par[0]
+                check_result.append(allclose(par, to_compare, atol=err))
+            elif lbl == 'e_step':
+                err = to_check[-1][0]
+                par = array(to_check[idx])
+                to_compare = ones(par.size) * par[0]
+                check_result.append(allclose(par, to_compare, atol=err * 0.1))
+            else:
+                check_result.append(to_check[idx][0] == to_check[idx][1])
+
+        if not (to_check[1][0] == to_check[1][1]):
+            return 0
+
+        if array(check_result).all():
+            message = 'Everything match! We\'re good to go!'
+        else:
+            message = 'Some stuff doesn\'t match...\n\n'
+            dont_match = where(array(check_result) == False)
+            for idx in dont_match[0]:
+                try:
+                    message += '{} \t\t {:.3f}\t  {:.3f} \n'.format(str(labels[idx]), to_check[idx][0], to_check[idx][1])
+                except TypeError:
+                    message += '{} \t\t {}\t  {} \n'.format(
+                        str(labels[idx]), str(to_check[idx][0]), str(to_check[idx][1]))
+                except ValueError:
+                    message += '{} \t\t {}\t  {} \n'.format(
+                        str(labels[idx]), str(to_check[idx][0]), str(to_check[idx][1]))
+            message += '\nSure to proceed?'
+
+        return message
 
 
 class InfoWindow(QMainWindow):
