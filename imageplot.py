@@ -2,8 +2,6 @@
 matplotlib pcolormesh equivalent in pyqtgraph (more or less) """
 
 import logging
-
-import numpy as np
 from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, \
     QLineEdit, QMainWindow, QDialogButtonBox, QMessageBox
 from PyQt5.QtGui import QFont
@@ -14,6 +12,10 @@ from numpy import arange, array, clip, inf, linspace, ndarray, abs, ones, allclo
 from pyqtgraph import Qt as qt
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
 
+import os
+import subprocess
+import sys
+import numpy as np
 import arpys_wp as wp
 from cmaps import cmaps, my_cmaps
 import data_loader as dl
@@ -993,12 +995,14 @@ class UtilitiesPanel(QWidget):
         self.layout.addWidget(self.tabs,            0, 0, self.tabs_rows_span, self.tabs_cols_span)
         self.layout.addWidget(self.buttons,         0, self.tabs_cols_span + 1)
         self.setLayout(self.layout)
+
         # file options
         self.file_show_md_button.clicked.connect(self.show_metadata_window)
         self.file_add_md_button.clicked.connect(self.add_metadata)
         self.file_remove_md_button.clicked.connect(self.remove_metadata)
         self.file_sum_datasets_sum_button.clicked.connect(self.sum_datasets)
         self.file_sum_datasets_reset_button.clicked.connect(self.reset_summation)
+        self.file_jn_button.clicked.connect(self.open_jupyter_notebook)
 
         # connect callbacks
         self.hide_button.clicked.connect(self.hidde_tabs)
@@ -1467,9 +1471,15 @@ class UtilitiesPanel(QWidget):
         self.file_sum_datasets_lbl.setFont(bold_font)
         self.file_sum_datasets_fname_lbl = QLabel('file name:')
         self.file_sum_datasets_fname = QLineEdit('Works only for *.h5 files')
-        self.file_sum_datasets_fname = QLineEdit('sistem_cut_2.h5')
+        # self.file_sum_datasets_fname = QLineEdit('sistem_cut_2.h5')
         self.file_sum_datasets_sum_button = QPushButton('sum')
         self.file_sum_datasets_reset_button = QPushButton('reset')
+
+        self.file_jn_main_lbl = QLabel('Jupyter')
+        self.file_jn_main_lbl.setFont(bold_font)
+        self.file_jn_fname_lbl = QLabel('file name:')
+        self.file_jn_fname = QLineEdit(self.mw.title.split('.')[0])
+        self.file_jn_button = QPushButton('open in jn')
 
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
@@ -1492,9 +1502,15 @@ class UtilitiesPanel(QWidget):
         ftl.addWidget(self.file_sum_datasets_sum_button,        row * sd, 8 * sd)
         ftl.addWidget(self.file_sum_datasets_reset_button,      row * sd, 9 * sd)
 
+        row = 3
+        ftl.addWidget(self.file_jn_main_lbl,                    row * sd, 0 * sd, 1, 2)
+        ftl.addWidget(self.file_jn_fname_lbl,                   row * sd, 2 * sd)
+        ftl.addWidget(self.file_jn_fname,                       row * sd, 3 * sd, 1, 5)
+        ftl.addWidget(self.file_jn_button,                      row * sd, 8 * sd)
+
         # dummy lbl
         dummy_lbl = QLabel('')
-        ftl.addWidget(dummy_lbl, 3, 0, 2, 9)
+        ftl.addWidget(dummy_lbl, 4, 0, 1, 9)
 
         self.file_tab.layout = ftl
         self.file_tab.setLayout(ftl)
@@ -1736,8 +1752,26 @@ class UtilitiesPanel(QWidget):
 
         file_path = self.mw.fname[:-len(self.mw.title)] + self.file_sum_datasets_fname.text()
         org_dataset = dl.load_data(self.mw.fname)
-        new_dataset = dl.load_data(file_path)
-        check_result = self.check_conflicts([org_dataset, new_dataset])
+
+        try:
+            new_dataset = dl.load_data(file_path)
+        except FileNotFoundError:
+            no_file_box = QMessageBox()
+            no_file_box.setIcon(QMessageBox.Information)
+            no_file_box.setText('File not found.')
+            no_file_box.setStandardButtons(QMessageBox.Ok)
+            if no_file_box.exec() == QMessageBox.Ok:
+                return
+
+        try:
+            check_result = self.check_conflicts([org_dataset, new_dataset])
+        except AttributeError:
+            not_h5_file_box = QMessageBox()
+            not_h5_file_box.setIcon(QMessageBox.Information)
+            not_h5_file_box.setText('Cut is not an SIStem *h5 file.')
+            not_h5_file_box.setStandardButtons(QMessageBox.Ok)
+            if not_h5_file_box.exec() == QMessageBox.Ok:
+                return
 
         if check_result == 0:
             data_mismatch_box = QMessageBox()
@@ -1787,6 +1821,45 @@ class UtilitiesPanel(QWidget):
             self.mw.update_main_plot()
         else:
             return
+
+    def open_jupyter_notebook(self):
+        file_path = self.mw.fname[:-len(self.mw.title)] + self.file_jn_fname.text() + '.ipynb'
+        template_path = os.path.dirname(os.path.abspath(__file__)) + '/'
+        if self.dim == 2:
+            template_fname = 'template_2d.ipynb'
+        elif self.dim == 3:
+            template_fname = 'template_3d.ipynb'
+        self.edit_file((template_path + template_fname), file_path)
+
+        # Open jupyter notebook as a subprocess
+        openJupyter = "jupyter notebook"
+        subprocess.Popen(openJupyter, shell=True)
+
+    def edit_file(self, template, new_file_name):
+        os.system('touch ' + new_file_name)
+
+        templ_file = open(template, 'r')
+        templ_lines = templ_file.readlines()
+        templ_file.close()
+
+        new_lines = []
+
+        # writing to file
+        for line in templ_lines:
+            if 'path = ' in line:
+                line = '    "path = \'{}\'\\n",'.format(self.mw.fname)
+            if 'slit_idx, e_idx =' in line:
+                if self.dim == 2:
+                    line = '    "slit_idx, e_idx = {}, {}\\n",'.format(
+                        self.momentum_hor.value(), self.energy_vert.value())
+                elif self.dim == 3:
+                    line = '    "scan_idx, slit_idx, e_idx = {}, {}, {}\\n",'.format(
+                        self.momentum_vert.value(), self.momentum_hor.value(), self.energy_vert.value())
+            new_lines.append(line)
+
+        new_file = open(new_file_name, 'w')
+        new_file.writelines(new_lines)
+        new_file.close()
 
     @staticmethod
     def check_conflicts(datasets):
