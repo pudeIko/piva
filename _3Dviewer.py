@@ -679,7 +679,7 @@ class MainWindow3D(QMainWindow):
         if self.new_energy_axis is None:
             self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.data_handler.axes[erg_ax][i_x]))
         else:
-            self.util_panel.energy_hor_value.setText('({:.4f})'.format(self.new_energy_axis[i_x]))
+            self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.new_energy_axis[i_x]))
         self.update_zx_zy_binning_line()
 
     def update_cut_x(self):
@@ -1466,8 +1466,8 @@ class MainWindow3D(QMainWindow):
                 if up.axes_gamma_y.value() != 0:
                     attrs['gamma_y'] = up.axes_gamma_y.value()
                 if not (self.new_hor_momentum_axis is None) and not (self.new_ver_momentum_axis is None):
-                    attrs['kx_axis'] = self.new_hor_momentum_axis
-                    attrs['ky_axis'] = self.new_ver_momentum_axis
+                    attrs['kx'] = self.new_hor_momentum_axis
+                    attrs['ky'] = self.new_ver_momentum_axis
                 dl.update_namespace(dataset, ['saved', attrs])
             elif box_return_value == QMessageBox.No:
                 pass
@@ -1495,11 +1495,11 @@ class MainWindow3D(QMainWindow):
                 self.util_panel.axes_gamma_y.setValue(saved['gamma_y'])
                 self.util_panel.orientate_init_y.setValue(saved['gamma_y'])
                 self.util_panel.orientate_find_gamma_message.setText('Values loaded from file.')
-            if 'kx_axis' in saved.keys() and 'kx_axis' in saved.keys():
-                self.new_hor_momentum_axis = saved['kx_axis']
-                self.new_ver_momentum_axis = saved['ky_axis']
-                new_hor_range = [saved['kx_axis'][0], saved['kx_axis'][-1]]
-                new_ver_range = [saved['ky_axis'][0], saved['ky_axis'][-1]]
+            if 'kx' in saved.keys() and 'ky' in saved.keys():
+                self.new_hor_momentum_axis = saved['kx']
+                self.new_ver_momentum_axis = saved['ky']
+                new_hor_range = [saved['kx'][0], saved['kx'][-1]]
+                new_ver_range = [saved['ky'][0], saved['ky'][-1]]
                 self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_hor_range)
                 self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_ver_range)
                 self.cut_x.plotItem.getAxis(self.cut_x.main_xaxis).setRange(*new_hor_range)

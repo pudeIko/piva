@@ -8,6 +8,7 @@ jupyterthemes>=0.20.0
 numpy>=1.21.1
 numba>=0.53.1
 matplotlib>=3.3.4
+openpyxl>=3.0.9
 pandas>=1.1.5
 pyqt5>=5.15.1
 pyqtgraph==0.11.0

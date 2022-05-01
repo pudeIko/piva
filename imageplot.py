@@ -1665,7 +1665,11 @@ class UtilitiesPanel(QWidget):
                 row += 1
                 entries[str(row)] = {}
                 entries[str(row)]['name'] = QLabel(key)
-                entries[str(row)]['value'] = QLabel(str(dataset['saved'][key]))
+                if key == 'kx' or key == 'ky':
+                    value = '({:.2f}  :  {:.2f})'.format(dataset['saved'][key][0], dataset['saved'][key][-1])
+                    entries[str(row)]['value'] = QLabel(str(value))
+                else:
+                    entries[str(row)]['value'] = QLabel(str(dataset['saved'][key]))
                 entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
 
                 mdw.addWidget(entries[str(row)]['name'],    row * sd, 0 * sd)
@@ -1825,10 +1829,7 @@ class UtilitiesPanel(QWidget):
     def open_jupyter_notebook(self):
         file_path = self.mw.fname[:-len(self.mw.title)] + self.file_jn_fname.text() + '.ipynb'
         template_path = os.path.dirname(os.path.abspath(__file__)) + '/'
-        if self.dim == 2:
-            template_fname = 'template_2d.ipynb'
-        elif self.dim == 3:
-            template_fname = 'template_3d.ipynb'
+        template_fname = 'template.ipynb'
         self.edit_file((template_path + template_fname), file_path)
 
         # Open jupyter notebook as a subprocess
@@ -1847,7 +1848,9 @@ class UtilitiesPanel(QWidget):
         # writing to file
         for line in templ_lines:
             if 'path = ' in line:
-                line = '    "path = \'{}\'\\n",'.format(self.mw.fname)
+                line = '    "path = \'{}\'\\n",'.format(self.mw.fname[:-len(self.mw.title)])
+            if 'fname = ' in line:
+                line = '    "fname = ''\\n",'.format(self.mw.title)
             if 'slit_idx, e_idx =' in line:
                 if self.dim == 2:
                     line = '    "slit_idx, e_idx = {}, {}\\n",'.format(
