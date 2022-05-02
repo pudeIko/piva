@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, Q
 from PyQt5.QtGui import QFont
 from PyQt5 import QtCore
 from pyqtgraph.Qt import QtGui
-from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen#, PColorMeshItem
+from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen, PColorMeshItem
 from numpy import arange, array, clip, inf, linspace, ndarray, abs, ones, allclose, where, all
 from pyqtgraph import Qt as qt
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
@@ -34,7 +34,6 @@ QCheckBox{color: rgb(246, 246, 246);}
 SIGNALS = 5
 MY_CMAPS = True
 DEFAULT_CMAP = 'viridis'
-PMESHITEM = False
 
 bold_font = QFont()
 bold_font.setBold(True)
@@ -217,6 +216,7 @@ class ImagePlot(PlotWidget):
         self.crosshair_cursor_visible = False
         self.binning = False
         self.orientation = orientation
+        self.pmeshitem = False
         self.transposed = TracedVariable(False, name='transposed')
 
         super().__init__(parent=parent, background=background, **kwargs)
@@ -337,7 +337,7 @@ class ImagePlot(PlotWidget):
         # Convert array to ImageItem
         if isinstance(image, ndarray):
             if 0 not in image.shape:
-                if PMESHITEM:
+                if self.pmeshitem:
                     try:
                         image_item = PColorMeshItem(image)
                     except AttributeError:

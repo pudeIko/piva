@@ -2093,7 +2093,7 @@ def shape_area(x, y):
 # +-----------------------+ #
 
 
-def a2k(alpha, beta, hv, dalpha=0, dbeta=0, orientation='horizontal', work_func=4.5, a=np.pi, Eb=0):
+def a2k(scan_ax, anal_ax, hv, d_scan_ax=0, d_anal_ax=0, orientation='horizontal', work_func=4.5, a=np.pi, Eb=0, phi=0, tilt=0):
     """
     Convert angles of the experimental geometry to k-space coordinates.
     Confer the sheet "ARPES angle to k-space conversion" [doc/a2k.pdf] for
@@ -2126,34 +2126,56 @@ def a2k(alpha, beta, hv, dalpha=0, dbeta=0, orientation='horizontal', work_func=
     ==  ========================================================================
     """
     # constant factor contribution
-    k0 = np.sqrt(2 * const.m_e * const.eV) * 1e-10 / const.hbar
+    # k0 = np.sqrt(2 * const.m_e * const.eV) * 1e-10 / const.hbar
+    k0 = np.sqrt(2 * const.m_e) / const.hbar
     # energy contribution
-    k0 *= np.sqrt(hv - work_func - Eb)
+    k0 *= np.sqrt(hv - work_func + Eb)
     # lattice constant contribution
     k0 *= (np.pi / a)
     # Angle to radian conversion and setting offset
-    dalpha = -np.deg2rad(dalpha)
-    dbeta = -np.deg2rad(dbeta)
-    alpha = np.deg2rad(alpha) + dalpha
-    beta = np.deg2rad(beta) + dbeta
+    d_scan_ax = -np.deg2rad(d_scan_ax)
+    d_anal_ax = -np.deg2rad(d_anal_ax)
+    scan_ax = np.deg2rad(scan_ax) + d_scan_ax
+    anal_ax = np.deg2rad(anal_ax) + d_anal_ax
+
+    def c(angle):
+        return np.cos(angle)
+
+    def s(angle):
+        return np.sin(angle)
 
     # Prepare containers
-    nkx = len(alpha)
-    nky = len(beta)
+    nkx = len(scan_ax)
+    nky = len(anal_ax)
     KX = np.empty((nkx, nky))
     KY = np.empty((nkx, nky))
 
     slit = orientation.lower()[0]
+    if slit == 'v':
+        def rot_mat(t):
+            p = phi
+            d = tilt
+            T_rot = [[c(p) * c(d),  -c(t) * s(d) + s(t) * s(p) * c(d),  s(t) * s(d) + c(t) * s(p) * c(d)],
+                     [c(p) * s(d),  c(t) * c(d) + s(t) * s(p) * s(d),   -s(t) * c(d) + c(t) * s(p) * s(d)],
+                     [-s(p),        s(t) * c(p),                        c(t) * c(p)]]
+            return np.array(T_rot)
+
+    print('elo')
     if slit == 'h':
         for i in range(nkx):
-            KX[i] = np.sin(beta) * np.cos(alpha[i])
-            KY[i] = np.sin(alpha[i])
+            KX[i] = np.sin(anal_ax) * np.cos(scan_ax[i])
+            KY[i] = np.sin(scan_ax[i])
     elif slit == 'v':
-        cos_da = np.cos(dalpha)
-        sin_theta_cos_beta = np.sin(dalpha) * np.cos(beta)
         for i in range(nkx):
-            KX[i] = sin_theta_cos_beta + cos_da * np.cos(alpha[i]) * np.sin(beta)
-            KY[i] = cos_da * np.sin(alpha[i])
+            alpha = scan_ax[i]
+            t_rot = rot_mat(alpha)
+            KX[i] = -t_rot[0, 0] * s(alpha) + t_rot[0, 2] * c(alpha)
+            KY[i] = -t_rot[1, 0] * s(alpha) + t_rot[1, 2] * c(alpha)
+        # cos_da = np.cos(dalpha)
+        # sin_theta_cos_beta = np.sin(dalpha) * np.cos(beta)
+        # for i in range(nkx):
+        #     KX[i] = sin_theta_cos_beta + cos_da * np.cos(alpha[i]) * np.sin(beta)
+        #     KY[i] = cos_da * np.sin(alpha[i])
     else:
         raise ValueError('Orientation "{}" not understood.'.format(orientation))
     return k0 * KX, k0 * KY
