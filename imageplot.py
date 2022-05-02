@@ -1291,7 +1291,7 @@ class UtilitiesPanel(QWidget):
 
         self.axes_slit_orient_lbl = QLabel('Slit:')
         self.axes_slit_orient = QComboBox()
-        self.axes_slit_orient.addItems(['horizontal', 'vertical'])
+        self.axes_slit_orient.addItems(['horizontal', 'vertical', 'deflection'])
         self.axes_copy_values = QPushButton('Copy from \'Orientate\'')
         self.axes_do_kspace_conv = QPushButton('Convert to k-space')
         self.axes_reset_conv = QPushButton('Reset conversion')
