@@ -77,3 +77,8 @@ def convert_eV_nm(eV_or_nm):
     """
     nm_or_eV = eV_nm_conversion / eV_or_nm
     return nm_or_eV
+
+
+def convert_eV_Ry(erg):
+    conv_fac = 0.0734986176
+    return conv_fac / erg

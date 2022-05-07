@@ -1,5 +1,6 @@
 import numpy as np
 import arpys_wp as wp
+import tss_utilities as tss
 import matplotlib as mpl
 import pandas as pd
 import scipy as spy
@@ -1346,6 +1347,232 @@ def cut_viewer(data, fname=None, mac=True):
     set_k_steps(sync_k_steps.value)
 
     main_panel = ipw.HBox([panel[0]['widget'], panel[1]['widget'], panel[2]['widget']], layout=ip.Layout(width='100%'))
+
+    whole_panel = ipw.VBox([utilities_panel, main_panel], layout=ip.Layout(width='100%'))
+
+    return whole_panel
+
+
+def model_viewer(data, fname=None, saved=True):
+    panel = [{}, {}]
+    style = {'description_width': 'initial', 'readout_color': 'red'}
+    cuts = ['horizontal', 'vertical']
+    models = ['li2018_d', 'li2018_b', 'rossnagel2005_d', 'rossnagel2005_b', 'inosov2008_d', 'inosov2008_b']
+    if saved:
+        energy_ax = data.zscale - data.saved['hv'] + data.saved['wf']
+        scanned_ax = data.saved['kx']
+        slit_ax = data.saved['ky']
+    else:
+        energy_ax = data.zscale
+        scanned_ax = data.xscale
+        slit_ax = data.yscale
+
+    def get_t_params(model):
+        if 'li2018' in model:
+            if model[-1] == 'd':
+                t = np.array([501.3, -15.9, 557.1, -72.0, -13.9, 12.2])
+            else:
+                t = np.array([-45.1, 157.8, 203.2, 25.7, 0.02, 0.48])
+        elif 'rossnagel2005' in model:
+            if model[-1] == 'd':
+                t = np.array([0.4108, -0.0726, 0.4534, -0.12]) * 1000
+            else:
+                t = np.array([-0.0373, 0.276, 0.2868, 0.007]) * 1000
+        elif 'inosov2008' in model:
+            if model[-1] == 'd':
+                t = np.array([0.369, 0.074, 0.425, -0.049, 0.018]) * 1000
+            else:
+                t = np.array([-0.064, 0.167, 0.211, 0.005, 0.003]) * 1000
+        return t
+
+    def set_t_params(val):
+        t = get_t_params(val['new'])
+        t1.value = t[0]
+        t2.value = t[1]
+        t3.value = t[2]
+        t4.value = t[3]
+        t5.value = t[4]
+        t6.value = t[5]
+
+    # -------- Colorscale panel
+    def get_const_e_map(data, energy, integrate_e, t1, t2, t3, t4, t5, t6, cut_orient, cut_idx, title, cmap, fontsize):
+        fig, ax = plt.subplots(figsize=(10, 10))
+        mpl.rcParams['font.size'] = fontsize
+        mpl.rcParams['xtick.labelsize'] = fontsize
+        mpl.rcParams['ytick.labelsize'] = fontsize
+
+        tt = [t1, t2, t3, t4, t5, t6]
+        tb_model = tss.TB_Ek(scanned_ax, slit_ax, *tt, x=2, flip=False) / 1000
+
+        e_idx = wp.indexof(energy, energy_ax)
+
+        if integrate_e == 0:
+            cut = data.data[:, :, e_idx]
+        else:
+            e_i, e_f = e_idx - integrate_e, e_idx + integrate_e
+            if e_i < 0:
+                e_i = 0
+            if e_f > energy_ax.size:
+                e_f = energy_ax.size
+            cut = np.sum(data.data[:, :, e_i:e_f], axis=2)
+
+        if cut_orient[0] == 'h':
+            line_x = np.ones_like(scanned_ax) * slit_ax[cut_idx]
+            line_y = scanned_ax
+        else:
+            line_x = np.ones_like(slit_ax) * scanned_ax[cut_idx]
+            line_y = slit_ax
+
+        kxx, kyy = wp.a2k(data.xscale, data.yscale, 130, d_scan_ax=0.756, d_anal_ax=-0.0924, orientation='v', a=3.314,
+                          work_func=4.38)
+        ax.pcolormesh(kxx, kyy, cut, cmap=cmap)
+        ax.contour(kyy, kxx, tb_model, [energy], colors='cyan')
+        ax.plot(line_x, line_y, 'g--')
+
+        ax.set_aspect('equal')
+        ax.set_title(title)
+        ax.set_xlabel('Scanned axis')
+        ax.set_ylabel('Analyzer axis')
+        ax.set_xlim(kxx.min(), kxx.max())
+        ax.set_ylim(kyy.min(), kyy.max())
+        plt.show()
+
+    def set_const_e_cell(data, fname):
+
+        def update_e_label(val):
+            new_lbl = wp.indexof(val['new'], energy_ax)
+            cell['energy_lbl'].value = str(new_lbl)
+
+        cell = panel[0]
+
+        cell['energy'] = ipw.FloatSlider(
+            value=energy_ax[wp.indexof(0, energy_ax)],
+            min=np.min(energy_ax),
+            max=np.max(energy_ax),
+            step=np.abs(energy_ax[0] - energy_ax[1]),
+            description='Energy:',
+            continuous_update=False,
+            layout=ip.Layout(width='95%'),
+            readout_format='.5f',
+            style=style)
+
+        cell['energy_lbl'] = ipw.Label(
+            value=str(wp.indexof(0, energy_ax)),
+            continuous_update=False,
+            style=style)
+        cell['energy'].observe(update_e_label, 'value')
+
+        cell['integrate_e'] = ipw.IntSlider(
+            value=0,
+            min=0,
+            max=10,
+            step=1,
+            description='Integration (Eb)',
+            layout=ip.Layout(width='85%'),
+            continuous_update=False,
+            style=style)
+
+        cell['output'] = ipw.interactive_output(get_const_e_map, {
+            'data': ip.fixed(data),
+            'energy': cell['energy'],
+            'integrate_e': cell['integrate_e'],
+            't1': t1,
+            't2': t2,
+            't3': t3,
+            't4': t4,
+            't5': t5,
+            't6': t6,
+            'cut_orient': cut_selector,
+            'cut_idx': cut_index,
+            'title': ip.fixed(fname),
+            'cmap': cmap_selector,
+            'fontsize': font_size_selector
+        })
+        cell['widget'] = ipw.VBox([cell['output'],
+                                   ipw.HBox([cell['energy'], cell['energy_lbl']], layout=ip.Layout(height='75px')),
+                                   cell['integrate_e']], layout=cell_layout)
+
+    def get_cut(data, t1, t2, t3, t4, t5, t6, cut_orient, cut_idx, cmap, fontsize):
+
+        fig, ax = plt.subplots(figsize=(10, 10))
+        mpl.rcParams['font.size'] = fontsize
+        mpl.rcParams['xtick.labelsize'] = fontsize
+        mpl.rcParams['ytick.labelsize'] = fontsize
+
+        if cut_orient[0] == 'h':
+            ikx = 3
+            cut = np.sum(data.data[cut_idx - ikx: cut_idx + ikx, :, :], axis=0).T
+            k, e = np.meshgrid(slit_ax, energy_ax)
+            title = 'Analyzer axis'
+        else:
+            iky = 3
+            cut = np.sum(data.data[:, cut_idx - iky: cut_idx + iky, :], axis=1).T
+            k, e = np.meshgrid(scanned_ax, energy_ax)
+            title = 'Scanned axis'
+
+        ax.pcolormesh(k, e, cut, cmap=cmap)
+        ax.set_title(title)
+        plt.show()
+
+    def set_cut_cell(data, cell):
+
+        cell['output'] = ipw.interactive_output(get_cut, {
+            'data': ip.fixed(data),
+            't1': t1,
+            't2': t2,
+            't3': t3,
+            't4': t4,
+            't5': t5,
+            't6': t6,
+            'cut_orient': cut_selector,
+            'cut_idx': cut_index,
+            'cmap': cmap_selector,
+            'fontsize': font_size_selector
+            # 'figsize': fig_size_selector
+        })
+        cell['widget'] = ipw.VBox([cell['output']], layout=cell_layout)
+
+    cell_width = '98%'  # Windows
+
+    util_cell_layout = ipw.Layout()
+
+    cmap_selector = ipw.Dropdown(options=my_cmaps, value='viridis', description='colormap:', layout=util_cell_layout)
+    cut_selector = ipw.Dropdown(options=cuts, value='horizontal', description='cut:', layout=util_cell_layout)
+    cut_index = ipw.IntText(value=20, min=0, max=48, step=1, description='cut idx:', layout=ipw.Layout(width='80%'))
+    font_size_selector = ipw.IntText(value=12, min=3, max=48, step=1, description='fontsize:', layout=util_cell_layout)
+    # fig_size_selector = ipw.IntText(value=10, min=3, max=20, step=1, description='figsize:', layout=util_cell_layout)
+    model_selector = ipw.Dropdown(options=models, value='li2018_d', description='model:', layout=util_cell_layout)
+    transponse_model = ipw.Checkbox(value=False, description='transponse:', layout=ipw.Layout(width='80%'))
+
+    t1 = ipw.FloatText(value=0, min=-1000, max=1000, step=0.1, description='t1', layout=ipw.Layout(width='80%'))
+    t2 = ipw.FloatText(value=0, min=-1000, max=1000, step=0.1, description='t2', layout=ipw.Layout(width='80%'))
+    t3 = ipw.FloatText(value=0, min=-1000, max=1000, step=0.1, description='t3', layout=ipw.Layout(width='80%'))
+    t4 = ipw.FloatText(value=0, min=-1000, max=1000, step=0.1, description='t4', layout=ipw.Layout(width='80%'))
+    t5 = ipw.FloatText(value=0, min=-1000, max=1000, step=0.1, description='t5', layout=ipw.Layout(width='80%'))
+    t6 = ipw.FloatText(value=0, min=-1000, max=1000, step=0.1, description='t6', layout=ipw.Layout(width='80%'))
+
+    util_panel_layout = ipw.Layout(border='dashed 1px gray', margin='0% 0% 1% 0%', width='100%', style=style,
+                                   flex_flow='row')
+    cell_layout = ipw.Layout(border='dashed 1px gray', margin='0% 0.5% 0.5% 0%', width=cell_width, height=cell_width)
+
+    utilities_panel = ipw.HBox([ipw.VBox([cmap_selector, cut_selector, cut_index]),
+                                ipw.VBox([font_size_selector, model_selector, transponse_model]),
+                                ipw.VBox([t1, t2, t3]),
+                                ipw.VBox([t4, t5, t6])],
+                               layout=util_panel_layout)
+
+    set_const_e_cell(data, fname)
+    set_cut_cell(data, panel[1])
+    model_selector.observe(set_t_params, 'value')
+    # t1.observe(set_tb_model, 'value')
+    # t2.observe(set_tb_model, 'value')
+    # t3.observe(set_tb_model, 'value')
+    # t4.observe(set_tb_model, 'value')
+    # t5.observe(set_tb_model, 'value')
+    # t6.observe(set_tb_model, 'value')
+    # widget.observe(fun, 'value')
+
+    main_panel = ipw.HBox([panel[0]['widget'], panel[1]['widget']], layout=ip.Layout(width='100%'))
 
     whole_panel = ipw.VBox([utilities_panel, main_panel], layout=ip.Layout(width='100%'))
 

@@ -44,7 +44,7 @@ class DataBrowser(QMainWindow):
 
     @staticmethod
     def add_slash(path):
-        if path[-1] is not '/':
+        if path[-1] != '/':
             path += '/'
         return path
 
@@ -157,7 +157,7 @@ class DataBrowser(QMainWindow):
         dp_layout.addWidget(dp_lbl)
         dp_def_fill = '-'
         max_len_1 = 50
-        max_len_2 = 1.5 * 50
+        max_len_2 = int(1.5 * 50)
 
         # scan details
         if 1:

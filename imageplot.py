@@ -33,7 +33,7 @@ QCheckBox{color: rgb(246, 246, 246);}
 """
 SIGNALS = 5
 MY_CMAPS = True
-DEFAULT_CMAP = 'viridis'
+DEFAULT_CMAP = 'coolwarm'
 
 bold_font = QFont()
 bold_font.setBold(True)
@@ -1556,12 +1556,12 @@ class UtilitiesPanel(QWidget):
         self.oi_beamline_lbl.setFont(bold_font)
         self.oi_azimuth_lbl = QLabel('Azimuth (clockwise)')
         self.oi_azimuth_lbl.setFont(bold_font)
-        self.oi_analyzer_lbl = QLabel('Analyzer (U -> D)')
+        self.oi_analyzer_lbl = QLabel('Analyzer (-> +)')
         self.oi_analyzer_lbl.setFont(bold_font)
-        self.oi_scanned_lbl = QLabel('Scanned (L -> R)')
+        self.oi_scanned_lbl = QLabel('Scanned (-> +)')
         self.oi_scanned_lbl.setFont(bold_font)
 
-        entries = [['SIS (SLS)',            'phi -> +',     'theta -> +',   'tilt -> +'],
+        entries = [['SIS (SLS)',            'phi -> +',     'theta -> +',   'tilt -> -'],
                    ['Bloch (MaxIV)',        'azimuth -> +', 'tilt -> ?',    'polar -> +'],
                    ['CASSIOPEE (SOLEIL)',   '-',            '-',            '-'],
                    ['I05 (Diamond)',        '-',            '-',            '-'],

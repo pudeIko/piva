@@ -1271,10 +1271,14 @@ class MainWindow3D(QMainWindow):
             return np.rad2deg(np.arctan(np.tan(np.deg2rad(angle)) / coeff))
 
     def convert_to_kspace(self):
-        alpha = self.data_handler.axes[slit_ax]
-        beta = self.data_handler.axes[scan_ax]
-        dalpha = self.data_handler.axes[slit_ax][self.util_panel.axes_gamma_y.value()]
-        dbeta = self.data_handler.axes[scan_ax][self.util_panel.axes_gamma_x.value()]
+        alpha = self.data_handler.axes[scan_ax]
+        beta = self.data_handler.axes[slit_ax]
+        dbeta = self.data_handler.axes[slit_ax][self.util_panel.axes_gamma_y.value()]
+        dalpha = self.data_handler.axes[scan_ax][self.util_panel.axes_gamma_x.value()]
+        # alpha = self.data_handler.axes[slit_ax]
+        # beta = self.data_handler.axes[scan_ax]
+        # dalpha = self.data_handler.axes[slit_ax][self.util_panel.axes_gamma_y.value()]
+        # dbeta = self.data_handler.axes[scan_ax][self.util_panel.axes_gamma_x.value()]
         hv = self.util_panel.axes_conv_hv.value()
         wf = self.util_panel.axes_conv_wf.value()
         a = self.util_panel.axes_conv_lc.value()
@@ -1295,13 +1299,22 @@ class MainWindow3D(QMainWindow):
             if warning_box.exec() == QMessageBox.Ok:
                 return
 
-        kx_axis, ky_axis = wp.a2k(alpha, beta, hv, dalpha=dalpha, dbeta=dbeta, work_func=wf, a=a, orientation=orient)
-        nhma = kx_axis[0, :]
-        nvma = ky_axis[:, 0]
+        kx_axis, ky_axis = wp.a2k(alpha, beta, hv, d_scan_ax=dalpha, d_anal_ax=dbeta, work_func=wf, a=a,
+                                  orientation=orient)
+        if orient[0] == 'h':
+            nhma = np.sort(kx_axis[:, 0])
+            nvma = np.sort(ky_axis[0, :])
+        elif orient[0] == 'v':
+            nhma = np.linspace(kx_axis.min(), kx_axis.max(), kx_axis[:, 0].size) #np.sort(kx_axis[:, 0])
+            nvma = np.linspace(ky_axis.min(), ky_axis.max(), ky_axis[0, :].size) #np.sort(ky_axis[0, :])
         self.new_hor_momentum_axis = nhma
         self.new_ver_momentum_axis = nvma
         new_hor_range = [nhma[0], nhma[-1]]
         new_ver_range = [nvma[0], nvma[-1]]
+        print(kx_axis.min(), kx_axis.max(), ky_axis.min(), ky_axis.max())
+        print(nhma.size, nvma.size)
+        print([nhma[0], nhma[-1]])
+        print([nvma[0], nvma[-1]])
         self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_hor_range)
         self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_ver_range)
         self.cut_x.plotItem.getAxis(self.cut_x.main_xaxis).setRange(*new_hor_range)

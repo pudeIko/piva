@@ -2093,7 +2093,7 @@ def shape_area(x, y):
 # +-----------------------+ #
 
 
-def a2k(scan_ax, anal_ax, hv, d_scan_ax=0, d_anal_ax=0, orientation='horizontal', da=False, work_func=4.5, a=np.pi,
+def a2k(scan_ax, anal_ax, hv, d_scan_ax=0, d_anal_ax=0, orientation='horizontal', work_func=4.5, a=np.pi,
         Eb=0, polar=0, azimuth=0, tilt=0):
     """
     Convert angles of the experimental geometry to k-space coordinates.
@@ -2149,18 +2149,93 @@ def a2k(scan_ax, anal_ax, hv, d_scan_ax=0, d_anal_ax=0, orientation='horizontal'
     KY = np.empty((nkx, nky))
 
     slit = orientation.lower()[0]
-    # rotation matrix
-    # if slit == 'v':
+    if slit == 'h':
+        for i in range(nkx):
+            t_rot = rot_mat(polar=polar, azimuth=azimuth, tilt=scan_ax[i])
+            KX[i] = t_rot[0, 1] * np.sin(anal_ax) + t_rot[0, 2] * np.cos(anal_ax)
+            KY[i] = t_rot[1, 1] * np.sin(anal_ax) + t_rot[1, 2] * np.cos(anal_ax)
+        # for i in range(nkx):
+        #     KX[i] = np.sin(anal_ax) * np.cos(scan_ax[i])
+        #     KY[i] = np.sin(scan_ax[i])
+    elif slit == 'v':
+        for i in range(nkx):
+            t_rot = rot_mat(polar=scan_ax[i], azimuth=azimuth, tilt=tilt)
+            KY[i] = -t_rot[0, 0] * np.sin(anal_ax) + t_rot[0, 2] * np.cos(anal_ax)
+            KX[i] = -t_rot[1, 0] * np.sin(anal_ax) + t_rot[1, 2] * np.cos(anal_ax)
+        # KX = KX.T
+        # cos_da = np.cos(d_scan_ax)
+        # sin_theta_cos_beta = np.sin(d_scan_ax) * np.cos(anal_ax)
+        # for i in range(nkx):
+        #     KX[i] = sin_theta_cos_beta + cos_da * np.cos(scan_ax[i]) * np.sin(anal_ax)
+        #     KY[i] = cos_da * np.sin(scan_ax[i])
+    elif slit == 'd':
+        t_rot = rot_mat(polar=polar, azimuth=azimuth, tilt=tilt)
+        for i in range(nkx):
+            eta = np.sqrt(anal_ax ** 2 + scan_ax[i] ** 2)
+            s_eta = np.sin(eta) / eta
+            KX[i] = -t_rot[0, 0] * scan_ax[i] * s_eta + t_rot[0, 1] * anal_ax * s_eta + t_rot[0, 2] * np.cos(eta)
+            KY[i] = -t_rot[1, 0] * scan_ax[i] * s_eta + t_rot[1, 1] * anal_ax * s_eta + t_rot[1, 2] * np.cos(eta)
+    else:
+        raise ValueError('Orientation "{}" not understood.'.format(orientation))
+    return k0 * KX, k0 * KY
 
-    # elif slit == 'h':
-    #     def rot_mat(p):
-    #         t = theta
-    #         d = delta
-    #         T_rot = [[c(p) * c(d),  -c(t) * s(d) + s(t) * s(p) * c(d),  s(t) * s(d) + c(t) * s(p) * c(d)],
-    #                  [c(p) * s(d),  c(t) * c(d) + s(t) * s(p) * s(d),   -s(t) * c(d) + c(t) * s(p) * s(d)],
-    #                  [-s(p),        s(t) * c(p),                        c(t) * c(p)]]
-    #         return np.array(T_rot)
 
+def a2k_pyta(scan_ax, anal_ax, hv, d_scan_ax=0, d_anal_ax=0, orientation='horizontal', work_func=4.5, a=np.pi,
+        Eb=0, polar=0, azimuth=0, tilt=0):
+    """
+    Convert angles of the experimental geometry to k-space coordinates.
+    Confer the sheet "ARPES angle to k-space conversion" [doc/a2k.pdf] for
+    detailed explanations.
+
+    **Parameters**
+
+    ===========  ===============================================================
+    alpha        array of length *nkx*; angles in degrees along the
+                 independent rotation (often called "theta" or "polar" at
+                 beamlines.
+    beta         array of length *nky*; angles in degrees along the dependent
+                 rotation (not the azimuth, often called "tilt").
+    hv           float; used photon energy in eV.
+    dalpha       float; offset to *alpha* in degrees.
+    dbeta        float; offset to *alpha* in degrees.
+    orientation  str; determines the analyzer slit orientation, which can be
+                 horizontal (default) or vertical. The first letter of the
+                 given string must be either 'h' or 'v'.
+    work_func    float; value of the work function in eV.
+    ===========  ===============================================================
+
+    **Returns**
+
+    ==  ========================================================================
+    KX  array of shape (nkx, nky); mesh of k values in parallel direction in
+        units of inverse Angstrom.
+    KY  array of shape (nkx, nky); mesh of k values in perpendicular
+        direction in units of inverse Angstrom.
+    ==  ========================================================================
+    """
+    # constant factor contribution
+    k0 = np.sqrt(2 * const.m_e * const.eV) * 1e-10 / const.hbar
+    # k0 = np.sqrt(2 * const.m_e) / const.hbar
+    # energy contribution
+    k0 *= np.sqrt(hv - work_func + Eb)
+    # lattice constant contribution
+    k0 *= (np.pi / a)
+    # Angle to radian conversion and setting offset
+    d_scan_ax = -np.deg2rad(d_scan_ax)
+    d_anal_ax = -np.deg2rad(d_anal_ax)
+    polar = np.deg2rad(polar)
+    azimuth = np.deg2rad(azimuth)
+    tilt = np.deg2rad(tilt)
+    scan_ax = np.deg2rad(scan_ax) + d_scan_ax
+    anal_ax = np.deg2rad(anal_ax) + d_anal_ax
+
+    # Prepare containers
+    nkx = len(scan_ax)
+    nky = len(anal_ax)
+    KX = np.empty((nkx, nky))
+    KY = np.empty((nkx, nky))
+
+    slit = orientation.lower()[0]
     if slit == 'h':
         for i in range(nkx):
             t_rot = rot_mat(polar=polar, azimuth=azimuth, tilt=scan_ax[i])

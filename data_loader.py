@@ -664,7 +664,9 @@ class DataloaderSIS(Dataloader):
         elif filename.endswith('zip'):
             return self.load_zip(filename)
         elif filename.endswith('pxt'):
-            return self.load_pxt()
+            return self.load_pxt(filename)
+        elif filename.endswith('ibw'):
+            return self.load_ibw(filename)
         else:
             raise NotImplementedError('File suffix not supported.')
 
@@ -957,7 +959,7 @@ class DataloaderSIS(Dataloader):
             yscale = start_step_n(*ylims, y)
             energies = start_step_n(*elims, N_E)
         else:
-            'Sorry, only cuts reading of .pxt files is working.'
+            print('Only cuts reading of .pxt files is working.')
             return
 
         res = Namespace(
@@ -966,6 +968,61 @@ class DataloaderSIS(Dataloader):
             yscale=yscale,
             zscale=energies
         )
+        return res
+
+    def load_ibw(self, filename):
+        """
+        Load scan data from an IGOR binary wave file. Luckily someone has
+        already written an interface for this (the python `igor` package).
+        """
+        wave = binarywave.load(filename)['wave']
+        # data = np.array([wave['wData']])
+
+        # The `header` contains some metadata
+        header = wave['wave_header']
+        nDim = header['nDim']
+        steps = header['sfA']
+        starts = header['sfB']
+
+        # Construct the x and y scales from start, stop and n
+        x = 1
+        xlims = [1, 1]
+        xscale = start_step_n(*xlims, x)
+        yscale = start_step_n(starts[1], steps[1], nDim[1])
+        zscale = start_step_n(starts[0], steps[0], nDim[0])
+
+        # data = np.zeros((xscale.size, yscale.size, zscale.size))
+        data = np.swapaxes(np.array([wave['wData']]), 1, 2)
+
+        # Convert `note`, which is a bytestring of ASCII characters that
+        # contains some metadata, to a list of strings
+        note = wave['note']
+        note = note.decode('ASCII').split('\r')
+
+        # Now the extraction fun begins. Most lines are of the form
+        # `Some-kind-of-name=some-value`
+        metadata = dict()
+        for line in note:
+            # Split at '='. If it fails, we are not in a line that contains
+            # useful information
+            try:
+                name, val = line.split('=')
+            except ValueError:
+                continue
+            # Put the pair in a dictionary for later access
+            metadata.update({name: val})
+
+        # NOTE Unreliable hv
+        hv = metadata['Excitation Energy']
+        res = Namespace(
+                data=data,
+                xscale=xscale,
+                yscale=yscale,
+                zscale=zscale,
+                theta=0,
+                phi=0,
+                E_b=0,
+                hv=hv)
         return res
 
 
@@ -1144,173 +1201,6 @@ class DataloaderBloch(Dataloader):
                 elif tokens[0] == 'Thetay_StepSize':
                     metadata.__setattr__('scan_step', float(tokens[1].split()[0]))
         return metadata
-
-    # def load_h5(self, filename):
-    #     """ Load and store the full h5 file and extract relevant information. """
-    #     # Load the hdf5 file
-    #     # Use 'rdcc_nbytes' flag for setting up the chunk cache (in bytes)
-    #     self.datfile = h5py.File(filename, 'r')
-    #     # Extract the actual dataset and some metadata
-    #     h5_data = self.datfile['Electron Analyzer/Image Data']
-    #     attributes = h5_data.attrs
-    #
-    #     # Convert to array and make 3 dimensional if necessary
-    #     shape = h5_data.shape
-    #     if len(shape) == 3:
-    #         # data = zeros((shape[2], shape[1], shape[0]))
-    #         data = zeros(shape)
-    #         for i in range(shape[2]):
-    #             data[:, :, i] = h5_data[:, :, i]
-    #     else:
-    #         data = array(h5_data)
-    #
-    #     data = data.T
-    #     # How the data needs to be arranged depends on the scan type: cut, map, hv scan or a sequence of cuts
-    #     # Case cut
-    #     if len(shape) == 2:
-    #         x = 1
-    #         y = shape[1]
-    #         N_E = shape[0]
-    #         # Make data 3D
-    #         data = data.reshape((1, y, N_E))
-    #         # Extract the limits
-    #         xlims = [1, 1]
-    #         ylims = attributes['Axis1.Scale']
-    #         elims = attributes['Axis0.Scale']
-    #         xscale = start_step_n(*xlims, x)
-    #         yscale = start_step_n(*ylims, y)
-    #         energies = start_step_n(*elims, N_E)
-    #     # shape[2] should hold the number of cuts. If it is reasonably large,
-    #     # we have a map. Otherwise just a sequence of cuts.
-    #     # Case map
-    #     # elif shape[2] > self.min_cuts_for_map:
-    #     elif len(shape) == 3:
-    #         x = shape[1]
-    #         y = shape[2]
-    #         N_E = shape[0]
-    #         # Extract the limits
-    #         xlims = attributes['Axis2.Scale']
-    #         ylims = attributes['Axis1.Scale']
-    #         elims = attributes['Axis0.Scale']
-    #         xscale = start_step_n(*xlims, y)
-    #         yscale = start_step_n(*ylims, x)
-    #         energies = start_step_n(*elims, N_E)
-    #     # Case sequence of cuts
-    #     else:
-    #         x = shape[0]
-    #         y = shape[1]
-    #         N_E = y
-    #         data = rollaxis(data, 2, 0)
-    #         # Extract the limits
-    #         xlims = attributes['Axis1.Scale']
-    #         ylims = attributes['Axis0.Scale']
-    #         elims = ylims
-    #         xscale = start_step_n(*xlims, y)
-    #         yscale = start_step_n(*ylims, x)
-    #         energies = start_step_n(*elims, N_E)
-    #
-    #     # print(f'xscale: {xscale.min()}, {xscale.max()}')
-    #     # print(f'yscale: {yscale.min()}, {yscale.max()}')
-    #     # print(f'zscale: {energies.min()}, {energies.max()}')
-    #     # print('data loader format')
-    #     # print(f'data shape = {data.shape}')
-    #     # print(f'x shape = {xscale.shape}')
-    #     # print(f'y shape = {yscale.shape}')
-    #     # print(f'z shape = {energies.shape}')
-    #
-    #     # Extract some data for ang2k conversion
-    #     metadata = self.datfile['Other Instruments']
-    #     x_pos = metadata['X'][0]
-    #     y_pos = metadata['Y'][0]
-    #     z_pos = metadata['Z'][0]
-    #     theta = metadata['Theta'][0]
-    #     phi = metadata['Phi'][0]
-    #     tilt = metadata['Tilt'][0]
-    #     temp = metadata['Temperature B (Sample 1)'][0]
-    #     pressure = metadata['Pressure AC (ACMI)'][0]
-    #     hv = attributes['Excitation Energy (eV)']
-    #     wf = attributes['Work Function (eV)']
-    #     polarization = metadata['hv'].attrs['Mode'][10:]
-    #     PE = attributes['Pass Energy (eV)']
-    #     exit_slit = metadata['Exit Slit'][0]
-    #     FE = metadata['FE Horiz. Width'][0]
-    #     ekin = energies + hv - wf
-    #     lens_mode = attributes['Lens Mode']
-    #     acq_mode = attributes['Acquisition Mode']
-    #     n_sweeps = attributes['Sweeps on Last Image']
-    #     DT = attributes['Dwell Time (ms)']
-    #     if 'Axis2.Scale' in attributes:
-    #         scan_type = attributes['Axis2.Description'] + ' scan'
-    #         start = attributes['Axis2.Scale'][0]
-    #         step = attributes['Axis2.Scale'][1]
-    #         stop = attributes['Axis2.Scale'][0] + attributes['Axis2.Scale'][1] * xscale.size
-    #         scan_dim = [start, stop, step]
-    #     else:
-    #         scan_type = 'cut'
-    #         scan_dim = []
-    #
-    #     res = Namespace(
-    #         data=data,
-    #         xscale=xscale,
-    #         yscale=yscale,
-    #         zscale=energies,
-    #         ekin=ekin,
-    #         x=x_pos,
-    #         y=y_pos,
-    #         z=z_pos,
-    #         theta=theta,
-    #         phi=phi,
-    #         tilt=tilt,
-    #         temp=temp,
-    #         pressure=pressure,
-    #         hv=hv,
-    #         wf=wf,
-    #         polarization=polarization,
-    #         PE=PE,
-    #         exit_slit=exit_slit,
-    #         FE=FE,
-    #         scan_type=scan_type,
-    #         scan_dim=scan_dim,
-    #         lens_mode=lens_mode,
-    #         acq_mode=acq_mode,
-    #         n_sweeps=n_sweeps,
-    #         DT=DT
-    #     )
-    #     h5py.File.close(self.datfile)
-    #
-    #     return res
-    #
-    # @staticmethod
-    # def load_pxt(filename):
-    #     """ Load and store the full h5 file and extract relevant information. """
-    #     pxt = igorpy.load(filename)[0]
-    #     data = pxt.data.T
-    #     shape = data.shape
-    #
-    #     if len(shape) == 2:
-    #         x = 1
-    #         y = shape[0]
-    #         N_E = shape[1]
-    #         # Make data 3D
-    #         data = data.reshape((1, y, N_E))
-    #         # Extract the limits
-    #         xlims = [1, 1]
-    #         ylims = [pxt.axis[1][0], pxt.axis[1][-1]]
-    #         elims = [pxt.axis[0][0], pxt.axis[0][-1]]
-    #         xscale = start_step_n(*xlims, x)
-    #         yscale = start_step_n(*ylims, y)
-    #         energies = start_step_n(*elims, N_E)
-    #     else:
-    #         'Sorry, only cuts reading of .pxt files is working.'
-    #         return
-    #
-    #     res = Namespace(
-    #         data=data,
-    #         xscale=xscale,
-    #         yscale=yscale,
-    #         zscale=energies
-    #     )
-    #     return res
 
 
 class DataloaderADRESS(Dataloader):
