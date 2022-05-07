@@ -5,8 +5,10 @@ import os
 import time
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog, QDialog, QDialogButtonBox
 import matplotlib.pyplot as plt
+from PyQt5.QtCore import QThread
 import numpy as np
 import warnings
+from _2Dviewer import *
 from imageplot import *
 from cmaps import cmaps
 import arpys_wp as wp
@@ -381,6 +383,9 @@ class MainWindow3D(QMainWindow):
         self.new_energy_axis = None
         self.new_hor_momentum_axis = None
         self.new_ver_momentum_axis = None
+        self.thread = {}
+        self.thread_count = 0
+        self.data_viewers = {}
 
         # Initialize instance variables
         # Plot transparency alpha
@@ -479,6 +484,7 @@ class MainWindow3D(QMainWindow):
         self.util_panel.image_show_BZ.stateChanged.connect(self.update_main_plot)
         self.util_panel.image_symmetry.valueChanged.connect(self.update_main_plot)
         self.util_panel.image_rotate_BZ.valueChanged.connect(self.update_main_plot)
+        self.util_panel.image_2dv_button.clicked.connect(self.open_2dviewer)
 
         # binning signals
         self.util_panel.bin_x.stateChanged.connect(self.set_x_binning_lines)
@@ -1395,6 +1401,45 @@ class MainWindow3D(QMainWindow):
         self.info_box = InfoWindow(self.util_panel.orient_info_window, title)
         self.info_box.show()
 
+    def open_2dviewer(self):
+        data_set = deepcopy(self.data_set)
+        cut_orient = self.util_panel.image_2dv_cut_selector.currentText()
+        if cut_orient[0] == 'h':
+            cut = self.data_handler.cut_x_data
+            dim_value = self.data_set.yscale[self.main_plot.crosshair.hpos.get_value()]
+            data_set.yscale = data_set.xscale
+        elif cut_orient[0] == 'v':
+            cut = self.data_handler.cut_y_data.T
+            dim_value = self.data_set.xscale[self.main_plot.crosshair.vpos.get_value()]
+
+        data = np.ones((1, cut.shape[0], cut.shape[1]))
+        data[0, :, :] = cut
+        print(data.shape)
+        data_set.data = data
+        data_set.xscale = [1]
+
+        if data_set.scan_type == 'tilt scan':
+            data_set.scan_type = 'cut'
+            data_set.tilt = dim_value
+        elif data_set.scan_type == 'hv scan':
+            data_set.scan_type = 'cut'
+            data_set.hv = dim_value
+
+        self.thread[self.thread_count] = ThreadClass(index=self.thread_count)
+        self.thread[self.thread_count].start()
+        try:
+            self.data_viewers[str(self.thread_count)] = \
+                MainWindow2D(self, data_set=data_set, fname=self.fname, index=self.thread_count)
+        except Exception:
+            error_box = QMessageBox()
+            error_box.setIcon(QMessageBox.Information)
+            error_box.setText('Couldn\'t load data,  something went wrong.')
+            error_box.setStandardButtons(QMessageBox.Ok)
+            if error_box.exec() == QMessageBox.Ok:
+                return
+        finally:
+            self.thread_count += 1
+
     @staticmethod
     def transform_points(pts, angle):
         theta = np.deg2rad(angle)
@@ -1530,3 +1575,16 @@ class MainWindow3D(QMainWindow):
             self.util_panel.axes_conv_hv.setValue(data_set.hv)
         if hasattr(data_set, 'wf'):
             self.util_panel.axes_conv_wf.setValue(data_set.wf)
+
+
+class ThreadClass(QThread):
+    any_signal = QtCore.pyqtSignal(int)
+
+    def __init__(self, parent=None, index=0):
+        super(ThreadClass, self).__init__(parent)
+        self.index = index
+        self.is_running = True
+
+    def stop(self):
+        self.quit()
+

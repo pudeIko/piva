@@ -3,7 +3,6 @@ import time
 start_time = time.time()
 from PyQt5.QtWidgets import QMainWindow, QMenuBar, QGridLayout, QAction, QFileDialog, QHBoxLayout, QLabel, QWidget, \
     QVBoxLayout, QLineEdit, QListWidget, QStatusBar
-from PyQt5.QtCore import QThread
 from PyQt5.QtGui import QFont
 from pyqtgraph.Qt import QtCore
 from _3Dviewer import *
@@ -531,16 +530,3 @@ class DataBrowser(QMainWindow):
             if hasattr(data, 'FE'): self.dp_bl_fe.setText('{}'.format(float(data.FE)))
         except TypeError:
             self.reset_detail_panel()
-
-
-class ThreadClass(QThread):
-    any_signal = QtCore.pyqtSignal(int)
-
-    def __init__(self, parent=None, index=0):
-        super(ThreadClass, self).__init__(parent)
-        self.index = index
-        self.is_running = True
-
-    def stop(self):
-        self.quit()
-

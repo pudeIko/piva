@@ -1047,7 +1047,7 @@ class UtilitiesPanel(QWidget):
         self.image_other_lbl = QLabel('Other')
         self.image_other_lbl.setFont(bold_font)
         self.image_normalize_edcs = QCheckBox('normalize by each EDC')
-        self.image_show_BZ = QCheckBox('Show BZ contour')
+        self.image_show_BZ = QCheckBox('show BZ contour')
         self.image_symmetry_label = QLabel('symmetry:')
         self.image_symmetry = QSpinBox()
         self.image_symmetry.setRange(4, 6)
@@ -1055,6 +1055,13 @@ class UtilitiesPanel(QWidget):
         self.image_rotate_BZ = QDoubleSpinBox()
         self.image_rotate_BZ.setRange(-90, 90)
         self.image_rotate_BZ.setSingleStep(0.5)
+
+        self.image_2dv_lbl = QLabel('Open in 2D viewer')
+        self.image_2dv_lbl.setFont(bold_font)
+        self.image_2dv_cut_selector_lbl = QLabel('select cut')
+        self.image_2dv_cut_selector = QComboBox()
+        self.image_2dv_cut_selector.addItems(['vertical', 'horizontal'])
+        self.image_2dv_button = QPushButton('Open')
 
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
@@ -1070,15 +1077,21 @@ class UtilitiesPanel(QWidget):
         itl.addWidget(self.image_colorscale_label,      2 * sd, col * sd)
         itl.addWidget(self.image_colorscale,            2 * sd, (col + 1) * sd)
 
-        row = 3
-        itl.addWidget(self.image_other_lbl,             row * sd, 0)
-        itl.addWidget(self.image_normalize_edcs,        (row + 1) * sd, 0, 1, 2)
+        col = 5
+        itl.addWidget(self.image_other_lbl,             0, col * sd)
+        itl.addWidget(self.image_normalize_edcs,        1, col * sd, 1, 2)
         if self.dim == 3:
-            itl.addWidget(self.image_show_BZ,           (row + 2) * sd, 0, 1, 2)
-            itl.addWidget(self.image_symmetry_label,    (row + 3) * sd, 0)
-            itl.addWidget(self.image_symmetry,          (row + 3) * sd, 1)
-            itl.addWidget(self.image_rotate_BZ_label,   (row + 3) * sd, 2)
-            itl.addWidget(self.image_rotate_BZ,         (row + 3) * sd, 3)
+            itl.addWidget(self.image_show_BZ,           2, col * sd, 1, 2)
+            itl.addWidget(self.image_symmetry_label,    3, col * sd)
+            itl.addWidget(self.image_symmetry,          3, (col + 1) * sd)
+            itl.addWidget(self.image_rotate_BZ_label,   4, col * sd)
+            itl.addWidget(self.image_rotate_BZ,         4, (col + 1) * sd)
+
+            row = 3
+            itl.addWidget(self.image_2dv_lbl,               row, 0, 1, 2)
+            itl.addWidget(self.image_2dv_cut_selector_lbl,  (row + 1), 0)
+            itl.addWidget(self.image_2dv_cut_selector,      (row + 1), 1)
+            itl.addWidget(self.image_2dv_button,            (row + 1), 2)
 
         # dummy item
         dummy_lbl = QLabel('')
@@ -1561,7 +1574,8 @@ class UtilitiesPanel(QWidget):
         self.oi_scanned_lbl = QLabel('Scanned (-> +)')
         self.oi_scanned_lbl.setFont(bold_font)
 
-        entries = [['SIS (SLS)',            'phi -> +',     'theta -> +',   'tilt -> -'],
+        entries = [['SIS (SLS, SIStem)',    'phi -> +',     'theta -> +',   'tilt -> -'],
+                   ['SIS (SLS, SES)',       'phi -> -',     'theta -> +',   'tilt -> -'],
                    ['Bloch (MaxIV)',        'azimuth -> +', 'tilt -> ?',    'polar -> +'],
                    ['CASSIOPEE (SOLEIL)',   '-',            '-',            '-'],
                    ['I05 (Diamond)',        '-',            '-',            '-'],
