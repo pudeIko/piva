@@ -1414,7 +1414,6 @@ class MainWindow3D(QMainWindow):
 
         data = np.ones((1, cut.shape[0], cut.shape[1]))
         data[0, :, :] = cut
-        print(data.shape)
         data_set.data = data
         data_set.xscale = [1]
 

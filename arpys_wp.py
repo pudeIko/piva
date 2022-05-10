@@ -1340,7 +1340,10 @@ def eV_nm_convertion(data):
 
 def normalize(data):
     if len(data.shape) == 1:
-        normalized = data / data.max()
+        if data.max() == 0:
+            normalized = 0
+        else:
+            normalized = data / data.max()
     elif len(data.shape) == 2:
         normalized = np.zeros_like(data)
         for i in range(data.shape[0]):
