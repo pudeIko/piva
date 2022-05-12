@@ -1478,7 +1478,7 @@ class MainWindow3D(QMainWindow):
         dir = self.fname[:-len(self.title)]
         up = self.util_panel
         file_selection = True
-        init_fname = ''
+        init_fname = self.title
 
         while file_selection:
             fname, fname_return_value = QInputDialog.getText(self, '', 'File name:', QLineEdit.Normal, init_fname)
@@ -1571,9 +1571,9 @@ class MainWindow3D(QMainWindow):
             pass
 
         if hasattr(data_set, 'hv'):
-            self.util_panel.axes_conv_hv.setValue(data_set.hv)
+            self.util_panel.axes_conv_hv.setValue(float(data_set.hv))
         if hasattr(data_set, 'wf'):
-            self.util_panel.axes_conv_wf.setValue(data_set.wf)
+            self.util_panel.axes_conv_wf.setValue(float(data_set.wf))
 
 
 class ThreadClass(QThread):

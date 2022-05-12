@@ -80,7 +80,7 @@ class DataHandler:
 
         self.data = TracedVariable(data, name='data')
         self.axes = np.array(axes, dtype="object")
-        self.norm_data = wp.normalize(self.data.get_value()[0, :, :])
+        self.norm_data = wp.normalize(self.data.get_value()[0, :, :].T).T
 
         self.prepare_axes()
         self.on_z_dim_change()
@@ -153,6 +153,8 @@ class MainWindow2D(QMainWindow):
         self.slider_pos = [0, 0]
         self.new_energy_axis = None
         self.new_momentum_axis = None
+        self.smooth = False
+        self.curvature = False
 
         # Initialize instance variables
         # Plot transparency alpha
@@ -202,6 +204,7 @@ class MainWindow2D(QMainWindow):
         # print(f'y shape = {D.yscale.shape}')
         # print(f'z shape = {D.zscale.shape}')
         self.data_handler.prepare_data(D.data, [D.xscale, D.yscale, D.zscale])
+        self.org_image_data = self.data_handler.get_data()
 
         self.util_panel.energy_vert.setRange(0, len(self.data_handler.axes[1]))
         self.util_panel.momentum_hor.setRange(0, len(self.data_handler.axes[0]))
@@ -232,6 +235,8 @@ class MainWindow2D(QMainWindow):
         self.util_panel.image_gamma.valueChanged.connect(self.set_gamma)
         self.util_panel.image_colorscale.valueChanged.connect(self.set_alpha)
         self.util_panel.image_normalize_edcs.stateChanged.connect(self.update_main_plot)
+        self.util_panel.image_smooth_button.clicked.connect(self.smoooth_data)
+        self.util_panel.image_curvature_button.clicked.connect(self.curvature_method)
 
         # binning utilities
         self.util_panel.bin_y.stateChanged.connect(self.update_binning_lines)
@@ -368,7 +373,12 @@ class MainWindow2D(QMainWindow):
             i_x = int(min(pos.get_value(), pos.allowed_values.max() - 1))
         else:
             i_x = 0
-        data = self.data_handler.get_data()
+
+        try:
+            data = self.image_data
+        except AttributeError:
+            data = self.data_handler.get_data()
+            
         if width == 0:
             y = data[:, i_x]
         else:
@@ -408,7 +418,10 @@ class MainWindow2D(QMainWindow):
             i_y = int(min(pos.get_value(), pos.allowed_values.max() - 1))
         else:
             i_y = 0
-        data = self.data_handler.get_data()
+        try:
+            data = self.image_data
+        except AttributeError:
+            data = self.data_handler.get_data()
         if width == 0:
             y = data[i_y, :]
         else:
@@ -520,7 +533,7 @@ class MainWindow2D(QMainWindow):
             # Redraw main plot
             self.set_image(image, displayed_axes=self.data_handler.displayed_axes)
             # Redraw cut plot
-            self.update_cut()
+            # self.update_cut()
         except AttributeError as e:
             # In some cases (namely initialization) the mainwindow is not defined yet
             pass
@@ -614,6 +627,7 @@ class MainWindow2D(QMainWindow):
         self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.new_energy_axis[erg_idx]))
 
     def convert_to_kspace(self):
+        # TODO delete some printing when converting
         axis = self.data_handler.axes[0]
         beta = self.util_panel.axes_angle_off.value()
         dalpha = self.data_handler.axes[0][self.util_panel.axes_gamma_x.value()]
@@ -653,16 +667,58 @@ class MainWindow2D(QMainWindow):
         self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
             self.data_handler.axes[0][self.main_plot.pos[1].get_value()]))
 
+    def smoooth_data(self):
+        self.smooth = not self.smooth
+        if self.smooth:
+            data = self.data_handler.get_data()
+            nb = self.util_panel.image_smooth_n.value()
+            rl = self.util_panel.image_smooth_rl.value()
+            self.image_data = wp.smooth_2d(data, n_box=nb, recursion_level=rl)
+            self.set_image()
+            self.util_panel.image_smooth_button.setText('Reset')
+        else:
+            self.image_data = deepcopy(self.org_image_data)
+            self.set_image()
+            self.curvature = False
+            self.util_panel.image_smooth_button.setText('Smooth')
+            self.util_panel.image_curvature_button.setText('Do curvature')
+
+    def curvature_method(self):
+        self.curvature = not self.curvature
+        if self.curvature:
+            a = self.util_panel.image_curvature_a.value()
+            if self.new_momentum_axis is None:
+                dx = wp.get_step(self.data_handler.axes[0])
+            else:
+                dx = wp.get_step(self.new_momentum_axis)
+            if self.new_energy_axis is None:
+                dy = wp.get_step(self.data_handler.axes[1])
+            else:
+                dy = wp.get_step(self.new_energy_axis)
+            self.smooth_data = deepcopy(self.image_data)
+            self.image_data = wp.curvature_2d(self.image_data, dx, dy, a0=a)
+            self.set_image()
+            self.util_panel.image_curvature_button.setText('Reset')
+        else:
+            if self.smooth:
+                self.image_data = self.smooth_data
+            else:
+                self.image_data = deepcopy(self.org_image_data)
+            self.set_image()
+            self.util_panel.image_curvature_button.setText('Do curvature')
+
+
     def close_mw(self):
         self.destroy()
         self.db.thread[self.index].stop()
 
     def save_to_pickle(self):
+        # TODO change 'k_axis' to 'k' for all cuts: add 'change attrs name'
         dataset = self.data_set
         dir = self.fname[:-len(self.title)]
         up = self.util_panel
         file_selection = True
-        init_fname = ''
+        init_fname = self.title
 
         while file_selection:
             fname, fname_return_value = QInputDialog.getText(self, '', 'File name:', QLineEdit.Normal, init_fname)
@@ -735,6 +791,6 @@ class MainWindow2D(QMainWindow):
             pass
 
         if hasattr(data_set, 'hv'):
-            self.util_panel.axes_conv_hv.setValue(data_set.hv)
+            self.util_panel.axes_conv_hv.setValue(float(data_set.hv))
         if hasattr(data_set, 'wf'):
-            self.util_panel.axes_conv_wf.setValue(data_set.wf)
+            self.util_panel.axes_conv_wf.setValue(float(data_set.wf))

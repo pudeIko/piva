@@ -1041,13 +1041,17 @@ class UtilitiesPanel(QWidget):
         self.image_invert_colors = QCheckBox('invert colors')
         self.image_gamma_label = QLabel('gamma:')
         self.image_gamma = QDoubleSpinBox()
+        self.image_gamma.setRange(0.05, 10)
         self.image_colorscale_label = QLabel('color scale:')
         self.image_colorscale = QDoubleSpinBox()
 
         self.image_other_lbl = QLabel('Other')
         self.image_other_lbl.setFont(bold_font)
         self.image_normalize_edcs = QCheckBox('normalize by each EDC')
-        self.image_show_BZ = QCheckBox('show BZ contour')
+
+        self.image_BZ_contour_lbl = QLabel('BZ contour')
+        self.image_BZ_contour_lbl.setFont(bold_font)
+        self.image_show_BZ = QCheckBox('show')
         self.image_symmetry_label = QLabel('symmetry:')
         self.image_symmetry = QSpinBox()
         self.image_symmetry.setRange(4, 6)
@@ -1063,39 +1067,78 @@ class UtilitiesPanel(QWidget):
         self.image_2dv_cut_selector.addItems(['vertical', 'horizontal'])
         self.image_2dv_button = QPushButton('Open')
 
+        self.image_smooth_lbl = QLabel('Smooth')
+        self.image_smooth_lbl.setFont(bold_font)
+        self.image_smooth_n_lbl = QLabel('box size:')
+        self.image_smooth_n = QSpinBox()
+        self.image_smooth_n.setValue(3)
+        self.image_smooth_n.setRange(3, 50)
+        self.image_smooth_rl_lbl = QLabel('recursion:')
+        self.image_smooth_rl = QSpinBox()
+        self.image_smooth_rl.setValue(3)
+        self.image_smooth_rl.setRange(1, 20)
+        self.image_smooth_button = QPushButton('Smooth')
+
+        self.image_curvature_lbl = QLabel('Curvature method')
+        self.image_curvature_lbl.setFont(bold_font)
+        self.image_curvature_a_lbl = QLabel('a:')
+        self.image_curvature_a = QDoubleSpinBox()
+        self.image_curvature_a.setRange(0, 1e10)
+        self.image_curvature_a.setSingleStep(0.1)
+        self.image_curvature_a.setValue(100.)
+        self.image_curvature_button = QPushButton('Do curvature')
+
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
-        col = 0
-        itl.addWidget(self.image_colors_label,          0 * sd, col * sd)
-        itl.addWidget(self.image_cmaps_label,           1 * sd, col * sd)
-        itl.addWidget(self.image_cmaps,                 1 * sd, (col + 1) * sd)
-        itl.addWidget(self.image_gamma_label,           2 * sd, col * sd)
-        itl.addWidget(self.image_gamma,                 2 * sd, (col + 1) * sd)
+        row = 0
+        itl.addWidget(self.image_colors_label,          row * sd, 0)
+        itl.addWidget(self.image_cmaps_label,           row * sd, 1)
+        itl.addWidget(self.image_cmaps,                 row * sd, 2)
+        itl.addWidget(self.image_invert_colors,         row * sd, 3, 1, 2)
 
-        col = 2
-        itl.addWidget(self.image_invert_colors,         1 * sd, col * sd, 1, 2)
-        itl.addWidget(self.image_colorscale_label,      2 * sd, col * sd)
-        itl.addWidget(self.image_colorscale,            2 * sd, (col + 1) * sd)
+        row = 1
+        itl.addWidget(self.image_gamma_label,           row * sd, 1)
+        itl.addWidget(self.image_gamma,                 row * sd, 2)
+        itl.addWidget(self.image_colorscale_label,      row * sd, 3)
+        itl.addWidget(self.image_colorscale,            row * sd, 4)
 
-        col = 5
-        itl.addWidget(self.image_other_lbl,             0, col * sd)
-        itl.addWidget(self.image_normalize_edcs,        1, col * sd, 1, 2)
-        if self.dim == 3:
-            itl.addWidget(self.image_show_BZ,           2, col * sd, 1, 2)
-            itl.addWidget(self.image_symmetry_label,    3, col * sd)
-            itl.addWidget(self.image_symmetry,          3, (col + 1) * sd)
-            itl.addWidget(self.image_rotate_BZ_label,   4, col * sd)
-            itl.addWidget(self.image_rotate_BZ,         4, (col + 1) * sd)
+        row = 2
+        itl.addWidget(self.image_other_lbl,             row * sd, 0)
+        itl.addWidget(self.image_normalize_edcs,        row * sd, 1, 1, 2)
 
+        if self.dim == 2:
             row = 3
+            itl.addWidget(self.image_smooth_lbl,        row * sd, 0)
+            itl.addWidget(self.image_smooth_n_lbl,      row * sd, 1)
+            itl.addWidget(self.image_smooth_n,          row * sd, 2)
+            itl.addWidget(self.image_smooth_rl_lbl,     row * sd, 3)
+            itl.addWidget(self.image_smooth_rl,         row * sd, 4)
+            itl.addWidget(self.image_smooth_button,     row * sd, 5, 1, 2)
+
+            row = 4
+            itl.addWidget(self.image_curvature_lbl,     row * sd, 0, 1, 2)
+            itl.addWidget(self.image_curvature_a_lbl,   row * sd, 2)
+            itl.addWidget(self.image_curvature_a,       row * sd, 3)
+            itl.addWidget(self.image_curvature_button,  row * sd, 5, 1, 2)
+
+        if self.dim == 3:
+            row = 3
+            itl.addWidget(self.image_BZ_contour_lbl,    row * sd, 0)
+            itl.addWidget(self.image_symmetry_label,    row * sd, 1)
+            itl.addWidget(self.image_symmetry,          row * sd, 2)
+            itl.addWidget(self.image_rotate_BZ_label,   row * sd, 3)
+            itl.addWidget(self.image_rotate_BZ,         row * sd, 4)
+            itl.addWidget(self.image_show_BZ,           row * sd, 5)
+
+            row = 4
             itl.addWidget(self.image_2dv_lbl,               row, 0, 1, 2)
-            itl.addWidget(self.image_2dv_cut_selector_lbl,  (row + 1), 0)
-            itl.addWidget(self.image_2dv_cut_selector,      (row + 1), 1)
-            itl.addWidget(self.image_2dv_button,            (row + 1), 2)
+            itl.addWidget(self.image_2dv_cut_selector_lbl,  row, 2)
+            itl.addWidget(self.image_2dv_cut_selector,      row, 3)
+            itl.addWidget(self.image_2dv_button,            row, 4)
 
         # dummy item
         dummy_lbl = QLabel('')
-        itl.addWidget(dummy_lbl, 7, 0, 1, 8)
+        itl.addWidget(dummy_lbl, 5, 0, 1, 7)
 
         self.image_tab.layout = itl
         self.image_tab.setLayout(itl)
@@ -1283,7 +1326,7 @@ class UtilitiesPanel(QWidget):
         self.axes_conv_hv_lbl = QLabel('h\u03BD (eV):')
         self.axes_conv_hv = QDoubleSpinBox()
         self.axes_conv_hv.setMaximumWidth(box_max_w)
-        self.axes_conv_hv.setRange(-2000., 2000)
+        self.axes_conv_hv.setRange(-2000., 2000.)
         self.axes_conv_hv.setDecimals(3)
         self.axes_conv_hv.setSingleStep(0.001)
 
@@ -1787,9 +1830,11 @@ class UtilitiesPanel(QWidget):
             not_h5_file_box = QMessageBox()
             not_h5_file_box.setIcon(QMessageBox.Information)
             not_h5_file_box.setText('Cut is not an SIStem *h5 file.')
-            not_h5_file_box.setStandardButtons(QMessageBox.Ok)
-            if not_h5_file_box.exec() == QMessageBox.Ok:
+            not_h5_file_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            if not_h5_file_box.exec() == QMessageBox.Cancel:
                 return
+            else:
+                pass
 
         if check_result == 0:
             data_mismatch_box = QMessageBox()

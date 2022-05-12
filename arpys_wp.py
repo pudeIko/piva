@@ -185,7 +185,7 @@ def fit_n_dublets(data, x, a0, mu, gamma, delta, constr=None, fit_delta=False, l
             dgammas.append(errs[i][2])
             mus2.append(pars[i][1]-delta)
             as0.append(pars[i][0])
-        d = {'a0': as0,
+        d = {'a0': normalize(np.array(as0)),
              'mu_0, eV': mus,
              # 'dmu_0, eV': dmus,
              # 'mu_1, eV': mus2,
@@ -942,8 +942,8 @@ def fit_binned(data, energies, angles, nbinned=10, T=5, units=1000, excluded=[],
     """
     if len(data.shape) == 3:
         data = data[0, :, :].T
-    else:
-        data = data.T
+    # else:
+    #     data = data.T
     edcs = []
     ang = []
     params = []
@@ -954,11 +954,11 @@ def fit_binned(data, energies, angles, nbinned=10, T=5, units=1000, excluded=[],
     # bin EDCs
     idx = 0
     stop = 0
-    while (stop + nbinned) <= data.shape[0]:
+    while (stop + nbinned) <= data.shape[1]:
         start = idx * nbinned
         stop = start + nbinned
         mid = int(start + 0.5 * (stop - start))
-        edcs.append(normalize(np.sum(data[start:stop, :], axis=0)))
+        edcs.append(normalize(np.sum(data[:, start:stop], axis=1)))
         ang.append(angles[mid])
         idx += 1
 
@@ -1395,26 +1395,26 @@ def sum_edcs_around(data, x, y, n=3):
 def sum_XPS(data, crop=None, plot=False):
 
     n = len(data)
-    spectra = [np.sum(data_i.data[0, :, :], axis=1) for data_i in data]
+    spectra = [np.sum(data_i.data[0, :, :], axis=0) for data_i in data]
 
     size_check = np.array([spectra_i.size for spectra_i in spectra])
 
     if all_equal(size_check):
         spectrum = np.sum(np.array(spectra), axis=0)
-        energy = data[0].yscale
+        energy = data[0].zscale
     else:
         spectrum = np.zeros((size_check.min()))
         narrow = np.where(size_check == min(size_check))[0][0]
-        min_ergs = [data_i.yscale.min() for data_i in data]
-        max_ergs = [data_i.yscale.max() for data_i in data]
+        min_ergs = [data_i.zscale.min() for data_i in data]
+        max_ergs = [data_i.zscale.max() for data_i in data]
         if narrow.size == 1:
-            cond1 = np.all([data[narrow].yscale.min() >= min_ergs_i for min_ergs_i in min_ergs])
-            cond2 = np.all([data[narrow].yscale.max() >= max_ergs_i for max_ergs_i in max_ergs])
+            cond1 = np.all([data[narrow].zscale.min() >= min_ergs_i for min_ergs_i in min_ergs])
+            cond2 = np.all([data[narrow].zscale.max() >= max_ergs_i for max_ergs_i in max_ergs])
             if cond1 and cond2:
-                energy = data[narrow].yscale
+                energy = data[narrow].zscale
                 e0 = energy[0]
                 for idx, sp in enumerate(spectra):
-                    e_idx = indexof(e0, data[idx].yscale)
+                    e_idx = indexof(e0, data[idx].zscale)
                     spectrum += sp[e_idx:(e_idx + energy.size)]
 
     if crop is not None:
@@ -1425,7 +1425,7 @@ def sum_XPS(data, crop=None, plot=False):
     if plot:
         fig, axs = plt.subplots(n+1, 1, figsize=[10, 7])
         for idx in range(len(axs) - 1):
-            axs[idx].plot(data[idx].yscale, spectra[idx])
+            axs[idx].plot(data[idx].zscale, spectra[idx])
             axs[idx].set_title(f'data{idx}')
         axs[-1].plot(energy, spectrum)
         axs[-1].set_title('summed spectra')
@@ -1907,9 +1907,10 @@ def curvature_1d(data, a0=0.0005, rl=5, xaxis=None):
     return normalize(np.abs(C_x))
 
 
-def curvature_2d(data, dx, dy, a0=100, nb=5, rl=5, eaxis=None):
+def curvature_2d(data, dx, dy, a0=100, nb=None, rl=None, eaxis=None):
 
-    data = smooth_2d(data, n_box=nb, recursion_level=rl)
+    if (nb is not None) and (rl is not None):
+        data = smooth_2d(data, n_box=nb, recursion_level=rl)
 
     dfdx = np.gradient(data, axis=0)
     dfdy = np.gradient(data, axis=1)
