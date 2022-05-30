@@ -3,7 +3,7 @@ matplotlib pcolormesh equivalent in pyqtgraph (more or less) """
 
 import logging
 from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, \
-    QLineEdit, QMainWindow, QDialogButtonBox, QMessageBox
+    QLineEdit, QMainWindow, QDialogButtonBox, QMessageBox, QSlider
 from PyQt5.QtGui import QFont
 from PyQt5 import QtCore
 from pyqtgraph.Qt import QtGui
@@ -20,6 +20,8 @@ import arpys_wp as wp
 from cmaps import cmaps, my_cmaps
 import data_loader as dl
 from copy import deepcopy
+import warnings
+warnings.filterwarnings("error")
 
 BASE_LINECOLOR = (255, 255, 0, 255)
 BINLINES_LINECOLOR = (168, 168, 104, 255)
@@ -146,21 +148,21 @@ class Crosshair:
             self.vline.setBounds([ymin, ymax])
             self.hline.setBounds([xmin, xmax])
 
-    def set_for_main_plot(self, pos):
-        """
-        Set crosshair for a main plot
-        :param pos:         list; positions of horizontal and vertical crosshairs
-        """
-        # Store the positions in TracedVariables
-        self.hpos = TracedVariable(pos[1], name='hpos')
-        self.vpos = TracedVariable(pos[0], name='vpos')
-
-        # Register some callbacks
-        self.hpos.sig_value_changed.connect(self.update_position_h)
-        self.vpos.sig_value_changed.connect(self.update_position_v)
-
-        self.hline.sigDragged.connect(self.on_dragged_h)
-        self.vline.sigDragged.connect(self.on_dragged_v)
+    # def set_for_main_plot(self, pos):
+    #     """
+    #     Set crosshair for a main plot
+    #     :param pos:         list; positions of horizontal and vertical crosshairs
+    #     """
+    #     # Store the positions in TracedVariables
+    #     self.hpos = TracedVariable(pos[1], name='hpos')
+    #     self.vpos = TracedVariable(pos[0], name='vpos')
+    #
+    #     # Register some callbacks
+    #     self.hpos.sig_value_changed.connect(self.update_position_h)
+    #     self.vpos.sig_value_changed.connect(self.update_position_v)
+    #
+    #     self.hline.sigDragged.connect(self.on_dragged_h)
+    #     self.vline.sigDragged.connect(self.on_dragged_v)
 
 
 class ImagePlot(PlotWidget):
@@ -265,8 +267,8 @@ class ImagePlot(PlotWidget):
         in which the crosshair can be dragged to the intervals [xmin, xmax]
         and [ymin, ymax].
         """
-        self.setXRange(xmin, xmax, padding=0.01)
-        self.setYRange(ymin, ymax, padding=0.01)
+        self.setXRange(xmin, xmax, padding=0.0)
+        self.setYRange(ymin, ymax, padding=0.0)
 
         self.crosshair.set_bounds(xmin, xmax, ymin, ymax)
 
@@ -874,9 +876,9 @@ class CursorPlot(PlotWidget):
         [lower, upper].
         """
         if self.orientation == 'horizontal':
-            self.setXRange(lower, upper, padding=0.01)
+            self.setXRange(lower, upper, padding=0.0)
         else:
-            self.setYRange(lower, upper, padding=0.01)
+            self.setYRange(lower, upper, padding=0.0)
         self.slider.setBounds([lower, upper])
 
     def set_secondary_axis(self, min_val, max_val):
@@ -938,11 +940,15 @@ class CursorPlot(PlotWidget):
 
 class UtilitiesPanel(QWidget):
     """ Utilities panel on the top. Mostly just creating and aligning the stuff, signals and callbacks are
-    handled in 'MainWidow' """
+    handled in 'MainWindow' """
     # TODO EDCs fitting
     # TODO MDCs fitting
+    # TODO Fermi edge fitting
     # TODO k-space conversion
     # TODO ROI
+    # TODO single plotting tool
+    # TODO multiple plotting tool
+    # TODO logbook!
 
     def __init__(self, main_window, name=None, dim=3):
 
@@ -1136,9 +1142,9 @@ class UtilitiesPanel(QWidget):
             itl.addWidget(self.image_2dv_cut_selector,      row, 3)
             itl.addWidget(self.image_2dv_button,            row, 4)
 
-        # dummy item
-        dummy_lbl = QLabel('')
-        itl.addWidget(dummy_lbl, 5, 0, 1, 7)
+            # dummy item
+            dummy_lbl = QLabel('')
+            itl.addWidget(dummy_lbl, 5, 0, 1, 7)
 
         self.image_tab.layout = itl
         self.image_tab.setLayout(itl)
@@ -1527,7 +1533,6 @@ class UtilitiesPanel(QWidget):
         self.file_sum_datasets_lbl.setFont(bold_font)
         self.file_sum_datasets_fname_lbl = QLabel('file name:')
         self.file_sum_datasets_fname = QLineEdit('Works only for *.h5 files')
-        # self.file_sum_datasets_fname = QLineEdit('sistem_cut_2.h5')
         self.file_sum_datasets_sum_button = QPushButton('sum')
         self.file_sum_datasets_reset_button = QPushButton('reset')
 
@@ -1536,6 +1541,14 @@ class UtilitiesPanel(QWidget):
         self.file_jn_fname_lbl = QLabel('file name:')
         self.file_jn_fname = QLineEdit(self.mw.title.split('.')[0])
         self.file_jn_button = QPushButton('open in jn')
+
+        self.file_mdc_fitter_lbl = QLabel('MDC fitter')
+        self.file_mdc_fitter_lbl.setFont(bold_font)
+        self.file_mdc_fitter_button = QPushButton('Open')
+
+        self.file_edc_fitter_lbl = QLabel('EDC fitter')
+        self.file_edc_fitter_lbl.setFont(bold_font)
+        self.file_edc_fitter_button = QPushButton('Open')
 
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
@@ -1564,9 +1577,18 @@ class UtilitiesPanel(QWidget):
         ftl.addWidget(self.file_jn_fname,                       row * sd, 3 * sd, 1, 5)
         ftl.addWidget(self.file_jn_button,                      row * sd, 8 * sd)
 
+        if self.dim == 2:
+            row = 4
+            ftl.addWidget(self.file_mdc_fitter_lbl,             row * sd, 0, 1, 2)
+            ftl.addWidget(self.file_mdc_fitter_button,          row * sd, 2, 1, 2)
+
+            row = 5
+            ftl.addWidget(self.file_edc_fitter_lbl,             row * sd, 0, 1, 2)
+            ftl.addWidget(self.file_edc_fitter_button,          row * sd, 2, 1, 2)
+
         # dummy lbl
-        dummy_lbl = QLabel('')
-        ftl.addWidget(dummy_lbl, 4, 0, 1, 9)
+        # dummy_lbl = QLabel('')
+        # ftl.addWidget(dummy_lbl, 4, 0, 1, 9)
 
         self.file_tab.layout = ftl
         self.file_tab.setLayout(ftl)
@@ -1618,8 +1640,8 @@ class UtilitiesPanel(QWidget):
         self.oi_scanned_lbl.setFont(bold_font)
 
         entries = [['SIS (SLS, SIStem)',    'phi -> +',     'theta -> +',   'tilt -> -'],
-                   ['SIS (SLS, SES)',       'phi -> -',     'theta -> +',   'tilt -> -'],
-                   ['Bloch (MaxIV)',        'azimuth -> +', 'tilt -> ?',    'polar -> +'],
+                   ['SIS (SLS, SES)',       'phi -> +',     'theta -> -',   'tilt -> -'],
+                   ['Bloch (MaxIV)',        'azimuth -> +', 'tilt -> -',    'polar -> -'],
                    ['CASSIOPEE (SOLEIL)',   '-',            '-',            '-'],
                    ['I05 (Diamond)',        '-',            '-',            '-'],
                    ['UARPES (SOLARIS)',     '-',            '-',            '-'],
@@ -1722,7 +1744,7 @@ class UtilitiesPanel(QWidget):
                 row += 1
                 entries[str(row)] = {}
                 entries[str(row)]['name'] = QLabel(key)
-                if key == 'kx' or key == 'ky':
+                if key == 'kx' or key == 'ky' or key == 'k':
                     value = '({:.2f}  :  {:.2f})'.format(dataset['saved'][key][0], dataset['saved'][key][-1])
                     entries[str(row)]['value'] = QLabel(str(value))
                 else:
@@ -1786,12 +1808,12 @@ class UtilitiesPanel(QWidget):
         if not hasattr(self.mw.data_set, name):
             no_attr_box = QMessageBox()
             no_attr_box.setIcon(QMessageBox.Information)
-            no_attr_box.setText(f'Data set has no attribute \'{name}\'.')
+            no_attr_box.setText(f'Attribute \'{name}\' not found.')
             no_attr_box.setStandardButtons(QMessageBox.Ok)
             if no_attr_box.exec() == QMessageBox.Ok:
                 return
 
-        message = 'Sure to remove attribute \'{}\' from data set?'.format(name)
+        message = 'Sure to remove attribute \'{}\' from the data set?'.format(name)
         sanity_check_box = QMessageBox()
         sanity_check_box.setIcon(QMessageBox.Question)
         sanity_check_box.setText(message)
@@ -2167,3 +2189,16 @@ class TracedVariable(qt.QtCore.QObject):
         else:
             ind = abs(self.allowed_values - value).argmin()
             return self.allowed_values[ind]
+
+
+class ThreadClass(QtCore.QThread):
+    any_signal = QtCore.pyqtSignal(int)
+
+    def __init__(self, parent=None, index=0):
+        super(ThreadClass, self).__init__(parent)
+        self.index = index
+        self.is_running = True
+
+    def stop(self):
+        self.quit()
+

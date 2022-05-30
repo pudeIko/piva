@@ -1547,12 +1547,13 @@ def set_mpl_rcparams(fontsize=9, color='b1b6d5', print_params=False):
     mpl.rcParams['font.size'] = fontsize
     mpl.rcParams['xtick.labelsize'] = fontsize
     mpl.rcParams['ytick.labelsize'] = fontsize
-    mpl.rcParams['ytick.color'] = color
-    mpl.rcParams['xtick.color'] = color
-    mpl.rcParams['axes.titlecolor'] = color
-    mpl.rcParams['axes.labelcolor'] = color
+    # mpl.rcParams[]
+    # mpl.rcParams['ytick.color'] = color
+    # mpl.rcParams['xtick.color'] = color
+    # mpl.rcParams['axes.titlecolor'] = color
+    # mpl.rcParams['axes.labelcolor'] = color
     mpl.rcParams['figure.autolayout'] = True
-    mpl.rcParams["figure.facecolor"] = '333a47'
+    # mpl.rcParams["figure.facecolor"] = '333a47'
     mpl.rcParams['pcolor.shading'] = 'auto'
     if print_params:
         print(mpl.rcParams.keys())
@@ -2339,6 +2340,7 @@ def rot_mat(polar=0, azimuth=0, tilt=0):
 # +----------+ #
 # | Misc     | # ==============================================================
 # +----------+ #
+
 
 def all_equal(iterable):
     g = groupby(iterable)

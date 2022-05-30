@@ -11,7 +11,7 @@ import sys
 os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
 # TODO DOCUMANTATION !!!!!!!!!!!
-# TODO glue scans
+# TODO glue scans together
 
 
 def db():
@@ -25,6 +25,7 @@ def db():
 ###################################
 # Probably doesn't work anymore
 ###################################
+
 
 def open2D():
     app = QApplication(sys.argv)

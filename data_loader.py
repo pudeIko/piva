@@ -1726,6 +1726,8 @@ all_dls = [
 
 
 # Function to try all dataloaders in all_dls
+# TODO unify data format returned by each DataLoader
+# TODO make sure files from appropriate beamlines are loaded by correct DataLoaders
 def load_data(filename, exclude=None, suppress_warnings=False):
     """
     Try to load some dataset *filename* by iterating through `all_dls` 

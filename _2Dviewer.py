@@ -6,9 +6,12 @@ import os
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog
 import numpy as np
 from imageplot import *
+from mdc_fitter import *
+from edc_fitter import *
 from cmaps import cmaps
 import arpys_wp as wp
 from copy import deepcopy
+import ctypes
 import data_loader as dl
 
 app_style = """
@@ -149,12 +152,15 @@ class MainWindow2D(QMainWindow):
         self.cmap_name = None
         self.lut = None
         self.db = data_browser
-        self.index = index
+        self.thread_index = index
         self.slider_pos = [0, 0]
         self.new_energy_axis = None
         self.new_momentum_axis = None
         self.smooth = False
         self.curvature = False
+        self.thread = {}
+        # self.thread_count = 0
+        self.data_viewers = {}
 
         # Initialize instance variables
         # Plot transparency alpha
@@ -237,6 +243,9 @@ class MainWindow2D(QMainWindow):
         self.util_panel.image_normalize_edcs.stateChanged.connect(self.update_main_plot)
         self.util_panel.image_smooth_button.clicked.connect(self.smoooth_data)
         self.util_panel.image_curvature_button.clicked.connect(self.curvature_method)
+
+        self.util_panel.file_mdc_fitter_button.clicked.connect(self.open_mdc_fitter)
+        self.util_panel.file_edc_fitter_button.clicked.connect(self.open_edc_fitter)
 
         # binning utilities
         self.util_panel.bin_y.stateChanged.connect(self.update_binning_lines)
@@ -378,7 +387,7 @@ class MainWindow2D(QMainWindow):
             data = self.image_data
         except AttributeError:
             data = self.data_handler.get_data()
-            
+
         if width == 0:
             y = data[:, i_x]
         else:
@@ -387,6 +396,7 @@ class MainWindow2D(QMainWindow):
             y = np.sum(data[:, start:stop], axis=1)
             # y = wp.normalize(y)
         x = np.arange(0, len(self.data_handler.axes[1]))
+        self.edc = y
         xp.plot(x, y)
         self.util_panel.momentum_hor.setValue(i_x)
         if self.new_momentum_axis is None:
@@ -430,6 +440,7 @@ class MainWindow2D(QMainWindow):
             y = np.sum(data[start:stop, :], axis=0)
             # y = wp.normalize(y)
         x = np.arange(0, len(self.data_handler.axes[0]))
+        self.mdc = y
         yp.plot(y, x)
         self.util_panel.energy_vert.setValue(i_y)
 
@@ -707,10 +718,88 @@ class MainWindow2D(QMainWindow):
             self.set_image()
             self.util_panel.image_curvature_button.setText('Do curvature')
 
+    def open_mdc_fitter(self):
+
+        thread_lbl = self.thread_index + '_mdc_viewer'
+        self.mdc_thread_lbl = thread_lbl
+
+        if thread_lbl in self.data_viewers:
+            already_opened_box = QMessageBox()
+            already_opened_box.setIcon(QMessageBox.Information)
+            already_opened_box.setText('MDC viewer already opened.')
+            already_opened_box.setStandardButtons(QMessageBox.Ok)
+            if already_opened_box.exec() == QMessageBox.Ok:
+                return
+
+        self.thread[thread_lbl] = ThreadClass(index=thread_lbl)
+        self.thread[thread_lbl].start()
+        title = self.title + ' - mdc fitter'
+        if self.new_energy_axis is not None:
+            erg_ax = self.new_energy_axis
+        else:
+            erg_ax = self.data_set.zscale
+        if self.new_momentum_axis is not None:
+            k_ax = self.new_momentum_axis
+        else:
+            k_ax = self.data_set.yscale
+        axes = [k_ax, erg_ax]
+        try:
+            self.data_viewers[thread_lbl] = MDCFitter(self, self.data_set, axes, title, index=thread_lbl)
+        except Exception:
+            error_box = QMessageBox()
+            error_box.setIcon(QMessageBox.Information)
+            error_box.setText('Couldn\'t load data,  something went wrong.')
+            error_box.setStandardButtons(QMessageBox.Ok)
+            if error_box.exec() == QMessageBox.Ok:
+                return
+
+    def open_edc_fitter(self):
+
+        thread_lbl = self.thread_index + '_edc_viewer'
+        self.edc_thread_lbl = thread_lbl
+
+        if thread_lbl in self.data_viewers:
+            already_opened_box = QMessageBox()
+            already_opened_box.setIcon(QMessageBox.Information)
+            already_opened_box.setText('EDC viewer already opened.')
+            already_opened_box.setStandardButtons(QMessageBox.Ok)
+            if already_opened_box.exec() == QMessageBox.Ok:
+                return
+
+        self.thread[thread_lbl] = ThreadClass(index=thread_lbl)
+        self.thread[thread_lbl].start()
+        title = self.title + ' - edc fitter'
+        if self.new_energy_axis is not None:
+            erg_ax = self.new_energy_axis
+        else:
+            erg_ax = self.data_set.zscale
+        if self.new_momentum_axis is not None:
+            k_ax = self.new_momentum_axis
+        else:
+            k_ax = self.data_set.yscale
+        axes = [k_ax, erg_ax]
+        # try:
+        self.data_viewers[thread_lbl] = EDCFitter(self, self.data_set, axes, title, index=thread_lbl)
+        # except Exception:
+        #     error_box = QMessageBox()
+        #     error_box.setIcon(QMessageBox.Information)
+        #     error_box.setText('Couldn\'t load data,  something went wrong.')
+        #     error_box.setStandardButtons(QMessageBox.Ok)
+        #     if error_box.exec() == QMessageBox.Ok:
+        #         return
 
     def close_mw(self):
         self.destroy()
-        self.db.thread[self.index].stop()
+        self.db.thread[self.thread_index].quit()
+        self.db.thread[self.thread_index].wait()
+        del(self.db.thread[self.thread_index])
+        del(self.db.data_viewers[self.thread_index])
+
+        try:
+            if self.mdc_thread_lbl in self.data_viewers:
+                self.data_viewers[self.mdc_thread_lbl].close()
+        except AttributeError:
+            pass
 
     def save_to_pickle(self):
         # TODO change 'k_axis' to 'k' for all cuts: add 'change attrs name'
@@ -758,8 +847,10 @@ class MainWindow2D(QMainWindow):
                     attrs['hv'] = up.axes_energy_hv.value()
                 if up.axes_energy_wf.value() != 0:
                     attrs['wf'] = up.axes_energy_wf.value()
+                if up.axes_angle_off.value() != 0:
+                    attrs['angle_off'] = up.axes_angle_off.value()
                 if not (self.new_momentum_axis is None):
-                    attrs['k_axis'] = self.new_momentum_axis
+                    attrs['k'] = self.new_momentum_axis
                 dl.update_namespace(dataset, ['saved', attrs])
             elif box_return_value == QMessageBox.No:
                 pass
@@ -780,6 +871,15 @@ class MainWindow2D(QMainWindow):
                 self.util_panel.axes_energy_hv.setValue(saved['hv'])
             if 'wf' in saved.keys():
                 self.util_panel.axes_energy_wf.setValue(saved['wf'])
+            if 'angle_off' in saved.keys():
+                self.util_panel.axes_angle_off.setValue(saved['angle_off'])
+            if 'k' in saved.keys():
+                self.new_momentum_axis = saved['k']
+                new_range = [self.new_momentum_axis[0], self.new_momentum_axis[-1]]
+                self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_range)
+                self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
+                self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+                    self.new_momentum_axis[self.main_plot.pos[1].get_value()]))
             if 'k_axis' in saved.keys():
                 self.new_momentum_axis = saved['k_axis']
                 new_range = [self.new_momentum_axis[0], self.new_momentum_axis[-1]]
@@ -794,3 +894,4 @@ class MainWindow2D(QMainWindow):
             self.util_panel.axes_conv_hv.setValue(float(data_set.hv))
         if hasattr(data_set, 'wf'):
             self.util_panel.axes_conv_wf.setValue(float(data_set.wf))
+

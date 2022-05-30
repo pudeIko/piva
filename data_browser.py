@@ -7,6 +7,7 @@ from PyQt5.QtGui import QFont
 from pyqtgraph.Qt import QtCore
 from _3Dviewer import *
 from _2Dviewer import *
+from plot_tool import *
 import data_loader as dl
 import sys
 import os
@@ -25,6 +26,7 @@ class DataBrowser(QMainWindow):
         self.thread = {}
         self.thread_count = 0
         self.data_viewers = {}
+        self.plotting_tools = {}
         self.list_view = None
         self.sb_timeout = 2000
 
@@ -76,10 +78,18 @@ class DataBrowser(QMainWindow):
         idx = self.list_view.currentRow()
         fname = self.working_dir + self.fnames[idx]
 
-        self.thread[self.thread_count] = ThreadClass(index=self.thread_count)
-        self.thread[self.thread_count].start()
+        if fname in self.data_viewers:
+            already_opened_box = QMessageBox()
+            already_opened_box.setIcon(QMessageBox.Information)
+            already_opened_box.setText('File already opened.')
+            already_opened_box.setStandardButtons(QMessageBox.Ok)
+            if already_opened_box.exec() == QMessageBox.Ok:
+                return
+
+        self.thread[fname] = ThreadClass(index=fname)
+        self.thread[fname].start()
         try:
-            self.thread[self.thread_count].any_signal.connect(self.open_dv(fname))
+            self.thread[fname].any_signal.connect(self.open_dv(fname))
         except TypeError:
             pass
 
@@ -96,18 +106,45 @@ class DataBrowser(QMainWindow):
     def open_dv(self, fname):
 
         data_set = dl.load_data(fname)
+
         try:
             if data_set.xscale.size == 1:
-                self.data_viewers[str(self.thread_count)] = \
-                    MainWindow2D(self, data_set=data_set, fname=fname, index=self.thread_count)
+                self.data_viewers[fname] = \
+                    MainWindow2D(self, data_set=data_set, fname=fname, index=fname)
             else:
-                self.data_viewers[str(self.thread_count)] = \
-                    MainWindow3D(self, data_set=data_set, fname=fname, index=self.thread_count)
+                self.data_viewers[fname] = \
+                    MainWindow3D(self, data_set=data_set, fname=fname, index=fname)
         except Exception:
             self.sb.showMessage('Couldn\'t load data,  format not supported.', self.sb_timeout)
-            self.thread[self.thread_count].stop()
+            self.thread[fname].quit()
+            self.thread[fname].wait()
+            del(self.thread[fname])
+
+    def open_single_plotting_tool(self):
+
+        thread_lbl = f'Plotting tool - {self.thread_count + 1}'
+
+        self.thread[thread_lbl] = ThreadClass(index=thread_lbl)
+        self.thread[thread_lbl].start()
+        try:
+            self.thread[thread_lbl].any_signal.connect(self.single_plotting_tool(thread_lbl))
+        except TypeError:
+            pass
+
+    def single_plotting_tool(self, thread_label):
+
+        try:
+            self.plotting_tools[thread_label] = PlotTool(self, title=thread_label)
+        except Exception:
+            self.sb.showMessage('Couldn\'t open plotting tool', self.sb_timeout)
+            self.thread[thread_label].quit()
+            self.thread[thread_label].wait()
+            del(self.thread[thread_label])
         finally:
             self.thread_count += 1
+
+    def open_multiple_plotting_tool(self):
+        print('elo')
 
     def remove_dir_string(self, dir_str, files):
         res = []
@@ -451,8 +488,21 @@ class DataBrowser(QMainWindow):
         open_file.triggered.connect(self.launch_pyta)
         file_menu.addAction(open_file)
 
+        plot_menu = menu_bar.addMenu('&Plot')
+        single_plot = QAction('Plotting Tool', self)
+        single_plot.setShortcut('Ctrl+P')
+        single_plot.setStatusTip('Plotting Tool')
+        single_plot.triggered.connect(self.open_single_plotting_tool)
+        plot_menu.addAction(single_plot)
+
+        multiple_plot = QAction('Multiple Plotting Tool', self)
+        multiple_plot.setShortcut('Ctrl+M')
+        multiple_plot.setStatusTip('Multiple Plotting Tool')
+        multiple_plot.triggered.connect(self.open_multiple_plotting_tool)
+        plot_menu.addAction(multiple_plot)
+
         file_menu.addSeparator()
-        run = menu_bar.addMenu('kl')
+        # run = menu_bar.addMenu('kl')
 
         self.menu_bar = menu_bar
 

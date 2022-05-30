@@ -5,7 +5,6 @@ import os
 import time
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog, QDialog, QDialogButtonBox
 import matplotlib.pyplot as plt
-from PyQt5.QtCore import QThread
 import numpy as np
 import warnings
 from _2Dviewer import *
@@ -223,6 +222,7 @@ class DataHandler:
         else:
             self.main_window.util_panel.energy_main_value.setText(
                 '({:.4f})'.format(self.main_window.new_energy_axis[z]))
+        # self.main_window.update_z_binning_lines()
 
     @staticmethod
     def make_slice(data, dim, index, integrate=0, silent=True):
@@ -366,6 +366,13 @@ class DataHandler:
 
 class MainWindow3D(QMainWindow):
 
+    # TODO bugs
+    # TODO plot_z binns not moving when changing slider's position in spinbox
+    # TODO cut_x/plot_x width doesn't always match main_plot's
+
+    # TODO utilities
+    # TODO logbook!
+
     def __init__(self, data_browser, data_set=None, fname=None, index=0):
         super(MainWindow3D, self).__init__()
         self.title = fname.split('/')[-1]
@@ -379,7 +386,7 @@ class MainWindow3D(QMainWindow):
         self.cmap_name = None
         self.lut = None
         self.db = data_browser
-        self.index = index
+        self.thread_index = index
         self.new_energy_axis = None
         self.new_hor_momentum_axis = None
         self.new_ver_momentum_axis = None
@@ -649,6 +656,7 @@ class MainWindow3D(QMainWindow):
         else:
             y = self.data_handler.cut_x_data[:, i_x]
         x = arange(0, len(self.data_handler.axes[scan_ax]))
+        self.plot_x_data = y
         xp.plot(x, y)
         self.util_panel.energy_hor.setValue(i_x)
         if self.new_energy_axis is None:
@@ -680,6 +688,7 @@ class MainWindow3D(QMainWindow):
         else:
             y = self.data_handler.cut_y_data[i_x, :]
         x = arange(0, len(self.data_handler.axes[slit_ax]))
+        self.plot_y_data = y
         yp.plot(y, x)
         self.util_panel.energy_vert.setValue(i_x)
         if self.new_energy_axis is None:
@@ -783,12 +792,15 @@ class MainWindow3D(QMainWindow):
             self.set_sp_EDC_data()
 
     def set_sp_EDC_data(self):
-        xpos = self.main_plot.crosshair.vpos.get_value()
-        ypos = self.main_plot.crosshair.hpos.get_value()
-        data = self.data_handler.get_data()[xpos, ypos, :]
-        with warnings.catch_warnings():
-            data = wp.normalize(data)
-        self.sp_EDC.setData(data, pen=self.plot_z.sp_EDC_pen)
+        try:
+            xpos = self.main_plot.crosshair.vpos.get_value()
+            ypos = self.main_plot.crosshair.hpos.get_value()
+            data = self.data_handler.get_data()[xpos, ypos, :]
+            with warnings.catch_warnings():
+                data = wp.normalize(data)
+            self.sp_EDC.setData(data, pen=self.plot_z.sp_EDC_pen)
+        except Exception:
+            pass
 
     def redraw_plots(self, image=None):
         """ Redraw plotted data to reflect changes in data or its colors. """
@@ -1078,7 +1090,7 @@ class MainWindow3D(QMainWindow):
                 self.plot_z.width = half_width
                 self.plot_z.n_bins = half_width
                 self.plot_z.pos.set_allowed_values(new_range)
-                self.update_main_plot(emit=False)
+                # self.update_main_plot(emit=False)
             except AttributeError:
                 pass
         else:
@@ -1471,7 +1483,10 @@ class MainWindow3D(QMainWindow):
     # main buttons' actions
     def close_mw(self):
         self.destroy()
-        self.db.thread[self.index].stop()
+        self.db.thread[self.thread_index].quit()
+        self.db.thread[self.thread_index].wait()
+        del(self.db.thread[self.thread_index])
+        del(self.db.data_viewers[self.thread_index])
 
     def save_to_pickle(self):
         dataset = self.data_set
@@ -1574,16 +1589,4 @@ class MainWindow3D(QMainWindow):
             self.util_panel.axes_conv_hv.setValue(float(data_set.hv))
         if hasattr(data_set, 'wf'):
             self.util_panel.axes_conv_wf.setValue(float(data_set.wf))
-
-
-class ThreadClass(QThread):
-    any_signal = QtCore.pyqtSignal(int)
-
-    def __init__(self, parent=None, index=0):
-        super(ThreadClass, self).__init__(parent)
-        self.index = index
-        self.is_running = True
-
-    def stop(self):
-        self.quit()
 
