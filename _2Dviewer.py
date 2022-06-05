@@ -217,7 +217,7 @@ class MainWindow2D(QMainWindow):
 
         self.load_saved_corrections(data_set)
         self.util_panel.set_metadata_window(raw_data)
-        self.put_sliders_in_the_middle()
+        self.put_sliders_in_initial_positions()
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -616,9 +616,24 @@ class MainWindow2D(QMainWindow):
         main_ver = self.main_plot.crosshair.vpos.get_value()
         return [main_hor, main_ver]
 
-    def put_sliders_in_the_middle(self):
-        mid_energy = int(len(self.data_handler.axes[1]) / 2)
-        mid_angle = int(len(self.data_handler.axes[0]) / 2)
+    def put_sliders_in_initial_positions(self):
+        if self.new_energy_axis is None:
+            e_ax = self.data_handler.axes[1]
+        else:
+            e_ax = self.new_energy_axis
+        if e_ax.min() < 0:
+            mid_energy = wp.indexof(-0.005, e_ax)
+        else:
+            mid_energy = int(len(e_ax) / 2)
+
+        if self.new_momentum_axis is None:
+            mom_ax = self.data_handler.axes[0]
+        else:
+            mom_ax = self.new_momentum_axis
+        if mom_ax.min() < 0:
+            mid_angle = wp.indexof(0, mom_ax)
+        else:
+            mid_angle = int(len(mom_ax) / 2)
 
         self.main_plot.pos[0].set_value(mid_energy)
         self.main_plot.pos[1].set_value(mid_angle)
@@ -778,28 +793,37 @@ class MainWindow2D(QMainWindow):
         else:
             k_ax = self.data_set.yscale
         axes = [k_ax, erg_ax]
-        # try:
-        self.data_viewers[thread_lbl] = EDCFitter(self, self.data_set, axes, title, index=thread_lbl)
-        # except Exception:
-        #     error_box = QMessageBox()
-        #     error_box.setIcon(QMessageBox.Information)
-        #     error_box.setText('Couldn\'t load data,  something went wrong.')
-        #     error_box.setStandardButtons(QMessageBox.Ok)
-        #     if error_box.exec() == QMessageBox.Ok:
-        #         return
+        try:
+            self.data_viewers[thread_lbl] = EDCFitter(self, self.data_set, axes, title, index=thread_lbl)
+        except Exception:
+            error_box = QMessageBox()
+            error_box.setIcon(QMessageBox.Information)
+            error_box.setText('Couldn\'t load data,  something went wrong.')
+            error_box.setStandardButtons(QMessageBox.Ok)
+            if error_box.exec() == QMessageBox.Ok:
+                return
 
     def close_mw(self):
         self.destroy()
-        self.db.thread[self.thread_index].quit()
-        self.db.thread[self.thread_index].wait()
-        del(self.db.thread[self.thread_index])
-        del(self.db.data_viewers[self.thread_index])
-
-        try:
-            if self.mdc_thread_lbl in self.data_viewers:
-                self.data_viewers[self.mdc_thread_lbl].close()
-        except AttributeError:
-            pass
+        if 'scanned_cut' in self.title:
+            idx = self.fname.find('scanned_cut') - 3
+            dv = self.db.data_viewers[self.fname[:idx]]
+            dv.thread[self.fname].quit()
+            dv.thread[self.fname].wait()
+            del(dv.thread[self.fname])
+            del(dv.data_viewers[self.fname])
+        elif 'analyzer_cut' in self.fname:
+            idx = self.fname.find('analyzer_cut') - 3
+            dv = self.db.data_viewers[self.fname[:idx]]
+            dv.thread[self.fname].quit()
+            dv.thread[self.fname].wait()
+            del(dv.thread[self.fname])
+            del(dv.data_viewers[self.fname])
+        else:
+            self.db.thread[self.thread_index].quit()
+            self.db.thread[self.thread_index].wait()
+            del(self.db.thread[self.thread_index])
+            del(self.db.data_viewers[self.thread_index])
 
     def save_to_pickle(self):
         # TODO change 'k_axis' to 'k' for all cuts: add 'change attrs name'

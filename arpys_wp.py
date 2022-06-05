@@ -1756,33 +1756,6 @@ def plot_kz_in_kspace(data, ang, hvs, work_func=4.5, E0=0, trans_kz=False, gamma
             ax.set_title('photon energy dependence along $\Gamma$-M, @E$_F$', **kwargs)
 
 
-def get_kz_scales(ang, hvs, work_func=4.5, E0=0, trans_kz=False, **kwargs):
-
-    ang, hvs = np.array(ang), np.array(hvs)
-    kx = []
-    for hv in hvs:
-        kx.append(a2k_single_axis(ang, hv, **kwargs))
-    kx = np.array(kx)
-    kz = np.zeros_like(kx)
-
-    if trans_kz:
-        k0 = np.sqrt(2 * const.m_e * const.eV) * 1e-10 / const.hbar
-        V0 = E0 + work_func
-        kzz = np.zeros_like(kx)
-        print(kx.shape)
-        for kz_i in range(kzz.shape[0]):
-            Ek = hvs[kz_i] + work_func
-            for kz_j in range(kzz.shape[1]):
-                theta = np.deg2rad(ang[kz_j])
-                k_ij = k0 * np.sqrt(Ek * (np.cos(theta) ** 2) + V0)
-                kzz[kz_i][kz_j] = k_ij
-    else:
-        for kzi, hv in enumerate(hvs):
-            kz[kzi, :] = np.ones_like(ang) * hv
-
-    return kx, kz
-
-
 # +---------------------+ #
 # | Image processing    | # ==============================================================
 # +---------------------+ #
@@ -1832,7 +1805,7 @@ def rotate_around_xy(init_guess, data_org):
     x0 = init_guess[0]
     y0 = init_guess[1]
 
-    # transponse in necessary and get dimensions
+    # transpose if necessary and get dimensions
     transposed = False
     if data_org.shape[0] > data_org.shape[1]:
         data_org = data_org.T
@@ -2319,6 +2292,32 @@ def a2k_single_axis(alpha, hv, beta=0, dalpha=0, work_func=4.5, a=np.pi, Eb=0, o
         KX = sin_theta_cos_beta + cos_da * np.cos(alpha) * np.sin(beta)
 
     return k0 * KX
+
+
+def hv2k(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi, **kwargs):
+
+    ang, hvs = np.array(ang), np.array(hvs)
+    kx = []
+    for hv in hvs:
+        kx.append(a2k_single_axis(ang, hv, **kwargs))
+    kx = np.array(kx)
+    kz = np.zeros_like(kx)
+
+    if trans_kz:
+        k0 = np.sqrt(2 * const.m_e * const.eV) * 1e-10 / const.hbar
+        k0 *= (c / np.pi)
+        print(kx.shape)
+        for kz_i in range(kz.shape[0]):
+            Ek = hvs[kz_i] + work_func
+            for kz_j in range(kz.shape[1]):
+                theta = np.deg2rad(ang[kz_j])
+                k_ij = k0 * np.sqrt(Ek * (np.cos(theta) ** 2) + V0)
+                kz[kz_i][kz_j] = k_ij
+    else:
+        for kzi, hv in enumerate(hvs):
+            kz[kzi, :] = np.ones_like(ang) * hv
+
+    return kx, kz
 
 
 def rot_mat(polar=0, azimuth=0, tilt=0):

@@ -941,14 +941,13 @@ class CursorPlot(PlotWidget):
 class UtilitiesPanel(QWidget):
     """ Utilities panel on the top. Mostly just creating and aligning the stuff, signals and callbacks are
     handled in 'MainWindow' """
-    # TODO EDCs fitting
-    # TODO MDCs fitting
     # TODO Fermi edge fitting
     # TODO k-space conversion
     # TODO ROI
-    # TODO single plotting tool
     # TODO multiple plotting tool
     # TODO logbook!
+    # TODO curvature along specific directions
+    # TODO smoothing along specific directions
 
     def __init__(self, main_window, name=None, dim=3):
 

@@ -4,6 +4,7 @@
 import os
 from data_browser import *
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtGui import QIcon, QPixmap
 import sys
 # from PyQt5.QtWidgets import
 
@@ -19,7 +20,9 @@ def db():
     print('\tdevelopement version')
     print('++++++++++++++++++++++++++++++++++++')
     app = QApplication(sys.argv)
+    # print('elo')
     window = DataBrowser()
+    # window.setWindowIcon(QIcon('./logo/MyIcon.icns'))
     sys.exit(app.exec_())
 
 ###################################

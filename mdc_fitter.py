@@ -40,6 +40,7 @@ bold_font.setBold(True)
 
 
 class MDCFitter(QMainWindow):
+    # TODO Smoothing
 
     def __init__(self, data_viewer, data_set, axes, title, index=None):
         super(MDCFitter, self).__init__()

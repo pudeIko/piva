@@ -3,7 +3,7 @@ import time
 start_time = time.time()
 from PyQt5.QtWidgets import QMainWindow, QMenuBar, QGridLayout, QAction, QFileDialog, QHBoxLayout, QLabel, QWidget, \
     QVBoxLayout, QLineEdit, QListWidget, QStatusBar
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QIcon, QFont
 from pyqtgraph.Qt import QtCore
 from _3Dviewer import *
 from _2Dviewer import *
@@ -133,15 +133,15 @@ class DataBrowser(QMainWindow):
 
     def single_plotting_tool(self, thread_label):
 
-        try:
-            self.plotting_tools[thread_label] = PlotTool(self, title=thread_label)
-        except Exception:
-            self.sb.showMessage('Couldn\'t open plotting tool', self.sb_timeout)
-            self.thread[thread_label].quit()
-            self.thread[thread_label].wait()
-            del(self.thread[thread_label])
-        finally:
-            self.thread_count += 1
+        # try:
+        self.plotting_tools[thread_label] = PlotTool(self, title=thread_label)
+        # except Exception:
+        #     self.sb.showMessage('Couldn\'t open plotting tool', self.sb_timeout)
+        #     self.thread[thread_label].quit()
+        #     self.thread[thread_label].wait()
+        #     del(self.thread[thread_label])
+        # finally:
+        #     self.thread_count += 1
 
     def open_multiple_plotting_tool(self):
         print('elo')

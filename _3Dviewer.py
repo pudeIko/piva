@@ -1420,27 +1420,43 @@ class MainWindow3D(QMainWindow):
             cut = self.data_handler.cut_x_data
             dim_value = self.data_set.yscale[self.main_plot.crosshair.hpos.get_value()]
             data_set.yscale = data_set.xscale
-        elif cut_orient[0] == 'v':
+            thread_lbl = self.fname + ' - ' + 'scanned_cut'
+        else:
             cut = self.data_handler.cut_y_data.T
             dim_value = self.data_set.xscale[self.main_plot.crosshair.vpos.get_value()]
+            thread_lbl = self.fname + ' - ' + 'analyzer_cut'
 
         data = np.ones((1, cut.shape[0], cut.shape[1]))
         data[0, :, :] = cut
         data_set.data = data
         data_set.xscale = [1]
 
+        # self.title = fname.split('/')[-1]
+        # self.fname = fname
+
         if data_set.scan_type == 'tilt scan':
             data_set.scan_type = 'cut'
             data_set.tilt = dim_value
+            thread_lbl += ' - @ {:.3} deg'.format(dim_value)
         elif data_set.scan_type == 'hv scan':
             data_set.scan_type = 'cut'
             data_set.hv = dim_value
+            thread_lbl += ' - @ {:.3} eV'.format(dim_value)
 
-        self.thread[self.thread_count] = ThreadClass(index=self.thread_count)
-        self.thread[self.thread_count].start()
+        if thread_lbl in self.thread.keys():
+            thread_running_box = QMessageBox()
+            thread_running_box.setIcon(QMessageBox.Information)
+            thread_running_box.setWindowTitle('Doh.')
+            thread_running_box.setText('Same cut is already opened')
+            thread_running_box.setStandardButtons(QMessageBox.Ok)
+            if thread_running_box.exec() == QMessageBox.Ok:
+                return
+
+        self.thread[thread_lbl] = ThreadClass(index=thread_lbl)
+        self.thread[thread_lbl].start()
         try:
-            self.data_viewers[str(self.thread_count)] = \
-                MainWindow2D(self, data_set=data_set, fname=self.fname, index=self.thread_count)
+            self.data_viewers[thread_lbl] = \
+                MainWindow2D(self.db, data_set=data_set, fname=thread_lbl, index=thread_lbl)
         except Exception:
             error_box = QMessageBox()
             error_box.setIcon(QMessageBox.Information)
