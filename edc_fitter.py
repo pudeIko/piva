@@ -78,6 +78,7 @@ class EDCFitter(QMainWindow):
         self.image_invert_colors.stateChanged.connect(self.set_cmap)
         self.image_gamma.valueChanged.connect(self.set_gamma)
         self.image_e_pos.valueChanged.connect(self.update_mdc_slider)
+        self.image_k_pos.valueChanged.connect(self.update_edc_slider)
         self.image_bin.stateChanged.connect(self.set_binning_lines)
         self.image_bin_n.valueChanged.connect(self.set_binning_lines)
         self.image_edc_range_start.valueChanged.connect(self.set_edc_panel)
@@ -383,8 +384,18 @@ class EDCFitter(QMainWindow):
     def update_mdc_slider(self):
         e = self.image_e_pos.value()
         self.mdc_pos.set_value(e)
+        self.mdc_line_cut.setValue(e)
+        self.mdc_line_edc.setValue(self.erg_ax[e])
         self.set_binning_lines()
         self.image_e_pos_value_lbl.setText('({:.4f})'.format(self.erg_ax[int(self.mdc_pos.get_value())]))
+
+    def update_edc_slider(self):
+        k = self.image_k_pos.value()
+        self.edc_pos.set_value(k)
+        # self.mdc_line_cut.setValue(k)
+        # self.mdc_line_edc.setValue(self.erg_ax[e])
+        # self.set_binning_lines()
+        self.image_k_pos_value_lbl.setText('({:.4f})'.format(self.k_ax[k]))
 
     def update_allowed_values(self, min, max):
         """ Update the allowed values silently.
@@ -392,6 +403,7 @@ class EDCFitter(QMainWindow):
         sets the allowed values to the available pixels.
         """
         self.edc_pos.set_allowed_values(arange(min, max + 1, 1))
+        # self.image_e_pos.setRange(min, max)
 
     def set_binning_lines(self):
         if self.image_bin.isChecked():
@@ -437,6 +449,7 @@ class EDCFitter(QMainWindow):
         try:
             self.mdc_line_cut.setBounds([e_start, e_stop])
             self.mdc_line_edc.setBounds([self.erg_ax[e_start], self.erg_ax[e_stop]])
+            self.image_e_pos.setRange(e_start, e_stop)
         except AttributeError:
             pass
 

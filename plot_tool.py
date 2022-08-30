@@ -434,10 +434,11 @@ class PlotTool(QMainWindow):
             self.dv_list.append(dvi)
             dvi_lbl = dvi.split('/')[-1]
             self.ds_dv.addItem(dvi_lbl)
-            for key in self.data_browser.data_viewers[dvi].data_viewers.keys():
-                key_lbl = key.split('/')[-1]
-                self.dv_list.append(key)
-                self.ds_dv.addItem(key_lbl)
+            if isinstance(self.data_browser.data_viewers[dvi], MainWindow3D):
+                for key in self.data_browser.data_viewers[dvi].data_viewers.keys():
+                    key_lbl = key.split('/')[-1]
+                    self.dv_list.append(key)
+                    self.ds_dv.addItem(key_lbl)
 
     def set_ds_dv_plot_list(self):
 
@@ -448,16 +449,7 @@ class PlotTool(QMainWindow):
         except IndexError:
             return
 
-        print(dv_lbl)
-
-        if 'scanned_cut' in dv_lbl:
-            idx = dv_lbl.find('scanned_cut') - 3
-            dv = self.data_browser.data_viewers[dv_lbl[:idx]].data_viewers[dv_lbl]
-        elif 'analyzer_cut' in dv_lbl:
-            idx = dv_lbl.find('scanned_cut') - 3
-            dv = self.data_browser.data_viewers[dv_lbl[:idx]].data_viewers[dv_lbl]
-        else:
-            dv = self.data_browser.data_viewers[dv_lbl]
+        dv = self.data_browser.data_viewers[dv_lbl]
 
         if isinstance(dv, MainWindow2D):
             self.ds_dv_plot.addItem('edc')
@@ -597,10 +589,10 @@ class PlotTool(QMainWindow):
             else:
                 return dv.new_energy_axis, dv.edc
         elif plot == 'mdc':
-            if dv.new_momentum_axis is None:
+            if dv.k_axis is None:
                 return dv.data_handler.axes[1], dv.mdc
             else:
-                return dv.new_momentum_axis, dv.mdc
+                return dv.k_axis, dv.mdc
         elif plot == 'edc_fitter':
             edc_fitter = dv.data_viewers[dv_lbl + '_edc_viewer']
             return edc_fitter.edc_erg_ax, edc_fitter.edc
@@ -633,7 +625,10 @@ class PlotTool(QMainWindow):
         cd_str = 'rgb' + str(cd.getRgb()[:3])
         self.ec_color.setStyleSheet(f'background-color: {cd_str}')
         data_item_lbl = self.main_added.currentText()
-        self.data_items[data_item_lbl]['color'] = cd
+        try:
+            self.data_items[data_item_lbl]['color'] = cd
+        except KeyError:
+            return
 
         self.set_pen()
 
@@ -1145,7 +1140,4 @@ class CustomDataItem(PlotDataItem):
         super(CustomDataItem, self).__init__(*args, **kwargs)
 
         self.created = datetime.datetime.now()
-
-
-
 

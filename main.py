@@ -20,13 +20,11 @@ def db():
     print('\tdevelopement version')
     print('++++++++++++++++++++++++++++++++++++')
     app = QApplication(sys.argv)
-    # print('elo')
     window = DataBrowser()
-    # window.setWindowIcon(QIcon('./logo/MyIcon.icns'))
     sys.exit(app.exec_())
 
 ###################################
-# Probably doesn't work anymore
+########### deprecated ############
 ###################################
 
 

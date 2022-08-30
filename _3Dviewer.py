@@ -367,16 +367,16 @@ class DataHandler:
 class MainWindow3D(QMainWindow):
 
     # TODO bugs
-    # TODO plot_z binns not moving when changing slider's position in spinbox
+    # TODO plot_z bins not moving when changing slider's position in spinbox
     # TODO cut_x/plot_x width doesn't always match main_plot's
 
     # TODO utilities
     # TODO logbook!
 
-    def __init__(self, data_browser, data_set=None, fname=None, index=0):
+    def __init__(self, data_browser, data_set=None, index=None, slice=False):
         super(MainWindow3D, self).__init__()
-        self.title = fname.split('/')[-1]
-        self.fname = fname
+        self.title = index.split('/')[-1]
+        self.fname = index
         self.central_widget = QtGui.QWidget()
         self.layout = QtGui.QGridLayout()
 
@@ -386,10 +386,11 @@ class MainWindow3D(QMainWindow):
         self.cmap_name = None
         self.lut = None
         self.db = data_browser
-        self.thread_index = index
+        self.index = index
+        self.slice = slice
         self.new_energy_axis = None
-        self.new_hor_momentum_axis = None
-        self.new_ver_momentum_axis = None
+        self.kx_axis = None
+        self.ky_axis = None
         self.thread = {}
         self.thread_count = 0
         self.data_viewers = {}
@@ -453,8 +454,14 @@ class MainWindow3D(QMainWindow):
         self.sp_EDC = self.plot_z.plot()
         self.set_sp_EDC_data()
 
-        self.load_saved_corrections(data_set)
+        try:
+            self.load_saved_corrections(data_set)
+        except AttributeError:
+            print('going with old settings.')
+            self.load_saved_corrections_old(data_set)
+
         self.put_sliders_in_initial_positions()
+        self.set_pmesh_axes()
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -525,6 +532,7 @@ class MainWindow3D(QMainWindow):
         self.util_panel.axes_energy_Ef.valueChanged.connect(self.apply_energy_correction)
         self.util_panel.axes_energy_hv.valueChanged.connect(self.apply_energy_correction)
         self.util_panel.axes_energy_wf.valueChanged.connect(self.apply_energy_correction)
+        self.util_panel.axes_energy_scale.currentIndexChanged.connect(self.apply_energy_correction)
         self.util_panel.axes_conv_lc.valueChanged.connect(self.update_main_plot)
         self.util_panel.axes_copy_values.clicked.connect(self.copy_values_orientate_to_axes)
         self.util_panel.axes_do_kspace_conv.clicked.connect(self.convert_to_kspace)
@@ -736,10 +744,10 @@ class MainWindow3D(QMainWindow):
 
         # update values of momentum at utilities panel
         self.util_panel.momentum_hor.setValue(i_x)
-        if self.new_ver_momentum_axis is None:
+        if self.ky_axis is None:
             self.util_panel.momentum_hor_value.setText('({:.3f})'.format(self.data_handler.axes[slit_ax][i_x]))
         else:
-            self.util_panel.momentum_hor_value.setText('({:.3f})'.format(self.new_ver_momentum_axis[i_x]))
+            self.util_panel.momentum_hor_value.setText('({:.3f})'.format(self.ky_axis[i_x]))
 
 
         # update EDC at crossing point
@@ -781,10 +789,10 @@ class MainWindow3D(QMainWindow):
 
         # update values of momentum at utilities panel
         self.util_panel.momentum_vert.setValue(i_x)
-        if self.new_hor_momentum_axis is None:
+        if self.kx_axis is None:
             self.util_panel.momentum_vert_value.setText('({:.3f})'.format(self.data_handler.axes[scan_ax][i_x]))
         else:
-            self.util_panel.momentum_vert_value.setText('({:.3f})'.format(self.new_hor_momentum_axis[i_x]))
+            self.util_panel.momentum_vert_value.setText('({:.3f})'.format(self.kx_axis[i_x]))
         self.update_xy_binning_lines()
 
         # update EDC at crossing point
@@ -820,8 +828,15 @@ class MainWindow3D(QMainWindow):
 
         # Reset the transformation
         self._transform_factors = []
+        # pmesh = self.util_panel.image_pmesh.isChecked()
+        # try:
+        #     pmesh_x, pmesh_y = self.pmesh_kx_axis, self.pmesh_ky_axis
+        # except AttributeError:
+        #     pmesh_x, pmesh_y = None, None
         if image is None:
             image = self.image_data
+        # self.main_plot.set_image(image, pmesh=pmesh, pmesh_x=pmesh_x, pmesh_y=pmesh_y,
+        #                          *args, lut=self.lut, **kwargs)
         self.main_plot.set_image(image, *args, lut=self.lut, **kwargs)
         self.set_orientating_lines()
 
@@ -1125,25 +1140,26 @@ class MainWindow3D(QMainWindow):
             e_ax = self.data_handler.axes[erg_ax]
         else:
             e_ax = self.new_energy_axis
-        if e_ax.min() < 0:
+        if (e_ax.min() < 0) and (e_ax.max() > 0):
             mid_energy = wp.indexof(-0.005, e_ax)
         else:
             mid_energy = int(len(e_ax) / 2)
+            self.util_panel.axes_energy_scale.setCurrentIndex(1)
 
-        if self.new_hor_momentum_axis is None:
+        if self.kx_axis is None:
             mh_ax = self.data_handler.axes[scan_ax]
         else:
-            mh_ax = self.new_hor_momentum_axis
-        if mh_ax.min() < 0:
+            mh_ax = self.kx_axis
+        if (mh_ax.min() < 0) and (mh_ax.max() > 0):
             mid_hor_angle = wp.indexof(0, mh_ax)
         else:
             mid_hor_angle = int(len(mh_ax) / 2)
 
-        if self.new_ver_momentum_axis is None:
+        if self.ky_axis is None:
             mv_ax = self.data_handler.axes[slit_ax]
         else:
-            mv_ax = self.new_ver_momentum_axis
-        if mv_ax.min() < 0:
+            mv_ax = self.ky_axis
+        if (mv_ax.min() < 0) and (mv_ax.max() > 0):
             mid_vert_angle = wp.indexof(0, mv_ax)
         else:
             mid_vert_angle = int(len(mv_ax) / 2)
@@ -1153,6 +1169,29 @@ class MainWindow3D(QMainWindow):
         self.cut_y.crosshair.hpos.set_value(mid_energy)
         self.main_plot.pos[0].set_value(mid_hor_angle)
         self.main_plot.pos[1].set_value(mid_vert_angle)
+
+    def set_pmesh_axes(self):
+        if self.kx_axis is None:
+            mh_ax = self.data_handler.axes[scan_ax]
+        else:
+            mh_ax = self.kx_axis
+
+        if self.ky_axis is None:
+            mv_ax = self.data_handler.axes[slit_ax]
+        else:
+            mv_ax = self.ky_axis
+
+        tmp_mh_ax = np.arange(mh_ax.size + 1)
+        # tmp_mh_ax[:-1] = mh_ax
+        # tmp_mh_ax[-1] = mh_ax[-1] + wp.get_step(mh_ax)
+
+        tmp_mv_ax = np.arange(mv_ax.size + 1)
+        # tmp_mv_ax[:-1] = mv_ax
+        # tmp_mv_ax[-1] = mv_ax[-1] + wp.get_step(mv_ax)
+
+        self.pmesh_kx_axis, self.pmesh_ky_axis = np.meshgrid(tmp_mh_ax, tmp_mv_ax)
+        self.pmesh_kx_axis, self.pmesh_ky_axis = self.pmesh_kx_axis.T, self.pmesh_ky_axis.T
+        # print(mh_ax.shape, mv_ax.shape, self.pmesh_kx_axis.shape, self.pmesh_ky_axis.shape)
 
     def get_sliders_positions(self):
         main_hor = self.main_plot.crosshair.hpos.get_value()
@@ -1180,9 +1219,15 @@ class MainWindow3D(QMainWindow):
             return
 
     def apply_energy_correction(self):
-        Ef = self.util_panel.axes_energy_Ef.value() * 0.001
+        Ef = self.util_panel.axes_energy_Ef.value()
         hv = self.util_panel.axes_energy_hv.value()
         wf = self.util_panel.axes_energy_wf.value()
+
+        scale = self.util_panel.axes_energy_scale.currentText()
+        if scale == 'binding':
+            hv = 0
+            wf = 0
+
         new_energy_axis = self.data_handler.axes[erg_ax] + Ef - hv + wf
         self.new_energy_axis = new_energy_axis
         new_range = [new_energy_axis[0], new_energy_axis[-1]]
@@ -1289,18 +1334,15 @@ class MainWindow3D(QMainWindow):
             return np.rad2deg(np.arctan(np.tan(np.deg2rad(angle)) / coeff))
 
     def convert_to_kspace(self):
-        alpha = self.data_handler.axes[scan_ax]
-        beta = self.data_handler.axes[slit_ax]
-        dbeta = self.data_handler.axes[slit_ax][self.util_panel.axes_gamma_y.value()]
-        dalpha = self.data_handler.axes[scan_ax][self.util_panel.axes_gamma_x.value()]
-        # alpha = self.data_handler.axes[slit_ax]
-        # beta = self.data_handler.axes[scan_ax]
-        # dalpha = self.data_handler.axes[slit_ax][self.util_panel.axes_gamma_y.value()]
-        # dbeta = self.data_handler.axes[scan_ax][self.util_panel.axes_gamma_x.value()]
-        hv = self.util_panel.axes_conv_hv.value()
-        wf = self.util_panel.axes_conv_wf.value()
+        scanned_ax = self.data_handler.axes[scan_ax]
+        anal_axis = self.data_handler.axes[slit_ax]
+        d_anal_ax = self.data_handler.axes[slit_ax][self.util_panel.axes_gamma_y.value()]
+        d_scan_ax = self.data_handler.axes[scan_ax][self.util_panel.axes_gamma_x.value()]
+        orientation = self.util_panel.axes_slit_orient.currentText()
         a = self.util_panel.axes_conv_lc.value()
-        orient = self.util_panel.axes_slit_orient.currentText()
+        energy = self.new_energy_axis[self.data_handler.z.get_value()]
+        hv = self.util_panel.axes_energy_hv.value()
+        wf = self.util_panel.axes_energy_wf.value()
 
         if hv == 0 or wf == 0:
             warning_box = QMessageBox()
@@ -1317,22 +1359,19 @@ class MainWindow3D(QMainWindow):
             if warning_box.exec() == QMessageBox.Ok:
                 return
 
-        kx_axis, ky_axis = wp.a2k(alpha, beta, hv, d_scan_ax=dalpha, d_anal_ax=dbeta, work_func=wf, a=a,
-                                  orientation=orient)
-        if orient[0] == 'h':
-            nhma = np.sort(kx_axis[:, 0])
-            nvma = np.sort(ky_axis[0, :])
-        elif orient[0] == 'v':
-            nhma = np.linspace(kx_axis.min(), kx_axis.max(), kx_axis[:, 0].size) #np.sort(kx_axis[:, 0])
-            nvma = np.linspace(ky_axis.min(), ky_axis.max(), ky_axis[0, :].size) #np.sort(ky_axis[0, :])
-        self.new_hor_momentum_axis = nhma
-        self.new_ver_momentum_axis = nvma
+        kx_axis, ky_axis = wp.angle2kscape(scanned_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax,
+                                           orientation=orientation, a=a, energy=energy, hv=hv, work_func=wf)
+        nhma = np.sort(kx_axis[:, 0])
+        nvma = np.sort(ky_axis[0, :])
+        self.kx_axis = nhma
+        self.ky_axis = nvma
+        self.pmesh_kx_axis, self.pmesh_ky_axis = kx_axis, ky_axis
         new_hor_range = [nhma[0], nhma[-1]]
         new_ver_range = [nvma[0], nvma[-1]]
-        print(kx_axis.min(), kx_axis.max(), ky_axis.min(), ky_axis.max())
-        print(nhma.size, nvma.size)
-        print([nhma[0], nhma[-1]])
-        print([nvma[0], nvma[-1]])
+        # print(kx_axis.min(), kx_axis.max(), ky_axis.min(), ky_axis.max())
+        # print(nhma.size, nvma.size)
+        # print([nhma[0], nhma[-1]])
+        # print([nvma[0], nvma[-1]])
         self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_hor_range)
         self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_ver_range)
         self.cut_x.plotItem.getAxis(self.cut_x.main_xaxis).setRange(*new_hor_range)
@@ -1340,13 +1379,13 @@ class MainWindow3D(QMainWindow):
         self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_hor_range)
         self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_ver_range)
         self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-            self.new_ver_momentum_axis[self.main_plot.pos[1].get_value()]))
+            self.ky_axis[self.main_plot.pos[1].get_value()]))
         self.util_panel.momentum_vert_value.setText('({:.4f})'.format(
-            self.new_hor_momentum_axis[self.main_plot.pos[0].get_value()]))
+            self.kx_axis[self.main_plot.pos[0].get_value()]))
 
     def reset_kspace_conversion(self):
-        self.new_hor_momentum_axis = None
-        self.new_ver_momentum_axis = None
+        self.kx_axis = None
+        self.ky_axis = None
         org_hor_range = [self.data_handler.axes[0][0], self.data_handler.axes[0][-1]]
         org_ver_range = [self.data_handler.axes[1][0], self.data_handler.axes[1][-1]]
         self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*org_hor_range)
@@ -1364,7 +1403,7 @@ class MainWindow3D(QMainWindow):
         if not self.util_panel.image_show_BZ.isChecked():
             return
 
-        if (self.new_hor_momentum_axis is None) or (self.new_ver_momentum_axis is None):
+        if (self.kx_axis is None) or (self.ky_axis is None):
             warning_box = QMessageBox()
             warning_box.setIcon(QMessageBox.Information)
             warning_box.setText('Data must be converted to k-space.')
@@ -1420,30 +1459,29 @@ class MainWindow3D(QMainWindow):
             cut = self.data_handler.cut_x_data
             dim_value = self.data_set.yscale[self.main_plot.crosshair.hpos.get_value()]
             data_set.yscale = data_set.xscale
-            thread_lbl = self.fname + ' - ' + 'scanned_cut'
+            thread_idx = self.index + '_scan_cut'
         else:
             cut = self.data_handler.cut_y_data.T
             dim_value = self.data_set.xscale[self.main_plot.crosshair.vpos.get_value()]
-            thread_lbl = self.fname + ' - ' + 'analyzer_cut'
+            thread_idx = self.index + '_an_cut'
 
         data = np.ones((1, cut.shape[0], cut.shape[1]))
         data[0, :, :] = cut
         data_set.data = data
-        data_set.xscale = [1]
+        data_set.xscale = np.array([1])
+        data_set.scan_type = 'cut'
 
         # self.title = fname.split('/')[-1]
         # self.fname = fname
 
-        if data_set.scan_type == 'tilt scan':
-            data_set.scan_type = 'cut'
+        if (data_set.scan_type == 'tilt scan') or (data_set.scan_type == 'DA scan'):
             data_set.tilt = dim_value
-            thread_lbl += ' - @ {:.3} deg'.format(dim_value)
+            thread_idx += '_@{:.3}deg'.format(dim_value)
         elif data_set.scan_type == 'hv scan':
-            data_set.scan_type = 'cut'
             data_set.hv = dim_value
-            thread_lbl += ' - @ {:.3} eV'.format(dim_value)
+            thread_idx += '_@{:.1}eV'.format(dim_value)
 
-        if thread_lbl in self.thread.keys():
+        if thread_idx in self.db.data_viewers.keys():
             thread_running_box = QMessageBox()
             thread_running_box.setIcon(QMessageBox.Information)
             thread_running_box.setWindowTitle('Doh.')
@@ -1452,12 +1490,13 @@ class MainWindow3D(QMainWindow):
             if thread_running_box.exec() == QMessageBox.Ok:
                 return
 
-        self.thread[thread_lbl] = ThreadClass(index=thread_lbl)
-        self.thread[thread_lbl].start()
+        self.db.thread[thread_idx] = ThreadClass(index=thread_idx)
+        self.db.thread[thread_idx].start()
         try:
-            self.data_viewers[thread_lbl] = \
-                MainWindow2D(self.db, data_set=data_set, fname=thread_lbl, index=thread_lbl)
-        except Exception:
+            self.db.data_viewers[thread_idx] = \
+                MainWindow2D(self.db, data_set=data_set, index=thread_idx, slice=True)
+        except Exception as e:
+            raise e
             error_box = QMessageBox()
             error_box.setIcon(QMessageBox.Information)
             error_box.setText('Couldn\'t load data,  something went wrong.')
@@ -1479,8 +1518,8 @@ class MainWindow3D(QMainWindow):
 
     def find_index_coords(self, raw_pts):
 
-        x0, dx = self.new_hor_momentum_axis[0], wp.get_step(self.new_hor_momentum_axis)
-        y0, dy = self.new_ver_momentum_axis[0], wp.get_step(self.new_ver_momentum_axis)
+        x0, dx = self.kx_axis[0], wp.get_step(self.kx_axis)
+        y0, dy = self.ky_axis[0], wp.get_step(self.ky_axis)
         res_pts = []
 
         for rp in raw_pts:
@@ -1499,10 +1538,10 @@ class MainWindow3D(QMainWindow):
     # main buttons' actions
     def close_mw(self):
         self.destroy()
-        self.db.thread[self.thread_index].quit()
-        self.db.thread[self.thread_index].wait()
-        del(self.db.thread[self.thread_index])
-        del(self.db.data_viewers[self.thread_index])
+        self.db.thread[self.index].quit()
+        self.db.thread[self.index].wait()
+        del(self.db.thread[self.index])
+        del(self.db.data_viewers[self.index])
 
     def save_to_pickle(self):
         dataset = self.data_set
@@ -1542,21 +1581,15 @@ class MainWindow3D(QMainWindow):
 
             box_return_value = save_cor_box.exec()
             if box_return_value == QMessageBox.Ok:
-                attrs = {}
                 if up.axes_energy_Ef.value() != 0:
-                    attrs['Ef'] = up.axes_energy_Ef.value()
+                    dataset.Ef = up.axes_energy_Ef.value()
                 if up.axes_energy_hv.value() != 0:
-                    attrs['hv'] = up.axes_energy_hv.value()
+                    dataset.hv = up.axes_energy_hv.value()
                 if up.axes_energy_wf.value() != 0:
-                    attrs['wf'] = up.axes_energy_wf.value()
-                if up.axes_gamma_x.value() != 0:
-                    attrs['gamma_x'] = up.axes_gamma_x.value()
-                if up.axes_gamma_y.value() != 0:
-                    attrs['gamma_y'] = up.axes_gamma_y.value()
-                if not (self.new_hor_momentum_axis is None) and not (self.new_ver_momentum_axis is None):
-                    attrs['kx'] = self.new_hor_momentum_axis
-                    attrs['ky'] = self.new_ver_momentum_axis
-                dl.update_namespace(dataset, ['saved', attrs])
+                    dataset.wf = up.axes_energy_wf.value()
+                if not (self.kx_axis is None) and not (self.ky_axis is None):
+                    dataset.kxscale = self.kx_axis
+                    dataset.kyscale = self.ky_axis
             elif box_return_value == QMessageBox.No:
                 pass
             elif box_return_value == QMessageBox.Cancel:
@@ -1567,6 +1600,20 @@ class MainWindow3D(QMainWindow):
         dl.dump(dataset, (dir + fname), force=True)
 
     def load_saved_corrections(self, data_set):
+        if type(data_set.Ef) == float:
+            self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
+        if type(data_set.hv) == float:
+            self.util_panel.axes_energy_hv.setValue(data_set.hv)
+        if type(data_set.wf) == float:
+            self.util_panel.axes_energy_wf.setValue(data_set.wf)
+        if type(data_set.Ef) == float:
+            self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
+        if hasattr(data_set, 'kxscale'):
+            self.kx_axis = data_set.kxscale
+        if hasattr(data_set, 'kyscale'):
+            self.ky_axis = data_set.kyscale
+
+    def load_saved_corrections_old(self, data_set):
         if hasattr(data_set, 'saved'):
             saved = data_set.saved
             if 'Ef' in saved.keys():
@@ -1584,8 +1631,8 @@ class MainWindow3D(QMainWindow):
                 self.util_panel.orientate_init_y.setValue(saved['gamma_y'])
                 self.util_panel.orientate_find_gamma_message.setText('Values loaded from file.')
             if 'kx' in saved.keys() and 'ky' in saved.keys():
-                self.new_hor_momentum_axis = saved['kx']
-                self.new_ver_momentum_axis = saved['ky']
+                self.kx_axis = saved['kx']
+                self.ky_axis = saved['ky']
                 new_hor_range = [saved['kx'][0], saved['kx'][-1]]
                 new_ver_range = [saved['ky'][0], saved['ky'][-1]]
                 self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_hor_range)
@@ -1595,14 +1642,16 @@ class MainWindow3D(QMainWindow):
                 self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_hor_range)
                 self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_ver_range)
                 self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-                    self.new_ver_momentum_axis[self.main_plot.pos[1].get_value()]))
+                    self.ky_axis[self.main_plot.pos[1].get_value()]))
                 self.util_panel.momentum_vert_value.setText('({:.4f})'.format(
-                    self.new_hor_momentum_axis[self.main_plot.pos[0].get_value()]))
+                    self.kx_axis[self.main_plot.pos[0].get_value()]))
         else:
             pass
 
-        if hasattr(data_set, 'hv'):
-            self.util_panel.axes_conv_hv.setValue(float(data_set.hv))
-        if hasattr(data_set, 'wf'):
-            self.util_panel.axes_conv_wf.setValue(float(data_set.wf))
+        if not (data_set.Ef is None):
+            self.util_panel.axes_energy_Ef.setValue(float(data_set.Ef))
+        if not (data_set.hv is None):
+            self.util_panel.axes_energy_hv.setValue(float(data_set.hv))
+        if not (data_set.wf is None):
+            self.util_panel.axes_energy_wf.setValue(float(data_set.wf))
 

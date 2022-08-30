@@ -139,10 +139,10 @@ class DataHandler:
 
 class MainWindow2D(QMainWindow):
 
-    def __init__(self, data_browser, data_set=None, fname=None, index=0):
+    def __init__(self, data_browser, data_set=None, index=None, slice=False):
         super(MainWindow2D, self).__init__()
-        self.title = fname.split('/')[-1]
-        self.fname = fname
+        self.title = index.split('/')[-1]
+        self.fname = index
         self.central_widget = QtGui.QWidget()
         self.layout = QtGui.QGridLayout()
 
@@ -152,10 +152,11 @@ class MainWindow2D(QMainWindow):
         self.cmap_name = None
         self.lut = None
         self.db = data_browser
-        self.thread_index = index
+        self.index = index
+        self.slice = slice
         self.slider_pos = [0, 0]
         self.new_energy_axis = None
-        self.new_momentum_axis = None
+        self.k_axis = None
         self.smooth = False
         self.curvature = False
         self.thread = {}
@@ -215,7 +216,12 @@ class MainWindow2D(QMainWindow):
         self.util_panel.energy_vert.setRange(0, len(self.data_handler.axes[1]))
         self.util_panel.momentum_hor.setRange(0, len(self.data_handler.axes[0]))
 
-        self.load_saved_corrections(data_set)
+        try:
+            self.load_saved_corrections(data_set)
+        except AttributeError:
+            print('going with old settings.')
+            self.load_saved_corrections_old(data_set)
+
         self.util_panel.set_metadata_window(raw_data)
         self.put_sliders_in_initial_positions()
 
@@ -263,6 +269,7 @@ class MainWindow2D(QMainWindow):
         self.util_panel.axes_energy_Ef.valueChanged.connect(self.apply_energy_correction)
         self.util_panel.axes_energy_hv.valueChanged.connect(self.apply_energy_correction)
         self.util_panel.axes_energy_wf.valueChanged.connect(self.apply_energy_correction)
+        self.util_panel.axes_energy_scale.currentIndexChanged.connect(self.apply_energy_correction)
         self.util_panel.axes_do_kspace_conv.clicked.connect(self.convert_to_kspace)
         self.util_panel.axes_reset_conv.clicked.connect(self.reset_kspace_conversion)
 
@@ -399,10 +406,10 @@ class MainWindow2D(QMainWindow):
         self.edc = y
         xp.plot(x, y)
         self.util_panel.momentum_hor.setValue(i_x)
-        if self.new_momentum_axis is None:
+        if self.k_axis is None:
             self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.data_handler.axes[0][i_x]))
         else:
-            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.new_momentum_axis[i_x]))
+            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.k_axis[i_x]))
 
         if binning:
             self.plot_y.left_line.setValue(i_x - width)
@@ -621,16 +628,17 @@ class MainWindow2D(QMainWindow):
             e_ax = self.data_handler.axes[1]
         else:
             e_ax = self.new_energy_axis
-        if e_ax.min() < 0:
+        if (e_ax.min() < 0) and (e_ax.max() > 0):
             mid_energy = wp.indexof(-0.005, e_ax)
         else:
             mid_energy = int(len(e_ax) / 2)
+            self.util_panel.axes_energy_scale.setCurrentIndex(1)
 
-        if self.new_momentum_axis is None:
+        if self.k_axis is None:
             mom_ax = self.data_handler.axes[0]
         else:
-            mom_ax = self.new_momentum_axis
-        if mom_ax.min() < 0:
+            mom_ax = self.k_axis
+        if (mom_ax.min() < 0) and (mom_ax.max() > 0):
             mid_angle = wp.indexof(0, mom_ax)
         else:
             mid_angle = int(len(mom_ax) / 2)
@@ -639,9 +647,15 @@ class MainWindow2D(QMainWindow):
         self.main_plot.pos[1].set_value(mid_angle)
 
     def apply_energy_correction(self):
-        Ef = self.util_panel.axes_energy_Ef.value() * 0.001
+        Ef = self.util_panel.axes_energy_Ef.value()
         hv = self.util_panel.axes_energy_hv.value()
         wf = self.util_panel.axes_energy_wf.value()
+
+        scale = self.util_panel.axes_energy_scale.currentText()
+        if scale == 'binding':
+            hv = 0
+            wf = 0
+
         new_energy_axis = self.data_handler.axes[1] + Ef - hv + wf
         self.new_energy_axis = new_energy_axis
         new_range = [new_energy_axis[0], new_energy_axis[-1]]
@@ -653,14 +667,15 @@ class MainWindow2D(QMainWindow):
         self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.new_energy_axis[erg_idx]))
 
     def convert_to_kspace(self):
-        # TODO delete some printing when converting
-        axis = self.data_handler.axes[0]
-        beta = self.util_panel.axes_angle_off.value()
-        dalpha = self.data_handler.axes[0][self.util_panel.axes_gamma_x.value()]
-        hv = self.util_panel.axes_conv_hv.value()
-        wf = self.util_panel.axes_conv_wf.value()
-        a = self.util_panel.axes_conv_lc.value()
+        scan_ax = np.array([0])
+        anal_axis = self.data_handler.axes[0]
+        d_scan_ax = self.util_panel.axes_angle_off.value()
+        d_anal_ax = self.data_handler.axes[0][self.util_panel.axes_gamma_x.value()]
         orientation = self.util_panel.axes_slit_orient.currentText()
+        a = self.util_panel.axes_conv_lc.value()
+        energy = self.new_energy_axis
+        hv = self.util_panel.axes_energy_hv.value()
+        wf = self.util_panel.axes_energy_wf.value()
 
         if hv == 0 or wf == 0:
             warning_box = QMessageBox()
@@ -677,16 +692,16 @@ class MainWindow2D(QMainWindow):
             if warning_box.exec() == QMessageBox.Ok:
                 return
 
-        nma = wp.a2k_single_axis(axis, hv, beta=beta, dalpha=dalpha, work_func=wf, a=a, orientation=orientation)
-        self.new_momentum_axis = nma
-        new_range = [nma[0], nma[-1]]
+        nma, erg = wp.angle2kscape(scan_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax,
+                                   orientation=orientation, a=a, energy=energy, hv=hv, work_func=wf)
+        self.k_axis = nma[-1]
+        new_range = [nma[-1][0], nma[-1][-1]]
         self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_range)
         self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
-        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-            self.new_momentum_axis[self.main_plot.pos[1].get_value()]))
+        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.k_axis[self.main_plot.pos[1].get_value()]))
 
     def reset_kspace_conversion(self):
-        self.new_momentum_axis = None
+        self.k_axis = None
         org_range = [self.data_handler.axes[0][0], self.data_handler.axes[0][-1]]
         self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*org_range)
         self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*org_range)
@@ -713,16 +728,24 @@ class MainWindow2D(QMainWindow):
         self.curvature = not self.curvature
         if self.curvature:
             a = self.util_panel.image_curvature_a.value()
-            if self.new_momentum_axis is None:
+            if self.k_axis is None:
                 dx = wp.get_step(self.data_handler.axes[0])
             else:
-                dx = wp.get_step(self.new_momentum_axis)
+                dx = wp.get_step(self.k_axis)
             if self.new_energy_axis is None:
                 dy = wp.get_step(self.data_handler.axes[1])
             else:
                 dy = wp.get_step(self.new_energy_axis)
             self.smooth_data = deepcopy(self.image_data)
-            self.image_data = wp.curvature_2d(self.image_data, dx, dy, a0=a)
+            method = self.util_panel.image_curvature_method.currentText()
+            if method == '2D':
+                self.image_data = wp.curvature_2d(self.image_data, dx, dy, a0=a)
+            elif method == '1D (EDC)':
+                for idx in range(self.image_data.shape[1]):
+                    self.image_data[:, idx] = wp.curvature_1d(self.image_data[:, idx], a0=a)
+            elif method == '1D (MDC)':
+                for idx in range(self.image_data.shape[0]):
+                    self.image_data[idx, :] = wp.curvature_1d(self.image_data[idx, :], a0=a)
             self.set_image()
             self.util_panel.image_curvature_button.setText('Reset')
         else:
@@ -735,7 +758,7 @@ class MainWindow2D(QMainWindow):
 
     def open_mdc_fitter(self):
 
-        thread_lbl = self.thread_index + '_mdc_viewer'
+        thread_lbl = self.index + '_mdc_viewer'
         self.mdc_thread_lbl = thread_lbl
 
         if thread_lbl in self.data_viewers:
@@ -753,8 +776,8 @@ class MainWindow2D(QMainWindow):
             erg_ax = self.new_energy_axis
         else:
             erg_ax = self.data_set.zscale
-        if self.new_momentum_axis is not None:
-            k_ax = self.new_momentum_axis
+        if self.k_axis is not None:
+            k_ax = self.k_axis
         else:
             k_ax = self.data_set.yscale
         axes = [k_ax, erg_ax]
@@ -770,10 +793,10 @@ class MainWindow2D(QMainWindow):
 
     def open_edc_fitter(self):
 
-        thread_lbl = self.thread_index + '_edc_viewer'
-        self.edc_thread_lbl = thread_lbl
+        thread_idx = self.index + '_edc_viewer'
+        self.edc_thread_lbl = thread_idx
 
-        if thread_lbl in self.data_viewers:
+        if thread_idx in self.data_viewers:
             already_opened_box = QMessageBox()
             already_opened_box.setIcon(QMessageBox.Information)
             already_opened_box.setText('EDC viewer already opened.')
@@ -781,20 +804,20 @@ class MainWindow2D(QMainWindow):
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
 
-        self.thread[thread_lbl] = ThreadClass(index=thread_lbl)
-        self.thread[thread_lbl].start()
+        self.thread[thread_idx] = ThreadClass(index=thread_idx)
+        self.thread[thread_idx].start()
         title = self.title + ' - edc fitter'
         if self.new_energy_axis is not None:
             erg_ax = self.new_energy_axis
         else:
             erg_ax = self.data_set.zscale
-        if self.new_momentum_axis is not None:
-            k_ax = self.new_momentum_axis
+        if self.k_axis is not None:
+            k_ax = self.k_axis
         else:
             k_ax = self.data_set.yscale
         axes = [k_ax, erg_ax]
         try:
-            self.data_viewers[thread_lbl] = EDCFitter(self, self.data_set, axes, title, index=thread_lbl)
+            self.data_viewers[thread_idx] = EDCFitter(self, self.data_set, axes, title, index=thread_idx)
         except Exception:
             error_box = QMessageBox()
             error_box.setIcon(QMessageBox.Information)
@@ -805,28 +828,15 @@ class MainWindow2D(QMainWindow):
 
     def close_mw(self):
         self.destroy()
-        if 'scanned_cut' in self.title:
-            idx = self.fname.find('scanned_cut') - 3
-            dv = self.db.data_viewers[self.fname[:idx]]
-            dv.thread[self.fname].quit()
-            dv.thread[self.fname].wait()
-            del(dv.thread[self.fname])
-            del(dv.data_viewers[self.fname])
-        elif 'analyzer_cut' in self.fname:
-            idx = self.fname.find('analyzer_cut') - 3
-            dv = self.db.data_viewers[self.fname[:idx]]
-            dv.thread[self.fname].quit()
-            dv.thread[self.fname].wait()
-            del(dv.thread[self.fname])
-            del(dv.data_viewers[self.fname])
-        else:
-            self.db.thread[self.thread_index].quit()
-            self.db.thread[self.thread_index].wait()
-            del(self.db.thread[self.thread_index])
-            del(self.db.data_viewers[self.thread_index])
+        self.db.thread[self.index].quit()
+        self.db.thread[self.index].wait()
+        # print(f'closing thread in dv: {self.index}')
+        del(self.db.thread[self.index])
+        del(self.db.data_viewers[self.index])
 
     def save_to_pickle(self):
         # TODO change 'k_axis' to 'k' for all cuts: add 'change attrs name'
+        # energy axis
         dataset = self.data_set
         dir = self.fname[:-len(self.title)]
         up = self.util_panel
@@ -864,18 +874,16 @@ class MainWindow2D(QMainWindow):
 
             box_return_value = save_cor_box.exec()
             if box_return_value == QMessageBox.Ok:
-                attrs = {}
                 if up.axes_energy_Ef.value() != 0:
-                    attrs['Ef'] = up.axes_energy_Ef.value()
+                    dataset.Ef = up.axes_energy_Ef.value()
                 if up.axes_energy_hv.value() != 0:
-                    attrs['hv'] = up.axes_energy_hv.value()
+                    dataset.hv = up.axes_energy_hv.value()
                 if up.axes_energy_wf.value() != 0:
-                    attrs['wf'] = up.axes_energy_wf.value()
-                if up.axes_angle_off.value() != 0:
-                    attrs['angle_off'] = up.axes_angle_off.value()
-                if not (self.new_momentum_axis is None):
-                    attrs['k'] = self.new_momentum_axis
-                dl.update_namespace(dataset, ['saved', attrs])
+                    dataset.wf = up.axes_energy_wf.value()
+                # if up.axes_angle_off.value() != 0:
+                #     attrs['angle_off'] = up.axes_angle_off.value()
+                if not (self.k_axis is None):
+                    dataset.kyscale = self.k_axis
             elif box_return_value == QMessageBox.No:
                 pass
             elif box_return_value == QMessageBox.Cancel:
@@ -888,6 +896,24 @@ class MainWindow2D(QMainWindow):
     def load_saved_corrections(self, data_set):
 
         if hasattr(data_set, 'saved'):
+            raise AttributeError
+        if not (data_set.Ef is None):
+            self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
+        if not (data_set.hv is None):
+            self.util_panel.axes_energy_hv.setValue(data_set.hv)
+        if not (data_set.wf is None):
+            self.util_panel.axes_energy_wf.setValue(data_set.wf)
+        if not (data_set.kyscale is None):
+            self.k_axis = data_set.kyscale
+            new_range = [self.k_axis[0], self.k_axis[-1]]
+            self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_range)
+            self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
+            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+                self.k_axis[self.main_plot.pos[1].get_value()]))
+
+    def load_saved_corrections_old(self, data_set):
+
+        if hasattr(data_set, 'saved'):
             saved = data_set.saved
             if 'Ef' in saved.keys():
                 self.util_panel.axes_energy_Ef.setValue(saved['Ef'])
@@ -898,24 +924,26 @@ class MainWindow2D(QMainWindow):
             if 'angle_off' in saved.keys():
                 self.util_panel.axes_angle_off.setValue(saved['angle_off'])
             if 'k' in saved.keys():
-                self.new_momentum_axis = saved['k']
-                new_range = [self.new_momentum_axis[0], self.new_momentum_axis[-1]]
+                self.k_axis = saved['k']
+                new_range = [self.k_axis[0], self.k_axis[-1]]
                 self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_range)
                 self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
                 self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-                    self.new_momentum_axis[self.main_plot.pos[1].get_value()]))
+                    self.k_axis[self.main_plot.pos[1].get_value()]))
             if 'k_axis' in saved.keys():
-                self.new_momentum_axis = saved['k_axis']
-                new_range = [self.new_momentum_axis[0], self.new_momentum_axis[-1]]
+                self.k_axis = saved['k_axis']
+                new_range = [self.k_axis[0], self.k_axis[-1]]
                 self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_range)
                 self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
                 self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-                    self.new_momentum_axis[self.main_plot.pos[1].get_value()]))
+                    self.k_axis[self.main_plot.pos[1].get_value()]))
         else:
             pass
 
-        if hasattr(data_set, 'hv'):
-            self.util_panel.axes_conv_hv.setValue(float(data_set.hv))
-        if hasattr(data_set, 'wf'):
-            self.util_panel.axes_conv_wf.setValue(float(data_set.wf))
+        if not (data_set.Ef is None):
+            self.util_panel.axes_energy_Ef.setValue(float(data_set.Ef))
+        if not (data_set.hv is None):
+            self.util_panel.axes_energy_hv.setValue(float(data_set.hv))
+        if not (data_set.wf is None):
+            self.util_panel.axes_energy_wf.setValue(float(data_set.wf))
 

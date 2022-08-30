@@ -11,6 +11,7 @@ from scipy.special import voigt_profile
 from scipy import ndimage
 from scipy.optimize import curve_fit, minimize, fsolve
 from scipy.signal import convolve2d
+from scipy.optimize import OptimizeWarning
 import scipy.signal as sig
 from scipy.fft import fft, ifft, fft2, ifft2, fftshift, ifftshift
 import my_constants as const
@@ -75,30 +76,22 @@ def dynes_formula(omega, n0, gamma, delta):
     return n0 * n_omega.real
 
 
-def asym_lorentzian(x, a0, mu, gamma, alpha=1, beta=1, resol=0):
+def asym_lorentzian(x, a0, mu, gamma, alpha=0, resol=0):
     if resol == 0:
-        for xi in x:
-            if xi <= mu:
-                return (a0 * (1 / (2 * np.pi)) * gamma / ((x - mu) ** 2 + (.5 * gamma) ** 2)) ** alpha
-            else:
-                return (a0 * (1 / (2 * np.pi)) * gamma / ((x - mu) ** 2 + (.5 * gamma) ** 2)) ** beta
+        gamma *= 2 / (1 + np.exp(alpha * (x - mu)))
+        return a0 * (1 / (2 * np.pi)) * gamma / ((x - mu) ** 2 + (.5 * gamma) ** 2)
     else:
-        for xi in x:
-            if xi <= mu:
-                y = (a0 * (1 / (2 * np.pi)) * gamma / ((x - mu) ** 2 + (.5 * gamma) ** 2)) ** alpha
-                return ndimage.gaussian_filter(y, resol)
-            else:
-                y = (a0 * (1 / (2 * np.pi)) * gamma / ((x - mu) ** 2 + (.5 * gamma) ** 2)) ** beta
-                return ndimage.gaussian_filter(y, resol)
+        gamma *= 2 / (1 + np.exp(alpha * (x - mu)))
+        y = a0 * (1 / (2 * np.pi)) * gamma / ((x - mu) ** 2 + (.5 * gamma) ** 2)
+        return ndimage.gaussian_filter(y, sigma=resol)
 
 
 def two_lorentzians(x, a0, mu0, gamma0, a1, mu1, gamma1):
     return lorentzian(x, a0, mu0, gamma0) + lorentzian(x, a1, mu1, gamma1)
 
 
-def three_lorentzians(x, a, mu, gamma):
-    return lorentzian(x, a[0], mu[0], gamma[0]) + lorentzian(x, a[1], mu[1], gamma[1]) + \
-           lorentzian(x, a[2], mu[2], gamma[2])
+def three_lorentzians(x, a0, mu0, gamma0, a1, mu1, gamma1, a2, mu2, gamma2):
+    return lorentzian(x, a0, mu0, gamma0) + lorentzian(x, a1, mu1, gamma1) + lorentzian(x, a2, mu2, gamma2)
 
 
 def four_lorentzians(x, a, mu, gamma):
@@ -167,7 +160,7 @@ def fit_n_dublets(data, x, a0, mu, gamma, delta, constr=None, fit_delta=False, l
             fitted_profiles += lorentzian_dublet(x, popt[ip:ik], delta=delta)
             pars.append(popt[ip:ik])
             pcovs.append(pcov[ip:ik])
-            errs.append(np.sqrt(np.diag(pcov[ip:ik])))
+            errs.append(np.sqrt(np.diag(np.abs(pcov[ip:ik]))))
 
     # create panda dataframe with results
     mus = []
@@ -611,6 +604,10 @@ def get_linear(points):
     return fun
 
 
+def exp(x, a, k):
+    return a * np.exp(k * x)
+
+
 def voigt(x, a, mu, gamma, sigma):
     """
         Return the Voigt line shape at x with Lorentzian component FWHM gamma
@@ -744,6 +741,83 @@ def TB_FS(TB_fun, k0, *t, model='li2018'):
     res = fsolve(fun, k0, args=t)
 
     return res
+
+
+def shift_k_coordinates(kx, ky, qx=0, qy=0):
+    kxx = kx + np.ones_like(kx) * qx
+    kyy = ky + np.ones_like(ky) * qy
+    return kxx, kyy
+
+
+def fit_mdc(k_ax, mdc, fit_range, p0, bgr_fit):
+
+    range0 = indexof(fit_range[0], k_ax)
+    range1 = indexof(fit_range[1], k_ax)
+    k_fit = k_ax[range0:range1]
+    try:
+        mdc_fit = mdc[range0:range1] - bgr_fit
+    except AttributeError:
+        mdc_fit = mdc[range0:range1]
+        bgr_fit = np.zeros_like(mdc_fit)
+    except TypeError:
+        mdc_fit = mdc[range0:range1]
+        bgr_fit = np.zeros_like(mdc_fit)
+    except ValueError:
+        return
+
+    a, mu, gamma, alpha, resol = p0
+    if alpha == 1:
+        fit_alpha = False
+    else:
+        fit_alpha = True
+    if resol == 0:
+        fit_resol = False
+    else:
+        fit_resol = True
+    fit_fun, p0 = set_fit_fun(p0, fit_alpha, fit_resol)
+
+    try:
+        p, cov = curve_fit(fit_fun, k_fit, mdc_fit, p0=p0)
+    except RuntimeWarning:
+        return None
+    except OptimizeWarning:
+        return None
+
+    # prepare_fitting_results(fit_alpha, fit_beta)
+    res_func = lambda x: fit_fun(x, *p)
+    fit = res_func(k_fit) + bgr_fit
+    return fit, p
+
+
+def fit_mdc_bgr(k_ax, mdc, fit_range, bgr_range, poly_order):
+    bgr0, bgr1 = fit_range[0], bgr_range[0]
+    bgr2, bgr3 = bgr_range[1], fit_range[1]
+    bgr0, bgr1 = indexof(bgr0, k_ax), indexof(bgr1, k_ax)
+    bgr2, bgr3 = indexof(bgr2, k_ax), indexof(bgr3, k_ax)
+
+    bgr_k = np.hstack((k_ax[bgr0:bgr1], k_ax[bgr2:bgr3]))
+    bgr_mdc = np.hstack((mdc[bgr0:bgr1], mdc[bgr2:bgr3]))
+    coefs_bgr = np.polyfit(bgr_k, bgr_mdc, poly_order)
+
+    fit_k = k_ax[bgr0:bgr3]
+    return np.poly1d(coefs_bgr)(fit_k), fit_k
+
+
+def set_fit_fun(p00, fit_alpha, fit_resol):
+    p0 = [p00[0], p00[1], p00[2]]
+    if fit_alpha and fit_resol:
+        fit_fun = lambda x, a0, mu, gamma, alpha, resol: asym_lorentzian(x, a0, mu, gamma, alpha=alpha, resol=resol)
+        p0.append(p00[3])
+        p0.append(p00[4])
+    elif fit_alpha and not fit_resol:
+        fit_fun = lambda x, a0, mu, gamma, alpha: asym_lorentzian(x, a0, mu, gamma, alpha=alpha)
+        p0.append(p00[3])
+    elif not fit_alpha and fit_resol:
+        fit_fun = lambda x, a0, mu, gamma, resol: asym_lorentzian(x, a0, mu, gamma, resol=resol)
+        p0.append(p00[4])
+    else:
+        fit_fun = lambda x, a0, mu, gamma: asym_lorentzian(x, a0, mu, gamma)
+    return fit_fun, p0
 
 
 # +--------------------------------------------------+ #
@@ -1052,7 +1126,7 @@ def PGM_calibration(hv, error_offset, dtheta, dbeta, cff=2.25, k=1, lines_per_mm
     N = lines_per_mm * (1e-6)
 
     # convert energy in eV to wavelength in nm
-    wl = eV_nm_convertion(hv)
+    wl = const.convert_eV_nm(hv)
     # convert degrees to radians
     dt = np.deg2rad(dtheta)
     db = np.deg2rad(dbeta)
@@ -1067,7 +1141,7 @@ def PGM_calibration(hv, error_offset, dtheta, dbeta, cff=2.25, k=1, lines_per_mm
     # wavelength from grating equation, taking into account offsets
     actualEnergy = 2 * np.cos(theta + dt) * np.sin(theta + dt + beta + db) / (N * k)
 
-    return eV_nm_convertion(actualEnergy) - hv + error_offset
+    return const.convert_eV_nm(actualEnergy) - hv + error_offset
 
 
 def fit_PGM_calibration(data, hv, error_offset=-0.06, dtheta=0.001, dbeta=-0.001, cff=2.25, k=1, lines_per_mm=300):
@@ -1173,6 +1247,10 @@ def symmetrize_edc_around_Ef(data, energies):
 # +--------------+ #
 # | Utilities    | # ==============================================================
 # +--------------+ #
+
+
+def add_attr(data, name, value):
+    data.__dict__.update({name: value})
 
 
 def add_kinetic_factor(data):
@@ -1333,11 +1411,6 @@ def smooth_2d(x, n_box=5, recursion_level=1):
         return smooth_2d(smoothened, n_box, recursion_level - 1)
 
 
-def eV_nm_convertion(data):
-    coeff = const.h * const.c * 1e9 / const.eV
-    return coeff / data
-
-
 def normalize(data):
     if len(data.shape) == 1:
         if data.max() == 0:
@@ -1390,6 +1463,22 @@ def sum_edcs_around(data, x, y, n=3):
         for yi in range(start_y, stop_y):
             result += data[:, yi, xi]
     return normalize(result)
+
+
+def sum_shifted_cuts(data):
+    steps = []
+    for xi in range(data.xscale.size):
+        tmp = np.sum(data.data[xi, :, :], axis=0)
+        steps.append(detect_step(tmp))
+    steps = np.array(steps)
+    steps_min, steps_max, steps_diff = steps.min(), steps.max(), steps.max() - steps.min()
+    cut = np.zeros((data.yscale.size, data.zscale.size + steps_diff))
+    nk, ne = data.data[0, :, :].shape
+    for idx, step in enumerate(steps):
+        shift = np.abs(step - steps_max)
+        cut[:, shift:(shift + ne)] += data.data[idx, :, :]
+    cut = cut[:, steps_diff:-steps_diff]
+    return cut, data.zscale[:cut.shape[1]]
 
 
 def sum_XPS(data, crop=None, plot=False):
@@ -1542,6 +1631,7 @@ def scan_whole_FS_for_gaps(data1, data2, erg1, erg2, e_range=None, gap_cutoff=10
 # +-----------------------+ #
 # | Plotting functions    | # ==============================================================
 # +-----------------------+ #
+
 
 def set_mpl_rcparams(fontsize=9, color='b1b6d5', print_params=False):
     mpl.rcParams['font.size'] = fontsize
@@ -1864,13 +1954,14 @@ def imgs_corr(img1, img2):
     return num / np.sqrt(den1 * den2)
 
 
-def curvature_1d(data, a0=0.0005, rl=5, xaxis=None):
+def curvature_1d(data, a0=0.0005, nb=None, rl=None, xaxis=None):
 
-    data = smooth(data, recursion_level=rl)
+    if (nb is not None) and (rl is not None):
+        data = smooth(data, n_box=nb, recursion_level=rl)
     df = np.gradient(data)
     d2f = np.gradient(df)
-    df = df
-    d2f = d2f
+    # df = df
+    # d2f = d2f
 
     df_max = np.max(np.abs(df) ** 2)
     C_x = d2f / (np.sqrt(a0 + ((df / df_max) ** 2)) ** 3)
@@ -2071,8 +2162,121 @@ def shape_area(x, y):
 # +-----------------------+ #
 
 
+def k_fac(energy, Eb=0, hv=0, work_func=4.5):
+    me = const.m_e / const.eV / 1e20
+    hbar = const.hbar_eV
+    return np.sqrt(2 * me * (energy - Eb + hv - work_func)) / hbar
+
+
+def angle2kscape(scan_ax, anal_ax, d_scan_ax=0, d_anal_ax=0, orientation='horizontal', a=np.pi, energy=np.array([0]),
+                 **kwargs):
+    # Angle to radian conversion and setting offsets
+    scan_ax, anal_ax, energy = np.array(scan_ax), np.array(anal_ax), np.array(energy)
+    d_scan_ax = -np.deg2rad(d_scan_ax)
+    d_anal_ax = -np.deg2rad(d_anal_ax)
+    scan_ax = np.deg2rad(scan_ax) + d_scan_ax
+    anal_ax = np.deg2rad(anal_ax) + d_anal_ax
+
+    nkx, nky, ne = scan_ax.size, anal_ax.size, energy.size
+
+    # single momentum axis for specified binding energy
+    if (nkx == 1) and (ne == 1):
+        ky = np.zeros(nky)
+        k0 = k_fac(energy, **kwargs)
+        k0 *= (a / np.pi)
+        if orientation == 'horizontal':
+            ky = np.cos(d_scan_ax) * np.sin(anal_ax)
+        elif orientation == 'vertical':
+            ky = np.sin(anal_ax)
+        return k0 * ky, 1
+
+    # momentum vs energy, e.g. for band maps
+    elif (nkx == 1) and (ne != 1):
+        ky = np.zeros((ne, nky))
+        erg = np.zeros_like(ky)
+        if orientation == 'horizontal':
+            for ei in range(ne):
+                k0i = k_fac(energy[ei], **kwargs)
+                k0i *= (a / np.pi)
+                ky[ei] = k0i * np.cos(d_scan_ax) * np.sin(anal_ax)
+                erg[ei] = energy[ei] * np.ones(nky)
+        elif orientation == 'vertical':
+            for ei in range(ne):
+                k0i = k_fac(energy[ei], **kwargs)
+                k0i *= (a / np.pi)
+                ky[ei] = k0i * np.sin(anal_ax)
+                erg[ei] = energy[ei] * np.ones(nky)
+        return ky, erg
+
+    # momentum vs momentum, e.g. for constant energy FSs
+    elif (nkx != 1) and (ne == 1):
+        kx = np.zeros((nkx, nky))
+        ky = np.zeros_like(kx)
+        k0 = k_fac(energy, **kwargs)
+        k0 *= (a / np.pi)
+        if orientation == 'horizontal':
+            for kxi in range(nkx):
+                kx[kxi] = np.ones(nky) * np.sin(scan_ax[kxi])
+                ky[kxi] = np.cos(scan_ax[kxi]) * np.sin(anal_ax)
+        elif orientation == 'vertical':
+            for kxi in range(nkx):
+                kx[kxi] = np.cos(anal_ax) * np.sin(scan_ax[kxi])
+                ky[kxi] = np.sin(anal_ax)
+        return k0 * kx, k0 * ky
+
+    # 3D set of momentum vs momentum coordinates, for all given binding energies
+    elif (nkx != 1) and (ne != 1):
+        kx = np.zeros((ne, nkx, nky))
+        ky = np.zeros_like(kx)
+        for ei in range(ne):
+            k0i = k_fac(energy[ei], **kwargs)
+            k0i *= (a / np.pi)
+            if orientation == 'horizontal':
+                for kxi in range(nkx):
+                    kx[ei, kxi, :] = k0i * np.ones(nky) * np.sin(scan_ax[kxi])
+                    ky[ei, kxi, :] = k0i * np.cos(scan_ax[kxi]) * np.sin(anal_ax)
+            elif orientation == 'vertical':
+                for kxi in range(nkx):
+                    kx[ei, kxi, :] = k0i * np.cos(anal_ax) * np.sin(scan_ax[kxi])
+                    ky[ei, kxi, :] = k0i * np.sin(anal_ax)
+        return kx, ky
+
+
+def hv2kz(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi, energy=np.array([0]), **kwargs):
+
+    ang, hvs, energy = np.array(ang), np.array(hvs), np.array(energy)
+    ky = []
+    for hv in hvs:
+        kyi, _ = angle2kscape(np.array([1]), ang, hv=hv, energy=energy, **kwargs)
+        ky.append(kyi)
+
+    ky = np.array(ky)
+    kz = np.zeros_like(ky)
+    me = const.m_e / const.eV / 1e20
+    hbar = const.hbar_eV
+    k0 = np.sqrt(2 * me) / hbar
+    k0 *= (c / np.pi)
+
+    if trans_kz:
+        for kz_i in range(kz.shape[0]):
+            Ek = hvs[kz_i] + work_func
+            for kz_j in range(kz.shape[1]):
+                theta = np.deg2rad(ang[kz_j])
+                k_ij = k0 * np.sqrt(Ek * (np.cos(theta) ** 2) + V0)
+                kz[kz_i][kz_j] = k_ij
+    else:
+        for kzi, hv in enumerate(hvs):
+            kz[kzi, :] = np.ones_like(ang) * hv
+
+    return ky, kz
+
+
+############################## deprecated ##############################
+
+
 def a2k(scan_ax, anal_ax, hv, d_scan_ax=0, d_anal_ax=0, orientation='horizontal', work_func=4.5, a=np.pi,
         Eb=0, polar=0, azimuth=0, tilt=0):
+    print('*** deprecated ***')
     """
     Convert angles of the experimental geometry to k-space coordinates.
     Confer the sheet "ARPES angle to k-space conversion" [doc/a2k.pdf] for
@@ -2191,6 +2395,7 @@ def a2k_pyta(scan_ax, anal_ax, hv, d_scan_ax=0, d_anal_ax=0, orientation='horizo
         direction in units of inverse Angstrom.
     ==  ========================================================================
     """
+    print('*** deprecated ***')
     # constant factor contribution
     k0 = np.sqrt(2 * const.m_e * const.eV) * 1e-10 / const.hbar
     # k0 = np.sqrt(2 * const.m_e) / const.hbar
@@ -2240,7 +2445,7 @@ def a2k_pyta(scan_ax, anal_ax, hv, d_scan_ax=0, d_anal_ax=0, orientation='horizo
             KX[i] = -t_rot[0, 0] * scan_ax[i] * s_eta + t_rot[0, 1] * anal_ax * s_eta + t_rot[0, 2] * np.cos(eta)
             KY[i] = -t_rot[1, 0] * scan_ax[i] * s_eta + t_rot[1, 1] * anal_ax * s_eta + t_rot[1, 2] * np.cos(eta)
     else:
-        raise ValueError('Orientation "{}" not understood.'.format(orientation))
+        raise ValueError('Orientation "{}" not supported.'.format(orientation))
     return k0 * KX, k0 * KY
 
 
@@ -2269,6 +2474,7 @@ def a2k_single_axis(alpha, hv, beta=0, dalpha=0, work_func=4.5, a=np.pi, Eb=0, o
         units of inverse Angstrom.
     ==  ========================================================================
     """
+    print('*** deprecated ***')
     # constant factor contribution
     k0 = np.sqrt(2 * const.m_e * const.eV) * 1e-10 / const.hbar
     # energy contribution
@@ -2296,6 +2502,7 @@ def a2k_single_axis(alpha, hv, beta=0, dalpha=0, work_func=4.5, a=np.pi, Eb=0, o
 
 def hv2k(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi, **kwargs):
 
+    print('*** deprecated ***')
     ang, hvs = np.array(ang), np.array(hvs)
     kx = []
     for hv in hvs:
@@ -2306,7 +2513,6 @@ def hv2k(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi, **kwargs):
     if trans_kz:
         k0 = np.sqrt(2 * const.m_e * const.eV) * 1e-10 / const.hbar
         k0 *= (c / np.pi)
-        print(kx.shape)
         for kz_i in range(kz.shape[0]):
             Ek = hvs[kz_i] + work_func
             for kz_j in range(kz.shape[1]):
@@ -2322,6 +2528,8 @@ def hv2k(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi, **kwargs):
 
 def rot_mat(polar=0, azimuth=0, tilt=0):
 
+    print('*** deprecated ***')
+
     def c(angle):
         return np.cos(angle)
 
@@ -2335,6 +2543,7 @@ def rot_mat(polar=0, azimuth=0, tilt=0):
              [c(tlt) * s(a),  c(p) * c(a) + s(p) * s(tlt) * s(a),   -s(p) * c(a) + c(p) * s(tlt) * s(a)],
              [-s(tlt),        s(p) * c(tlt),                        c(p) * c(tlt)]]
     return np.array(T_rot)
+
 
 # +----------+ #
 # | Misc     | # ==============================================================

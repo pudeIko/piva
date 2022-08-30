@@ -319,7 +319,7 @@ class ImagePlot(PlotWidget):
             self.removeItem(self.image_item)
         self.image_item = None
 
-    def set_image(self, image, emit=True, *args, **kwargs):
+    def set_image(self, image, pmesh=False, pmesh_x=None, pmesh_y=None, emit=True, *args, **kwargs):
         """ Expects either np.arrays or pg.ImageItems as input and sets them 
         correctly to this PlotWidget's Image with `addItem`. Also makes sure 
         there is only one Image by deleting the previous image.
@@ -339,9 +339,11 @@ class ImagePlot(PlotWidget):
         # Convert array to ImageItem
         if isinstance(image, ndarray):
             if 0 not in image.shape:
-                if self.pmeshitem:
+                if pmesh:
                     try:
-                        image_item = PColorMeshItem(image)
+                        print(pmesh_x.shape, pmesh_y.shape, image.shape)
+                        image_item = PColorMeshItem(pmesh_x, pmesh_y, image)
+                        # image_item = PColorMeshItem(image, **kwargs)
                     except AttributeError:
                         print('unable to use pcolormesh object')
                         image_item = ImageItem(image, *args, **kwargs)
@@ -948,6 +950,7 @@ class UtilitiesPanel(QWidget):
     # TODO logbook!
     # TODO curvature along specific directions
     # TODO smoothing along specific directions
+    # TODO colorscale
 
     def __init__(self, main_window, name=None, dim=3):
 
@@ -1036,6 +1039,7 @@ class UtilitiesPanel(QWidget):
 
     def set_image_tab(self):
 
+        max_w = 80
         # create elements
         self.image_tab = QWidget()
         itl = QtGui.QGridLayout()
@@ -1050,7 +1054,9 @@ class UtilitiesPanel(QWidget):
         self.image_colorscale_label = QLabel('color scale:')
         self.image_colorscale = QDoubleSpinBox()
 
-        self.image_other_lbl = QLabel('Other')
+        self.image_pmesh = QCheckBox('pmesh')
+
+        self.image_other_lbl = QLabel('Normalize')
         self.image_other_lbl.setFont(bold_font)
         self.image_normalize_edcs = QCheckBox('normalize by each EDC')
 
@@ -1078,19 +1084,25 @@ class UtilitiesPanel(QWidget):
         self.image_smooth_n = QSpinBox()
         self.image_smooth_n.setValue(3)
         self.image_smooth_n.setRange(3, 50)
+        self.image_smooth_n.setMaximumWidth(max_w)
         self.image_smooth_rl_lbl = QLabel('recursion:')
         self.image_smooth_rl = QSpinBox()
         self.image_smooth_rl.setValue(3)
         self.image_smooth_rl.setRange(1, 20)
         self.image_smooth_button = QPushButton('Smooth')
 
-        self.image_curvature_lbl = QLabel('Curvature method')
+        self.image_curvature_lbl = QLabel('Curvature')
         self.image_curvature_lbl.setFont(bold_font)
+        self.image_curvature_method_lbl = QLabel('method:')
+        self.image_curvature_method = QComboBox()
+        curvature_methods = ['2D', '1D (EDC)', '1D (MDC)']
+        self.image_curvature_method.addItems(curvature_methods)
         self.image_curvature_a_lbl = QLabel('a:')
         self.image_curvature_a = QDoubleSpinBox()
         self.image_curvature_a.setRange(0, 1e10)
-        self.image_curvature_a.setSingleStep(0.1)
+        self.image_curvature_a.setSingleStep(0.0001)
         self.image_curvature_a.setValue(100.)
+        self.image_curvature_a.setMaximumWidth(max_w)
         self.image_curvature_button = QPushButton('Do curvature')
 
         sd = 1
@@ -1099,7 +1111,8 @@ class UtilitiesPanel(QWidget):
         itl.addWidget(self.image_colors_label,          row * sd, 0)
         itl.addWidget(self.image_cmaps_label,           row * sd, 1)
         itl.addWidget(self.image_cmaps,                 row * sd, 2)
-        itl.addWidget(self.image_invert_colors,         row * sd, 3, 1, 2)
+        itl.addWidget(self.image_invert_colors,         row * sd, 3)
+        itl.addWidget(self.image_pmesh,                 row * sd, 4)
 
         row = 1
         itl.addWidget(self.image_gamma_label,           row * sd, 1)
@@ -1121,10 +1134,12 @@ class UtilitiesPanel(QWidget):
             itl.addWidget(self.image_smooth_button,     row * sd, 5, 1, 2)
 
             row = 4
-            itl.addWidget(self.image_curvature_lbl,     row * sd, 0, 1, 2)
-            itl.addWidget(self.image_curvature_a_lbl,   row * sd, 2)
-            itl.addWidget(self.image_curvature_a,       row * sd, 3)
-            itl.addWidget(self.image_curvature_button,  row * sd, 5, 1, 2)
+            itl.addWidget(self.image_curvature_lbl,         row * sd, 0)
+            itl.addWidget(self.image_curvature_method_lbl,  row * sd, 1)
+            itl.addWidget(self.image_curvature_method,      row * sd, 2)
+            itl.addWidget(self.image_curvature_a_lbl,       row * sd, 3)
+            itl.addWidget(self.image_curvature_a,           row * sd, 4)
+            itl.addWidget(self.image_curvature_button,      row * sd, 5, 1, 2)
 
         if self.dim == 3:
             row = 3
@@ -1296,7 +1311,7 @@ class UtilitiesPanel(QWidget):
         self.axes_energy_main_lbl = QLabel('Energy correction')
         self.axes_energy_main_lbl.setFont(bold_font)
         self.axes_energy_main_lbl.setMaximumHeight(lbl_max_h)
-        self.axes_energy_Ef_lbl = QLabel('Ef (meV):')
+        self.axes_energy_Ef_lbl = QLabel('Ef (eV):')
         # self.axes_energy_Ef_lbl.setMaximumWidth(max_lbl_w)
         self.axes_energy_Ef = QDoubleSpinBox()
         self.axes_energy_Ef.setMaximumWidth(box_max_w)
@@ -1310,7 +1325,7 @@ class UtilitiesPanel(QWidget):
         self.axes_energy_hv = QDoubleSpinBox()
         self.axes_energy_hv.setMaximumWidth(box_max_w)
         self.axes_energy_hv.setRange(-2000., 2000)
-        self.axes_energy_hv.setDecimals(6)
+        self.axes_energy_hv.setDecimals(4)
         self.axes_energy_hv.setSingleStep(0.001)
 
         self.axes_energy_wf_lbl = QLabel('wf (eV):')
@@ -1318,8 +1333,12 @@ class UtilitiesPanel(QWidget):
         self.axes_energy_wf = QDoubleSpinBox()
         self.axes_energy_wf.setMaximumWidth(box_max_w)
         self.axes_energy_wf.setRange(0, 5)
-        self.axes_energy_wf.setDecimals(3)
+        self.axes_energy_wf.setDecimals(4)
         self.axes_energy_wf.setSingleStep(0.001)
+
+        self.axes_energy_scale_lbl = QLabel('scale:')
+        self.axes_energy_scale = QComboBox()
+        self.axes_energy_scale.addItems(['binding', 'kinetic'])
 
         self.axes_momentum_main_lbl = QLabel('k-space conversion')
         self.axes_momentum_main_lbl.setFont(bold_font)
@@ -1328,34 +1347,44 @@ class UtilitiesPanel(QWidget):
         self.axes_gamma_x = QSpinBox()
         self.axes_gamma_x.setRange(0, 5000)
 
-        self.axes_conv_hv_lbl = QLabel('h\u03BD (eV):')
-        self.axes_conv_hv = QDoubleSpinBox()
-        self.axes_conv_hv.setMaximumWidth(box_max_w)
-        self.axes_conv_hv.setRange(-2000., 2000.)
-        self.axes_conv_hv.setDecimals(3)
-        self.axes_conv_hv.setSingleStep(0.001)
+        self.axes_transform_kz = QCheckBox('Transform to kz')
 
-        self.axes_conv_wf_lbl = QLabel('wf (eV):')
-        self.axes_conv_wf = QDoubleSpinBox()
-        self.axes_conv_wf.setMaximumWidth(box_max_w)
-        self.axes_conv_wf.setRange(0, 5)
-        self.axes_conv_wf.setDecimals(3)
-        self.axes_conv_wf.setSingleStep(0.001)
+        # self.axes_conv_hv_lbl = QLabel('h\u03BD (eV):')
+        # self.axes_conv_hv = QDoubleSpinBox()
+        # self.axes_conv_hv.setMaximumWidth(box_max_w)
+        # self.axes_conv_hv.setRange(-2000., 2000.)
+        # self.axes_conv_hv.setDecimals(3)
+        # self.axes_conv_hv.setSingleStep(0.001)
+        #
+        # self.axes_conv_wf_lbl = QLabel('wf (eV):')
+        # self.axes_conv_wf = QDoubleSpinBox()
+        # self.axes_conv_wf.setMaximumWidth(box_max_w)
+        # self.axes_conv_wf.setRange(0, 5)
+        # self.axes_conv_wf.setDecimals(3)
+        # self.axes_conv_wf.setSingleStep(0.001)
 
-        self.axes_conv_lc_lbl = QLabel('a (1/\u212B):')
+        self.axes_conv_lc_lbl = QLabel('a (\u212B):')
         self.axes_conv_lc = QDoubleSpinBox()
         self.axes_conv_lc.setMaximumWidth(box_max_w)
         self.axes_conv_lc.setRange(0, 10)
-        self.axes_conv_lc.setDecimals(3)
+        self.axes_conv_lc.setDecimals(4)
         self.axes_conv_lc.setSingleStep(0.001)
-        self.axes_conv_lc.setValue(3.142)
+        self.axes_conv_lc.setValue(3.1416)
+
+        self.axes_conv_lc_op_lbl = QLabel('c (\u212B):')
+        self.axes_conv_lc_op = QDoubleSpinBox()
+        self.axes_conv_lc_op.setMaximumWidth(box_max_w)
+        self.axes_conv_lc_op.setRange(0, 10)
+        self.axes_conv_lc_op.setDecimals(4)
+        self.axes_conv_lc_op.setSingleStep(0.001)
+        self.axes_conv_lc_op.setValue(3.1416)
 
         self.axes_slit_orient_lbl = QLabel('Slit:')
         self.axes_slit_orient = QComboBox()
         self.axes_slit_orient.addItems(['horizontal', 'vertical', 'deflection'])
         self.axes_copy_values = QPushButton('Copy from \'Orientate\'')
-        self.axes_do_kspace_conv = QPushButton('Convert to k-space')
-        self.axes_reset_conv = QPushButton('Reset conversion')
+        self.axes_do_kspace_conv = QPushButton('Convert')
+        self.axes_reset_conv = QPushButton('Reset')
 
         if self.dim == 2:
 
@@ -1369,6 +1398,8 @@ class UtilitiesPanel(QWidget):
             # addWidget(widget, row, column, rowSpan, columnSpan)
             row = 0
             atl.addWidget(self.axes_energy_main_lbl,    row * sd, 0 * sd, 1, 2)
+            atl.addWidget(self.axes_energy_scale_lbl,   row * sd, 4 * sd)
+            atl.addWidget(self.axes_energy_scale,       row * sd, 5 * sd)
             atl.addWidget(self.axes_energy_Ef_lbl,      (row + 1) * sd, 0 * sd)
             atl.addWidget(self.axes_energy_Ef,          (row + 1) * sd, 1 * sd)
             atl.addWidget(self.axes_energy_hv_lbl,      (row + 1) * sd, 2 * sd)
@@ -1382,20 +1413,18 @@ class UtilitiesPanel(QWidget):
             atl.addWidget(self.axes_gamma_x,            (row + 1) * sd, 1 * sd)
             atl.addWidget(self.axes_angle_off_lbl,      (row + 1) * sd, 2 * sd)
             atl.addWidget(self.axes_angle_off,          (row + 1) * sd, 3 * sd)
-            atl.addWidget(self.axes_conv_hv_lbl,        (row + 1) * sd, 4 * sd)
-            atl.addWidget(self.axes_conv_hv,            (row + 1) * sd, 5 * sd)
+            atl.addWidget(self.axes_conv_lc_lbl,        (row + 1) * sd, 4 * sd)
+            atl.addWidget(self.axes_conv_lc,            (row + 1) * sd, 5 * sd)
+            # atl.addWidget(self.axes_conv_hv_lbl,        (row + 1) * sd, 4 * sd)
+            # atl.addWidget(self.axes_conv_hv,            (row + 1) * sd, 5 * sd)
 
             row = 4
-            atl.addWidget(self.axes_conv_wf_lbl,        row * sd, 0 * sd)
-            atl.addWidget(self.axes_conv_wf,            row * sd, 1 * sd)
-            atl.addWidget(self.axes_conv_lc_lbl,        row * sd, 2 * sd)
-            atl.addWidget(self.axes_conv_lc,            row * sd, 3 * sd)
-            atl.addWidget(self.axes_slit_orient_lbl,    row * sd, 4 * sd)
-            atl.addWidget(self.axes_slit_orient,        row * sd, 5 * sd)
-
-            row = 5
-            atl.addWidget(self.axes_do_kspace_conv,     row * sd, 0 * sd, 1, 2)
-            atl.addWidget(self.axes_reset_conv,         row * sd, 2 * sd, 1, 2)
+            # atl.addWidget(self.axes_conv_wf_lbl,        row * sd, 0 * sd)
+            # atl.addWidget(self.axes_conv_wf,            row * sd, 1 * sd)
+            atl.addWidget(self.axes_slit_orient_lbl,    row * sd, 0 * sd)
+            atl.addWidget(self.axes_slit_orient,        row * sd, 1 * sd)
+            atl.addWidget(self.axes_do_kspace_conv,     row * sd, 2 * sd, 1, 2)
+            atl.addWidget(self.axes_reset_conv,         row * sd, 4 * sd, 1, 2)
 
             # # dummy item
             # self.axes_massage_lbl = QLabel('')
@@ -1411,6 +1440,8 @@ class UtilitiesPanel(QWidget):
             # addWidget(widget, row, column, rowSpan, columnSpan)
             row = 0
             atl.addWidget(self.axes_energy_main_lbl,    row * sd, 0 * sd, 1, 2)
+            atl.addWidget(self.axes_energy_scale_lbl,   row * sd, 4 * sd)
+            atl.addWidget(self.axes_energy_scale,       row * sd, 5 * sd)
             atl.addWidget(self.axes_energy_Ef_lbl,      (row + 1) * sd, 0 * sd)
             atl.addWidget(self.axes_energy_Ef,          (row + 1) * sd, 1 * sd)
             atl.addWidget(self.axes_energy_hv_lbl,      (row + 1) * sd, 2 * sd)
@@ -1424,14 +1455,13 @@ class UtilitiesPanel(QWidget):
             atl.addWidget(self.axes_gamma_x,            (row + 1) * sd, 1 * sd)
             atl.addWidget(self.axes_gamma_y_lbl,        (row + 1) * sd, 2 * sd)
             atl.addWidget(self.axes_gamma_y,            (row + 1) * sd, 3 * sd)
-            atl.addWidget(self.axes_conv_hv_lbl,        (row + 1) * sd, 4 * sd)
-            atl.addWidget(self.axes_conv_hv,            (row + 1) * sd, 5 * sd)
+            atl.addWidget(self.axes_transform_kz,       (row + 1) * sd, 4 * sd, 1, 2)
 
             row = 4
-            atl.addWidget(self.axes_conv_wf_lbl,        row * sd, 0 * sd)
-            atl.addWidget(self.axes_conv_wf,            row * sd, 1 * sd)
-            atl.addWidget(self.axes_conv_lc_lbl,        row * sd, 2 * sd)
-            atl.addWidget(self.axes_conv_lc,            row * sd, 3 * sd)
+            atl.addWidget(self.axes_conv_lc_lbl,        row * sd, 0 * sd)
+            atl.addWidget(self.axes_conv_lc,            row * sd, 1 * sd)
+            atl.addWidget(self.axes_conv_lc_op_lbl,     row * sd, 2 * sd)
+            atl.addWidget(self.axes_conv_lc_op,         row * sd, 3 * sd)
             atl.addWidget(self.axes_slit_orient_lbl,    row * sd, 4 * sd)
             atl.addWidget(self.axes_slit_orient,        row * sd, 5 * sd)
 
@@ -1465,7 +1495,7 @@ class UtilitiesPanel(QWidget):
         self.orientate_find_gamma = QPushButton('Find \t \u0393')
         self.orientate_copy_coords = QPushButton('Copy from \'Volume\'')
 
-        self.orientate_find_gamma_message = QLineEdit('NOTE: algorythm will process main plot image.')
+        self.orientate_find_gamma_message = QLineEdit('NOTE: algorythm will process the main plot image.')
         self.orientate_find_gamma_message.setReadOnly(True)
 
         self.orientate_lines_lbl = QLabel('Show rotatable lines')
@@ -1517,13 +1547,13 @@ class UtilitiesPanel(QWidget):
         self.file_tab = QWidget()
         ftl = QtGui.QGridLayout()
 
-        self.file_add_md_lbl = QLabel('Add/remove entry')
+        self.file_add_md_lbl = QLabel('Edit entries')
         self.file_add_md_lbl.setFont(bold_font)
         self.file_md_name_lbl = QLabel('name:')
         self.file_md_name = QLineEdit()
         self.file_md_value_lbl = QLabel('value:')
         self.file_md_value = QLineEdit()
-        self.file_add_md_button = QPushButton('add')
+        self.file_add_md_button = QPushButton('add/update')
         self.file_remove_md_button = QPushButton('remove')
 
         self.file_show_md_button = QPushButton('show metadata')
@@ -1531,7 +1561,7 @@ class UtilitiesPanel(QWidget):
         self.file_sum_datasets_lbl = QLabel('Sum data sets')
         self.file_sum_datasets_lbl.setFont(bold_font)
         self.file_sum_datasets_fname_lbl = QLabel('file name:')
-        self.file_sum_datasets_fname = QLineEdit('Works only for *.h5 files')
+        self.file_sum_datasets_fname = QLineEdit('Only *.h5 files')
         self.file_sum_datasets_sum_button = QPushButton('sum')
         self.file_sum_datasets_reset_button = QPushButton('reset')
 
@@ -1565,25 +1595,23 @@ class UtilitiesPanel(QWidget):
 
         row = 2
         ftl.addWidget(self.file_sum_datasets_lbl,               row * sd, 0 * sd, 1, 2)
-        ftl.addWidget(self.file_sum_datasets_fname_lbl,         row * sd, 2 * sd)
-        ftl.addWidget(self.file_sum_datasets_fname,             row * sd, 3 * sd, 1, 5)
+        # ftl.addWidget(self.file_sum_datasets_fname_lbl,         row * sd, 2 * sd)
+        ftl.addWidget(self.file_sum_datasets_fname,             row * sd, 2 * sd, 1, 6)
         ftl.addWidget(self.file_sum_datasets_sum_button,        row * sd, 8 * sd)
         ftl.addWidget(self.file_sum_datasets_reset_button,      row * sd, 9 * sd)
 
         row = 3
         ftl.addWidget(self.file_jn_main_lbl,                    row * sd, 0 * sd, 1, 2)
-        ftl.addWidget(self.file_jn_fname_lbl,                   row * sd, 2 * sd)
-        ftl.addWidget(self.file_jn_fname,                       row * sd, 3 * sd, 1, 5)
+        # ftl.addWidget(self.file_jn_fname_lbl,                   row * sd, 2 * sd)
+        ftl.addWidget(self.file_jn_fname,                       row * sd, 2 * sd, 1, 6)
         ftl.addWidget(self.file_jn_button,                      row * sd, 8 * sd)
 
         if self.dim == 2:
             row = 4
             ftl.addWidget(self.file_mdc_fitter_lbl,             row * sd, 0, 1, 2)
-            ftl.addWidget(self.file_mdc_fitter_button,          row * sd, 2, 1, 2)
-
-            row = 5
-            ftl.addWidget(self.file_edc_fitter_lbl,             row * sd, 0, 1, 2)
-            ftl.addWidget(self.file_edc_fitter_button,          row * sd, 2, 1, 2)
+            ftl.addWidget(self.file_mdc_fitter_button,          row * sd, 2)
+            ftl.addWidget(self.file_edc_fitter_lbl,             row * sd, 4, 1, 2)
+            ftl.addWidget(self.file_edc_fitter_button,          row * sd, 6)
 
         # dummy lbl
         # dummy_lbl = QLabel('')
@@ -1638,7 +1666,7 @@ class UtilitiesPanel(QWidget):
         self.oi_scanned_lbl = QLabel('Scanned (-> +)')
         self.oi_scanned_lbl.setFont(bold_font)
 
-        entries = [['SIS (SLS, SIStem)',    'phi -> +',     'theta -> +',   'tilt -> -'],
+        entries = [['SIS (SLS, SIStem)',    'phi -> -',     'theta -> +',   'tilt -> -'],
                    ['SIS (SLS, SES)',       'phi -> +',     'theta -> -',   'tilt -> -'],
                    ['Bloch (MaxIV)',        'azimuth -> +', 'tilt -> -',    'polar -> -'],
                    ['CASSIOPEE (SOLEIL)',   '-',            '-',            '-'],
@@ -1727,6 +1755,30 @@ class UtilitiesPanel(QWidget):
                 entries[str(row)]['name'] = QLabel(key)
                 entries[str(row)]['value'] = QLabel(str(value))
                 entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+            elif key == 'kxscale':
+                if not (dataset[key] is None):
+                    value = '({:.3f}  :  {:.3f})'.format(dataset[key][0], dataset[key][-1])
+                    entries[str(row)] = {}
+                    entries[str(row)]['name'] = QLabel(key)
+                    entries[str(row)]['value'] = QLabel(str(value))
+                    entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+                else:
+                    entries[str(row)] = {}
+                    entries[str(row)]['name'] = QLabel(key)
+                    entries[str(row)]['value'] = QLabel(str(dataset[key]))
+                    entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+            elif key == 'kyscale':
+                if not (dataset[key] is None):
+                    value = '({:.3f}  :  {:.3f})'.format(dataset[key][0], dataset[key][-1])
+                    entries[str(row)] = {}
+                    entries[str(row)]['name'] = QLabel(key)
+                    entries[str(row)]['value'] = QLabel(str(value))
+                    entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+                else:
+                    entries[str(row)] = {}
+                    entries[str(row)]['name'] = QLabel(key)
+                    entries[str(row)]['value'] = QLabel(str(dataset[key]))
+                    entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
             else:
                 entries[str(row)] = {}
                 entries[str(row)]['name'] = QLabel(key)
@@ -1914,7 +1966,7 @@ class UtilitiesPanel(QWidget):
 
         # Open jupyter notebook as a subprocess
         openJupyter = "jupyter notebook"
-        subprocess.Popen(openJupyter, shell=True)
+        subprocess.Popen(openJupyter, shell=True, cwd=self.mw.fname[:-len(self.mw.title)])
 
     def edit_file(self, template, new_file_name):
         os.system('touch ' + new_file_name)
@@ -1930,7 +1982,7 @@ class UtilitiesPanel(QWidget):
             if 'path = ' in line:
                 line = '    "path = \'{}\'\\n",'.format(self.mw.fname[:-len(self.mw.title)])
             if 'fname = ' in line:
-                line = '    "fname = ''\\n",'.format(self.mw.title)
+                line = '    "fname = \'{}\'\\n",'.format(self.mw.title)
             if 'slit_idx, e_idx =' in line:
                 if self.dim == 2:
                     line = '    "slit_idx, e_idx = {}, {}\\n",'.format(

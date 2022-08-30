@@ -13,6 +13,16 @@ import sys
 import os
 import arpys_wp as wp
 
+testing = True
+all_dls = {
+    'SIS': dl.DataloaderSIS,
+    'Pickle': dl.DataloaderPickle,
+    'Bloch': dl.DataloaderBloch,
+    '*i05': dl.Dataloaderi05,
+    '*CASSIOPEE': dl.DataloaderCASSIOPEE,
+    '*ADRESS': dl.DataloaderADRESS,
+    '*ALS': dl.DataloaderALS}
+
 
 class DataBrowser(QMainWindow):
 
@@ -28,7 +38,7 @@ class DataBrowser(QMainWindow):
         self.data_viewers = {}
         self.plotting_tools = {}
         self.list_view = None
-        self.sb_timeout = 2000
+        self.sb_timeout = 2500
 
         # self.init_list_view(self.working_dir)
         self.set_list_view(self.working_dir)
@@ -86,11 +96,13 @@ class DataBrowser(QMainWindow):
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
 
+        # print(f'opening thread: {fname}')
         self.thread[fname] = ThreadClass(index=fname)
         self.thread[fname].start()
         try:
             self.thread[fname].any_signal.connect(self.open_dv(fname))
-        except TypeError:
+        except TypeError as te:
+            # raise te
             pass
 
     def mb_open_dir(self):
@@ -105,20 +117,26 @@ class DataBrowser(QMainWindow):
 
     def open_dv(self, fname):
 
-        data_set = dl.load_data(fname)
+        selected_loader = self.dp_dl_picker.currentText()
+        if selected_loader == 'All':
+            data_set = dl.load_data(fname)
+        else:
+            loader = all_dls[selected_loader]()
+            data_set = loader.load_data(fname)
 
         try:
             if data_set.xscale.size == 1:
-                self.data_viewers[fname] = \
-                    MainWindow2D(self, data_set=data_set, fname=fname, index=fname)
+                self.data_viewers[fname] = MainWindow2D(self, data_set=data_set, index=fname)
             else:
-                self.data_viewers[fname] = \
-                    MainWindow3D(self, data_set=data_set, fname=fname, index=fname)
-        except Exception:
+                self.data_viewers[fname] = MainWindow3D(self, data_set=data_set, index=fname)
+        except Exception as e:
             self.sb.showMessage('Couldn\'t load data,  format not supported.', self.sb_timeout)
             self.thread[fname].quit()
             self.thread[fname].wait()
+            # print(f'closing thread in db: {fname}')
             del(self.thread[fname])
+            if testing:
+                raise e
 
     def open_single_plotting_tool(self):
 
@@ -131,17 +149,17 @@ class DataBrowser(QMainWindow):
         except TypeError:
             pass
 
-    def single_plotting_tool(self, thread_label):
+    def single_plotting_tool(self, thread_index):
 
-        # try:
-        self.plotting_tools[thread_label] = PlotTool(self, title=thread_label)
-        # except Exception:
-        #     self.sb.showMessage('Couldn\'t open plotting tool', self.sb_timeout)
-        #     self.thread[thread_label].quit()
-        #     self.thread[thread_label].wait()
-        #     del(self.thread[thread_label])
-        # finally:
-        #     self.thread_count += 1
+        try:
+            self.plotting_tools[thread_index] = PlotTool(self, title=thread_index)
+        except Exception:
+            self.sb.showMessage('Couldn\'t open plotting tool', self.sb_timeout)
+            self.thread[thread_index].quit()
+            self.thread[thread_index].wait()
+            del(self.thread[thread_index])
+        finally:
+            self.thread_count += 1
 
     def open_multiple_plotting_tool(self):
         print('elo')
@@ -188,12 +206,26 @@ class DataBrowser(QMainWindow):
 
         bold_font = QFont()
         bold_font.setBold(True)
-        dp_lbl = QLabel('Metadata')
-        dp_lbl.setFont(bold_font)
-        dp_layout.addWidget(dp_lbl)
         dp_def_fill = '-'
         max_len_1 = 50
         max_len_2 = int(1.5 * 50)
+
+        # pick dataloader
+        if 1:
+            dp_dl_picker_layout = QHBoxLayout()
+            dp_dl_picker_label = QLabel('Data loader:')
+            dp_dl_picker_label.setFont(bold_font)
+            self.dp_dl_picker = QComboBox()
+            self.dp_dl_picker.addItem('All')
+            for key in all_dls.keys():
+                self.dp_dl_picker.addItem(key)
+            dp_dl_picker_layout.addWidget(dp_dl_picker_label)
+            dp_dl_picker_layout.addWidget(self.dp_dl_picker)
+            dp_dl_picker_layout.addStretch()
+
+        dp_lbl = QLabel('Metadata')
+        dp_lbl.setFont(bold_font)
+        dp_layout.addWidget(dp_lbl)
 
         # scan details
         if 1:
@@ -451,8 +483,9 @@ class DataBrowser(QMainWindow):
 
         # add all to detail_panel layout
         if 1:
+            # dl picker
+            dp_layout.addLayout(dp_dl_picker_layout)
             # scan
-            # dp_layout.addWidget(dp_scan_lbl)
             dp_layout.addLayout(dp_scan_layout)
             # manipulator
             dp_layout.addWidget(dp_manip_lbl)
@@ -532,20 +565,32 @@ class DataBrowser(QMainWindow):
 
     def update_details_panel(self):
         idx = self.list_view.currentRow()
-        fname = self.fnames[idx]
+        fname = self.working_dir + self.fnames[idx]
         self.reset_detail_panel()
 
-        # if fname in os.listdir(self.working_dir):
+        selected_loader = self.dp_dl_picker.currentText()
+
         try:
-            data = dl.load_data(self.working_dir + fname)
-        except Exception:
-            # print('Couldn\'t load data, file format not supported.')
+            if selected_loader == 'All':
+                data = dl.load_data(fname)
+            else:
+                loader = all_dls[selected_loader]()
+                data = loader.load_data(fname)
+        except FileNotFoundError:
+            return
+        except NotImplementedError:
+            self.sb.showMessage('File extension not implemented for a chosen data loader.', self.sb_timeout)
+            return
+        except Exception as e:
+            print('Couldn\'t load data, file format not supported.')
+            if testing:
+                raise e
             return
 
         try:
             # scan
-            if hasattr(data, 'scan_type'): self.dp_scan_type.setText('{}'.format(data.scan_type))
-            if hasattr(data, 'scan_dim'):
+            if not (data.scan_type is None): self.dp_scan_type.setText('{}'.format(data.scan_type))
+            if not (data.scan_dim is None):
                 sd = data.scan_dim
                 if len(sd) == 0:
                     pass
@@ -554,29 +599,29 @@ class DataBrowser(QMainWindow):
                     if hasattr(data, 'scan_dim'): self.dp_scan_stop.setText('{:.2f}'.format(float(data.scan_dim[1])))
                     if hasattr(data, 'scan_dim'): self.dp_scan_step.setText('{:.2f}'.format(float(data.scan_dim[2])))
             # manipulator
-            if hasattr(data, 'x'): self.dp_manip_x.setText('{:.2f}'.format(float(data.x)))
-            if hasattr(data, 'y'): self.dp_manip_y.setText('{:.2f}'.format(float(data.y)))
-            if hasattr(data, 'z'): self.dp_manip_z.setText('{:.2f}'.format(float(data.z)))
-            if hasattr(data, 'theta'): self.dp_manip_theta.setText('{:.2f}'.format(float(data.theta)))
-            if hasattr(data, 'phi'): self.dp_manip_phi.setText('{:.2f}'.format(float(data.phi)))
-            if hasattr(data, 'tilt'): self.dp_manip_tilt.setText('{:.2f}'.format(float(data.tilt)))
-            if hasattr(data, 'temp'): self.dp_manip_temp.setText('{:.1f}'.format(float(data.temp)))
-            if hasattr(data, 'pressure'): self.dp_manip_press.setText('{:.2e}'.format(float(data.pressure)))
+            if not (data.x is None): self.dp_manip_x.setText('{:.2f}'.format(float(data.x)))
+            if not (data.y is None): self.dp_manip_y.setText('{:.2f}'.format(float(data.y)))
+            if not (data.z is None): self.dp_manip_z.setText('{:.2f}'.format(float(data.z)))
+            if not (data.theta is None): self.dp_manip_theta.setText('{:.2f}'.format(float(data.theta)))
+            if not (data.phi is None): self.dp_manip_phi.setText('{:.2f}'.format(float(data.phi)))
+            if not (data.tilt is None): self.dp_manip_tilt.setText('{:.2f}'.format(float(data.tilt)))
+            if not (data.temp is None): self.dp_manip_temp.setText('{:.1f}'.format(float(data.temp)))
+            if not (data.pressure is None): self.dp_manip_press.setText('{:.2e}'.format(float(data.pressure)))
 
             # analyzer
-            if hasattr(data, 'zscale'): self.dp_anal_e0.setText('{:.4f}'.format(data.zscale[0]))
-            if hasattr(data, 'zscale'): self.dp_anal_e1.setText('{:.4f}'.format(data.zscale[-1]))
-            if hasattr(data, 'zscale'): self.dp_anal_de.setText('{:.2e}'.format(wp.get_step(data.zscale)))
-            if hasattr(data, 'PE'): self.dp_anal_pe.setText('{}'.format(int(data.PE)))
-            if hasattr(data, 'lens_mode'): self.dp_anal_lm.setText('{}'.format(data.lens_mode))
-            if hasattr(data, 'acq_mode'): self.dp_anal_am.setText('{}'.format(data.acq_mode))
-            if hasattr(data, 'n_sweeps'): self.dp_anal_n_sweeps.setText('{}'.format(int(data.n_sweeps)))
-            if hasattr(data, 'DT'): self.dp_anal_dt.setText('{}'.format(int(data.DT)))
+            if not (data.zscale is None): self.dp_anal_e0.setText('{:.4f}'.format(data.zscale[0]))
+            if not (data.zscale is None): self.dp_anal_e1.setText('{:.4f}'.format(data.zscale[-1]))
+            if not (data.zscale is None): self.dp_anal_de.setText('{:.2e}'.format(wp.get_step(data.zscale)))
+            if not (data.PE is None): self.dp_anal_pe.setText('{}'.format(int(data.PE)))
+            if not (data.lens_mode is None): self.dp_anal_lm.setText('{}'.format(data.lens_mode))
+            if not (data.acq_mode is None): self.dp_anal_am.setText('{}'.format(data.acq_mode))
+            if not (data.n_sweeps is None): self.dp_anal_n_sweeps.setText('{}'.format(int(data.n_sweeps)))
+            if not (data.DT is None): self.dp_anal_dt.setText('{}'.format(int(data.DT)))
 
             # beamline
-            if hasattr(data, 'hv'): self.dp_bl_hv.setText('{:.1f}'.format(float(data.hv)))
-            if hasattr(data, 'polarization'): self.dp_bl_polar.setText(data.polarization)
-            if hasattr(data, 'exit_slit'): self.dp_bl_exit.setText('{}'.format(float(data.exit_slit)))
-            if hasattr(data, 'FE'): self.dp_bl_fe.setText('{}'.format(float(data.FE)))
-        except TypeError:
+            if not (data.hv is None): self.dp_bl_hv.setText('{:.1f}'.format(float(data.hv)))
+            if not (data.polarization is None): self.dp_bl_polar.setText(data.polarization)
+            if not (data.exit_slit is None): self.dp_bl_exit.setText('{}'.format(float(data.exit_slit)))
+            if not (data.FE is None): self.dp_bl_fe.setText('{}'.format(float(data.FE)))
+        except AttributeError:
             self.reset_detail_panel()
