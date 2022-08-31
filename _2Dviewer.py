@@ -1,28 +1,33 @@
 """
 Data handler and main window creator for 2D data inspection
 """
-import time
-import os
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog
-import numpy as np
-from imageplot import *
-from mdc_fitter import *
-from edc_fitter import *
-from cmaps import cmaps
-import arpys_wp as wp
-from copy import deepcopy
 import ctypes
+import os
+import time
+from copy import deepcopy
+
+import numpy as np
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog
+
+import arpys_wp as wp
 import data_loader as dl
+from cmaps import cmaps
+from imageplot import *
+from edc_fitter import *
+from mdc_fitter import *
 
 app_style = """
 QMainWindow{background-color: rgb(64,64,64);}
+QWidget{background-color: rgb(64,64,64);}
 """
 DEFAULT_CMAP = 'viridis'
+ORIENTLINES_LINECOLOR = (164, 37, 22, 255)
 NDIM = 3
+erg_ax = 2
+scan_ax = 0
 
-
-class DataHandler:
-    """ Object that keeps track of a set of 3D data and allows
+class DataHandler2D :
+    """ Object that keeps track of a set of 2D data and allows
     manipulations on it. In a Model-View-Controller framework this could be
     seen as the Model, while :class:`MainWindow <data_slicer.pit.MainWindow>`
     would be the View part.
@@ -176,7 +181,7 @@ class MainWindow2D(QMainWindow):
 
         self.data_set = deepcopy(data_set)
         self.org_dataset = None
-        self.data_handler = DataHandler(self)
+        self.data_handler = DataHandler2D(self)
 
         # Create the 3D (main) and cut ImagePlots
         self.main_plot = ImagePlot(name='main_plot', crosshair=True)

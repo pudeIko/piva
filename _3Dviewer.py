@@ -3,29 +3,21 @@ Data handler and main window creator for 3D data inspection
 """
 import os
 import time
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog, QDialog, QDialogButtonBox
+import warnings
+
 import matplotlib.pyplot as plt
 import numpy as np
-import warnings
-from _2Dviewer import *
-from imageplot import *
-from cmaps import cmaps
+from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog, QDialog, QDialogButtonBox
+
 import arpys_wp as wp
 import data_loader as dl
+from _2Dviewer import *
+from cmaps import cmaps
+from imageplot import *
 
-app_style = """
-QMainWindow{background-color: rgb(64,64,64);}
-QWidget{background-color: rgb(64,64,64);}
-"""
-DEFAULT_CMAP = 'viridis'
-ORIENTLINES_LINECOLOR = (164, 37, 22, 255)
-NDIM = 3
-erg_ax = 2
 slit_ax = 1
-scan_ax = 0
 
-
-class DataHandler:
+class DataHandler3D :
     """ Object that keeps track of a set of 3D data and allows
     manipulations on it. In a Model-View-Controller framework this could be
     seen as the Model, while :class:`MainWindow <data_slicer.pit.MainWindow>`
@@ -435,7 +427,7 @@ class MainWindow3D(QMainWindow):
         else:
             D = data_set
 
-        self.data_handler = DataHandler(self)
+        self.data_handler = DataHandler3D(self)
         self.initUI()
 
         self.data_set = data_set
