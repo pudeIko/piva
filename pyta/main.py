@@ -67,4 +67,5 @@ def open3Djn(fname, pickle=False, ns=None):
 def reshape_pickled():
     dl.reshape_pickled(sys.argv[1])
 
-
+if __name__ == "__main__" :
+    db()
