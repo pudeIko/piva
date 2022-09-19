@@ -2,6 +2,13 @@
 matplotlib pcolormesh equivalent in pyqtgraph (more or less) """
 
 import logging
+import os
+import subprocess
+import sys
+import warnings
+from copy import deepcopy
+
+import numpy as np
 from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, \
     QLineEdit, QMainWindow, QDialogButtonBox, QMessageBox, QSlider
 from PyQt5.QtGui import QFont
@@ -12,15 +19,10 @@ from numpy import arange, array, clip, inf, linspace, ndarray, abs, ones, allclo
 from pyqtgraph import Qt as qt
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
 
-import os
-import subprocess
-import sys
-import numpy as np
-import arpys_wp as wp
-from cmaps import cmaps, my_cmaps
-import data_loader as dl
-from copy import deepcopy
-import warnings
+import pyta.arpys_wp as wp
+import pyta.data_loader as dl
+from pyta.cmaps import cmaps, my_cmaps
+
 warnings.filterwarnings("error")
 
 BASE_LINECOLOR = (255, 255, 0, 255)

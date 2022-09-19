@@ -81,8 +81,6 @@ from numpy import linspace, frombuffer, reshape, moveaxis, array, rollaxis, zero
 import numpy as np
 import astropy.io.fits as pyfits
 from igor import binarywave, igorpy
-# import time
-
 
 # Fcn to build the x, y (, z) ranges (maybe outsource this fcn definition)
 def start_step_n(start, step, n):

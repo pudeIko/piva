@@ -1,19 +1,21 @@
-
 import datetime
+import os
+import warnings
+from argparse import Namespace
+from copy import deepcopy
+
 from PyQt5.QtGui import QFont, QColor, QFileDialog
 from pyqtgraph.Qt import QtGui
 from PyQt5.QtWidgets import QVBoxLayout, QColorDialog, QApplication
-from data_browser import *
-from _2Dviewer import *
-from _3Dviewer import *
 from pyqtgraph import PlotWidget, AxisItem, mkPen, mkBrush, PlotDataItem, ScatterPlotItem, TextItem, exporters
-import os
 import numpy as np
-from argparse import Namespace
-import data_loader as dl
-from copy import deepcopy
-import arpys_wp as wp
-import warnings
+
+import pyta.arpys_wp as wp
+import pyta.data_loader as dl
+from pyta.data_browser import *
+from pyta._2Dviewer import *
+from pyta._3Dviewer import *
+
 warnings.filterwarnings("error")
 MDC_PANEL_BGR = (236, 236, 236)
 

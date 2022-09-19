@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog, QDialog, QDialogButtonBox
 
-import arpys_wp as wp
-import data_loader as dl
-from _2Dviewer import *
-from cmaps import cmaps
-from imageplot import *
+import pyta.arpys_wp as wp
+import pyta.data_loader as dl
+from pyta._2Dviewer import *
+from pyta.cmaps import cmaps
+from pyta.imageplot import *
 
 slit_ax = 1
 

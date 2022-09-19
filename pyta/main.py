@@ -1,12 +1,13 @@
 # main for calling files' openers
 
-# import sys
 import os
-from data_browser import *
+import sys
+
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon, QPixmap
-import sys
 # from PyQt5.QtWidgets import
+
+from pyta.data_browser import *
 
 # to fix bugs in Big Siur
 os.environ['QT_MAC_WANTS_LAYER'] = '1'

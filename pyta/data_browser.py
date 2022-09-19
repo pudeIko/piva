@@ -1,18 +1,20 @@
 
+import os
 import time
-start_time = time.time()
+import sys
+
 from PyQt5.QtWidgets import QMainWindow, QMenuBar, QGridLayout, QAction, QFileDialog, QHBoxLayout, QLabel, QWidget, \
     QVBoxLayout, QLineEdit, QListWidget, QStatusBar
 from PyQt5.QtGui import QIcon, QFont
 from pyqtgraph.Qt import QtCore
-from _3Dviewer import *
-from _2Dviewer import *
-from plot_tool import *
-import data_loader as dl
-import sys
-import os
-import arpys_wp as wp
 
+import pyta.data_loader as dl
+import pyta.arpys_wp as wp
+from pyta._3Dviewer import *
+from pyta._2Dviewer import *
+from pyta.plot_tool import *
+
+start_time = time.time()
 testing = True
 all_dls = {
     'SIS': dl.DataloaderSIS,

@@ -1,24 +1,25 @@
 # moje funkcje do obróbki danych, a przynajmniej taki jest zamysł
 
-import data_loader as dl
 import math
+from itertools import groupby
+
 # from scipy import optimize as opt
+import matplotlib as mpl
 import numpy as np
 import pandas as pd
-import matplotlib as mpl
+import scipy.signal as sig
 from matplotlib import pyplot as plt
+from matplotlib import colors, patches, interactive
+from numpy.linalg import norm   # for shriley bckgrd
 from scipy.special import voigt_profile
 from scipy import ndimage
 from scipy.optimize import curve_fit, minimize, fsolve
 from scipy.signal import convolve2d
 from scipy.optimize import OptimizeWarning
-import scipy.signal as sig
 from scipy.fft import fft, ifft, fft2, ifft2, fftshift, ifftshift
-import my_constants as const
-from itertools import groupby
-from matplotlib import colors, patches, interactive
-from numpy.linalg import norm   # for shriley bckgrd
 
+import pyta.data_loader as dl
+import pyta.my_constants as const
 
 # +-------------------------------------+ #
 # | Data fitting functions and routines | # =========================

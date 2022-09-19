@@ -1,4 +1,8 @@
 
+import os
+import warnings
+
+import numpy as np
 from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, \
     QLineEdit, QMainWindow, QMessageBox
 from PyQt5.QtGui import QFont
@@ -6,17 +10,14 @@ from PyQt5 import QtCore
 from pyqtgraph.Qt import QtGui
 from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen, PColorMeshItem, mkBrush, FillBetweenItem, \
     PlotDataItem, ScatterPlotItem
-from numpy import arange, ndarray
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
-from imageplot import TracedVariable
-
-import os
-import numpy as np
 from scipy.optimize import curve_fit
 from scipy.optimize import OptimizeWarning
-import arpys_wp as wp
-from cmaps import cmaps, my_cmaps
-import warnings
+
+from pyta.imageplot import TracedVariable
+import pyta.arpys_wp as wp
+from pyta.cmaps import cmaps, my_cmaps
+
 warnings.filterwarnings("error")
 
 BASE_LINECOLOR = (255, 255, 0, 255)
@@ -273,7 +274,7 @@ class EDCFitter(QMainWindow):
         self.cut_panel.slider_axis_index = 1
 
         # Convert array to ImageItem
-        if isinstance(image, ndarray):
+        if isinstance(image, np.ndarray):
             if 0 not in image.shape:
                 self.image_item = ImageItem(image.T)
             else:
@@ -320,7 +321,7 @@ class EDCFitter(QMainWindow):
         self.mdc_line_cut.setBounds([1, self.erg_ax.size - 1])
         self.mdc_line_edc.setBounds([self.erg_ax.min(), self.erg_ax.max()])
         self.mdc_pos = TracedVariable(e_idx, name='pos')
-        self.mdc_pos.set_allowed_values(arange(1, self.erg_ax.size - 1, 1))
+        self.mdc_pos.set_allowed_values(np.arange(1, self.erg_ax.size - 1, 1))
         self.mdc_line_cut.sigDragged.connect(self.on_dragged_cut_mdc)
         self.mdc_line_edc.sigDragged.connect(self.on_dragged_edc_mdc)
         self.mdc_line_cut.setPen(BASE_LINECOLOR)
@@ -402,7 +403,7 @@ class EDCFitter(QMainWindow):
         This assumes that the displayed image is in pixel coordinates and
         sets the allowed values to the available pixels.
         """
-        self.edc_pos.set_allowed_values(arange(min, max + 1, 1))
+        self.edc_pos.set_allowed_values(np.arange(min, max + 1, 1))
         # self.image_e_pos.setRange(min, max)
 
     def set_binning_lines(self):
