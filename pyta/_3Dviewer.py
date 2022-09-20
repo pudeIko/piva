@@ -592,6 +592,10 @@ class MainWindow3D(QMainWindow):
             # l.setColumnMaximumWidth(i, 51)
             l.setColumnStretch(i, 1)
 
+    def closeEvent(self, event) :
+        """ Ensure that this instance is un-registered from the DataBrowser. """
+        self.unregister()
+
     def update_main_plot(self, **image_kwargs):
         """ Change *self.main_plot*`s currently displayed
         :class:`image_item <data_slicer.imageplot.ImagePlot.image_item>` to
@@ -1528,13 +1532,19 @@ class MainWindow3D(QMainWindow):
 
         return res_pts
 
-    # main buttons' actions
-    def close_mw(self):
-        self.destroy()
+    def unregister(self) :
+        """ Remove this window from the main-window's memory and close the 
+        open threads.
+        """
         self.db.thread[self.index].quit()
         self.db.thread[self.index].wait()
         del(self.db.thread[self.index])
         del(self.db.data_viewers[self.index])
+
+    def close_mw(self):
+        """ Action executed when pressing on the `Close` button. """
+        self.destroy()
+        self.unregister()
 
     def save_to_pickle(self):
         dataset = self.data_set

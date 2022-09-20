@@ -324,6 +324,19 @@ class MainWindow2D(QMainWindow):
             l.setColumnMinimumWidth(i, 50)
             l.setColumnStretch(i, 1)
 
+    def closeEvent(self, event) :
+        """ Ensure that this instance is un-registered from the DataBrowser. """
+        self.unregister()
+
+    def unregister(self) :
+        """ Remove this window from the main-window's memory and close the 
+        open threads.
+        """
+        self.db.thread[self.index].quit()
+        self.db.thread[self.index].wait()
+        del(self.db.thread[self.index])
+        del(self.db.data_viewers[self.index])
+
     @staticmethod
     def swap_axes_aroud(D):
         """
@@ -832,12 +845,9 @@ class MainWindow2D(QMainWindow):
                 return
 
     def close_mw(self):
+        """ Action executed when pressing on the `Close` button. """
         self.destroy()
-        self.db.thread[self.index].quit()
-        self.db.thread[self.index].wait()
-        # print(f'closing thread in dv: {self.index}')
-        del(self.db.thread[self.index])
-        del(self.db.data_viewers[self.index])
+        self.unregister()
 
     def save_to_pickle(self):
         # TODO change 'k_axis' to 'k' for all cuts: add 'change attrs name'
