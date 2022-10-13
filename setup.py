@@ -25,11 +25,11 @@ setuptools.setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'pyta2d = main:open2D',
-            'pyta3d = main:open3D',
-            'h5_to_pickle = main:pickle_h5',
-            'reshape_pickled = main:reshape_pickled',
-            'db = main:db'
+            'pyta2d = pyta.main:open2D',
+            'pyta3d = pyta.main:open3D',
+            'h5_to_pickle = pyta.main:pickle_h5',
+            'reshape_pickled = pyta.main:reshape_pickled',
+            'db = pyta.main:db'
         ],
     }
 )
