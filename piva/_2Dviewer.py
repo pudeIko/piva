@@ -9,12 +9,12 @@ from copy import deepcopy
 import numpy as np
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog
 
-import pyta.arpys_wp as wp
-import pyta.data_loader as dl
-from pyta.cmaps import cmaps
-from pyta.imageplot import *
-from pyta.edc_fitter import *
-from pyta.mdc_fitter import *
+import piva.arpys_wp as wp
+import piva.data_loader as dl
+from piva.cmaps import cmaps
+from piva.imageplot import *
+from piva.edc_fitter import *
+from piva.mdc_fitter import *
 
 app_style = """
 QMainWindow{background-color: rgb(64,64,64);}

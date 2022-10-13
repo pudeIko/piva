@@ -10,11 +10,11 @@ from PyQt5.QtWidgets import QVBoxLayout, QColorDialog, QApplication
 from pyqtgraph import PlotWidget, AxisItem, mkPen, mkBrush, PlotDataItem, ScatterPlotItem, TextItem, exporters
 import numpy as np
 
-import pyta.arpys_wp as wp
-import pyta.data_loader as dl
-from pyta.data_browser import *
-from pyta._2Dviewer import *
-from pyta._3Dviewer import *
+import piva.arpys_wp as wp
+import piva.data_loader as dl
+from piva.data_browser import *
+from piva._2Dviewer import *
+from piva._3Dviewer import *
 
 warnings.filterwarnings("error")
 MDC_PANEL_BGR = (236, 236, 236)

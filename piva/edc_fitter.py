@@ -14,9 +14,9 @@ from pyqtgraph.graphicsItems.ImageItem import ImageItem
 from scipy.optimize import curve_fit
 from scipy.optimize import OptimizeWarning
 
-from pyta.imageplot import TracedVariable
-import pyta.arpys_wp as wp
-from pyta.cmaps import cmaps, my_cmaps
+from piva.imageplot import TracedVariable
+import piva.arpys_wp as wp
+from piva.cmaps import cmaps, my_cmaps
 
 warnings.filterwarnings("error")
 

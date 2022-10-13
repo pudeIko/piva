@@ -7,11 +7,11 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name='pyta',
+    name='piva',
     version='0.0.1',
     author='Wojtek Pudelko',
     author_email='wojciech.pudelko@psi.ch',
-    description='My pyta, have fun',
+    description='My piva, have fun',
     long_description=long_description,
     long_description_content_type='text/markdown',
     packages=setuptools.find_packages(),
@@ -25,11 +25,11 @@ setuptools.setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'pyta2d = pyta.main:open2D',
-            'pyta3d = pyta.main:open3D',
-            'h5_to_pickle = pyta.main:pickle_h5',
-            'reshape_pickled = pyta.main:reshape_pickled',
-            'db = pyta.main:db'
+            'piva2d = piva.main:open2D',
+            'piva3d = piva.main:open3D',
+            'h5_to_pickle = piva.main:pickle_h5',
+            'reshape_pickled = piva.main:reshape_pickled',
+            'db = piva.main:db'
         ],
     }
 )

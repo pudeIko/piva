@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon, QPixmap
 # from PyQt5.QtWidgets import
 
-from pyta.data_browser import *
+from piva.data_browser import *
 
 # to fix bugs in Big Siur
 os.environ['QT_MAC_WANTS_LAYER'] = '1'

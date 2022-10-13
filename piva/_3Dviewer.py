@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog, QDialog, QDialogButtonBox
 
-import pyta.arpys_wp as wp
-import pyta.data_loader as dl
-from pyta._2Dviewer import *
-from pyta.cmaps import cmaps
-from pyta.imageplot import *
+import piva.arpys_wp as wp
+import piva.data_loader as dl
+from piva._2Dviewer import *
+from piva.cmaps import cmaps
+from piva.imageplot import *
 
 slit_ax = 1
 
@@ -1445,7 +1445,7 @@ class MainWindow3D(QMainWindow):
 
     def show_orientation_info(self):
 
-        title = 'pyta -> beamline coordinates translator'
+        title = 'piva -> beamline coordinates translator'
         self.info_box = InfoWindow(self.util_panel.orient_info_window, title)
         self.info_box.show()
 

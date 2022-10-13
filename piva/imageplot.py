@@ -19,9 +19,9 @@ from numpy import arange, array, clip, inf, linspace, ndarray, abs, ones, allclo
 from pyqtgraph import Qt as qt
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
 
-import pyta.arpys_wp as wp
-import pyta.data_loader as dl
-from pyta.cmaps import cmaps, my_cmaps
+import piva.arpys_wp as wp
+import piva.data_loader as dl
+from piva.cmaps import cmaps, my_cmaps
 
 warnings.filterwarnings("error")
 
@@ -1657,7 +1657,7 @@ class UtilitiesPanel(QWidget):
         self.orient_info_window = QWidget()
         oiw = QtGui.QGridLayout()
 
-        self.oi_window_lbl = QLabel('pyta -> beamline coordinates translator')
+        self.oi_window_lbl = QLabel('piva -> beamline coordinates translator')
         self.oi_window_lbl.setFont(bold_font)
         self.oi_beamline_lbl = QLabel('Beamline')
         self.oi_beamline_lbl.setFont(bold_font)

@@ -18,8 +18,8 @@ from scipy.signal import convolve2d
 from scipy.optimize import OptimizeWarning
 from scipy.fft import fft, ifft, fft2, ifft2, fftshift, ifftshift
 
-import pyta.data_loader as dl
-import pyta.my_constants as const
+import piva.data_loader as dl
+import piva.my_constants as const
 
 # +-------------------------------------+ #
 # | Data fitting functions and routines | # =========================
@@ -2363,7 +2363,7 @@ def a2k(scan_ax, anal_ax, hv, d_scan_ax=0, d_anal_ax=0, orientation='horizontal'
     return k0 * KX, k0 * KY
 
 
-def a2k_pyta(scan_ax, anal_ax, hv, d_scan_ax=0, d_anal_ax=0, orientation='horizontal', work_func=4.5, a=np.pi,
+def a2k_piva(scan_ax, anal_ax, hv, d_scan_ax=0, d_anal_ax=0, orientation='horizontal', work_func=4.5, a=np.pi,
         Eb=0, polar=0, azimuth=0, tilt=0):
     """
     Convert angles of the experimental geometry to k-space coordinates.

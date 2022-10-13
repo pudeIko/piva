@@ -8,11 +8,11 @@ from PyQt5.QtWidgets import QMainWindow, QMenuBar, QGridLayout, QAction, QFileDi
 from PyQt5.QtGui import QIcon, QFont
 from pyqtgraph.Qt import QtCore
 
-import pyta.data_loader as dl
-import pyta.arpys_wp as wp
-from pyta._3Dviewer import *
-from pyta._2Dviewer import *
-from pyta.plot_tool import *
+import piva.data_loader as dl
+import piva.arpys_wp as wp
+from piva._3Dviewer import *
+from piva._2Dviewer import *
+from piva.plot_tool import *
 
 start_time = time.time()
 testing = True
@@ -50,10 +50,10 @@ class DataBrowser(QMainWindow):
 
         # self.setCentralWidget(self.list_view)
         self.align()
-        self.setWindowTitle('pyta data browser - ' + self.working_dir)
+        self.setWindowTitle('piva data browser - ' + self.working_dir)
         self.show()
         time_init = time.time()
-        print("initializing pyta browser: {:.3f} s".format(time_init - time_packages))
+        print("initializing piva browser: {:.3f} s".format(time_init - time_packages))
 
     @staticmethod
     def add_slash(path):
@@ -85,7 +85,7 @@ class DataBrowser(QMainWindow):
                 res.append(li)
         return res
 
-    def launch_pyta(self):
+    def launch_piva(self):
 
         idx = self.list_view.currentRow()
         fname = self.working_dir + self.fnames[idx]
@@ -113,7 +113,7 @@ class DataBrowser(QMainWindow):
         try:
             self.working_dir = self.add_slash(chosen_dir)
             self.set_list_view(self.working_dir)
-            self.setWindowTitle('pyta data browser - ' + self.working_dir)
+            self.setWindowTitle('piva data browser - ' + self.working_dir)
         except IndexError:
             pass
 
@@ -517,10 +517,10 @@ class DataBrowser(QMainWindow):
         open_dir.triggered.connect(self.mb_open_dir)
         file_menu.addAction(open_dir)
 
-        open_file = QAction('Launch pyta', self)
+        open_file = QAction('Launch piva', self)
         open_file.setShortcut('Ctrl+L')
-        open_file.setStatusTip('Launch pyta')
-        open_file.triggered.connect(self.launch_pyta)
+        open_file.setStatusTip('Launch piva')
+        open_file.triggered.connect(self.launch_piva)
         file_menu.addAction(open_file)
 
         plot_menu = menu_bar.addMenu('&Plot')
