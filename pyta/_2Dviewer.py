@@ -18,7 +18,7 @@ from pyta.mdc_fitter import *
 
 app_style = """
 QMainWindow{background-color: rgb(64,64,64);}
-QWidget{background-color: rgb(64,64,64);}
+QTabWidget{background-color: rgb(64,64,64);}
 """
 DEFAULT_CMAP = 'viridis'
 ORIENTLINES_LINECOLOR = (164, 37, 22, 255)
