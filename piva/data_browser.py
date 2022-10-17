@@ -39,16 +39,12 @@ class DataBrowser(QMainWindow):
         self.thread_count = 0
         self.data_viewers = {}
         self.plotting_tools = {}
-        self.list_view = None
+        self.file_explorer = None
         self.sb_timeout = 2500
-
-        # self.init_list_view(self.working_dir)
-        self.set_list_view(self.working_dir)
+        self.set_file_explorer(self.working_dir)
         self.set_menu_bar()
         self.set_status_bar()
         self.set_details_panel()
-
-        # self.setCentralWidget(self.list_view)
         self.align()
         self.setWindowTitle('piva data browser - ' + self.working_dir)
         self.show()
@@ -66,11 +62,10 @@ class DataBrowser(QMainWindow):
 
         self.central_widget = QWidget()
         self.main_layout = QGridLayout()
-        # self.list_layout = QGridLayout()
         self.central_widget.setLayout(self.main_layout)
 
         self.main_layout.setMenuBar(self.menu_bar)
-        self.main_layout.addWidget(self.list_view, 0, 0)
+        self.main_layout.addWidget(self.file_explorer, 0, 0)
         self.main_layout.addWidget(self.details_panel, 0, 1)
 
         self.setCentralWidget(self.central_widget)
@@ -86,9 +81,8 @@ class DataBrowser(QMainWindow):
         return res
 
     def launch_piva(self):
-
-        idx = self.list_view.currentRow()
-        fname = self.working_dir + self.fnames[idx]
+        fname = self.get_selected_path()
+        idx = os.path.basename(fname)
 
         if fname in self.data_viewers:
             already_opened_box = QMessageBox()
@@ -108,17 +102,18 @@ class DataBrowser(QMainWindow):
             pass
 
     def mb_open_dir(self):
-
         chosen_dir = str(QFileDialog.getExistingDirectory(self, 'Select Directory', self.working_dir))
         try:
             self.working_dir = self.add_slash(chosen_dir)
-            self.set_list_view(self.working_dir)
+            self.set_file_explorer(self.working_dir)
             self.setWindowTitle('piva data browser - ' + self.working_dir)
         except IndexError:
             pass
 
     def open_dv(self, fname):
-
+        """ Load the currently selected file and show the data in a 
+        dataviewer. 
+        """
         selected_loader = self.dp_dl_picker.currentText()
         if selected_loader == 'All':
             data_set = dl.load_data(fname)
@@ -545,8 +540,8 @@ class DataBrowser(QMainWindow):
         self.sb = QStatusBar()
         self.setStatusBar(self.sb)
 
-    def set_list_view(self, path):
-        """ Create or update the file explorer view (QTreeView). """
+    def set_file_explorer(self, path):
+        """ Create or recreate the file explorer view (QTreeView). """
         model = QtGui.QFileSystemModel()
         file_explorer = QtGui.QTreeView()
         file_explorer.setModel(model)
@@ -573,12 +568,12 @@ class DataBrowser(QMainWindow):
         file_explorer.selectionModel().selectionChanged.connect(
             self.update_details_panel
         )
-        self.list_view = file_explorer
+        self.file_explorer = file_explorer
 
     def get_selected_path(self) :
-        """ Get the path of selected file as a string. """
-        index = self.list_view.currentIndex()
-        path = self.list_view.model().filePath(index)
+        """ Get the path of selected file in the QTreeView as a string. """
+        index = self.file_explorer.currentIndex()
+        path = self.file_explorer.model().filePath(index)
         return path
 
     def update_details_panel(self):
@@ -648,3 +643,4 @@ class DataBrowser(QMainWindow):
             if not (data.FE is None): self.dp_bl_fe.setText('{}'.format(float(data.FE)))
         except AttributeError:
             self.reset_detail_panel()
+
