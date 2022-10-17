@@ -6,7 +6,7 @@ import sys
 from PyQt5.QtWidgets import QMainWindow, QMenuBar, QGridLayout, QAction, QFileDialog, QHBoxLayout, QLabel, QWidget, \
     QVBoxLayout, QLineEdit, QListWidget, QStatusBar
 from PyQt5.QtGui import QIcon, QFont
-from pyqtgraph.Qt import QtCore
+from pyqtgraph.Qt import QtCore, QtGui
 
 import piva.data_loader as dl
 import piva.arpys_wp as wp
@@ -546,36 +546,53 @@ class DataBrowser(QMainWindow):
         self.setStatusBar(self.sb)
 
     def set_list_view(self, path):
+        """ Create or update the file explorer view (QTreeView). """
+        model = QtGui.QFileSystemModel()
+        file_explorer = QtGui.QTreeView()
+        file_explorer.setModel(model)
 
-        work_path = path
-        files = os.listdir(work_path)
-        files = [os.path.join(work_path, f) for f in files]
-        files.sort(key=lambda x: os.path.getmtime(x))
-        # print(work_path)
-        # print(files)
-        fnames = self.remove_dir_string(work_path, files)
-        # initialize at the beginning
-        if self.list_view is None:
-            self.list_view = QListWidget()
-            self.list_view.itemSelectionChanged.connect(self.update_details_panel)
-        # clear if already exists
-        else:
-            self.list_view.clear()
-        for fname in fnames:
-            self.list_view.addItem(fname)
-        self.fnames = fnames
+        # Only allow browsing directories below "Home"
+        home = QtCore.QDir.homePath()
+        model.setRootPath(home)
+        file_explorer.setRootIndex(model.index(home))
+
+        # Select the current working directory
+        cwd = QtCore.QDir.currentPath()
+        file_explorer.setCurrentIndex(model.index(cwd))
+
+        # Visual fiddling: the columns are 0: filename, 1: size, 2: date 
+        # modified, 3: type
+        self.shown_columns = [0, 1, 2, 3]
+        self.hidden_columns = [1, 2, 3]
+        # Remove unnecessary columns
+        for i in self.hidden_columns :
+            file_explorer.hideColumn(i)
+            self.shown_columns.remove(i)
+
+        # Connect signal for changing selection in the QTreeView
+        file_explorer.selectionModel().selectionChanged.connect(
+            self.update_details_panel
+        )
+        self.list_view = file_explorer
+
+    def get_selected_path(self) :
+        """ Get the path of selected file as a string. """
+        index = self.list_view.currentIndex()
+        path = self.list_view.model().filePath(index)
+        return path
 
     def update_details_panel(self):
-        idx = self.list_view.currentRow()
-        fname = self.working_dir + self.fnames[idx]
-        self.reset_detail_panel()
-
+        """ Try reading the file currently selected by the QTreeView. In case 
+        of success, fill the details panel with metadata from the selected file.
+        """
         selected_loader = self.dp_dl_picker.currentText()
+        fname = self.get_selected_path()
 
         try:
             if selected_loader == 'All':
                 data = dl.load_data(fname)
             else:
+                # Instantiante a loader of selected type
                 loader = all_dls[selected_loader]()
                 data = loader.load_data(fname)
         except FileNotFoundError:
@@ -588,6 +605,10 @@ class DataBrowser(QMainWindow):
             if testing:
                 raise e
             return
+
+        # Reaching this point means we have succeeded in loading *something*. 
+        # Better clean up the details panel before we fill it with new info.
+        self.reset_detail_panel()
 
         try:
             # scan
