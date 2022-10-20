@@ -6,7 +6,7 @@ import sys
 from PyQt5.QtWidgets import QMainWindow, QMenuBar, QGridLayout, QAction, QFileDialog, QHBoxLayout, QLabel, QWidget, \
     QVBoxLayout, QLineEdit, QListWidget, QStatusBar
 from PyQt5.QtGui import QIcon, QFont
-from pyqtgraph.Qt import QtCore, QtGui
+from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
 import piva.data_loader as dl
 import piva.arpys_wp as wp
@@ -543,7 +543,7 @@ class DataBrowser(QMainWindow):
     def set_file_explorer(self, path):
         """ Create or recreate the file explorer view (QTreeView). """
         model = QtGui.QFileSystemModel()
-        file_explorer = QtGui.QTreeView()
+        file_explorer = QtWidgets.QTreeView()
         file_explorer.setModel(model)
 
         # Only allow browsing directories below "Home"

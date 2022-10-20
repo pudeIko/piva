@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, Q
     QLineEdit, QMainWindow, QDialogButtonBox, QMessageBox, QSlider
 from PyQt5.QtGui import QFont
 from PyQt5 import QtCore
-from pyqtgraph.Qt import QtGui
+from pyqtgraph.Qt import QtGui, QtWidgets
 from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen, PColorMeshItem
 from numpy import arange, array, clip, inf, linspace, ndarray, abs, ones, allclose, where, all
 from pyqtgraph import Qt as qt
@@ -959,7 +959,7 @@ class UtilitiesPanel(QWidget):
         super().__init__()
 
         self.mw = main_window
-        self.layout = QtGui.QGridLayout()
+        self.layout = QtWidgets.QGridLayout()
         self.tabs = QTabWidget()
         self.tabs_visible = True
         self.dim = dim
@@ -969,7 +969,7 @@ class UtilitiesPanel(QWidget):
         self.hide_button = QPushButton('hide tabs')
 
         self.buttons = QWidget()
-        self.buttons_layout = QtGui.QGridLayout()
+        self.buttons_layout = QtWidgets.QGridLayout()
         self.buttons_layout.addWidget(self.close_button,    1, 0)
         self.buttons_layout.addWidget(self.save_button,     2, 0)
         self.buttons_layout.addWidget(self.hide_button,     3, 0)
@@ -1044,7 +1044,7 @@ class UtilitiesPanel(QWidget):
         max_w = 80
         # create elements
         self.image_tab = QWidget()
-        itl = QtGui.QGridLayout()
+        itl = QtWidgets.QGridLayout()
         self.image_colors_label = QLabel('Colors')
         self.image_colors_label.setFont(bold_font)
         self.image_cmaps_label = QLabel('cmaps:')
@@ -1169,7 +1169,7 @@ class UtilitiesPanel(QWidget):
     def set_sliders_tab(self):
 
         self.sliders_tab = QWidget()
-        vtl = QtGui.QGridLayout()
+        vtl = QtWidgets.QGridLayout()
         max_lbl_w = 40
         bin_box_w = 50
         coords_box_w = 70
@@ -1306,7 +1306,7 @@ class UtilitiesPanel(QWidget):
 
     def set_axes_tab(self):
         self.axes_tab = QWidget()
-        atl = QtGui.QGridLayout()
+        atl = QtWidgets.QGridLayout()
         box_max_w = 100
         lbl_max_h = 30
 
@@ -1483,7 +1483,7 @@ class UtilitiesPanel(QWidget):
     def set_orientate_tab(self):
 
         self.orientate_tab = QWidget()
-        otl = QtGui.QGridLayout()
+        otl = QtWidgets.QGridLayout()
 
         self.orientate_init_cooradinates_lbl = QLabel('Give initial coordinates')
         self.orientate_init_cooradinates_lbl.setFont(bold_font)
@@ -1547,7 +1547,7 @@ class UtilitiesPanel(QWidget):
     def set_file_tab(self):
 
         self.file_tab = QWidget()
-        ftl = QtGui.QGridLayout()
+        ftl = QtWidgets.QGridLayout()
 
         self.file_add_md_lbl = QLabel('Edit entries')
         self.file_add_md_lbl.setFont(bold_font)
@@ -1655,7 +1655,7 @@ class UtilitiesPanel(QWidget):
 
     def set_orientation_info_window(self):
         self.orient_info_window = QWidget()
-        oiw = QtGui.QGridLayout()
+        oiw = QtWidgets.QGridLayout()
 
         self.oi_window_lbl = QLabel('piva -> beamline coordinates translator')
         self.oi_window_lbl.setFont(bold_font)
@@ -1709,7 +1709,7 @@ class UtilitiesPanel(QWidget):
     def set_metadata_window(self, dataset):
 
         self.md_window = QWidget()
-        mdw = QtGui.QGridLayout()
+        mdw = QtWidgets.QGridLayout()
 
         attribute_name_lbl = QLabel('Attribute')
         attribute_name_lbl.setFont(bold_font)
@@ -2091,7 +2091,7 @@ class InfoWindow(QMainWindow):
         super(InfoWindow, self).__init__()
 
         self.central_widget = QWidget()
-        self.info_window_layout = QtGui.QGridLayout()
+        self.info_window_layout = QtWidgets.QGridLayout()
         self.central_widget.setLayout(self.info_window_layout)
 
         QBtn = QDialogButtonBox.Ok

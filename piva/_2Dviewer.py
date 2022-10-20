@@ -148,8 +148,8 @@ class MainWindow2D(QMainWindow):
         super(MainWindow2D, self).__init__()
         self.title = index.split('/')[-1]
         self.fname = index
-        self.central_widget = QtGui.QWidget()
-        self.layout = QtGui.QGridLayout()
+        self.central_widget = QtWidgets.QWidget()
+        self.layout = QtWidgets.QGridLayout()
 
         # moved to get rid of warnings
         self.cmap = None

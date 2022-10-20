@@ -5,7 +5,7 @@ from argparse import Namespace
 from copy import deepcopy
 
 from PyQt5.QtGui import QFont, QColor, QFileDialog
-from pyqtgraph.Qt import QtGui
+from pyqtgraph.Qt import QtGui, QtWidgets
 from PyQt5.QtWidgets import QVBoxLayout, QColorDialog, QApplication
 from pyqtgraph import PlotWidget, AxisItem, mkPen, mkBrush, PlotDataItem, ScatterPlotItem, TextItem, exporters
 import numpy as np
@@ -26,7 +26,7 @@ class PlotTool(QMainWindow):
         super(PlotTool, self).__init__()
 
         self.central_widget = QWidget()
-        self.plotting_tool_layout = QtGui.QGridLayout()
+        self.plotting_tool_layout = QtWidgets.QGridLayout()
         self.central_widget.setLayout(self.plotting_tool_layout)
         self.tabs = QTabWidget()
 
@@ -167,7 +167,7 @@ class PlotTool(QMainWindow):
     def set_datasets_tab(self):
         # create elements
         self.datasets_tab = QWidget()
-        dtl = QtGui.QGridLayout()
+        dtl = QtWidgets.QGridLayout()
 
         self.ds_dv_label = QLabel('dataset:')
         self.ds_dv = QComboBox()
@@ -215,7 +215,7 @@ class PlotTool(QMainWindow):
     def set_edit_curves_tab(self):
         # create elements
         self.edit_curves_tab = QWidget()
-        etl = QtGui.QGridLayout()
+        etl = QtWidgets.QGridLayout()
 
         self.ec_color_lbl = QLabel("color:")
         self.ec_color = QPushButton('')
@@ -273,7 +273,7 @@ class PlotTool(QMainWindow):
     def set_edit_plot_tab(self):
         # create elements
         self.edit_plot_tab = QWidget()
-        eptl = QtGui.QGridLayout()
+        eptl = QtWidgets.QGridLayout()
 
         self.ep_bgr_color_lbl = QLabel("bgr color:")
         self.ep_bgr_color = QPushButton('')
@@ -321,7 +321,7 @@ class PlotTool(QMainWindow):
     def set_markers_tab(self):
         # create elements
         self.markers_tab = QWidget()
-        mtl = QtGui.QGridLayout()
+        mtl = QtWidgets.QGridLayout()
         max_w = 80
 
         self.markers_x_lbl = QLabel("x:")
@@ -368,7 +368,7 @@ class PlotTool(QMainWindow):
     def set_annotate_tab(self):
         # create elements
         self.ann_tab = QWidget()
-        atl = QtGui.QGridLayout()
+        atl = QtWidgets.QGridLayout()
 
         self.ann_name_lbl = QLabel('name:')
         self.ann_name = QLineEdit()
@@ -1006,7 +1006,7 @@ class PlotTool(QMainWindow):
             annotations=annotations_to_save
         )
 
-        full_path, types = QtGui.QFileDialog.getSaveFileName(self, 'Save Session')
+        full_path, types = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Session')
 
         dl.dump(res, full_path, force=True)
 
@@ -1089,7 +1089,7 @@ class PlotTool(QMainWindow):
         else:
             return
 
-        full_path, types = QtGui.QFileDialog.getOpenFileName(self, 'Load Session')
+        full_path, types = QtWidgets.QFileDialog.getOpenFileName(self, 'Load Session')
         session = dl.load_pickle(full_path)
 
         self.main_added.blockSignals(True)
@@ -1122,7 +1122,7 @@ class PlotTool(QMainWindow):
     def save_image(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        full_path, types = QtGui.QFileDialog.getSaveFileName(
+        full_path, types = QtWidgets.QFileDialog.getSaveFileName(
             self, 'Save Image', filter='Images (*.png *.jpg *.jpeg *.bmp)', options=options)
         to_save = exporters.ImageExporter(self.plot_panel.plotItem)
 

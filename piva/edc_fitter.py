@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, Q
     QLineEdit, QMainWindow, QMessageBox
 from PyQt5.QtGui import QFont
 from PyQt5 import QtCore
-from pyqtgraph.Qt import QtGui
+from pyqtgraph.Qt import QtGui, QtWidgets
 from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen, PColorMeshItem, mkBrush, FillBetweenItem, \
     PlotDataItem, ScatterPlotItem
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
@@ -46,7 +46,7 @@ class EDCFitter(QMainWindow):
         super(EDCFitter, self).__init__()
 
         self.central_widget = QWidget()
-        self.edc_fitter_layout = QtGui.QGridLayout()
+        self.edc_fitter_layout = QtWidgets.QGridLayout()
         self.central_widget.setLayout(self.edc_fitter_layout)
         self.tabs = QTabWidget()
 
@@ -104,7 +104,7 @@ class EDCFitter(QMainWindow):
     def set_image_tab(self):
         # create elements
         self.image_tab = QWidget()
-        itl = QtGui.QGridLayout()
+        itl = QtWidgets.QGridLayout()
 
         self.image_cmaps_label = QLabel('cmaps:')
         self.image_cmaps = QComboBox()
@@ -180,7 +180,7 @@ class EDCFitter(QMainWindow):
 
     def set_fitting_tab(self):
         self.symmetrize_tab = QWidget()
-        stl = QtGui.QGridLayout()
+        stl = QtWidgets.QGridLayout()
 
         self.symmetrize_box = QCheckBox('symmetrize')
 
