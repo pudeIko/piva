@@ -520,7 +520,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.util_panel.bin_zy_nbins.setValue(5)
 
         # buttons
-        self.util_panel.close_button.clicked.connect(self.close_mw)
+        self.util_panel.close_button.clicked.connect(self.close)
         self.util_panel.save_button.clicked.connect(self.save_to_pickle)
 
         # energy and k-space concersion
@@ -596,7 +596,10 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
     def closeEvent(self, event) :
         """ Ensure that this instance is un-registered from the DataBrowser. """
-        self.unregister()
+        self.db.thread[self.index].quit()
+        self.db.thread[self.index].wait()
+        del(self.db.thread[self.index])
+        del(self.db.data_viewers[self.index])
 
     def update_main_plot(self, **image_kwargs):
         """ Change *self.main_plot*`s currently displayed
@@ -1533,20 +1536,6 @@ class MainWindow3D(QtWidgets.QMainWindow):
             res_pts.append([x, y])
 
         return res_pts
-
-    def unregister(self) :
-        """ Remove this window from the main-window's memory and close the 
-        open threads.
-        """
-        self.db.thread[self.index].quit()
-        self.db.thread[self.index].wait()
-        del(self.db.thread[self.index])
-        del(self.db.data_viewers[self.index])
-
-    def close_mw(self):
-        """ Action executed when pressing on the `Close` button. """
-        self.destroy()
-        self.unregister()
 
     def save_to_pickle(self):
         dataset = self.data_set

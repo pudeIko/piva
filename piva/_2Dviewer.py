@@ -266,7 +266,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.util_panel.momentum_hor.valueChanged.connect(self.set_hor_momentum_slider)
 
         # buttons
-        self.util_panel.close_button.clicked.connect(self.close_mw)
+        self.util_panel.close_button.clicked.connect(self.close)
         self.util_panel.save_button.clicked.connect(self.save_to_pickle)
 
         # energy and k-space concersion
@@ -325,12 +325,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
 
     def closeEvent(self, event) :
         """ Ensure that this instance is un-registered from the DataBrowser. """
-        self.unregister()
-
-    def unregister(self) :
-        """ Remove this window from the main-window's memory and close the 
-        open threads.
-        """
         self.db.thread[self.index].quit()
         self.db.thread[self.index].wait()
         del(self.db.thread[self.index])
@@ -842,11 +836,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
             error_box.setStandardButtons(QMessageBox.Ok)
             if error_box.exec() == QMessageBox.Ok:
                 return
-
-    def close_mw(self):
-        """ Action executed when pressing on the `Close` button. """
-        self.destroy()
-        self.unregister()
 
     def save_to_pickle(self):
         # TODO change 'k_axis' to 'k' for all cuts: add 'change attrs name'
