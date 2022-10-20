@@ -1,20 +1,20 @@
 """
 Data handler and main window creator for 2D data inspection
 """
-import ctypes
 import os
 import time
 from copy import deepcopy
 
 import numpy as np
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog
+from pyqtgraph.Qt import QtWidgets
+from PyQt5.QtWidgets import QMessageBox
 
 import piva.arpys_wp as wp
 import piva.data_loader as dl
+import piva.imageplot as ip
 from piva.cmaps import cmaps
-from piva.imageplot import *
-from piva.edc_fitter import *
-from piva.mdc_fitter import *
+from piva.edc_fitter import EDCFitter
+from piva.mdc_fitter import MDCFitter
 
 app_style = """
 QMainWindow{background-color: rgb(64,64,64);}
@@ -22,7 +22,6 @@ QTabWidget{background-color: rgb(64,64,64);}
 """
 DEFAULT_CMAP = 'viridis'
 ORIENTLINES_LINECOLOR = (164, 37, 22, 255)
-NDIM = 3
 erg_ax = 2
 scan_ax = 0
 
@@ -86,7 +85,7 @@ class DataHandler2D :
         ====  ==================================================================
         """
 
-        self.data = TracedVariable(data, name='data')
+        self.data = ip.TracedVariable(data, name='data')
         self.axes = np.array(axes, dtype="object")
         self.norm_data = wp.normalize(self.data.get_value()[0, :, :].T).T
 
@@ -142,7 +141,7 @@ class DataHandler2D :
             print(('update_image_data(): z index {} out of range for data of length {}.'))
 
 
-class MainWindow2D(QMainWindow):
+class MainWindow2D(QtWidgets.QMainWindow):
 
     def __init__(self, data_browser, data_set=None, index=None, slice=False):
         super(MainWindow2D, self).__init__()
@@ -184,13 +183,13 @@ class MainWindow2D(QMainWindow):
         self.data_handler = DataHandler2D(self)
 
         # Create the 3D (main) and cut ImagePlots
-        self.main_plot = ImagePlot(name='main_plot', crosshair=True)
+        self.main_plot = ip.ImagePlot(name='main_plot', crosshair=True)
         # Create cut of cut_x
-        self.plot_x = CursorPlot(name='plot_x')
+        self.plot_x = ip.CursorPlot(name='plot_x')
         # Create cut of cut_y
-        self.plot_y = CursorPlot(name='plot_y', orientation='vertical')
+        self.plot_y = ip.CursorPlot(name='plot_y', orientation='vertical')
         # Create utilities panel
-        self.util_panel = UtilitiesPanel(self, name='utilities_panel', dim=2)
+        self.util_panel = ip.UtilitiesPanel(self, name='utilities_panel', dim=2)
         self.util_panel.positions_momentum_label.setText('Sliders')
         # self.util_panel.momentum_vert_label.setText('E:')
 
@@ -859,7 +858,10 @@ class MainWindow2D(QMainWindow):
         init_fname = self.title
 
         while file_selection:
-            fname, fname_return_value = QInputDialog.getText(self, '', 'File name:', QLineEdit.Normal, init_fname)
+            fname, fname_return_value = \
+                    QtWidgets.QInputDialog.getText(self, '', 'File name:', 
+                                                   QtWidgets.QLineEdit.Normal,
+                                                   init_fname)
             if not fname_return_value:
                 return
 

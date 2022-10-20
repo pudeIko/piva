@@ -2,18 +2,20 @@
 Data handler and main window creator for 3D data inspection
 """
 import os
-import time
 import warnings
+from copy import deepcopy
 
 import matplotlib.pyplot as plt
 import numpy as np
-from PyQt5.QtWidgets import QMainWindow, QMessageBox, QInputDialog, QDialog, QDialogButtonBox
+from PyQt5.QtWidgets import QMessageBox
+from pyqtgraph.Qt import QtWidgets
 
+import piva._2Dviewer as p2d
 import piva.arpys_wp as wp
 import piva.data_loader as dl
-from piva._2Dviewer import *
+import piva.imageplot as ip
+from piva._2Dviewer import ORIENTLINES_LINECOLOR, erg_ax, scan_ax
 from piva.cmaps import cmaps
-from piva.imageplot import *
 
 slit_ax = 1
 
@@ -32,11 +34,11 @@ class DataHandler3D :
         # Initialize instance variables
         # np.array that contains the 3D data
         self.data = None
-        self.axes = array([[0, 1], [0, 1], [0, 1]])
+        self.axes = np.array([[0, 1], [0, 1], [0, 1]])
         # Indices of *data* that are displayed in the main plot
         self.displayed_axes = (0, 1)
         # Index along the z axis at which to produce a slice
-        self.z = TracedVariable(0, name='z')
+        self.z = ip.TracedVariable(0, name='z')
         # # Number of slices to integrate along z
         # integrate_z = TracedVariable(value=0, name='integrate_z')
         # How often we have rolled the axes from the original setup
@@ -80,8 +82,8 @@ class DataHandler3D :
         ====  ==================================================================
         """
 
-        self.data = TracedVariable(data, name='data')
-        self.axes = array(axes, dtype="object")
+        self.data = ip.TracedVariable(data, name='data')
+        self.axes = np.array(axes, dtype="object")
         with warnings.catch_warnings():
             self.norm_data = wp.normalize(data)
 
@@ -155,7 +157,7 @@ class DataHandler3D :
         # Avoid undefined axes scales and replace them with len(1) sequences
         for i, axis in enumerate(self.axes):
             if axis is None:
-                self.axes[i] = arange(shapes[i])
+                self.axes[i] = np.arange(shapes[i])
 
     def on_data_change(self):
         """ Update self.main_window.image_data and replot. """
@@ -281,7 +283,7 @@ class DataHandler3D :
             stop = n_slices
 
         # Roll the original data such that the specified dimension comes first
-        i_original = arange(ndim)
+        i_original = np.arange(ndim)
         i_rolled = np.roll(i_original, dim)
         data = np.moveaxis(data, i_original, i_rolled)
         # Take the slice
@@ -357,7 +359,7 @@ class DataHandler3D :
                                   n_ticks=n_ticks, **getlines_kwargs)
 
 
-class MainWindow3D(QMainWindow):
+class MainWindow3D(QtWidgets.QMainWindow):
 
     # TODO bugs
     # TODO plot_z bins not moving when changing slider's position in spinbox
@@ -400,21 +402,21 @@ class MainWindow3D(QMainWindow):
         self._transform_factors = []
 
         # Create the 3D (main) and cut ImagePlots
-        self.main_plot = ImagePlot(name='main_plot')
+        self.main_plot = ip.ImagePlot(name='main_plot')
         # Create cut plot along x
-        self.cut_x = ImagePlot(name='cut_x')
+        self.cut_x = ip.ImagePlot(name='cut_x')
         # Create cut of cut_x
-        self.plot_x = CursorPlot(name='plot_x')
+        self.plot_x = ip.CursorPlot(name='plot_x')
         # Create cut plot along y
-        self.cut_y = ImagePlot(name='cut_y', orientation='vertical')
+        self.cut_y = ip.ImagePlot(name='cut_y', orientation='vertical')
         # Create cut of cut_y
-        self.plot_y = CursorPlot(name='plot_y', orientation='vertical')
+        self.plot_y = ip.CursorPlot(name='plot_y', orientation='vertical')
         # Create the integrated intensity plot
-        self.plot_z = CursorPlot(name='plot_z', z_plot=True)
+        self.plot_z = ip.CursorPlot(name='plot_z', z_plot=True)
         # Create utilities panel
-        self.util_panel = UtilitiesPanel(self, name='utilities_panel')
+        self.util_panel = ip.UtilitiesPanel(self, name='utilities_panel')
 
-        self.setStyleSheet(app_style)
+        self.setStyleSheet(p2d.app_style)
         self.set_cmap()
 
         self.setGeometry(100, 100, 800, 900)
@@ -660,7 +662,7 @@ class MainWindow3D(QMainWindow):
                 y = wp.normalize(np.sum(self.data_handler.cut_x_data[:, start:stop], axis=1))
         else:
             y = self.data_handler.cut_x_data[:, i_x]
-        x = arange(0, len(self.data_handler.axes[scan_ax]))
+        x = np.arange(0, len(self.data_handler.axes[scan_ax]))
         self.plot_x_data = y
         xp.plot(x, y)
         self.util_panel.energy_hor.setValue(i_x)
@@ -692,7 +694,7 @@ class MainWindow3D(QMainWindow):
                 y = wp.normalize(np.sum(self.data_handler.cut_y_data[start:stop, :], axis=0))
         else:
             y = self.data_handler.cut_y_data[i_x, :]
-        x = arange(0, len(self.data_handler.axes[slit_ax]))
+        x = np.arange(0, len(self.data_handler.axes[slit_ax]))
         self.plot_y_data = y
         yp.plot(y, x)
         self.util_panel.energy_vert.setValue(i_x)
@@ -733,8 +735,8 @@ class MainWindow3D(QMainWindow):
         self.cut_x.xscale_rescaled = self.data_handler.axes[scan_ax]
         self.cut_x.yscale_rescaled = self.data_handler.axes[erg_ax]
         self.set_cut_x_image(image=cut, lut=self.lut)
-        self.cut_x.crosshair.vpos.set_allowed_values(arange(0, len(self.data_handler.axes[scan_ax])), binning=binning)
-        self.cut_x.crosshair.hpos.set_allowed_values(arange(0, len(self.data_handler.axes[erg_ax])), binning=binning)
+        self.cut_x.crosshair.vpos.set_allowed_values(np.arange(0, len(self.data_handler.axes[scan_ax])), binning=binning)
+        self.cut_x.crosshair.hpos.set_allowed_values(np.arange(0, len(self.data_handler.axes[erg_ax])), binning=binning)
         self.cut_x.set_bounds(0, len(self.data_handler.axes[scan_ax]), 0, len(self.data_handler.axes[erg_ax]))
 
         self.cut_x.fix_viewrange()
@@ -871,10 +873,10 @@ class MainWindow3D(QMainWindow):
         """
         try:
             cmap = self.util_panel.image_cmaps.currentText()
-            if self.util_panel.image_invert_colors.isChecked() and MY_CMAPS:
+            if self.util_panel.image_invert_colors.isChecked() and ip.MY_CMAPS:
                 cmap = cmap + '_r'
         except AttributeError:
-            cmap = DEFAULT_CMAP
+            cmap = p2d.DEFAULT_CMAP
 
         try:
             self.cmap = cmaps[cmap]
@@ -1098,7 +1100,7 @@ class MainWindow3D(QMainWindow):
                 self.plot_z.add_binning_lines(z_pos, half_width)
                 zmin = half_width
                 zmax = len(self.data_handler.axes[2]) - half_width
-                new_range = arange(zmin, zmax)
+                new_range = np.arange(zmin, zmax)
                 self.plot_z.width = half_width
                 self.plot_z.n_bins = half_width
                 self.plot_z.pos.set_allowed_values(new_range)
@@ -1446,7 +1448,7 @@ class MainWindow3D(QMainWindow):
     def show_orientation_info(self):
 
         title = 'piva -> beamline coordinates translator'
-        self.info_box = InfoWindow(self.util_panel.orient_info_window, title)
+        self.info_box = ip.InfoWindow(self.util_panel.orient_info_window, title)
         self.info_box.show()
 
     def open_2dviewer(self):
@@ -1487,11 +1489,11 @@ class MainWindow3D(QMainWindow):
             if thread_running_box.exec() == QMessageBox.Ok:
                 return
 
-        self.db.thread[thread_idx] = ThreadClass(index=thread_idx)
+        self.db.thread[thread_idx] = ip.ThreadClass(index=thread_idx)
         self.db.thread[thread_idx].start()
         try:
             self.db.data_viewers[thread_idx] = \
-                MainWindow2D(self.db, data_set=data_set, index=thread_idx, slice=True)
+                p2d.MainWindow2D(self.db, data_set=data_set, index=thread_idx, slice=True)
         except Exception as e:
             raise e
             error_box = QMessageBox()
@@ -1554,7 +1556,7 @@ class MainWindow3D(QMainWindow):
         init_fname = self.title
 
         while file_selection:
-            fname, fname_return_value = QInputDialog.getText(self, '', 'File name:', QLineEdit.Normal, init_fname)
+            fname, fname_return_value = QtWidgets.QInputDialog.getText(self, '', 'File name:', QLineEdit.Normal, init_fname)
             if not fname_return_value:
                 return
 

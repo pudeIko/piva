@@ -4,10 +4,11 @@ import os
 import sys
 
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtGui import QIcon, QPixmap
-# from PyQt5.QtWidgets import
 
-from piva.data_browser import *
+import piva._2Dviewer as p2d
+import piva._3Dviewer as p3d
+import piva.data_loader as dl
+from piva.data_browser import DataBrowser
 
 # to fix bugs in Big Siur
 os.environ['QT_MAC_WANTS_LAYER'] = '1'
@@ -37,7 +38,7 @@ def open2D():
     # else:
     #     pickle = False
     data_set = dl.load_data(fname)
-    MainWindow2D("data_browser", data_set=data_set, title=fname)
+    p2d.MainWindow2D("data_browser", data_set=data_set, title=fname)
     sys.exit(app.exec_())
 
 
@@ -49,7 +50,7 @@ def open3D():
     # else:
     #     pickle = False
     data_set = dl.load_data(fname)
-    MainWindow3D("data_browser", data_set=data_set, title=fname)
+    p3d.MainWindow3D("data_browser", data_set=data_set, title=fname)
     sys.exit(app.exec_())
 
 
@@ -61,7 +62,7 @@ def pickle_h5():
 
 def open3Djn(fname, pickle=False, ns=None):
     app = QApplication(sys.argv)
-    MainWindow3D(fname=fname, from_pickle=pickle, ns=ns)
+    p3d.MainWindow3D(fname=fname, from_pickle=pickle, ns=ns)
     sys.exit(app.exec_())
 
 

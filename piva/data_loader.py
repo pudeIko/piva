@@ -77,7 +77,6 @@ from errno import ENOENT
 from warnings import catch_warnings, simplefilter  # , warn
 
 import h5py
-from numpy import linspace, frombuffer, reshape, moveaxis, array, rollaxis, zeros, swapaxes
 import numpy as np
 import astropy.io.fits as pyfits
 from igor import binarywave, igorpy
@@ -89,7 +88,7 @@ def start_step_n(start, step, n):
     steps of `step`. 
     """
     end = start + n * step
-    return linspace(start, end, n)
+    return np.linspace(start, end, n)
 
 
 class DataSet:
@@ -234,11 +233,11 @@ class DataloaderSIS(Dataloader):
         shape = h5_data.shape
         if len(shape) == 3:
             # data = zeros((shape[2], shape[1], shape[0]))
-            data = zeros(shape)
+            data = np.zeros(shape)
             for i in range(shape[2]):
                 data[:, :, i] = h5_data[:, :, i]
         else:
-            data = array(h5_data)
+            data = np.array(h5_data)
 
         data = data.T
         # How the data needs to be arranged depends on the scan type: cut, map, hv scan or a sequence of cuts
@@ -276,7 +275,7 @@ class DataloaderSIS(Dataloader):
             x = shape[0]
             y = shape[1]
             N_E = y
-            data = rollaxis(data, 2, 0)
+            data = np.rollaxis(data, 2, 0)
             # Extract the limits
             xlims = attributes['Axis1.Scale']
             ylims = attributes['Axis0.Scale']
@@ -413,13 +412,13 @@ class DataloaderSIS(Dataloader):
                     pass
             # Extract the binary data from the zipfile
             with z.open('Spectrum_' + file_id + '.bin') as f:
-                data_flat = frombuffer(f.read(), dtype='float32')
+                data_flat = np.frombuffer(f.read(), dtype='float32')
         # Put the data back into its actual shape
-        data = reshape(data_flat, (int(M.n_y), int(M.n_x), int(M.n_energy)))
+        data = np.reshape(data_flat, (int(M.n_y), int(M.n_x), int(M.n_energy)))
         # Cut off unswept region
         data = data[:, :, M.first_energy:M.last_energy+1]
         # Put into shape (energy, other angle, angle along analyzer)
-        data = moveaxis(data, 2, 0)
+        data = np.moveaxis(data, 2, 0)
         # Create axes
         xscale = start_step_n(M.start_x, M.step_x, M.n_x)
         yscale = start_step_n(M.start_y, M.step_y, M.n_y)
@@ -429,9 +428,9 @@ class DataloaderSIS(Dataloader):
         if yscale.size > 1:
             yscale = start_step_n(M.start_x, M.step_x, M.n_x)
             xscale = start_step_n(M.start_y, M.step_y, M.n_y)
-            data = swapaxes(data, 1, 2)
+            data = np.swapaxes(data, 1, 2)
         else:
-            data = swapaxes(data, 0, 1)
+            data = np.swapaxes(data, 0, 1)
             yscale = deepcopy(energies)
 
         res = Namespace(
@@ -705,13 +704,13 @@ class DataloaderBloch(Dataloader):
                     pass
             # Extract the binary data from the zipfile
             with z.open('Spectrum_' + file_id + '.bin') as f:
-                data_flat = frombuffer(f.read(), dtype='float32')
+                data_flat = np.frombuffer(f.read(), dtype='float32')
         # Put the data back into its actual shape
-        data = reshape(data_flat, (int(M.n_x), int(M.n_y), int(M.n_energy)))
+        data = np.reshape(data_flat, (int(M.n_x), int(M.n_y), int(M.n_energy)))
         # Cut off unswept region
         data = data[:, :, M.first_energy:M.last_energy + 1]
         # Put into shape (energy, other angle, angle along analyzer)
-        data = moveaxis(data, 2, 0)
+        data = np.moveaxis(data, 2, 0)
         # Create axes
         xscale = start_step_n(M.start_x, M.step_x, M.n_x)
         yscale = start_step_n(M.start_y, M.step_y, M.n_y)
@@ -719,9 +718,9 @@ class DataloaderBloch(Dataloader):
         energies = energies[M.first_energy:M.last_energy + 1]
 
         if yscale.size > 1:
-            data = swapaxes(swapaxes(data, 0, 1), 1, 2)
+            data = np.swapaxes(np.swapaxes(data, 0, 1), 1, 2)
         else:
-            data = swapaxes(data, 0, 1)
+            data = np.swapaxes(data, 0, 1)
         # print('data shape = {}'.format(data.shape))
         # print('xscale shape = {}'.format(xscale.shape))
         # print('yscale shape = {}'.format(yscale.shape))

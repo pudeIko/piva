@@ -1,18 +1,17 @@
 
 import os
 import time
-import sys
 
-from PyQt5.QtWidgets import QMainWindow, QMenuBar, QGridLayout, QAction, QFileDialog, QHBoxLayout, QLabel, QWidget, \
-    QVBoxLayout, QLineEdit, QListWidget, QStatusBar
-from PyQt5.QtGui import QIcon, QFont
+from PyQt5.QtWidgets import QAction, QHBoxLayout, QLabel, QVBoxLayout, \
+    QLineEdit 
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
 import piva.data_loader as dl
 import piva.arpys_wp as wp
-from piva._3Dviewer import *
-from piva._2Dviewer import *
-from piva.plot_tool import *
+import piva._3Dviewer as p3d
+import piva._2Dviewer as p2d
+import piva.plot_tool as pt
+from piva.imageplot import ThreadClass
 
 start_time = time.time()
 testing = True
@@ -26,7 +25,7 @@ all_dls = {
     '*ALS': dl.DataloaderALS}
 
 
-class DataBrowser(QMainWindow):
+class DataBrowser(QtWidgets.QMainWindow):
 
     def __init__(self):
 
@@ -60,8 +59,8 @@ class DataBrowser(QMainWindow):
     def align(self):
         self.resize(700, 600)
 
-        self.central_widget = QWidget()
-        self.main_layout = QGridLayout()
+        self.central_widget = QtWidgets.QWidget()
+        self.main_layout = QtWidgets.QGridLayout()
         self.central_widget.setLayout(self.main_layout)
 
         self.main_layout.setMenuBar(self.menu_bar)
@@ -102,7 +101,7 @@ class DataBrowser(QMainWindow):
             pass
 
     def mb_open_dir(self):
-        chosen_dir = str(QFileDialog.getExistingDirectory(self, 'Select Directory', self.working_dir))
+        chosen_dir = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', self.working_dir))
         try:
             self.working_dir = self.add_slash(chosen_dir)
             self.set_file_explorer(self.working_dir)
@@ -123,9 +122,9 @@ class DataBrowser(QMainWindow):
 
         try:
             if data_set.xscale.size == 1:
-                self.data_viewers[fname] = MainWindow2D(self, data_set=data_set, index=fname)
+                self.data_viewers[fname] = p2d.MainWindow2D(self, data_set=data_set, index=fname)
             else:
-                self.data_viewers[fname] = MainWindow3D(self, data_set=data_set, index=fname)
+                self.data_viewers[fname] = p3d.MainWindow3D(self, data_set=data_set, index=fname)
         except Exception as e:
             self.sb.showMessage('Couldn\'t load data,  format not supported.', self.sb_timeout)
             self.thread[fname].quit()
@@ -149,7 +148,7 @@ class DataBrowser(QMainWindow):
     def single_plotting_tool(self, thread_index):
 
         try:
-            self.plotting_tools[thread_index] = PlotTool(self, title=thread_index)
+            self.plotting_tools[thread_index] = pt.PlotTool(self, title=thread_index)
         except Exception:
             self.sb.showMessage('Couldn\'t open plotting tool', self.sb_timeout)
             self.thread[thread_index].quit()
@@ -198,10 +197,10 @@ class DataBrowser(QMainWindow):
         self.dp_bl_fe.setText(self.dp_def_fill)
 
     def set_details_panel(self):
-        dp = QWidget()
+        dp = QtWidgets.QWidget()
         dp_layout = QVBoxLayout()
 
-        bold_font = QFont()
+        bold_font = QtGui.QFont()
         bold_font.setBold(True)
         dp_def_fill = '-'
         max_len_1 = 50
@@ -212,7 +211,7 @@ class DataBrowser(QMainWindow):
             dp_dl_picker_layout = QHBoxLayout()
             dp_dl_picker_label = QLabel('Data loader:')
             dp_dl_picker_label.setFont(bold_font)
-            self.dp_dl_picker = QComboBox()
+            self.dp_dl_picker = QtWidgets.QComboBox()
             self.dp_dl_picker.addItem('All')
             for key in all_dls.keys():
                 self.dp_dl_picker.addItem(key)
@@ -502,7 +501,7 @@ class DataBrowser(QMainWindow):
 
     def set_menu_bar(self):
 
-        menu_bar = QMenuBar()
+        menu_bar = QtWidgets.QMenuBar()
         # status_bar = QStatusBar()
         # self.layout.addWidget(status_bar, 0, 1)
         file_menu = menu_bar.addMenu('&File')
@@ -537,7 +536,7 @@ class DataBrowser(QMainWindow):
         self.menu_bar = menu_bar
 
     def set_status_bar(self):
-        self.sb = QStatusBar()
+        self.sb = QtWidgets.QStatusBar()
         self.setStatusBar(self.sb)
 
     def set_file_explorer(self, path):

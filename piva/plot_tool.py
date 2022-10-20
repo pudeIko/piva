@@ -1,26 +1,24 @@
+import argparse
 import datetime
-import os
-import warnings
-from argparse import Namespace
 from copy import deepcopy
 
-from PyQt5.QtGui import QFont, QColor, QFileDialog
-from pyqtgraph.Qt import QtGui, QtWidgets
-from PyQt5.QtWidgets import QVBoxLayout, QColorDialog, QApplication
-from pyqtgraph import PlotWidget, AxisItem, mkPen, mkBrush, PlotDataItem, ScatterPlotItem, TextItem, exporters
 import numpy as np
+import pyqtgraph as pg
+from pyqtgraph.Qt import QtGui, QtWidgets
+from PyQt5.QtGui import QFont, QColor
+from PyQt5.QtWidgets import QColorDialog, QFileDialog, QWidget, \
+    QDoubleSpinBox, QLineEdit, QPushButton, QLabel, QComboBox, QSpinBox, \
+    QCheckBox, QMessageBox
 
 import piva.arpys_wp as wp
 import piva.data_loader as dl
-from piva.data_browser import *
-from piva._2Dviewer import *
-from piva._3Dviewer import *
+import piva._2Dviewer as p2d
+import piva._3Dviewer as p3d
 
-warnings.filterwarnings("error")
 MDC_PANEL_BGR = (236, 236, 236)
 
 
-class PlotTool(QMainWindow):
+class PlotTool(QtWidgets.QMainWindow):
 
     def __init__(self, data_browser, title=None):
         super(PlotTool, self).__init__()
@@ -28,10 +26,10 @@ class PlotTool(QMainWindow):
         self.central_widget = QWidget()
         self.plotting_tool_layout = QtWidgets.QGridLayout()
         self.central_widget.setLayout(self.plotting_tool_layout)
-        self.tabs = QTabWidget()
+        self.tabs = QtWidgets.QTabWidget()
 
         self.main_utils = QWidget()
-        self.plot_panel = PlotWidget(background=MDC_PANEL_BGR)
+        self.plot_panel = pg.PlotWidget(background=MDC_PANEL_BGR)
 
         self.data_browser = data_browser
         self.title = title
@@ -106,7 +104,7 @@ class PlotTool(QMainWindow):
     def init_markers(self):
         max_w = 80
 
-        self.marker_1['marker'] = ScatterPlotItem()
+        self.marker_1['marker'] = pg.ScatterPlotItem()
         self.marker_1['dropped'] = False
         self.marker_1['idx'] = 1
         self.marker_1['x'] = QDoubleSpinBox()
@@ -118,7 +116,7 @@ class PlotTool(QMainWindow):
         self.marker_1['button'] = QPushButton('drop')
         self.marker_1['dumped_at'] = None
 
-        self.marker_2['marker'] = ScatterPlotItem()
+        self.marker_2['marker'] = pg.ScatterPlotItem()
         self.marker_2['dropped'] = False
         self.marker_2['idx'] = 2
         self.marker_2['x'] = QDoubleSpinBox()
@@ -146,7 +144,7 @@ class PlotTool(QMainWindow):
 
     def set_main_utils(self):
         # self.main_utils = QWidget()
-        mul = QVBoxLayout()
+        mul = QtWidgets.QVBoxLayout()
 
         self.main_added_lbl = QLabel('Curves:')
         self.main_added = QComboBox()
@@ -453,7 +451,7 @@ class PlotTool(QMainWindow):
 
         dv = self.data_browser.data_viewers[dv_lbl]
 
-        if isinstance(dv, MainWindow2D):
+        if isinstance(dv, p2d.MainWindow2D):
             self.ds_dv_plot.addItem('edc')
             self.ds_dv_plot.addItem('mdc')
             for key in dv.data_viewers.keys():
@@ -520,9 +518,9 @@ class PlotTool(QMainWindow):
             y = np.array([float(yi) for yi in y])
             data_item_lbl = plot
         else:
-            if isinstance(dv, MainWindow2D):
+            if isinstance(dv, p2d.MainWindow2D):
                 x, y = self.get_data_from_2dviewer(dv_lbl, plot)
-            elif isinstance(dv, MainWindow3D):
+            elif isinstance(dv, p3d.MainWindow3D):
                 x, y = self.get_data_from_3dviewer(dv_lbl, plot)
             data_item_lbl = dv_lbl.split('/')[-1] + ' - ' + plot
 
@@ -533,7 +531,7 @@ class PlotTool(QMainWindow):
             data_item_colision_box.setText('Curve with this name already has been added.  Want to add another one?')
             data_item_colision_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             if data_item_colision_box.exec() == QMessageBox.Yes:
-                lbl, lbl_return_val = QInputDialog.getText(self, '', 'Then add specific label:', QLineEdit.Normal, '1')
+                lbl, lbl_return_val = QtWidgets.QInputDialog.getText(self, '', 'Then add specific label:', QLineEdit.Normal, '1')
                 data_item_lbl = data_item_lbl + ' (' + lbl + ')'
                 if not lbl_return_val:
                     return
@@ -541,7 +539,7 @@ class PlotTool(QMainWindow):
                 return
 
         self.data_items[data_item_lbl] = {}
-        self.data_items[data_item_lbl]['data_item'] = CustomDataItem(x, y, pen=mkPen('k', width=2))
+        self.data_items[data_item_lbl]['data_item'] = CustomDataItem(x, y, pen=pg.mkPen('k', width=2))
         self.data_items[data_item_lbl]['org_data'] = [deepcopy(x), deepcopy(y)]
         self.data_items[data_item_lbl]['color'] = 'k'
         self.data_items[data_item_lbl]['width'] = 2
@@ -824,12 +822,12 @@ class PlotTool(QMainWindow):
             xx, yy = [x0, x0], [y0, y0]
             if marker['idx'] == 1:
                 s = 'star'
-                mkp = mkPen(color='r')
-                b = mkBrush(color='r')
+                mkp = pg.mkPen(color='r')
+                b = pg.mkBrush(color='r')
             else:
                 s = 'x'
-                mkp = mkPen(color='k')
-                b = mkBrush(color='k')
+                mkp = pg.mkPen(color='k')
+                b = pg.mkBrush(color='k')
             marker['marker'].setData(xx, yy, symbol=s, pen=mkp, brush=b)
             self.plot_panel.addItem(marker['marker'])
         else:
@@ -916,7 +914,7 @@ class PlotTool(QMainWindow):
             clr = 'k'
             self.annotations[name]['color'] = clr
 
-        self.annotations[name]['text_item'] = TextItem(text=text, anchor=(0, 1), color=clr)
+        self.annotations[name]['text_item'] = pg.TextItem(text=text, anchor=(0, 1), color=clr)
         self.annotations[name]['text_item'].setFont(text_font)
         self.annotations[name]['text_item'].setPos(x, y)
         self.plot_panel.addItem(self.annotations[name]['text_item'])
@@ -1000,13 +998,13 @@ class PlotTool(QMainWindow):
         data_items_to_save = self.get_data_items_to_save()
         plot_design_to_save = self.get_plot_design_to_save()
         annotations_to_save = self.get_annotations_to_save()
-        res = Namespace(
+        res = argparse.Namespace(
             data_items=data_items_to_save,
             plot_design=plot_design_to_save,
             annotations=annotations_to_save
         )
 
-        full_path, types = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Session')
+        full_path, types = QFileDialog.getSaveFileName(self, 'Save Session')
 
         dl.dump(res, full_path, force=True)
 
@@ -1074,7 +1072,7 @@ class PlotTool(QMainWindow):
                 else:
                     self.annotations[key][keyy] = saved[key][keyy]
                 clr = saved[key]['color']
-                self.annotations[key]['text_item'] = TextItem(text=saved[key]['text'], anchor=(1, 0), color=clr)
+                self.annotations[key]['text_item'] = pg.TextItem(text=saved[key]['text'], anchor=(1, 0), color=clr)
         return self.annotations
 
     def load(self):
@@ -1089,7 +1087,7 @@ class PlotTool(QMainWindow):
         else:
             return
 
-        full_path, types = QtWidgets.QFileDialog.getOpenFileName(self, 'Load Session')
+        full_path, types = QFileDialog.getOpenFileName(self, 'Load Session')
         session = dl.load_pickle(full_path)
 
         self.main_added.blockSignals(True)
@@ -1122,9 +1120,9 @@ class PlotTool(QMainWindow):
     def save_image(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        full_path, types = QtWidgets.QFileDialog.getSaveFileName(
+        full_path, types = QFileDialog.getSaveFileName(
             self, 'Save Image', filter='Images (*.png *.jpg *.jpeg *.bmp)', options=options)
-        to_save = exporters.ImageExporter(self.plot_panel.plotItem)
+        to_save = pg.exporters.ImageExporter(self.plot_panel.plotItem)
 
         to_save.export(full_path)
 
@@ -1136,7 +1134,7 @@ class PlotTool(QMainWindow):
         del(self.data_browser.plotting_tools[self.title])
 
 
-class CustomDataItem(PlotDataItem):
+class CustomDataItem(pg.PlotDataItem):
 
     def __init__(self, *args, **kwargs):
         super(CustomDataItem, self).__init__(*args, **kwargs)

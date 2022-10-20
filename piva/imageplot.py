@@ -1,29 +1,20 @@
 """ General classes for data visualization objects
-matplotlib pcolormesh equivalent in pyqtgraph (more or less) """
-
-import logging
+matplotlib pcolormesh equivalent in pyqtgraph (more or less) 
+"""
 import os
 import subprocess
-import sys
-import warnings
-from copy import deepcopy
 
 import numpy as np
-from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, \
-    QLineEdit, QMainWindow, QDialogButtonBox, QMessageBox, QSlider
-from PyQt5.QtGui import QFont
-from PyQt5 import QtCore
-from pyqtgraph.Qt import QtGui, QtWidgets
-from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen, PColorMeshItem
-from numpy import arange, array, clip, inf, linspace, ndarray, abs, ones, allclose, where, all
-from pyqtgraph import Qt as qt
+import pyqtgraph as pg
+from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QComboBox, \
+    QDoubleSpinBox, QSpinBox, QPushButton, QLineEdit, QMainWindow, \
+    QDialogButtonBox, QMessageBox
+from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
 
 import piva.arpys_wp as wp
 import piva.data_loader as dl
 from piva.cmaps import cmaps, my_cmaps
-
-warnings.filterwarnings("error")
 
 BASE_LINECOLOR = (255, 255, 0, 255)
 BINLINES_LINECOLOR = (168, 168, 104, 255)
@@ -39,9 +30,8 @@ SIGNALS = 5
 MY_CMAPS = True
 DEFAULT_CMAP = 'coolwarm'
 
-bold_font = QFont()
+bold_font = QtGui.QFont()
 bold_font.setBold(True)
-
 
 class Crosshair:
     """ Crosshair made up of two InfiniteLines. """
@@ -55,11 +45,11 @@ class Crosshair:
 
         # Initialize the InfiniteLines
         if orientation == 'horizontal':
-            self.hline = InfiniteLine(pos[1], movable=True, angle=0)
-            self.vline = InfiniteLine(pos[0], movable=True, angle=90)
+            self.hline = pg.InfiniteLine(pos[1], movable=True, angle=0)
+            self.vline = pg.InfiniteLine(pos[0], movable=True, angle=90)
         elif orientation == 'vertical':
-            self.hline = InfiniteLine(pos[1], movable=True, angle=90)
-            self.vline = InfiniteLine(pos[0], movable=True, angle=0)
+            self.hline = pg.InfiniteLine(pos[1], movable=True, angle=90)
+            self.vline = pg.InfiniteLine(pos[0], movable=True, angle=0)
 
         # Set the color
         self.set_color(BASE_LINECOLOR, HOVER_COLOR)
@@ -167,7 +157,7 @@ class Crosshair:
     #     self.vline.sigDragged.connect(self.on_dragged_v)
 
 
-class ImagePlot(PlotWidget):
+class ImagePlot(pg.PlotWidget):
     """
     A PlotWidget which mostly contains a single 2D image (intensity 
     distribution) or a 3D array (distribution of RGB values) as well as all 
@@ -184,9 +174,9 @@ class ImagePlot(PlotWidget):
     sig_clicked        emitted when user clicks inside the imageplot
     =================  =========================================================
     """
-    sig_image_changed = qt.QtCore.Signal()
-    sig_axes_changed = qt.QtCore.Signal()
-    sig_clicked = qt.QtCore.Signal(object)
+    sig_image_changed = QtCore.Signal()
+    sig_axes_changed = QtCore.Signal()
+    sig_clicked = QtCore.Signal(object)
 
     def __init__(self, image=None, parent=None, background=BGR_COLOR, name=None, mainplot=True,
                  orientation='horizontal', **kwargs):
@@ -258,11 +248,11 @@ class ImagePlot(PlotWidget):
         """
         [[xmin, xmax], [ymin, ymax]] = self.get_limits()
         if self.orientation == 'horizontal':
-            self.pos[0].set_allowed_values(arange(xmin, xmax + 1, 1))
-            self.pos[1].set_allowed_values(arange(ymin, ymax + 1, 1))
+            self.pos[0].set_allowed_values(np.arange(xmin, xmax + 1, 1))
+            self.pos[1].set_allowed_values(np.arange(ymin, ymax + 1, 1))
         else:
-            self.pos[1].set_allowed_values(arange(xmin, xmax + 1, 1))
-            self.pos[0].set_allowed_values(arange(ymin, ymax + 1, 1))
+            self.pos[1].set_allowed_values(np.arange(xmin, xmax + 1, 1))
+            self.pos[0].set_allowed_values(np.arange(ymin, ymax + 1, 1))
 
     def set_bounds(self, xmin, xmax, ymin, ymax):
         """ Set both, the displayed area of the axis as well as the the range
@@ -339,12 +329,12 @@ class ImagePlot(PlotWidget):
         ========  ==============================================================
         """
         # Convert array to ImageItem
-        if isinstance(image, ndarray):
+        if isinstance(image, np.ndarray):
             if 0 not in image.shape:
                 if pmesh:
                     try:
                         print(pmesh_x.shape, pmesh_y.shape, image.shape)
-                        image_item = PColorMeshItem(pmesh_x, pmesh_y, image)
+                        image_item = pg.PColorMeshItem(pmesh_x, pmesh_y, image)
                         # image_item = PColorMeshItem(image, **kwargs)
                     except AttributeError:
                         print('unable to use pcolormesh object')
@@ -464,7 +454,7 @@ class ImagePlot(PlotWidget):
         # Remove the old top-axis
         plotItem.layout.removeItem(plotItem.getAxis(axis))
         # Create the new axis and set its range
-        new_axis = AxisItem(orientation=axis)
+        new_axis = pg.AxisItem(orientation=axis)
         new_axis.setRange(min_val, max_val)
         # Attach it internally to the plotItem and its layout (The arguments
         # `*(1, 1)` or `*(2, 2)` refers to the axis' position in the GridLayout)
@@ -494,7 +484,7 @@ class ImagePlot(PlotWidget):
         sy = 1 if sy == 0 else sy
         # Define a transformation matrix that scales and translates the image 
         # such that it appears at the coordinates that match our x and y axes.
-        transform = qt.QtGui.QTransform()
+        transform = QtGui.QTransform()
         transform.scale(sx, sy)
         # Carry out the translation in scaled coordinates
         transform.translate(x0/sx, y0/sy)
@@ -516,7 +506,7 @@ class ImagePlot(PlotWidget):
         # Remove the old top-axis
         plotItem.layout.removeItem(plotItem.getAxis(self.secondary_axis))
         # Create the new axis and set its range
-        new_axis = AxisItem(orientation=self.secondary_axis)
+        new_axis = pg.AxisItem(orientation=self.secondary_axis)
         new_axis.setRange(min_val, max_val)
         # Attach it internally to the plotItem and its layout (The arguments
         # `*(1, 1)` or `*(2, 2)` refers to the axis' position in the GridLayout)
@@ -536,8 +526,8 @@ class ImagePlot(PlotWidget):
 
         # Set the limits to image pixels if they are not defined
         if self.xlim is None or self.ylim is None:
-            self.set_xscale(arange(0, x))
-            self.set_yscale(arange(0, y))
+            self.set_xscale(np.arange(0, x))
+            self.set_yscale(np.arange(0, y))
 
         if self.orientation == 'horizontal':
             x_min, x_max = self.xlim
@@ -587,8 +577,8 @@ class ImagePlot(PlotWidget):
             # add new binning lines
             self.binning_hor = True
             self.hor_width = width
-            self.left_hor_line = InfiniteLine(pos - width, movable=False, angle=0)
-            self.right_hor_line = InfiniteLine(pos + width, movable=False, angle=0)
+            self.left_hor_line = pg.InfiniteLine(pos - width, movable=False, angle=0)
+            self.right_hor_line = pg.InfiniteLine(pos + width, movable=False, angle=0)
             self.left_hor_line.setPen(color=BINLINES_LINECOLOR, width=1)
             self.right_hor_line.setPen(color=BINLINES_LINECOLOR, width=1)
             self.addItem(self.left_hor_line)
@@ -602,8 +592,8 @@ class ImagePlot(PlotWidget):
             # add new binning lines
             self.binning_ver = True
             self.ver_width = width
-            self.left_ver_line = InfiniteLine(pos - width, movable=False, angle=90)
-            self.right_ver_line = InfiniteLine(pos + width, movable=False, angle=90)
+            self.left_ver_line = pg.InfiniteLine(pos - width, movable=False, angle=90)
+            self.right_ver_line = pg.InfiniteLine(pos + width, movable=False, angle=90)
             self.left_ver_line.setPen(color=BINLINES_LINECOLOR, width=1)
             self.right_ver_line.setPen(color=BINLINES_LINECOLOR, width=1)
             self.addItem(self.left_ver_line)
@@ -671,7 +661,7 @@ class ImagePlot(PlotWidget):
         self.crosshair.vline.setBounds([xmin, xmax])
 
 
-class CursorPlot(PlotWidget):
+class CursorPlot(pg.PlotWidget):
     """ Implements a simple, draggable scalebar represented by a line
     (:class:`pyqtgraph.InfiniteLine) on an axis
     (:class:`pyqtgraph.PlotWidget).
@@ -713,7 +703,7 @@ class CursorPlot(PlotWidget):
         self.wheel_frames = None
         self.cursor_color = None
         self.pen_width = None
-        self.sp_EDC_pen = mkPen('r')
+        self.sp_EDC_pen = pg.mkPen('r')
 
         # Whether to allow changing the slider width with arrow keys
         self.change_width_enabled = False
@@ -744,7 +734,7 @@ class CursorPlot(PlotWidget):
 
         # Set up the slider
         self.slider_width = TracedVariable(slider_width, name='{}.slider_width'.format(self.name))
-        self.slider = InfiniteLine(initial_pos, movable=True, angle=self.angle)
+        self.slider = pg.InfiniteLine(initial_pos, movable=True, angle=self.angle)
         self.set_slider_pen(color=(255, 255, 0, 255), width=slider_width)
 
         # Add a marker. Args are (style, position (from 0-1), size #NOTE
@@ -858,8 +848,8 @@ class CursorPlot(PlotWidget):
         # add new binning lines
         self.binning = True
         self.width = width
-        self.left_line = InfiniteLine(pos-width, movable=False, angle=self.angle)
-        self.right_line = InfiniteLine(pos+width, movable=False, angle=self.angle)
+        self.left_line = pg.InfiniteLine(pos-width, movable=False, angle=self.angle)
+        self.right_line = pg.InfiniteLine(pos+width, movable=False, angle=self.angle)
         self.left_line.setPen(color=BINLINES_LINECOLOR, width=1)
         self.right_line.setPen(color=BINLINES_LINECOLOR, width=1)
         self.addItem(self.left_line)
@@ -896,7 +886,7 @@ class CursorPlot(PlotWidget):
         # Remove the old top-axis
         plotItem.layout.removeItem(plotItem.getAxis(self.secondary_axis))
         # Create the new axis and set its range
-        new_axis = AxisItem(orientation=self.secondary_axis)
+        new_axis = pg.AxisItem(orientation=self.secondary_axis)
         new_axis.setRange(min_val, max_val)
         # Attach it internally to the plotItem and its layout (The arguments
         # `*(1, 1)` or `*(2, 2)` refers to the axis' position in the GridLayout)
@@ -909,7 +899,7 @@ class CursorPlot(PlotWidget):
         # Remove the old top-axis
         plotItem.layout.removeItem(plotItem.getAxis(axis))
         # Create the new axis and set its range
-        new_axis = AxisItem(orientation=axis)
+        new_axis = pg.AxisItem(orientation=axis)
         new_axis.setRange(min_val, max_val)
         # Attach it internally to the plotItem and its layout (The arguments
         # `*(1, 1)` or `*(2, 2)` refers to the axis' position in the GridLayout)
@@ -960,7 +950,7 @@ class UtilitiesPanel(QWidget):
 
         self.mw = main_window
         self.layout = QtWidgets.QGridLayout()
-        self.tabs = QTabWidget()
+        self.tabs = QtWidgets.QTabWidget()
         self.tabs_visible = True
         self.dim = dim
 
@@ -2034,43 +2024,43 @@ class UtilitiesPanel(QWidget):
             # temperature
             elif lbl == 'T':
                 err = 1
-                par = array(to_check[idx])
-                to_compare = ones(par.size) * par[0]
-                check_result.append(allclose(par, to_compare, atol=err))
+                par = np.array(to_check[idx])
+                to_compare = np.ones(par.size) * par[0]
+                check_result.append(np.allclose(par, to_compare, atol=err))
             # photon energy
             elif lbl == 'hv':
                 err = 0.1
-                par = array(to_check[idx])
-                to_compare = ones(par.size) * par[0]
-                check_result.append(allclose(par, to_compare, atol=err))
+                par = np.array(to_check[idx])
+                to_compare = np.ones(par.size) * par[0]
+                check_result.append(np.allclose(par, to_compare, atol=err))
             # e_min of analyzer
             elif lbl == 'e_start':
                 err = to_check[-1][0]
-                par = array(to_check[idx])
-                to_compare = ones(par.size) * par[0]
-                check_result.append(allclose(par, to_compare, atol=err))
+                par = np.array(to_check[idx])
+                to_compare = np.ones(par.size) * par[0]
+                check_result.append(np.allclose(par, to_compare, atol=err))
             # e_max of analyzer
             elif lbl == 'e_stop':
                 err = to_check[-1][0]
-                par = array(to_check[idx])
-                to_compare = ones(par.size) * par[0]
-                check_result.append(allclose(par, to_compare, atol=err))
+                par = np.array(to_check[idx])
+                to_compare = np.ones(par.size) * par[0]
+                check_result.append(np.allclose(par, to_compare, atol=err))
             elif lbl == 'e_step':
                 err = to_check[-1][0]
-                par = array(to_check[idx])
-                to_compare = ones(par.size) * par[0]
-                check_result.append(allclose(par, to_compare, atol=err * 0.1))
+                par = np.array(to_check[idx])
+                to_compare = np.ones(par.size) * par[0]
+                check_result.append(np.allclose(par, to_compare, atol=err * 0.1))
             else:
                 check_result.append(to_check[idx][0] == to_check[idx][1])
 
         if not (to_check[1][0] == to_check[1][1]):
             return 0
 
-        if array(check_result).all():
+        if np.array(check_result).all():
             message = 'Everything match! We\'re good to go!'
         else:
             message = 'Some stuff doesn\'t match...\n\n'
-            dont_match = where(array(check_result) == False)
+            dont_match = np.where(np.array(check_result) == False)
             for idx in dont_match[0]:
                 try:
                     message += '{} \t\t {:.3f}\t  {:.3f} \n'.format(str(labels[idx]), to_check[idx][0], to_check[idx][1])
@@ -2104,7 +2094,7 @@ class InfoWindow(QMainWindow):
         self.setWindowTitle(title)
 
 
-class TracedVariable(qt.QtCore.QObject):
+class TracedVariable(QtCore.QObject):
 
     """ A pyqt implementaion of tkinter's/Tcl's traced variables using Qt's
     signaling mechanism.
@@ -2137,9 +2127,9 @@ class TracedVariable(qt.QtCore.QObject):
                                 allowed one.
     ==========================  ================================================
     """
-    sig_value_changed = qt.QtCore.Signal()
-    sig_value_read = qt.QtCore.Signal()
-    sig_allowed_values_changed = qt.QtCore.Signal()
+    sig_value_changed = QtCore.Signal()
+    sig_value_read = QtCore.Signal()
+    sig_allowed_values_changed = QtCore.Signal()
 
     def __init__(self, value=None, name=None):
         # Initialize instance variables
@@ -2214,9 +2204,9 @@ class TracedVariable(qt.QtCore.QObject):
             # Convert to sorted numpy array
             try:
                 if binning == 0:
-                    values = array(values)
+                    values = np.array(values)
                 else:
-                    values = array(values)[binning:-binning]
+                    values = np.array(values)[binning:-binning]
             except TypeError:
                 message = 'Could not convert allowed values to np.array.'
                 raise TypeError(message)
@@ -2240,7 +2230,7 @@ class TracedVariable(qt.QtCore.QObject):
         if self.allowed_values is None:
             return value
         else:
-            ind = abs(self.allowed_values - value).argmin()
+            ind = np.abs(self.allowed_values - value).argmin()
             return self.allowed_values[ind]
 
 

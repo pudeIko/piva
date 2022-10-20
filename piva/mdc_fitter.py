@@ -1,5 +1,4 @@
 import os
-import warnings
 
 import numpy as np
 from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, \
@@ -16,8 +15,6 @@ from scipy.optimize import OptimizeWarning
 import piva.arpys_wp as wp
 from piva.cmaps import cmaps, my_cmaps
 from piva.imageplot import TracedVariable
-
-warnings.filterwarnings("error")
 
 BASE_LINECOLOR = (255, 255, 0, 255)
 BINLINES_LINECOLOR = (168, 168, 104, 255)
