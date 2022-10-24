@@ -16,8 +16,16 @@ from pyqtgraph import ColorMap
 
 # from data_slicer.utilities import CONFIG_DIR
 
-
 class ds_cmap(ColorMap):
+    """ Empty shell due to an upstream change in pyqtgraph. """
+    def set_alpha(self, *args, **kwargs) :
+        pass
+    def set_gamma(self, *args, **kwargs) :
+        pass
+    def set_vmax(self, *args, **kwargs) :
+        pass
+
+class ds_cmap_legacy(ColorMap):
     """ Simple subclass of :class:`pyqtgraph.ColorMap`. Adds vmax, 
     powerlaw normalization and a convenience function to change alpha.
     """
