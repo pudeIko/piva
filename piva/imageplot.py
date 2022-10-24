@@ -957,12 +957,14 @@ class UtilitiesPanel(QWidget):
         self.close_button = QPushButton('close')
         self.save_button = QPushButton('save')
         self.hide_button = QPushButton('hide tabs')
+        self.pit_button = QPushButton('open in PIT')
 
         self.buttons = QWidget()
         self.buttons_layout = QtWidgets.QGridLayout()
         self.buttons_layout.addWidget(self.close_button,    1, 0)
         self.buttons_layout.addWidget(self.save_button,     2, 0)
         self.buttons_layout.addWidget(self.hide_button,     3, 0)
+        self.buttons_layout.addWidget(self.pit_button,      4, 0)
         self.buttons.setLayout(self.buttons_layout)
 
         if name is not None:

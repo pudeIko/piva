@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QMessageBox
 import piva.arpys_wp as wp
 import piva.data_loader as dl
 import piva.imageplot as ip
+from data_slicer import pit
 from piva.cmaps import cmaps
 from piva.edc_fitter import EDCFitter
 from piva.mdc_fitter import MDCFitter
@@ -268,6 +269,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
         # buttons
         self.util_panel.close_button.clicked.connect(self.close)
         self.util_panel.save_button.clicked.connect(self.save_to_pickle)
+        self.util_panel.pit_button.clicked.connect(self.open_pit)
 
         # energy and k-space concersion
         self.util_panel.axes_energy_Ef.valueChanged.connect(self.apply_energy_correction)
@@ -952,4 +954,15 @@ class MainWindow2D(QtWidgets.QMainWindow):
             self.util_panel.axes_energy_hv.setValue(float(data_set.hv))
         if not (data_set.wf is None):
             self.util_panel.axes_energy_wf.setValue(float(data_set.wf))
+
+    def open_pit(self) :
+        """ Open the data in an instance of 
+        :class:`data_slicer.pit.MainWindow`, which has the benefit of 
+        providing a free-slicing ROI.
+        """
+        mw = pit.MainWindow()
+        # Move the empty axis back
+        data = np.moveaxis(self.data_set.data, 0, -1)
+        mw.data_handler.set_data(data, axes=self.data_handler.axes)
+        mw.set_cmap(self.cmap_name)
 
