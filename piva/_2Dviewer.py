@@ -204,7 +204,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
         # Set the loaded data in PIT
         if data_set is None:
             print('Data set not defined.')
-            self.close_mw()
         else:
             raw_data = data_set
 
@@ -780,7 +779,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
 
-        self.thread[thread_lbl] = ThreadClass(index=thread_lbl)
+        self.thread[thread_lbl] = ip.ThreadClass(index=thread_lbl)
         self.thread[thread_lbl].start()
         title = self.title + ' - mdc fitter'
         if self.new_energy_axis is not None:
@@ -815,7 +814,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
 
-        self.thread[thread_idx] = ThreadClass(index=thread_idx)
+        self.thread[thread_idx] = ip.ThreadClass(index=thread_idx)
         self.thread[thread_idx].start()
         title = self.title + ' - edc fitter'
         if self.new_energy_axis is not None:

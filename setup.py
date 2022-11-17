@@ -8,12 +8,13 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='piva',
-    version='0.0.1',
+    version='1.0.0',
     author='Wojtek Pudelko',
     author_email='wojciech.pudelko@psi.ch',
     description='My piva, have fun',
     long_description=long_description,
     long_description_content_type='text/markdown',
+    url='https://github.com/pudeIko/piva.git',
     packages=setuptools.find_packages(),
     python_requires=">=3.7",
     install_requires=requirements,

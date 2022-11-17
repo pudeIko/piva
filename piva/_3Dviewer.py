@@ -425,7 +425,6 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
         if data_set is None:
             print('No dataset to open.')
-            self.close_mw()
         else:
             D = data_set
 

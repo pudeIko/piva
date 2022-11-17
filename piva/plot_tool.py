@@ -1127,8 +1127,10 @@ class PlotTool(QtWidgets.QMainWindow):
 
         to_save.export(full_path)
 
-    def close(self):
-        self.destroy()
+    def closeEvent(self, event) :
+        """ closeEvent is triggered on `Alt-F4` or mouse-click closing a 
+        window. 
+        """
         self.data_browser.thread[self.title].quit()
         self.data_browser.thread[self.title].wait()
         del(self.data_browser.thread[self.title])
