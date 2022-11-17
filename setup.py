@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='piva',
-    version='1.0.0',
+    version='1.0.1',
     author='Wojtek Pudelko',
     author_email='wojciech.pudelko@psi.ch',
     description='My piva, have fun',
