@@ -42,7 +42,7 @@ Detailed instructions for Anaconda users follow:
 
       (testenv) $ db
    
-   This should bring up a :ref:`databrowser window <sec-db-window>`.
+This should bring up a :ref:`databrowser window <sec-db>`.
 
 ..
     .. _sec-verifying:
