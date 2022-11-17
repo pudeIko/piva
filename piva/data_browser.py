@@ -146,7 +146,7 @@ class DataBrowser(QtWidgets.QMainWindow):
             pass
 
     def single_plotting_tool(self, thread_index):
-
+        print(f'[Debug]data_browser.single_plotting_tool({thread_index})')
         try:
             self.plotting_tools[thread_index] = pt.PlotTool(self, title=thread_index)
         except Exception:

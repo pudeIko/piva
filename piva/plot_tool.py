@@ -14,6 +14,7 @@ import piva.arpys_wp as wp
 import piva.data_loader as dl
 import piva._2Dviewer as p2d
 import piva._3Dviewer as p3d
+from piva.imageplot import bold_font
 
 MDC_PANEL_BGR = (236, 236, 236)
 
