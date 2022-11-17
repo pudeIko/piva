@@ -17,6 +17,12 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+## [1.0.2] = 2022-11-17
+
+### Added
+
+- "Open in PIT" button
+
 ## [1.0.1] = 2022-11-17
 
 ### Changed
