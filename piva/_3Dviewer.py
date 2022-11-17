@@ -7,6 +7,7 @@ from copy import deepcopy
 
 import matplotlib.pyplot as plt
 import numpy as np
+from data_slicer import pit
 from PyQt5.QtWidgets import QMessageBox
 from pyqtgraph.Qt import QtWidgets
 
@@ -86,12 +87,6 @@ class DataHandler3D :
         self.axes = np.array(axes, dtype="object")
         with warnings.catch_warnings():
             self.norm_data = wp.normalize(data)
-
-        # Retain a copy of the original data and axes so that we can reset later
-        # NOTE: this effectively doubles the used memory!
-        # self.original_data = copy(self.data.get_value())
-        # self.original_axes = copy(self.axes)
-
         self.prepare_axes()
         self.on_z_dim_change()
 
@@ -521,6 +516,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
         # buttons
         self.util_panel.close_button.clicked.connect(self.close)
         self.util_panel.save_button.clicked.connect(self.save_to_pickle)
+        self.util_panel.pit_button.clicked.connect(self.open_pit)
 
         # energy and k-space concersion
         self.util_panel.axes_energy_Ef.valueChanged.connect(self.apply_energy_correction)
@@ -1452,6 +1448,15 @@ class MainWindow3D(QtWidgets.QMainWindow):
         title = 'piva -> beamline coordinates translator'
         self.info_box = ip.InfoWindow(self.util_panel.orient_info_window, title)
         self.info_box.show()
+
+    def open_pit(self) :
+        """ Open the data in an instance of 
+        :class:`data_slicer.pit.MainWindow`, which has the benefit of 
+        providing a free-slicing ROI.
+        """
+        mw = pit.MainWindow()
+        mw.data_handler.set_data(self.data_set.data, axes=self.data_handler.axes)
+        mw.set_cmap(self.cmap_name)
 
     def open_2dviewer(self):
         data_set = deepcopy(self.data_set)
