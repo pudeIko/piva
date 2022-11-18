@@ -777,11 +777,6 @@ class DataloaderBloch(Dataloader):
         return metadata
 
 
-######################################
-######### Not updated yet ############
-######################################
-
-
 class Dataloaderi05(Dataloader):
     """
     Dataloader object for the i05 beamline at the Diamond Light Source.
@@ -792,12 +787,9 @@ class Dataloaderi05(Dataloader):
 
         ds = DataSet()
         try:
-            filedata = self.load_nxs_new(fname)
+            filedata = self.load_nxs(fname)
         except AttributeError:
             raise NotImplementedError
-        except IndexError:
-            filedata = self.load_nxs_old(fname)
-
 
         dict_ds = vars(ds.dataset)
         dict_filedata = vars(filedata)
@@ -808,7 +800,7 @@ class Dataloaderi05(Dataloader):
 
         return ds.dataset
 
-    def load_nxs_new(self, filename):
+    def load_nxs(self, filename):
         # Read file with h5py reader
         infile = h5py.File(filename, 'r')
 
@@ -867,7 +859,7 @@ class Dataloaderi05(Dataloader):
                 start, stop, step = [float(s) for s in start_stop_step]
                 xscale = np.arange(start, stop + 0.5 * step, step)
 
-        # What we usually call theta is tilt in this beamline
+        # read metadata
         x = infile['entry1/instrument/manipulator/sax'][0]
         y = infile['entry1/instrument/manipulator/say'][0]
         z = infile['entry1/instrument/manipulator/saz'][0]
@@ -875,32 +867,34 @@ class Dataloaderi05(Dataloader):
         phi = infile['entry1/instrument/manipulator/saazimuth'][0]
         tilt = infile['entry1/instrument/manipulator/satilt'][0]
 
-        PE = infile['entry1/instrument/analyzer/pass_energy']
-        n_sweeps = infile['entry1/instrument/analyzer/number_of_iterations']
-        lens_mode = infile['entry1/instrument/analyzer/lens_mode']
-        acq_mode = infile['entry1/instrument/analyzer/acquisition_mode']
-        DT = infile['entry1/instrument/analyzer/time_per_frames']
+        PE = infile['entry1/instrument/analyser/pass_energy'][0]
+        n_sweeps = infile['entry1/instrument/analyser/number_of_iterations'][0]
+        lens_mode = str(infile['entry1/instrument/analyser/lens_mode'][0])[2:-1]
+        acq_mode = str(infile['entry1/instrument/analyser/acquisition_mode'][0])[2:-1]
+        DT = infile['entry1/instrument/analyser/time_for_frames'][0] * 1000
 
         hv = infile['entry1/instrument/monochromator/energy'][0]
-        polarization = infile['entry1/instrument/insertion_device/beam/final_polarisation_label'][0]
-        temp = infile['entry1/instrument/sample/temperature'][0]
+        exit_slit = infile['entry1/instrument/monochromator/exit_slit_size'][0] * 1000
+        FE = round(infile['entry1/instrument/monochromator/s2_horizontal_slit_size'][0], 2)
+        polarization = str(infile['entry1/instrument/insertion_device/beam/final_polarisation_label'][0])[2:-1]
+        temp = infile['entry1/sample/temperature'][0]
+        pressure = infile['entry1/sample/lc_pressure'][0]
 
-        # Take the mean of the given binding energies as an estimate
-        # E_b = -np.mean(infile['entry1/analyser/binding_energies'])
-
-        print('pe', type(PE), PE)
-        print('n_sweeps', type(n_sweeps), n_sweeps)
-        print('lens_mode', type(lens_mode), lens_mode)
-        print('acq_mode', type(acq_mode), acq_mode)
-        print('DT', type(DT), DT)
-        print('hv', type(hv), hv)
-        print('polarization', type(polarization), polarization)
-        print('temp', type(temp), temp)
-        #
-        # print('data \t', data.shape)
-        # print('xscale \t', xscale.shape)
-        # print('yscale \t', yscale.shape)
-        # print('zscale \t', zscale.shape)
+        # get scan info
+        if infile['entry1/scan_dimensions'][0] == 1:
+            scan_type = 'cut'
+            scan_dim = None
+        else:
+            tmp = str(np.string_(infile['entry1/scan_command']))[2:-1].split()
+            start, stop, step = float(tmp[2]), float(tmp[3]), float(tmp[4])
+            scan_dim = [start, stop, step]
+            if 'deflector' in tmp[1]:
+                scan_type = 'DA'
+            elif 'polar' in tmp[1]:
+                scan_type = 'theta'
+            elif 'energy' in tmp[1]:
+                scan_type = 'hv'
+            scan_type += ' scan'
 
         res = Namespace(
             data=data,
@@ -916,121 +910,30 @@ class Dataloaderi05(Dataloader):
             theta=theta,
             phi=phi,
             tilt=tilt,
-            # temp=temp,
-            # pressure=None,
-            # hv=hv,
+            temp=temp,
+            pressure=pressure,
+            hv=hv,
             # wf=None,
             # Ef=None,
-            # polarization=polarization,
-            # PE=PE,
-            exit_slit=None,
-            FE=None,
-            scan_type=None,
-            scan_dim=None,
-            # acq_mode=acq_mode,
-            # lens_mode=lens_mode,
-            # anal_slit=None,
-            # n_sweeps=n_sweeps,
-            # DT=DT
+            polarization=polarization,
+            PE=PE,
+            exit_slit=exit_slit,
+            FE=FE,
+            scan_type=scan_type,
+            scan_dim=scan_dim,
+            acq_mode=acq_mode,
+            lens_mode=lens_mode,
+            anal_slit=None,
+            n_sweeps=n_sweeps,
+            DT=DT
         )
         return res
+    
 
-    def load_nxs_old(self, filename):
-        # Read file with h5py reader
-        infile = h5py.File(filename, 'r')
-        print('using old I05 data format')
+######################################
+######### Not updated yet ############
+######################################
 
-        data = np.array(infile['/entry1/analyser/data']).T
-        angles = np.array(infile['/entry1/analyser/angles'])
-        energies = np.array(infile['/entry1/analyser/energies'])
-        hv = np.array(infile['/entry1/instrument/monochromator/energy'])
-
-        zscale = energies
-        yscale = angles
-
-        print('data \t', type(data), data.shape)
-        # print('xscale \t', type(xscale), xscale.shape)
-        print('yscale \t', type(yscale), yscale.shape)
-        print('zscale \t', type(zscale), zscale.shape)
-        # Find which xscale is appropriate
-        # """
-        # sapolar : map
-        # salong  : combined x & y scan along beam
-        # saperp  : combined x & y scan perpendicular to beam
-        # """
-        # for z_name in ['salong', 'saperp'] :
-        #    index = '/entry1/analyser/{}'.format(z_name)
-        #    try :
-        #        zscale = np.array(infile[index])
-        #    except KeyError :
-        #        continue
-
-        # Check if we have a scan
-        if data.shape[2] == 1:
-            xscale = energies
-            zscale = np.array([0])
-            data = data.T
-        else:
-            # Otherwise, extract third dimension from scan command
-            command = infile['entry1/scan_command'][()]
-
-            # Special case for 'pathgroup'
-            if command.split()[1] == 'pathgroup':
-                self.print_m('is pathgroup')
-                # Extract points from a ([polar, x, y], [polar, x, y], ...)
-                # tuple
-                points = command.split('(')[-1].split(')')[0]
-                tuples = points.split('[')[1:]
-                xscale = []
-                for t in tuples:
-                    point = t.split(',')[0]
-                    xscale.append(float(point))
-                xscale = np.array(xscale)
-
-                # Now, if this was a scan with varying centre_energy, the
-                # zscale contains a list of energies...
-                # for now, just take the first one
-            #                zscale = zscale[0]
-
-            # Special case for 'scangroup'
-            elif command.split()[1] == 'scan_group':
-                self.print_m('is scan_group')
-                # Extract points from a ([polar, x, y], [polar, x, y], ...)
-                # tuple
-                points = command.split('((')[-1].split('))')[0]
-                points = '((' + points + '))'
-                xscale = np.array(ast.literal_eval(points))[:, 0]
-
-                # Now, if this was a scan with varying centre_energy, the
-                # zscale contains a list of energies...
-                # for now, just take the first one
-                zscale = zscale[0]
-
-            # "Normal" case
-            else:
-                start_stop_step = command.split()[2:5]
-                start, stop, step = [float(s) for s in start_stop_step]
-                xscale = np.arange(start, stop + 0.5 * step, step)
-
-        # What we usually call theta is tilt in this beamline
-        theta = infile['entry1/instrument/manipulator/satilt'][0]
-        phi = infile['entry1/instrument/manipulator/sapolar'][0]
-
-        # Take the mean of the given binding energies as an estimate
-        E_b = -np.mean(infile['entry1/analyser/binding_energies'])
-
-        res = Namespace(
-            data=data,
-            xscale=xscale,
-            yscale=yscale,
-            zscale=zscale,
-            angles=angles,
-            theta=theta,
-            phi=phi,
-            E_b=E_b,
-            hv=hv
-        )
-        return res
 
 
 class DataloaderALS(Dataloader):
