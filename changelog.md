@@ -17,6 +17,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Issue #30: Inverting colorscale in 2D viewer.
+
 ## [1.0.2] = 2022-11-17
 
 ### Added

@@ -531,7 +531,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
         """
         try:
             cmap = self.util_panel.image_cmaps.currentText()
-            if self.util_panel.image_invert_colors.isChecked() and MY_CMAPS:
+            if self.util_panel.image_invert_colors.isChecked() and ip.MY_CMAPS:
                 cmap = cmap + '_r'
         except AttributeError:
             cmap = DEFAULT_CMAP
