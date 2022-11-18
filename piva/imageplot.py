@@ -1489,7 +1489,7 @@ class UtilitiesPanel(QWidget):
         self.orientate_find_gamma = QPushButton('Find \t \u0393')
         self.orientate_copy_coords = QPushButton('Copy from \'Volume\'')
 
-        self.orientate_find_gamma_message = QLineEdit('NOTE: algorythm will process the main plot image.')
+        self.orientate_find_gamma_message = QLineEdit('NOTE: algorithm will process the main plot image.')
         self.orientate_find_gamma_message.setReadOnly(True)
 
         self.orientate_lines_lbl = QLabel('Show rotatable lines')

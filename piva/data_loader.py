@@ -160,7 +160,8 @@ class DataloaderPickle(Dataloader):
     name = 'Pickle'
 
     @staticmethod
-    def load_data(filename):
+    # kwarg "metadata" necessary to match arguments of all other data loaders
+    def load_data(filename, metadata=False):
         # Open the file and get a handle for it
         ds = DataSet()
         with open(filename, 'rb') as f:
@@ -190,7 +191,7 @@ class DataloaderSIS(Dataloader):
         self.datfile = None
         pass
 
-    def load_data(self, filename):
+    def load_data(self, filename, metadata=False):
         """
         Extract and return the actual 'data', i.e. the recorded map/cut.
         Also return labels which provide some indications what the data means.
@@ -203,13 +204,13 @@ class DataloaderSIS(Dataloader):
 
         ds = DataSet()
         if filename.endswith('h5'):
-            filedata = self.load_h5(filename)
+            filedata = self.load_h5(filename, metadata=metadata)
         elif filename.endswith('zip'):
-            filedata = self.load_zip(filename)
+            filedata = self.load_zip(filename, metadata=metadata)
         elif filename.endswith('pxt'):
-            filedata = self.load_pxt(filename)
+            filedata = self.load_pxt(filename, metadata=metadata)
         elif filename.endswith('ibw'):
-            filedata = self.load_ibw(filename)
+            filedata = self.load_ibw(filename, metadata=metadata)
         else:
             raise NotImplementedError('File extension not supported.')
 
@@ -221,7 +222,7 @@ class DataloaderSIS(Dataloader):
                 dict_ds[attr] = dict_filedata[attr]
         return ds.dataset
 
-    def load_h5(self, filename):
+    def load_h5(self, filename, metadata=False):
         """ Load and store the full h5 file and extract relevant information. """
         # Load the hdf5 file
         # Use 'rdcc_nbytes' flag for setting up the chunk cache (in bytes)
@@ -232,17 +233,17 @@ class DataloaderSIS(Dataloader):
 
         # Convert to array and make 3 dimensional if necessary
         shape = h5_data.shape
-        if len(shape) == 3:
-            # data = zeros((shape[2], shape[1], shape[0]))
+        if metadata:
             data = np.zeros(shape)
-            for i in range(shape[2]):
-                data[:, :, i] = h5_data[:, :, i]
         else:
-            data = np.array(h5_data)
+            if len(shape) == 3:
+                data = np.zeros(shape)
+                for i in range(shape[2]):
+                    data[:, :, i] = h5_data[:, :, i]
+            else:
+                data = np.array(h5_data)
 
         data = data.T
-        # How the data needs to be arranged depends on the scan type: cut, map, hv scan or a sequence of cuts
-        # Case cut
         if len(shape) == 2:
             x = 1
             y = shape[1]
@@ -256,10 +257,6 @@ class DataloaderSIS(Dataloader):
             xscale = start_step_n(*xlims, x)
             yscale = start_step_n(*ylims, y)
             energies = start_step_n(*elims, N_E)
-        # shape[2] should hold the number of cuts. If it is reasonably large,
-        # we have a map. Otherwise just a sequence of cuts.
-        # Case map
-        # elif shape[2] > self.min_cuts_for_map:
         elif len(shape) == 3:
             x = shape[1]
             y = shape[2]
@@ -284,15 +281,6 @@ class DataloaderSIS(Dataloader):
             xscale = start_step_n(*xlims, y)
             yscale = start_step_n(*ylims, x)
             energies = start_step_n(*elims, N_E)
-
-        # print(f'xscale: {xscale.min()}, {xscale.max()}')
-        # print(f'yscale: {yscale.min()}, {yscale.max()}')
-        # print(f'zscale: {energies.min()}, {energies.max()}')
-        # print('data loader format')
-        # print(f'data shape = {data.shape}')
-        # print(f'x shape = {xscale.shape}')
-        # print(f'y shape = {yscale.shape}')
-        # print(f'z shape = {energies.shape}')
 
         # Extract some data for ang2k conversion
         metadata = self.datfile['Other Instruments']
@@ -356,7 +344,7 @@ class DataloaderSIS(Dataloader):
 
         return res
 
-    def load_zip(self, filename):
+    def load_zip(self, filename, metadata=False):
         """ Load and store a deflector mode file from SIS-ULTRA. """
         # Prepare metadata key-value pairs for the different metadata files
         # and their expected types
@@ -412,8 +400,12 @@ class DataloaderSIS(Dataloader):
                 else:
                     pass
             # Extract the binary data from the zipfile
-            with z.open('Spectrum_' + file_id + '.bin') as f:
-                data_flat = np.frombuffer(f.read(), dtype='float32')
+            if metadata:
+                data_flat = np.zeros((int(M.n_y) * int(M.n_x) * int(M.n_energy)))
+            else:
+                with z.open('Spectrum_' + file_id + '.bin') as f:
+                    data_flat = np.frombuffer(f.read(), dtype='float32')
+
         # Put the data back into its actual shape
         data = np.reshape(data_flat, (int(M.n_y), int(M.n_x), int(M.n_energy)))
         # Cut off unswept region
@@ -451,43 +443,8 @@ class DataloaderSIS(Dataloader):
         )
         return res
 
-    @staticmethod
-    def read_viewer(viewer):
-        """ Extract the file ID from a SIS-ULTRA deflector mode output file. """
-        for line in viewer.readlines():
-            l = line.decode('UTF-8')
-            if l.startswith('name'):
-                # Make sure to split off unwanted whitespace
-                return l.split('=')[1].split()[0]
-
-    @staticmethod
-    def read_metadata(keys, metadata_file):
-        """ Read the metadata from a SIS-ULTRA deflector mode output file. """
-        # List of interesting keys and associated variable names
-        metadata = Namespace()
-        for line in metadata_file.readlines():
-            # Split at 'equals' sign
-            tokens = line.decode('utf-8').split('=')
-            for key, name, dtype in keys:
-                # print(tokens[0])
-                if tokens[0] == key:
-                    # Split off whitespace or garbage at the end
-                    value = tokens[1].split()[0]
-                    # And cast to right type
-                    value = dtype(value)
-                    metadata.__setattr__(name, value)
-                elif tokens[0] == 'Mode':
-                    if tokens[1].split()[0] == 'ARPES' and tokens[1].split()[1] == 'Mapping':
-                        metadata.__setattr__('scan_type', 'DA scan')
-                elif tokens[0] == 'Thetay_Low':
-                    metadata.__setattr__('scan_start', float(tokens[1].split()[0]))
-                elif tokens[0] == 'Thetay_High':
-                    metadata.__setattr__('scan_stop', float(tokens[1].split()[0]))
-                elif tokens[0] == 'Thetay_StepSize':
-                    metadata.__setattr__('scan_step', float(tokens[1].split()[0]))
-        return metadata
-
-    def load_pxt(self, filename):
+    # kwarg "metadata" necessary to match arguments of all other data loaders
+    def load_pxt(self, filename, metadata=False):
         """ Load and store the full h5 file and extract relevant information. """
         pxt = igorpy.load(filename)[0]
         data = pxt.data.T
@@ -529,7 +486,8 @@ class DataloaderSIS(Dataloader):
                 res.__setattr__(key, meta_namespace[key])
         return res
 
-    def load_ibw(self, filename):
+    # kwarg "metadata" necessary to match arguments of all other data loaders
+    def load_ibw(self, filename, metadata=False):
         """
         Load scan data from an IGOR binary wave file. Luckily someone has
         already written an interface for this (the python `igor` package).
@@ -577,6 +535,42 @@ class DataloaderSIS(Dataloader):
         return res
 
     @staticmethod
+    def read_viewer(viewer):
+        """ Extract the file ID from a SIS-ULTRA deflector mode output file. """
+        for line in viewer.readlines():
+            l = line.decode('UTF-8')
+            if l.startswith('name'):
+                # Make sure to split off unwanted whitespace
+                return l.split('=')[1].split()[0]
+
+    @staticmethod
+    def read_metadata(keys, metadata_file):
+        """ Read the metadata from a SIS-ULTRA deflector mode output file. """
+        # List of interesting keys and associated variable names
+        metadata = Namespace()
+        for line in metadata_file.readlines():
+            # Split at 'equals' sign
+            tokens = line.decode('utf-8').split('=')
+            for key, name, dtype in keys:
+                # print(tokens[0])
+                if tokens[0] == key:
+                    # Split off whitespace or garbage at the end
+                    value = tokens[1].split()[0]
+                    # And cast to right type
+                    value = dtype(value)
+                    metadata.__setattr__(name, value)
+                elif tokens[0] == 'Mode':
+                    if tokens[1].split()[0] == 'ARPES' and tokens[1].split()[1] == 'Mapping':
+                        metadata.__setattr__('scan_type', 'DA scan')
+                elif tokens[0] == 'Thetay_Low':
+                    metadata.__setattr__('scan_start', float(tokens[1].split()[0]))
+                elif tokens[0] == 'Thetay_High':
+                    metadata.__setattr__('scan_stop', float(tokens[1].split()[0]))
+                elif tokens[0] == 'Thetay_StepSize':
+                    metadata.__setattr__('scan_step', float(tokens[1].split()[0]))
+        return metadata
+
+    @staticmethod
     def read_pxt_ibw_metadata(keys, meta):
         metadata = Namespace()
         for line in meta:
@@ -616,7 +610,7 @@ class DataloaderBloch(Dataloader):
         self.datfile = None
         pass
 
-    def load_data(self, filename):
+    def load_data(self, filename, metadata=False):
         """
         Extract and return the actual 'data', i.e. the recorded map/cut.
         Also return labels which provide some indications what the data means.
@@ -629,7 +623,7 @@ class DataloaderBloch(Dataloader):
 
         ds = DataSet()
         if filename.endswith('zip'):
-            filedata = self.load_zip(filename)
+            filedata = self.load_zip(filename, metadata=metadata)
         elif filename.endswith('pxt'):
             filedata = self.load_pxt()
         else:
@@ -643,7 +637,7 @@ class DataloaderBloch(Dataloader):
                 dict_ds[attr] = dict_filedata[attr]
         return ds.dataset
 
-    def load_zip(self, filename):
+    def load_zip(self, filename, metadata=False):
         """ Load and store a deflector mode file from SIS-ULTRA. """
         # Prepare metadata key-value pairs for the different metadata files
         # and their expected types
@@ -671,17 +665,18 @@ class DataloaderBloch(Dataloader):
                  ('Z', 'z', float),
                  ('A', 'phi', float),
                  ('P', 'theta', float),
-                 ('T', 'tilt', float),
-                 ('Y', 'y', float)]
-
+                 ('T', 'tilt', float)]
+        # print('elo')
         # Load the zipfile
         with zipfile.ZipFile(filename, 'r') as z:
             # Get the created filename from the viewer
             with z.open('viewer.ini') as viewer:
                 file_id = self.read_viewer(viewer)
+            # print('eloelo')
             # Get most metadata from a metadata file
             with z.open('Spectrum_' + file_id + '.ini') as metadata_file:
                 M = self.read_metadata(keys1, metadata_file)
+            # print('eloeloelo')
             # Get additional metadata from a second metadata file...
             with z.open(file_id + '.ini') as metadata_file2:
                 M2 = self.read_metadata(keys2, metadata_file2)
@@ -699,13 +694,18 @@ class DataloaderBloch(Dataloader):
                         M2.n_sweeps /= n_dim_steps
                         M2.__setattr__('scan_dim', [M2.scan_start, M2.scan_stop, M2.scan_step])
                     else:
-                        M2.scan_dim=[]
+                        M2.scan_dim = []
                         M2.scan_type = 'cut'
                 else:
                     pass
             # Extract the binary data from the zipfile
-            with z.open('Spectrum_' + file_id + '.bin') as f:
-                data_flat = np.frombuffer(f.read(), dtype='float32')
+            # print('eloelo eloelo')
+            if metadata:
+                data_flat = np.zeros((int(M.n_y) * int(M.n_x) * int(M.n_energy)))
+            else:
+                with z.open('Spectrum_' + file_id + '.bin') as f:
+                    data_flat = np.frombuffer(f.read(), dtype='float32')
+
         # Put the data back into its actual shape
         data = np.reshape(data_flat, (int(M.n_x), int(M.n_y), int(M.n_energy)))
         # Cut off unswept region
@@ -722,10 +722,6 @@ class DataloaderBloch(Dataloader):
             data = np.swapaxes(np.swapaxes(data, 0, 1), 1, 2)
         else:
             data = np.swapaxes(data, 0, 1)
-        # print('data shape = {}'.format(data.shape))
-        # print('xscale shape = {}'.format(xscale.shape))
-        # print('yscale shape = {}'.format(yscale.shape))
-        # print('erg shape = {}'.format(energies.shape))
 
         res = Namespace(
             data=data,
@@ -783,11 +779,11 @@ class Dataloaderi05(Dataloader):
     """
     name = 'i05'
 
-    def load_data(self, fname):
+    def load_data(self, fname, metadata=False):
 
         ds = DataSet()
         try:
-            filedata = self.load_nxs(fname)
+            filedata = self.load_nxs(fname, metadata=metadata)
         except AttributeError:
             raise NotImplementedError
 
@@ -800,11 +796,14 @@ class Dataloaderi05(Dataloader):
 
         return ds.dataset
 
-    def load_nxs(self, filename):
+    def load_nxs(self, filename, metadata):
         # Read file with h5py reader
         infile = h5py.File(filename, 'r')
 
-        data = np.array(infile['/entry1/analyser/data'])
+        if metadata:
+            data = np.zeros(infile['/entry1/analyser/data'].shape)
+        else:
+            data = np.array(infile['/entry1/analyser/data'])
         angles = np.array(infile['/entry1/analyser/angles'])
         energies = np.array(infile['/entry1/analyser/energies'])
 
@@ -928,12 +927,11 @@ class Dataloaderi05(Dataloader):
             DT=DT
         )
         return res
-    
+
 
 ######################################
 ######### Not updated yet ############
 ######################################
-
 
 
 class DataloaderALS(Dataloader):
@@ -1859,7 +1857,7 @@ all_dls = [
 
 
 # Function to try all dataloaders in all_dls
-def load_data(filename, exclude=None, suppress_warnings=False):
+def load_data(filename, metadata=False, exclude=None, suppress_warnings=False):
     """
     Try to load some dataset *filename* by iterating through `all_dls` 
     and appliyng the respective dataloader's load_data method. If it works: 
@@ -1893,7 +1891,7 @@ def load_data(filename, exclude=None, suppress_warnings=False):
 
             # Try loading the data
             try:
-                namespace = dl.load_data(filename)
+                namespace = dl.load_data(filename, metadata=metadata)
             except Exception as e:
                 # Temporarily store the exception
                 exceptions.update({dl: e})

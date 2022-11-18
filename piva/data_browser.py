@@ -19,7 +19,7 @@ all_dls = {
     'SIS': dl.DataloaderSIS,
     'Pickle': dl.DataloaderPickle,
     'Bloch': dl.DataloaderBloch,
-    '*i05': dl.Dataloaderi05,
+    'i05': dl.Dataloaderi05,
     '*CASSIOPEE': dl.DataloaderCASSIOPEE,
     '*ADRESS': dl.DataloaderADRESS,
     '*ALS': dl.DataloaderALS}
@@ -584,26 +584,26 @@ class DataBrowser(QtWidgets.QMainWindow):
 
         try:
             if selected_loader == 'All':
-                data = dl.load_data(fname)
+                data = dl.load_data(fname, metadata=True)
             else:
                 # Instantiante a loader of selected type
                 loader = all_dls[selected_loader]()
-                data = loader.load_data(fname)
+                data = loader.load_data(fname, metadata=True)
         except FileNotFoundError:
             return
         except NotImplementedError:
             self.sb.showMessage('File extension not implemented for a chosen data loader.', self.sb_timeout)
             return
         except Exception as e:
-            print('Couldn\'t load data, file format not supported.')
+            self.sb.showMessage('Couldn\'t load data, file format not supported.', self.sb_timeout)
             if testing:
                 raise e
             return
+        finally:
+            # Better clean up the details panel before we fill it with new info.
+            self.reset_detail_panel()
 
-        # Reaching this point means we have succeeded in loading *something*. 
-        # Better clean up the details panel before we fill it with new info.
-        self.reset_detail_panel()
-
+        # Reaching this point means we have succeeded in loading *something*.
         try:
             # scan
             if not (data.scan_type is None): self.dp_scan_type.setText('{}'.format(data.scan_type))
