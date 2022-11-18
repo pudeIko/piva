@@ -3,7 +3,7 @@ import os
 import time
 
 from PyQt5.QtWidgets import QAction, QHBoxLayout, QLabel, QVBoxLayout, \
-    QLineEdit 
+    QLineEdit, QMessageBox
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
 import piva.data_loader as dl
@@ -14,7 +14,7 @@ import piva.plot_tool as pt
 from piva.imageplot import ThreadClass
 
 start_time = time.time()
-testing = True
+testing = False
 all_dls = {
     'SIS': dl.DataloaderSIS,
     'Pickle': dl.DataloaderPickle,
