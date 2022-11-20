@@ -26,6 +26,7 @@ ORIENTLINES_LINECOLOR = (164, 37, 22, 255)
 erg_ax = 2
 scan_ax = 0
 
+
 class DataHandler2D :
     """ Object that keeps track of a set of 2D data and allows
     manipulations on it. In a Model-View-Controller framework this could be

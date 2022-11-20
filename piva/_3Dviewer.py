@@ -20,6 +20,7 @@ from piva.cmaps import cmaps
 
 slit_ax = 1
 
+
 class DataHandler3D :
     """ Object that keeps track of a set of 3D data and allows
     manipulations on it. In a Model-View-Controller framework this could be

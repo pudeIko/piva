@@ -4,7 +4,7 @@ from copy import deepcopy
 
 import numpy as np
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtGui, QtWidgets
+from pyqtgraph.Qt import QtGui, QtWidgets, QtCore
 from PyQt5.QtGui import QFont, QColor
 from PyQt5.QtWidgets import QColorDialog, QFileDialog, QWidget, \
     QDoubleSpinBox, QLineEdit, QPushButton, QLabel, QComboBox, QSpinBox, \
@@ -435,7 +435,7 @@ class PlotTool(QtWidgets.QMainWindow):
             self.dv_list.append(dvi)
             dvi_lbl = dvi.split('/')[-1]
             self.ds_dv.addItem(dvi_lbl)
-            if isinstance(self.data_browser.data_viewers[dvi], MainWindow3D):
+            if isinstance(self.data_browser.data_viewers[dvi], p3d.MainWindow3D):
                 for key in self.data_browser.data_viewers[dvi].data_viewers.keys():
                     key_lbl = key.split('/')[-1]
                     self.dv_list.append(key)
@@ -460,7 +460,7 @@ class PlotTool(QtWidgets.QMainWindow):
                     self.ds_dv_plot.addItem('edc_fitter')
                 if 'mdc_viewer' in key:
                     self.ds_dv_plot.addItem('mdc_fitter')
-        elif isinstance(dv, MainWindow3D):
+        elif isinstance(dv, p3d.MainWindow3D):
             self.ds_dv_plot.addItem('main edc')
             self.ds_dv_plot.addItem('single point edc')
             self.ds_dv_plot.addItem('vertical (analyzer)')
