@@ -1368,7 +1368,7 @@ class UtilitiesPanel(QWidget):
         self.axes_conv_lc_op_lbl = QLabel('c (\u212B):')
         self.axes_conv_lc_op = QDoubleSpinBox()
         self.axes_conv_lc_op.setMaximumWidth(box_max_w)
-        self.axes_conv_lc_op.setRange(0, 10)
+        self.axes_conv_lc_op.setRange(0, 100)
         self.axes_conv_lc_op.setDecimals(4)
         self.axes_conv_lc_op.setSingleStep(0.001)
         self.axes_conv_lc_op.setValue(3.1416)
