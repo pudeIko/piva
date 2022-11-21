@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QAction, QHBoxLayout, QLabel, QVBoxLayout, \
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
 import piva.data_loader as dl
-import piva.arpys_wp as wp
+import piva.working_procedures as wp
 import piva._3Dviewer as p3d
 import piva._2Dviewer as p2d
 import piva.plot_tool as pt

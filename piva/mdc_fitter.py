@@ -12,7 +12,7 @@ from pyqtgraph.graphicsItems.ImageItem import ImageItem
 from scipy.optimize import curve_fit
 from scipy.optimize import OptimizeWarning
 
-import piva.arpys_wp as wp
+import piva.working_procedures as wp
 from piva.cmaps import cmaps, my_cmaps
 from piva.imageplot import TracedVariable
 

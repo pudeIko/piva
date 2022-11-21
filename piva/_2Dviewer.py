@@ -9,7 +9,7 @@ import numpy as np
 from pyqtgraph.Qt import QtWidgets
 from PyQt5.QtWidgets import QMessageBox, QLineEdit
 
-import piva.arpys_wp as wp
+import piva.working_procedures as wp
 import piva.data_loader as dl
 import piva.imageplot as ip
 from data_slicer import pit

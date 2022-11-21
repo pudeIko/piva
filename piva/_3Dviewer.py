@@ -13,7 +13,7 @@ from pyqtgraph.Qt import QtWidgets
 from pyqtgraph import InfiniteLine
 
 import piva._2Dviewer as p2d
-import piva.arpys_wp as wp
+import piva.working_procedures as wp
 import piva.data_loader as dl
 import piva.imageplot as ip
 from piva._2Dviewer import ORIENTLINES_LINECOLOR, erg_ax, scan_ax

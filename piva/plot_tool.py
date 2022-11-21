@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QColorDialog, QFileDialog, QWidget, \
     QDoubleSpinBox, QLineEdit, QPushButton, QLabel, QComboBox, QSpinBox, \
     QCheckBox, QMessageBox
 
-import piva.arpys_wp as wp
+import piva.working_procedures as wp
 import piva.data_loader as dl
 import piva._2Dviewer as p2d
 import piva._3Dviewer as p3d

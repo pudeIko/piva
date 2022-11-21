@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBo
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
 
-import piva.arpys_wp as wp
+import piva.working_procedures as wp
 import piva.data_loader as dl
 from piva.cmaps import cmaps, my_cmaps
 
