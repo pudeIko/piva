@@ -7,7 +7,7 @@ from copy import deepcopy
 
 import numpy as np
 from pyqtgraph.Qt import QtWidgets
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QLineEdit
 
 import piva.arpys_wp as wp
 import piva.data_loader as dl
@@ -843,10 +843,11 @@ class MainWindow2D(QtWidgets.QMainWindow):
         # TODO change 'k_axis' to 'k' for all cuts: add 'change attrs name'
         # energy axis
         dataset = self.data_set
-        dir = self.fname[:-len(self.title)]
+        savedir = self.fname[:-len(self.title)]
         up = self.util_panel
         file_selection = True
-        init_fname = self.title
+        # Prepare a filename with the .p suffix
+        init_fname = '.'.join(self.title.split('.')[:-1] + ['p'])
 
         while file_selection:
             fname, fname_return_value = \
@@ -857,7 +858,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
                 return
 
             # check if there is no fname colosions
-            if fname in os.listdir(dir):
+            if fname in os.listdir(savedir):
                 fname_colision_box = QMessageBox()
                 fname_colision_box.setIcon(QMessageBox.Question)
                 fname_colision_box.setWindowTitle('File name already used.')
@@ -899,7 +900,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
         else:
             pass
 
-        dl.dump(dataset, (dir + fname), force=True)
+        dl.dump(dataset, (savedir + fname), force=True)
 
     def load_saved_corrections(self, data_set):
 

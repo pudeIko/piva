@@ -8,7 +8,7 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
 from data_slicer import pit
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QLineEdit
 from pyqtgraph.Qt import QtWidgets
 
 import piva._2Dviewer as p2d
@@ -1544,10 +1544,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
     def save_to_pickle(self):
         dataset = self.data_set
-        dir = self.fname[:-len(self.title)]
+        savedir = self.fname[:-len(self.title)]
         up = self.util_panel
         file_selection = True
-        init_fname = self.title
+        # Prepare a filename with the .p suffix
+        init_fname = '.'.join(self.title.split('.')[:-1] + ['p'])
 
         while file_selection:
             fname, fname_return_value = QtWidgets.QInputDialog.getText(self, '', 'File name:', QLineEdit.Normal, init_fname)
@@ -1555,7 +1556,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
                 return
 
             # check if there is no fname colosions
-            if fname in os.listdir(dir):
+            if fname in os.listdir(savedir):
                 fname_colision_box = QMessageBox()
                 fname_colision_box.setIcon(QMessageBox.Question)
                 fname_colision_box.setWindowTitle('File name already used.')
@@ -1596,7 +1597,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
         else:
             pass
 
-        dl.dump(dataset, (dir + fname), force=True)
+        dl.dump(dataset, (savedir + fname), force=True)
 
     def load_saved_corrections(self, data_set):
         if type(data_set.Ef) == float:
