@@ -12,8 +12,10 @@ This is the documentation for **piva**, the **p**\ ython **i**\ nteractive
 Please be aware that the documentation is very much a work in progress.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+    :maxdepth: 2
+    :caption: Contents:
 
-   installation
-
+    installation
+    db
+    viewers
+    file-formats
