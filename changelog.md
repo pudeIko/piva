@@ -15,6 +15,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
+- Commented a part of the code in `cmaps.py` which was attempting to load 
+  `data-slicer` colormaps. See issue #29.
+
 ### Fixed
 
 - Issue #30: Inverting colorscale in 2D viewer.
