@@ -15,12 +15,18 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
-- Commented a part of the code in `cmaps.py` which was attempting to load 
-  `data-slicer` colormaps. See issue #29.
+### Fixed
+
+## [1.0.3] = 2022-11-21
 
 ### Fixed
 
+- Issue #27 & #33: Save button now working properly.
+- Issue #29: Commented a part of the code in `cmaps.py` which was attempting 
+  to load `data-slicer` colormaps. See issue #29. PIT now opening from piva.
 - Issue #30: Inverting colorscale in 2D viewer.
+- Issue #31: c-axis field accepts values beyond 10 Angstrom.
+- Issue #32: metadata-window now has a scrollbar.
 
 ## [1.0.2] = 2022-11-17
 
