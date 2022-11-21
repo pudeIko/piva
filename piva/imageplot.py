@@ -6,9 +6,8 @@ import subprocess
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QComboBox, \
-    QDoubleSpinBox, QSpinBox, QPushButton, QLineEdit, QMainWindow, \
-    QDialogButtonBox, QMessageBox
+from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, QLineEdit, \
+    QMainWindow, QDialogButtonBox, QMessageBox, QScrollArea
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
 
@@ -32,6 +31,7 @@ DEFAULT_CMAP = 'coolwarm'
 
 bold_font = QtGui.QFont()
 bold_font.setBold(True)
+
 
 class Crosshair:
     """ Crosshair made up of two InfiniteLines. """
@@ -1773,10 +1773,18 @@ class UtilitiesPanel(QWidget):
                     entries[str(row)]['name'] = QLabel(key)
                     entries[str(row)]['value'] = QLabel(str(dataset[key]))
                     entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+            elif key == 'pressure':
+                entries[str(row)] = {}
+                entries[str(row)]['name'] = QLabel(key)
+                entries[str(row)]['value'] = QLabel('{:.4e}'.format((dataset[key])))
+                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
             else:
                 entries[str(row)] = {}
                 entries[str(row)]['name'] = QLabel(key)
-                entries[str(row)]['value'] = QLabel(str(dataset[key]))
+                if isinstance(dataset[key], float):
+                    entries[str(row)]['value'] = QLabel('{:.4f}'.format((dataset[key])))
+                else:
+                    entries[str(row)]['value'] = QLabel(str(dataset[key]))
                 entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
 
             mdw.addWidget(entries[str(row)]['name'],    row * sd, 0 * sd)
@@ -2082,6 +2090,7 @@ class InfoWindow(QMainWindow):
     def __init__(self, info_widget, title):
         super(InfoWindow, self).__init__()
 
+        self.scroll_area = QScrollArea()
         self.central_widget = QWidget()
         self.info_window_layout = QtWidgets.QGridLayout()
         self.central_widget.setLayout(self.info_window_layout)
@@ -2092,7 +2101,8 @@ class InfoWindow(QMainWindow):
 
         self.info_window_layout.addWidget(info_widget)
         self.info_window_layout.addWidget(self.buttonBox)
-        self.setCentralWidget(self.central_widget)
+        self.scroll_area.setWidget(self.central_widget)
+        self.setCentralWidget(self.scroll_area)
         self.setWindowTitle(title)
 
 
