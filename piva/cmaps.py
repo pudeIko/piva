@@ -187,25 +187,25 @@ for name in colormaps():
     cmaps.update({name: convert_matplotlib_to_pyqtgraph(cmap)})
 
 # Add additional colormaps from package
-dir_path = os.path.dirname(os.path.realpath(__file__))
-data_path = dir_path + '/custom_cmaps/'
-try:
-    datafiles = os.listdir(data_path)
-except FileNotFoundError:
-    warnings.warn('Package colormaps were not found.')
-    datafiles = []
-
-for cmap in datafiles:
-    name, suffix = cmap.split('.')
-    # Only load files with the .cmap suffix
-    if suffix != 'cmap':
-        continue
-    cmap_object = load_custom_cmap(data_path + cmap)
-    cmaps.update({name: cmap_object})
-    # Also add the inverse cmap
-    inverse = copy.copy(cmap_object)
-    inverse.color = cmap_object.color[::-1]
-    cmaps.update({name + '_r': inverse})
+# dir_path = os.path.dirname(os.path.realpath(__file__))
+# data_path = dir_path + '/custom_cmaps/'
+# try:
+#     datafiles = os.listdir(data_path)
+# except FileNotFoundError:
+#    warnings.warn('Package colormaps were not found.')
+#    datafiles = []
+#
+#for cmap in datafiles:
+#    name, suffix = cmap.split('.')
+#    # Only load files with the .cmap suffix
+#    if suffix != 'cmap':
+#        continue
+#    cmap_object = load_custom_cmap(data_path + cmap)
+#    cmaps.update({name: cmap_object})
+#    # Also add the inverse cmap
+#    inverse = copy.copy(cmap_object)
+#    inverse.color = cmap_object.color[::-1]
+#    cmaps.update({name + '_r': inverse})
 
 # # Add user supplied colormaps
 # config_path = pathlib.Path.home() / CONFIG_DIR / 'cmaps/'
