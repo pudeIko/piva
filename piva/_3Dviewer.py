@@ -10,6 +10,7 @@ import numpy as np
 from data_slicer import pit
 from PyQt5.QtWidgets import QMessageBox, QLineEdit
 from pyqtgraph.Qt import QtWidgets
+from pyqtgraph import InfiniteLine
 
 import piva._2Dviewer as p2d
 import piva.arpys_wp as wp
@@ -21,7 +22,7 @@ from piva.cmaps import cmaps
 slit_ax = 1
 
 
-class DataHandler3D :
+class DataHandler3D:
     """ Object that keeps track of a set of 3D data and allows
     manipulations on it. In a Model-View-Controller framework this could be
     seen as the Model, while :class:`MainWindow <data_slicer.pit.MainWindow>`
@@ -1208,9 +1209,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
         if hasattr(dataset, 'scan_type'):
             if dataset.scan_type == 'hv scan':
                 self.util_panel.momentum_vert_label.setText('hv:')
-                self.util_panel.momentum_hor_label.setText('kx:')
                 self.util_panel.energy_hor_label.setText('hv:')
-                self.util_panel.energy_vert_label.setText('kx:')
                 self.util_panel.bin_x.setText('bin hv')
                 self.util_panel.bin_zx.setText('bin E (hv)')
         else:
@@ -1462,15 +1461,28 @@ class MainWindow3D(QtWidgets.QMainWindow):
     def open_2dviewer(self):
         data_set = deepcopy(self.data_set)
         cut_orient = self.util_panel.image_2dv_cut_selector.currentText()
+
         if cut_orient[0] == 'h':
             cut = self.data_handler.cut_x_data
             dim_value = self.data_set.yscale[self.main_plot.crosshair.hpos.get_value()]
             data_set.yscale = data_set.xscale
-            thread_idx = self.index + '_scan_cut'
+            idx = self.main_plot.crosshair.hpos.get_value()
+            lbl = self.util_panel.momentum_hor_label.text()[:-1]
+            if self.util_panel.bin_y.isChecked():
+                n_bin = self.util_panel.bin_y_nbins.value()
+                thread_idx = '{}: {} [{}]; nbin [{}]'.format(self.index, lbl, str(idx), str(n_bin))
+            else:
+                thread_idx = '{}: {} [{}]'.format(self.index, lbl, str(idx))
         else:
             cut = self.data_handler.cut_y_data.T
             dim_value = self.data_set.xscale[self.main_plot.crosshair.vpos.get_value()]
-            thread_idx = self.index + '_an_cut'
+            idx = self.main_plot.crosshair.vpos.get_value()
+            lbl = self.util_panel.momentum_vert_label.text()[:-1]
+            if self.util_panel.bin_x.isChecked():
+                n_bin = self.util_panel.bin_x_nbins.value()
+                thread_idx = '{}: {} [{}]; nbin [{}]'.format(self.index, lbl, str(idx), str(n_bin))
+            else:
+                thread_idx = '{}: {} [{}]'.format(self.index, lbl, str(idx))
 
         data = np.ones((1, cut.shape[0], cut.shape[1]))
         data[0, :, :] = cut
