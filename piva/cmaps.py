@@ -17,15 +17,6 @@ from pyqtgraph import ColorMap
 # from data_slicer.utilities import CONFIG_DIR
 
 class ds_cmap(ColorMap):
-    """ Empty shell due to an upstream change in pyqtgraph. """
-    def set_alpha(self, *args, **kwargs) :
-        pass
-    def set_gamma(self, *args, **kwargs) :
-        pass
-    def set_vmax(self, *args, **kwargs) :
-        pass
-
-class ds_cmap_legacy(ColorMap):
     """ Simple subclass of :class:`pyqtgraph.ColorMap`. Adds vmax, 
     powerlaw normalization and a convenience function to change alpha.
     """
@@ -33,7 +24,7 @@ class ds_cmap_legacy(ColorMap):
         super().__init__(pos, color, **kwargs)
 
         # Initialize instance variables
-        self.alpha = 0.5
+        self.alpha = 1
         self.vmax = 1
         self.gamma = 1
 
@@ -51,7 +42,7 @@ class ds_cmap_legacy(ColorMap):
         self.stopsCache = dict()
 
         # Apply alpha
-        self.color[:, -1] = 255*self.alpha
+        self.color[:, -1] = self.alpha
 
         # Linearly transform color values to the new range
         old_max = self.original_pos.max()
@@ -84,7 +75,6 @@ class ds_cmap_legacy(ColorMap):
         """
         self.vmax = vmax
         self.apply_transformations()
-
 
 def convert_matplotlib_to_pyqtgraph(matplotlib_cmap, alpha=0.5):
     """ Take a matplotlib colormap and convert it to a pyqtgraph ColorMap.
