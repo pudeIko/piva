@@ -16,7 +16,7 @@ setuptools.setup(
     long_description_content_type='text/markdown',
     url='https://github.com/pudeIko/piva.git',
     packages=setuptools.find_packages(),
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=requirements,
     classifiers=[
         'Programming Language :: Python :: 3',

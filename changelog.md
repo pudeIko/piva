@@ -11,11 +11,15 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Python version >3.8 is now required, rather than previous >3.7.
+
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+
+- Issue #28: colorscales now work as expected again.
 
 ## [1.0.3] = 2022-11-21
 
