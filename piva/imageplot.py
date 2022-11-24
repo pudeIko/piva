@@ -1047,6 +1047,7 @@ class UtilitiesPanel(QWidget):
         self.image_gamma.setRange(0.05, 10)
         self.image_colorscale_label = QLabel('color scale:')
         self.image_colorscale = QDoubleSpinBox()
+        self.image_colorscale.setRange(0., 10.)
 
         self.image_pmesh = QCheckBox('pmesh')
 
@@ -1341,7 +1342,7 @@ class UtilitiesPanel(QWidget):
         self.axes_gamma_x = QSpinBox()
         self.axes_gamma_x.setRange(0, 5000)
 
-        self.axes_transform_kz = QCheckBox('Transform to kz')
+        self.axes_transform_kz = QCheckBox('kz')
 
         # self.axes_conv_hv_lbl = QLabel('h\u03BD (eV):')
         # self.axes_conv_hv = QDoubleSpinBox()

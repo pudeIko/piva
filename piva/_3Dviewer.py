@@ -19,6 +19,8 @@ import piva.imageplot as ip
 from piva._2Dviewer import ORIENTLINES_LINECOLOR, erg_ax, scan_ax
 from piva.cmaps import cmaps
 
+import time
+
 slit_ax = 1
 
 
@@ -591,7 +593,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
             # l.setColumnMaximumWidth(i, 51)
             l.setColumnStretch(i, 1)
 
-    def closeEvent(self, event) :
+    def closeEvent(self, event):
         """ Ensure that this instance is un-registered from the DataBrowser. """
         del(self.db.data_viewers[self.index])
 
@@ -1334,48 +1336,92 @@ class MainWindow3D(QtWidgets.QMainWindow):
         d_scan_ax = self.data_handler.axes[scan_ax][self.util_panel.axes_gamma_x.value()]
         orientation = self.util_panel.axes_slit_orient.currentText()
         a = self.util_panel.axes_conv_lc.value()
-        energy = self.new_energy_axis[self.data_handler.z.get_value()]
+        try:
+            energy = self.new_energy_axis[self.data_handler.z.get_value()]
+        except TypeError:
+            energy = self.data_handler.axes[erg_ax][self.data_handler.z.get_value()]
         hv = self.util_panel.axes_energy_hv.value()
         wf = self.util_panel.axes_energy_wf.value()
+        ds = self.data_set
+        new_dataset = deepcopy(ds)
 
-        if hv == 0 or wf == 0:
-            warning_box = QMessageBox()
-            warning_box.setIcon(QMessageBox.Information)
-            warning_box.setWindowTitle('Wrong conversion values.')
-            if hv == 0 and wf == 0:
-                msg = 'Photon energy and work fonction values not given.'
-            elif hv == 0:
-                msg = 'Photon energy value not given.'
-            elif wf == 0:
-                msg = 'Work fonction value not given.'
-            warning_box.setText(msg)
-            warning_box.setStandardButtons(QMessageBox.Ok)
-            if warning_box.exec() == QMessageBox.Ok:
-                return
+        if self.util_panel.axes_transform_kz.isChecked():
+            ky, _ = wp.hv2kz(anal_axis, scanned_ax, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax, a=a,
+                             orientation = orientation)
+            y_min, y_max, min_step = ky[-1].min(), ky[-1].max(), wp.get_step(ky[0])
+            new_yscale = np.arange(y_min, y_max, min_step)
 
-        kx_axis, ky_axis = wp.angle2kscape(scanned_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax,
-                                           orientation=orientation, a=a, energy=energy, hv=hv, work_func=wf)
-        nhma = np.sort(kx_axis[:, 0])
-        nvma = np.sort(ky_axis[0, :])
-        self.kx_axis = nhma
-        self.ky_axis = nvma
-        self.pmesh_kx_axis, self.pmesh_ky_axis = kx_axis, ky_axis
-        new_hor_range = [nhma[0], nhma[-1]]
-        new_ver_range = [nvma[0], nvma[-1]]
-        # print(kx_axis.min(), kx_axis.max(), ky_axis.min(), ky_axis.max())
-        # print(nhma.size, nvma.size)
-        # print([nhma[0], nhma[-1]])
-        # print([nvma[0], nvma[-1]])
-        self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_hor_range)
-        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_ver_range)
-        self.cut_x.plotItem.getAxis(self.cut_x.main_xaxis).setRange(*new_hor_range)
-        self.cut_y.plotItem.getAxis(self.cut_y.main_xaxis).setRange(*new_ver_range)
-        self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_hor_range)
-        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_ver_range)
-        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-            self.ky_axis[self.main_plot.pos[1].get_value()]))
-        self.util_panel.momentum_vert_value.setText('({:.4f})'.format(
-            self.kx_axis[self.main_plot.pos[0].get_value()]))
+            print('rescaling data: ', end='')
+            start_time = time.time()
+            dataset_rescaled = wp.rescale_data(ds.data, ky, new_yscale)  # , ProgressBar(total=ds.zscale.size))
+            # dataset_rescaled = wp.rescale_data(ds.data, ds.yscale, new_yscale, ProgressBar(total=ds.zscale.size))
+            print('{:.4} s'.format(time.time() - start_time))
+        else:
+            if hv == 0 or wf == 0:
+                warning_box = QMessageBox()
+                warning_box.setIcon(QMessageBox.Information)
+                warning_box.setWindowTitle('Wrong conversion values.')
+                if hv == 0 and wf == 0:
+                    msg = 'Photon energy and work function values not given.'
+                elif hv == 0:
+                    msg = 'Photon energy value not given.'
+                elif wf == 0:
+                    msg = 'Work function value not given.'
+                    warning_box.setText(msg)
+                    warning_box.setStandardButtons(QMessageBox.Ok)
+                if warning_box.exec() == QMessageBox.Ok:
+                    return
+            kx, ky = wp.angle2kscape(scanned_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax, a=a,
+                                     orientation=orientation, hv=hv, work_func=wf)
+            kxx, kyy = np.meshgrid(kx[:, 0], ky[0, :])
+            cut = self.main_plot.image_data
+            plt.pcolormesh(kxx, kyy, cut.T)
+            y_min, y_max, min_step = ky.min(), ky.max(), wp.get_step(ky[0, :])
+            new_yscale = np.arange(y_min, y_max, min_step)
+
+            print('rescaling data: ', end='')
+            start_time = time.time()
+            dataset_rescaled = wp.rescale_data(ds.data, ky, new_yscale)  # , ProgressBar(total=ds.zscale.size))
+            # dataset_rescaled = wp.rescale_data(ds.data, ds.yscale, new_yscale, ProgressBar(total=ds.zscale.size))
+            print('{:.4} s'.format(time.time() - start_time))
+            new_dataset.xscale = kx[:, 0]
+        new_dataset.data = dataset_rescaled
+        new_dataset.yscale = new_yscale
+        new_idx = self.index + '_rescaled'
+
+        try:
+            self.db.data_viewers[new_idx] = MainWindow3D(self.db, data_set=new_dataset, index=new_idx)
+        except Exception:
+            print('didn\'t work')
+            return
+
+            # self.closeEvent()
+
+            # return
+
+        # kx_axis, ky_axis = wp.angle2kscape(scanned_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax,
+        #                                    orientation=orientation, a=a, energy=energy, hv=hv, work_func=wf)
+        # nhma = np.sort(kx_axis[:, 0])
+        # nvma = np.sort(ky_axis[0, :])
+        # self.kx_axis = nhma
+        # self.ky_axis = nvma
+        # self.pmesh_kx_axis, self.pmesh_ky_axis = kx_axis, ky_axis
+        # new_hor_range = [nhma[0], nhma[-1]]
+        # new_ver_range = [nvma[0], nvma[-1]]
+        # # print(kx_axis.min(), kx_axis.max(), ky_axis.min(), ky_axis.max())
+        # # print(nhma.size, nvma.size)
+        # # print([nhma[0], nhma[-1]])
+        # # print([nvma[0], nvma[-1]])
+        # self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_hor_range)
+        # self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_ver_range)
+        # self.cut_x.plotItem.getAxis(self.cut_x.main_xaxis).setRange(*new_hor_range)
+        # self.cut_y.plotItem.getAxis(self.cut_y.main_xaxis).setRange(*new_ver_range)
+        # self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_hor_range)
+        # self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_ver_range)
+        # self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+        #     self.ky_axis[self.main_plot.pos[1].get_value()]))
+        # self.util_panel.momentum_vert_value.setText('({:.4f})'.format(
+        #     self.kx_axis[self.main_plot.pos[0].get_value()]))
 
     def reset_kspace_conversion(self):
         self.kx_axis = None
@@ -1446,7 +1492,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.info_box = ip.InfoWindow(self.util_panel.orient_info_window, title)
         self.info_box.show()
 
-    def open_pit(self) :
+    def open_pit(self):
         """ Open the data in an instance of 
         :class:`data_slicer.pit.MainWindow`, which has the benefit of 
         providing a free-slicing ROI.
