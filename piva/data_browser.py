@@ -11,7 +11,6 @@ import piva.working_procedures as wp
 import piva._3Dviewer as p3d
 import piva._2Dviewer as p2d
 import piva.plot_tool as pt
-from piva.imageplot import ThreadClass
 
 start_time = time.time()
 testing = False

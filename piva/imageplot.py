@@ -2245,15 +2245,3 @@ class TracedVariable(QtCore.QObject):
             ind = np.abs(self.allowed_values - value).argmin()
             return self.allowed_values[ind]
 
-
-class ThreadClass(QtCore.QThread):
-    any_signal = QtCore.pyqtSignal(int)
-
-    def __init__(self, parent=None, index=0):
-        super(ThreadClass, self).__init__(parent)
-        self.index = index
-        self.is_running = True
-
-    def stop(self):
-        self.quit()
-
