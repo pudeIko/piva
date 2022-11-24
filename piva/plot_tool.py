@@ -1131,9 +1131,6 @@ class PlotTool(QtWidgets.QMainWindow):
         """ closeEvent is triggered on `Alt-F4` or mouse-click closing a 
         window. 
         """
-        self.data_browser.thread[self.title].quit()
-        self.data_browser.thread[self.title].wait()
-        del(self.data_browser.thread[self.title])
         del(self.data_browser.plotting_tools[self.title])
 
 
