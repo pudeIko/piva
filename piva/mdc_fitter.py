@@ -798,11 +798,7 @@ class MDCFitter(QMainWindow):
         except IndexError:
             pass
 
-    def close(self):
-        self.destroy()
-        self.data_viewer.thread[self.thread_index].quit()
-        self.data_viewer.thread[self.thread_index].wait()
-        del(self.data_viewer.thread[self.thread_index])
+    def closeEvent(self, event) :
         del(self.data_viewer.data_viewers[self.thread_index])
 
 

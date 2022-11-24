@@ -6,7 +6,7 @@ import time
 from copy import deepcopy
 
 import numpy as np
-from pyqtgraph.Qt import QtWidgets
+from pyqtgraph.Qt import QtCore, QtWidgets
 from PyQt5.QtWidgets import QMessageBox, QLineEdit
 
 import piva.working_procedures as wp
@@ -166,7 +166,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.smooth = False
         self.curvature = False
         self.thread = {}
-        # self.thread_count = 0
         self.data_viewers = {}
 
         # Initialize instance variables
@@ -327,9 +326,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
 
     def closeEvent(self, event) :
         """ Ensure that this instance is un-registered from the DataBrowser. """
-        self.db.thread[self.index].quit()
-        self.db.thread[self.index].wait()
-        del(self.db.thread[self.index])
         del(self.db.data_viewers[self.index])
 
     @staticmethod
@@ -770,7 +766,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
             self.util_panel.image_curvature_button.setText('Do curvature')
 
     def open_mdc_fitter(self):
-
         thread_lbl = self.index + '_mdc_viewer'
         self.mdc_thread_lbl = thread_lbl
 
@@ -782,8 +777,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
 
-        self.thread[thread_lbl] = ip.ThreadClass(index=thread_lbl)
-        self.thread[thread_lbl].start()
         title = self.title + ' - mdc fitter'
         if self.new_energy_axis is not None:
             erg_ax = self.new_energy_axis
@@ -805,7 +798,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
                 return
 
     def open_edc_fitter(self):
-
         thread_idx = self.index + '_edc_viewer'
         self.edc_thread_lbl = thread_idx
 
@@ -817,8 +809,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
 
-        self.thread[thread_idx] = ip.ThreadClass(index=thread_idx)
-        self.thread[thread_idx].start()
         title = self.title + ' - edc fitter'
         if self.new_energy_axis is not None:
             erg_ax = self.new_energy_axis
@@ -966,4 +956,10 @@ class MainWindow2D(QtWidgets.QMainWindow):
         data = np.moveaxis(self.data_set.data, 0, -1)
         mw.data_handler.set_data(data, axes=self.data_handler.axes)
         mw.set_cmap(self.cmap_name)
+
+    def keyPressEvent(self, event) :
+        """ Use <Space> key to print debug info. """
+        print(event.key())
+        if event.key() == QtCore.Qt.Key_Space :
+            print(self.data_viewers)
 

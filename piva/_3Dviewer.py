@@ -593,9 +593,6 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
     def closeEvent(self, event) :
         """ Ensure that this instance is un-registered from the DataBrowser. """
-        self.db.thread[self.index].quit()
-        self.db.thread[self.index].wait()
-        del(self.db.thread[self.index])
         del(self.db.data_viewers[self.index])
 
     def update_main_plot(self, **image_kwargs):
@@ -1509,8 +1506,6 @@ class MainWindow3D(QtWidgets.QMainWindow):
             if thread_running_box.exec() == QMessageBox.Ok:
                 return
 
-        self.db.thread[thread_idx] = ip.ThreadClass(index=thread_idx)
-        self.db.thread[thread_idx].start()
         try:
             self.db.data_viewers[thread_idx] = \
                 p2d.MainWindow2D(self.db, data_set=data_set, index=thread_idx, slice=True)

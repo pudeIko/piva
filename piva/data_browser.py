@@ -11,7 +11,6 @@ import piva.working_procedures as wp
 import piva._3Dviewer as p3d
 import piva._2Dviewer as p2d
 import piva.plot_tool as pt
-from piva.imageplot import ThreadClass
 
 start_time = time.time()
 testing = False
@@ -91,14 +90,7 @@ class DataBrowser(QtWidgets.QMainWindow):
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
 
-        # print(f'opening thread: {fname}')
-        self.thread[fname] = ThreadClass(index=fname)
-        self.thread[fname].start()
-        try:
-            self.thread[fname].any_signal.connect(self.open_dv(fname))
-        except TypeError as te:
-            # raise te
-            pass
+        self.open_dv(fname)
 
     def mb_open_dir(self):
         chosen_dir = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', self.working_dir))
@@ -127,23 +119,12 @@ class DataBrowser(QtWidgets.QMainWindow):
                 self.data_viewers[fname] = p3d.MainWindow3D(self, data_set=data_set, index=fname)
         except Exception as e:
             self.sb.showMessage('Couldn\'t load data,  format not supported.', self.sb_timeout)
-            self.thread[fname].quit()
-            self.thread[fname].wait()
-            # print(f'closing thread in db: {fname}')
-            del(self.thread[fname])
             if testing:
                 raise e
 
     def open_single_plotting_tool(self):
-
         thread_lbl = f'Plotting tool - {self.thread_count + 1}'
-
-        self.thread[thread_lbl] = ThreadClass(index=thread_lbl)
-        self.thread[thread_lbl].start()
-        try:
-            self.thread[thread_lbl].any_signal.connect(self.single_plotting_tool(thread_lbl))
-        except TypeError:
-            pass
+        self.single_plotting_tool(thread_lbl)
 
     def single_plotting_tool(self, thread_index):
         print(f'[Debug]data_browser.single_plotting_tool({thread_index})')
@@ -151,9 +132,6 @@ class DataBrowser(QtWidgets.QMainWindow):
             self.plotting_tools[thread_index] = pt.PlotTool(self, title=thread_index)
         except Exception:
             self.sb.showMessage('Couldn\'t open plotting tool', self.sb_timeout)
-            self.thread[thread_index].quit()
-            self.thread[thread_index].wait()
-            del(self.thread[thread_index])
         finally:
             self.thread_count += 1
 
