@@ -7,7 +7,7 @@ from itertools import groupby
 import matplotlib as mpl
 import numpy as np
 from numba import njit
-from numba_progress import ProgressBar
+# from numba_progress import ProgressBar
 import pandas as pd
 import scipy.signal as sig
 from matplotlib import pyplot as plt

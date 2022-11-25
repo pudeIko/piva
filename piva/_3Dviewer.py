@@ -734,8 +734,10 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.cut_x.xscale_rescaled = self.data_handler.axes[scan_ax]
         self.cut_x.yscale_rescaled = self.data_handler.axes[erg_ax]
         self.set_cut_x_image(image=cut, lut=self.lut)
-        self.cut_x.crosshair.vpos.set_allowed_values(np.arange(0, len(self.data_handler.axes[scan_ax])), binning=binning)
-        self.cut_x.crosshair.hpos.set_allowed_values(np.arange(0, len(self.data_handler.axes[erg_ax])), binning=binning)
+        self.cut_x.crosshair.vpos.set_allowed_values(np.arange(0, len(self.data_handler.axes[scan_ax])),
+                                                     binning=binning)
+        self.cut_x.crosshair.hpos.set_allowed_values(np.arange(0, len(self.data_handler.axes[erg_ax])),
+                                                     binning=binning)
         self.cut_x.set_bounds(0, len(self.data_handler.axes[scan_ax]), 0, len(self.data_handler.axes[erg_ax]))
 
         self.cut_x.fix_viewrange()
@@ -1632,7 +1634,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
         init_fname = '.'.join(self.title.split('.')[:-1] + ['p'])
 
         while file_selection:
-            fname, fname_return_value = QtWidgets.QInputDialog.getText(self, '', 'File name:', QLineEdit.Normal, init_fname)
+            fname, fname_return_value = QtWidgets.QInputDialog.getText(self, '', 'File name:',
+                                                                       QLineEdit.Normal, init_fname)
             if not fname_return_value:
                 return
 

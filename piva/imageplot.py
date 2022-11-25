@@ -8,6 +8,7 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, QLineEdit, \
     QMainWindow, QDialogButtonBox, QMessageBox, QScrollArea
+from PyQt5.QtGui import QColor, QPalette
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
 
@@ -24,6 +25,7 @@ util_panel_style = """
 QFrame{margin:5px; border:1px solid rgb(150,150,150);}
 QLabel{color: rgb(246, 246, 246); border:1px solid rgb(64, 64, 64);}
 QCheckBox{color: rgb(246, 246, 246);}
+QTabWidget{background-color: rgb(64, 64, 64);}
 """
 SIGNALS = 5
 MY_CMAPS = True
@@ -973,6 +975,7 @@ class UtilitiesPanel(QWidget):
             self.name = 'Unnamed'
 
         self.initUI()
+        self.set_tabs_color()
 
     def initUI(self):
 
@@ -1013,6 +1016,7 @@ class UtilitiesPanel(QWidget):
         self.setup_gamma()
         self.setup_colorscale()
         self.setup_bin_z()
+        # self.set_dark_tab()
 
     def align(self):
 
@@ -1036,6 +1040,8 @@ class UtilitiesPanel(QWidget):
         max_w = 80
         # create elements
         self.image_tab = QWidget()
+        # self.image_tab.setStyleSheet("color: rgb(64, 64, 64)")
+        # self.image_tab.setStyleSheet("QButton{background-color: rgb (64, 64, 64);}")
         itl = QtWidgets.QGridLayout()
         self.image_colors_label = QLabel('Colors')
         self.image_colors_label.setFont(bold_font)
@@ -1615,6 +1621,19 @@ class UtilitiesPanel(QWidget):
         self.file_tab.layout = ftl
         self.file_tab.setLayout(ftl)
         self.tabs.addTab(self.file_tab, 'File')
+
+    def set_tabs_color(self):
+        """
+        Running piva on Windows machine requires to set QWidgets' colors by hand
+        """
+        to_change = ['QPushButton', 'QLineEdit', 'QSpinBox', 'QDoubleSpinBox', 'QComboBox']
+        for i in range(self.tabs.count()):
+            tab_i = self.tabs.widget(i)
+            tab_i.setStyleSheet("QWidget { background-color: rgb(64, 64, 64);}")
+            for wi in tab_i.children():
+                wi_name = wi.metaObject().className()
+                if wi_name in to_change:
+                    wi.setStyleSheet("QWidget {background-color: rgb(255, 255, 255);}")
 
     def setup_cmaps(self):
 
