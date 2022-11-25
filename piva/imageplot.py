@@ -3,6 +3,7 @@ matplotlib pcolormesh equivalent in pyqtgraph (more or less)
 """
 import os
 import subprocess
+from sys import platform
 
 import numpy as np
 import pyqtgraph as pg
@@ -975,7 +976,6 @@ class UtilitiesPanel(QWidget):
             self.name = 'Unnamed'
 
         self.initUI()
-        self.set_tabs_color()
 
     def initUI(self):
 
@@ -1016,7 +1016,8 @@ class UtilitiesPanel(QWidget):
         self.setup_gamma()
         self.setup_colorscale()
         self.setup_bin_z()
-        # self.set_dark_tab()
+        if platform == 'win32':
+            self.set_tabs_color()
 
     def align(self):
 
