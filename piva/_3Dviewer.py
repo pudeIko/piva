@@ -1336,14 +1336,27 @@ class MainWindow3D(QtWidgets.QMainWindow):
         d_scan_ax = self.data_handler.axes[scan_ax][self.util_panel.axes_gamma_x.value()]
         orientation = self.util_panel.axes_slit_orient.currentText()
         a = self.util_panel.axes_conv_lc.value()
-        try:
-            energy = self.new_energy_axis[self.data_handler.z.get_value()]
-        except TypeError:
-            energy = self.data_handler.axes[erg_ax][self.data_handler.z.get_value()]
+        # try:
+        #     energy = self.new_energy_axis[self.data_handler.z.get_value()]
+        # except TypeError:
+        #     energy = self.data_handler.axes[erg_ax][self.data_handler.z.get_value()]
         hv = self.util_panel.axes_energy_hv.value()
         wf = self.util_panel.axes_energy_wf.value()
         ds = self.data_set
         new_dataset = deepcopy(ds)
+
+        info_box = QMessageBox()
+        info_box.setIcon(QMessageBox.Information)
+        info_box.setWindowTitle('K-space conversion.')
+        msg = 'Conversion might take a while,  depending on the datasets\' size.\n' \
+              'Make sure all parameters are correct and be patient.'.format()
+        info_box.setText(msg)
+        info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+        choice = info_box.exec()
+        if choice == QMessageBox.Ok:
+            pass
+        elif choice == QMessageBox.Cancel:
+            return
 
         if self.util_panel.axes_transform_kz.isChecked():
             ky, _ = wp.hv2kz(anal_axis, scanned_ax, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax, a=a,
@@ -1367,8 +1380,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
                     msg = 'Photon energy value not given.'
                 elif wf == 0:
                     msg = 'Work function value not given.'
-                    warning_box.setText(msg)
-                    warning_box.setStandardButtons(QMessageBox.Ok)
+                warning_box.setText(msg)
+                warning_box.setStandardButtons(QMessageBox.Ok)
                 if warning_box.exec() == QMessageBox.Ok:
                     return
             kx, ky = wp.angle2kscape(scanned_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax, a=a,
@@ -1385,19 +1398,34 @@ class MainWindow3D(QtWidgets.QMainWindow):
             # dataset_rescaled = wp.rescale_data(ds.data, ds.yscale, new_yscale, ProgressBar(total=ds.zscale.size))
             print('{:.4} s'.format(time.time() - start_time))
             new_dataset.xscale = kx[:, 0]
+            new_dataset.kxscale = kx[:, 0]
         new_dataset.data = dataset_rescaled
         new_dataset.yscale = new_yscale
-        new_idx = self.index + '_rescaled'
+        new_dataset.kyscale = new_yscale
+        new_idx = self.index + ' [rescaled to k-space]'
 
         try:
             self.db.data_viewers[new_idx] = MainWindow3D(self.db, data_set=new_dataset, index=new_idx)
         except Exception:
-            print('didn\'t work')
+            fail_box = QMessageBox()
+            fail_box.setIcon(QMessageBox.Information)
+            fail_box.setWindowTitle('K-space conversion.')
+            msg = 'Something went wrong.<br>' \
+                  'K-space conversion failed.'
+            fail_box.setText(msg)
+            fail_box.setStandardButtons(QMessageBox.Ok)
+            if fail_box.exec() == QMessageBox.Ok:
+                return
+
+        success_box = QMessageBox()
+        success_box.setIcon(QMessageBox.Information)
+        success_box.setWindowTitle('Conversion succeed.')
+        msg = 'K-space conversion succeed!<br>' \
+              'Make sure to save results.'
+        success_box.setText(msg)
+        success_box.setStandardButtons(QMessageBox.Ok)
+        if success_box.exec() == QMessageBox.Ok:
             return
-
-            # self.closeEvent()
-
-            # return
 
         # kx_axis, ky_axis = wp.angle2kscape(scanned_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax,
         #                                    orientation=orientation, a=a, energy=energy, hv=hv, work_func=wf)

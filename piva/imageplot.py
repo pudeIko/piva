@@ -1049,7 +1049,7 @@ class UtilitiesPanel(QWidget):
         self.image_colorscale = QDoubleSpinBox()
         self.image_colorscale.setRange(0., 10.)
 
-        self.image_pmesh = QCheckBox('pmesh')
+        # self.image_pmesh = QCheckBox('pmesh')
 
         self.image_other_lbl = QLabel('Normalize')
         self.image_other_lbl.setFont(bold_font)
@@ -1107,7 +1107,7 @@ class UtilitiesPanel(QWidget):
         itl.addWidget(self.image_cmaps_label,           row * sd, 1)
         itl.addWidget(self.image_cmaps,                 row * sd, 2)
         itl.addWidget(self.image_invert_colors,         row * sd, 3)
-        itl.addWidget(self.image_pmesh,                 row * sd, 4)
+        # itl.addWidget(self.image_pmesh,                 row * sd, 4)
 
         row = 1
         itl.addWidget(self.image_gamma_label,           row * sd, 1)
@@ -1376,7 +1376,7 @@ class UtilitiesPanel(QWidget):
 
         self.axes_slit_orient_lbl = QLabel('Slit:')
         self.axes_slit_orient = QComboBox()
-        self.axes_slit_orient.addItems(['horizontal', 'vertical', 'deflection'])
+        self.axes_slit_orient.addItems(['horizontal', 'vertical'])
         self.axes_copy_values = QPushButton('Copy from \'Orientate\'')
         self.axes_do_kspace_conv = QPushButton('Convert')
         self.axes_reset_conv = QPushButton('Reset')

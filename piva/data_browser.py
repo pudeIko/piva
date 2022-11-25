@@ -618,9 +618,3 @@ class DataBrowser(QtWidgets.QMainWindow):
             if not (data.FE is None): self.dp_bl_fe.setText('{}'.format(float(data.FE)))
         except AttributeError:
             self.reset_detail_panel()
-
-    def reset_dataset(self, dataset, index):
-        self.data_viewers[index].close()
-        del (self.data_viewers[index])
-        self.data_viewers[index] = p3d.MainWindow3D(self, data_set=dataset, index=index)
-

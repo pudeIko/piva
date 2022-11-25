@@ -2275,7 +2275,7 @@ def hv2kz(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi, energy=np.arra
     return ky, kz
 
 
-@njit#(nogil=True)
+@njit
 def rescale_data(data, org_scale, new_scale):#, progress_proxy):
     new_data = np.zeros((data.shape[0], new_scale.size, data.shape[2]))
     for zi in range(data.shape[2]):
