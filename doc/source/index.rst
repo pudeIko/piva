@@ -18,4 +18,5 @@ Please be aware that the documentation is very much a work in progress.
     installation
     db
     viewers
+    fitters
     file-formats
