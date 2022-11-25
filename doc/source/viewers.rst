@@ -60,8 +60,13 @@ Image
    :alt: Image not found.
 
 Visual aspects of the colormap can be adjusted here.
-Normalization can be applied and a BZ contour can be overlayed over the data 
-(requires :ref:`conversion to *k*-space first <sec-utility-panel-axes>`).
+*color scale* refers to the relative max value for the colormap normalization.
+*gamma* is the exponent in a power-law normalization according to :math:`x 
+\rightarrow x^{1/\gamma}`.
+
+An EDC-wise normalization can be applied to and a BZ contour can be overlayed 
+over the data (requires :ref:`conversion to *k*-space first 
+<sec-utility-panel-axes>`).
 
 Finally, one can open the horizontal (**c**) and vertical (**b**) cuts in a 
 new :ref:`2D viewer window <sec-2d-viewer>` for closer inspection.
@@ -144,5 +149,6 @@ visualization of dispersive features.
 File
 """"
 
-Additionally allows opening this dataset in the  *MDC/EDC fitter* windows.
+Additionally allows opening this dataset in the :ref:`MDC/EDC fitter windows 
+<sec-fitters>`.
 
