@@ -803,7 +803,22 @@ class MainWindow3D(QtWidgets.QMainWindow):
         try:
             xpos = self.main_plot.crosshair.vpos.get_value()
             ypos = self.main_plot.crosshair.hpos.get_value()
-            data = self.data_handler.get_data()[xpos, ypos, :]
+            bin_x, bin_y = self.util_panel.bin_x.isChecked(), self.util_panel.bin_y.isChecked()
+            if bin_x and bin_y:
+                nbx = self.util_panel.bin_x_nbins.value()
+                nby = self.util_panel.bin_y_nbins.value()
+                data = self.data_handler.get_data()[(xpos - nbx):(xpos + nbx), (ypos - nby):(ypos + nby), :]
+                data = np.sum(np.sum(data, axis=1), axis=0)
+            elif bin_x:
+                nbx = self.util_panel.bin_x_nbins.value()
+                data = self.data_handler.get_data()[(xpos - nbx):(xpos + nbx), ypos, :]
+                data = np.sum(data, axis=0)
+            elif bin_y:
+                nby = self.util_panel.bin_y_nbins.value()
+                data = self.data_handler.get_data()[xpos, (ypos - nby):(ypos + nby), :]
+                data = np.sum(data, axis=0)
+            else:
+                data = self.data_handler.get_data()[xpos, ypos, :]
             with warnings.catch_warnings():
                 data = wp.normalize(data)
             self.sp_EDC.setData(data, pen=self.plot_z.sp_EDC_pen)
