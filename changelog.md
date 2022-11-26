@@ -11,15 +11,24 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Python version >3.8 is now required, rather than previous >3.7.
-
 ### Deprecated
 
 ### Removed
 
 ### Fixed
 
+## [1.0.4] = 2022-11-26
+
+### Changed
+
+- Python version >3.8 is now required, rather than previous >3.7.
+- k-space conversion routine improved. Now uses a "rescaling" approach.
+- Tweaked appearance on Windows.
+
+### Fixed
+
 - Issue #28: colorscales now work as expected again.
+- Several small bugfixes.
 
 ## [1.0.3] = 2022-11-21
 
