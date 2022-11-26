@@ -23,7 +23,6 @@ all_dls = {
     '*ADRESS': dl.DataloaderADRESS,
     '*ALS': dl.DataloaderALS}
 
-
 class DataBrowser(QtWidgets.QMainWindow):
 
     def __init__(self):
@@ -542,8 +541,18 @@ class DataBrowser(QtWidgets.QMainWindow):
             self.shown_columns.remove(i)
 
         # Connect signal for changing selection in the QTreeView
-        file_explorer.selectionModel().selectionChanged.connect(self.update_details_panel)
+        file_explorer.selectionModel().selectionChanged.connect(
+            self.on_selection_change
+        )
         self.file_explorer = file_explorer
+
+    def on_selection_change(self) :
+        """ Fired when a new item in the QTreeView was clicked or selected 
+        through arrow keys. Ensure the new item is visible in the tree and 
+        try to load the selected item as ARPES data.
+        """
+        self.file_explorer.resizeColumnToContents(0)
+        self.update_details_panel()
 
     def get_selected_path(self) :
         """ Get the path of selected file in the QTreeView as a string. """
