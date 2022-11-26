@@ -9,6 +9,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Horizontal scrollbar now appears when needed in data_browser.
+
 ### Changed
 
 ### Deprecated
