@@ -11,7 +11,7 @@ setuptools.setup(
     version='1.0.4',
     author='Wojtek Pudelko',
     author_email='wojciech.pudelko@psi.ch',
-    description='My piva, have fun',
+    description='PIVA - Python Interactive Viewer for Arpes',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/pudeIko/piva.git',
