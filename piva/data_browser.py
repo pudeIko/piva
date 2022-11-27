@@ -39,7 +39,8 @@ class DataBrowser(QtWidgets.QMainWindow):
         self.file_explorer = None
         self.model = None
         self.sb_timeout = 2500
-        self.set_file_explorer(self.working_dir)
+        # self.set_file_explorer(self.working_dir)
+        self.set_file_explorer()
         self.set_menu_bar()
         self.set_status_bar()
         self.set_details_panel()
