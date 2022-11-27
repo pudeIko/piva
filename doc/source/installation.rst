@@ -20,10 +20,10 @@ Detailed instructions for Anaconda users follow:
 1) Open "Anaconda Prompt" 
 
 2) In order not to mess up your dependencies, create a virtual 
-   environment. In the example we will be using python version 3.7.5, but 
+   environment. In the example we will be using python version 3.10.8, but
    most other versions should work as well. ::
 
-      $ conda create --name testenv python==3.7.5
+      $ conda create --name testenv python==3.10.8
       [some output]
       $ conda activate testenv
       (testenv) $
@@ -38,7 +38,7 @@ Detailed instructions for Anaconda users follow:
    This will create a lot of console output. If everything succeeded, you should 
    see something like ``Successfully installed piva`` towards the end.
 
-4) Test the installation by starting up a databrowser::
+4) Test the installation by starting up a data_browser::
 
       (testenv) $ db
    

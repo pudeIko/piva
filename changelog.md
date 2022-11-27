@@ -21,15 +21,20 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.4] = 2022-11-26
 
+### Added
+
+- Proper k-space conversion routine for both manipulator & photon energy scans. 
+Uses a "rescaling" approach to account for momentum conservation, instead of 
+previous simple swapping of axes values.
+
 ### Changed
 
 - Python version >3.8 is now required, rather than previous >3.7.
-- k-space conversion routine improved. Now uses a "rescaling" approach.
-- Tweaked appearance on Windows.
 
 ### Fixed
 
 - Issue #28: colorscales now work as expected again.
+- Appearance issues of `QTabWidget` on Windows.
 - Several small bugfixes.
 
 ## [1.0.3] = 2022-11-21
