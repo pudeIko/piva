@@ -13,6 +13,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- root directory of a tree view window can be changed with `Ctrl+O` instead of 
+fixed `home_dir` 
+
 ### Deprecated
 
 ### Removed

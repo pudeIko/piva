@@ -2,8 +2,7 @@
 import os
 import time
 
-from PyQt5.QtWidgets import QAction, QHBoxLayout, QLabel, QVBoxLayout, \
-    QLineEdit, QMessageBox
+from PyQt5.QtWidgets import QAction, QHBoxLayout, QLabel, QVBoxLayout, QLineEdit, QMessageBox
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
 import piva.data_loader as dl
@@ -23,6 +22,7 @@ all_dls = {
     '*ADRESS': dl.DataloaderADRESS,
     '*ALS': dl.DataloaderALS}
 
+
 class DataBrowser(QtWidgets.QMainWindow):
 
     def __init__(self):
@@ -37,6 +37,7 @@ class DataBrowser(QtWidgets.QMainWindow):
         self.data_viewers = {}
         self.plotting_tools = {}
         self.file_explorer = None
+        self.model = None
         self.sb_timeout = 2500
         self.set_file_explorer(self.working_dir)
         self.set_menu_bar()
@@ -95,7 +96,7 @@ class DataBrowser(QtWidgets.QMainWindow):
         chosen_dir = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', self.working_dir))
         try:
             self.working_dir = self.add_slash(chosen_dir)
-            self.set_file_explorer(self.working_dir)
+            self.change_working_dir(self.working_dir)
             self.setWindowTitle('piva data browser - ' + self.working_dir)
         except IndexError:
             pass
@@ -505,7 +506,7 @@ class DataBrowser(QtWidgets.QMainWindow):
         multiple_plot.setShortcut('Ctrl+M')
         multiple_plot.setStatusTip('Multiple Plotting Tool')
         multiple_plot.triggered.connect(self.open_multiple_plotting_tool)
-        plot_menu.addAction(multiple_plot)
+        # plot_menu.addAction(multiple_plot)
 
         file_menu.addSeparator()
         # run = menu_bar.addMenu('kl')
@@ -516,20 +517,16 @@ class DataBrowser(QtWidgets.QMainWindow):
         self.sb = QtWidgets.QStatusBar()
         self.setStatusBar(self.sb)
 
-    def set_file_explorer(self, path):
+    def set_file_explorer(self):
         """ Create or recreate the file explorer view (QTreeView). """
         model = QtGui.QFileSystemModel()
         file_explorer = QtWidgets.QTreeView()
         file_explorer.setModel(model)
 
-        # Only allow browsing directories below "Home"
-        home = QtCore.QDir.homePath()
-        model.setRootPath(home)
-        file_explorer.setRootIndex(model.index(home))
-
-        # Select the current working directory
+        # set root as a current directory
         cwd = QtCore.QDir.currentPath()
-        file_explorer.setCurrentIndex(model.index(cwd))
+        model.setRootPath(cwd)
+        file_explorer.setRootIndex(model.index(cwd))
 
         # Visual fiddling: the columns are 0: filename, 1: size, 2: date 
         # modified, 3: type
@@ -541,12 +538,21 @@ class DataBrowser(QtWidgets.QMainWindow):
             self.shown_columns.remove(i)
 
         # Connect signal for changing selection in the QTreeView
-        file_explorer.selectionModel().selectionChanged.connect(
-            self.on_selection_change
-        )
+        file_explorer.selectionModel().selectionChanged.connect(self.on_selection_change)
         self.file_explorer = file_explorer
+        self.model = model
 
-    def on_selection_change(self) :
+    def change_working_dir(self, path):
+        """ Change working directory in a shell and update data_browser tree view"""
+        if QtCore.QDir.exists(QtCore.QDir(), path):
+            os.chdir(path)
+        else:
+            return
+        cwd = QtCore.QDir.currentPath()
+        self.model.setRootPath(cwd)
+        self.file_explorer.setRootIndex(self.model.index(cwd))
+
+    def on_selection_change(self):
         """ Fired when a new item in the QTreeView was clicked or selected 
         through arrow keys. Ensure the new item is visible in the tree and 
         try to load the selected item as ARPES data.
@@ -554,7 +560,7 @@ class DataBrowser(QtWidgets.QMainWindow):
         self.file_explorer.resizeColumnToContents(0)
         self.update_details_panel()
 
-    def get_selected_path(self) :
+    def get_selected_path(self):
         """ Get the path of selected file in the QTreeView as a string. """
         index = self.file_explorer.currentIndex()
         path = self.file_explorer.model().filePath(index)
