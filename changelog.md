@@ -9,6 +9,20 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+
+### Changed
+ 
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+## [1.1.0] = 2022-11-28
+
+### Added
+
 - Horizontal scrollbar now appears when needed in data_browser.
 
 ### Changed
@@ -16,11 +30,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - root directory of a tree view window can be changed with `Ctrl+O` instead of 
 fixed `home_dir` 
 
-### Deprecated
-
-### Removed
-
-### Fixed
 
 ## [1.0.4] = 2022-11-26
 
