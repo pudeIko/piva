@@ -6,7 +6,7 @@ from itertools import groupby
 # from scipy import optimize as opt
 import matplotlib as mpl
 import numpy as np
-from numba import njit
+from numba import njit, prange
 # from numba_progress import ProgressBar
 import pandas as pd
 import scipy.signal as sig
@@ -2275,13 +2275,14 @@ def hv2kz(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi, energy=np.arra
     return ky, kz
 
 
-@njit
+@njit(parallel=True)
 def rescale_data(data, org_scale, new_scale):#, progress_proxy):
     new_data = np.zeros((data.shape[0], new_scale.size, data.shape[2]))
-    for zi in range(data.shape[2]):
-        for xi in range(data.shape[0]):
+    for zi in prange(data.shape[2]):
+        for xi in prange(data.shape[0]):
             y_min, y_max = org_scale[xi].min(), org_scale[xi].max()
-            for yi_idx, yi in enumerate(new_scale):
+            for yi_idx in prange(len(new_scale)):
+                yi = new_scale[yi_idx]
                 y_org_idx = np.argmin(np.abs(org_scale[xi] - yi))
                 if (yi >= y_min) and (yi <= y_max):
                     new_data[xi, yi_idx, zi] = data[xi, y_org_idx, zi]
