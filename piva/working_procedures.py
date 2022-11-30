@@ -2279,10 +2279,9 @@ def hv2kz(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi, energy=np.arra
 def rescale_data(data, org_scale, new_scale):#, progress_proxy):
     new_data = np.zeros((data.shape[0], new_scale.size, data.shape[2]))
     for zi in prange(data.shape[2]):
-        for xi in prange(data.shape[0]):
+        for xi in range(data.shape[0]):
             y_min, y_max = org_scale[xi].min(), org_scale[xi].max()
-            for yi_idx in prange(len(new_scale)):
-                yi = new_scale[yi_idx]
+            for yi_idx, yi in enumerate(new_scale):
                 y_org_idx = np.argmin(np.abs(org_scale[xi] - yi))
                 if (yi >= y_min) and (yi <= y_max):
                     new_data[xi, yi_idx, zi] = data[xi, y_org_idx, zi]
