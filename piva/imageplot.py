@@ -1795,10 +1795,13 @@ class UtilitiesPanel(QWidget):
                     entries[str(row)]['value'] = QLabel(str(dataset[key]))
                     entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
             elif key == 'pressure':
-                entries[str(row)] = {}
-                entries[str(row)]['name'] = QLabel(key)
-                entries[str(row)]['value'] = QLabel('{:.4e}'.format((dataset[key])))
-                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+                if dataset[key] is None:
+                    continue
+                else:
+                    entries[str(row)] = {}
+                    entries[str(row)]['name'] = QLabel(key)
+                    entries[str(row)]['value'] = QLabel('{:.4e}'.format((dataset[key])))
+                    entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
             else:
                 entries[str(row)] = {}
                 entries[str(row)]['name'] = QLabel(key)

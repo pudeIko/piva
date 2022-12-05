@@ -221,13 +221,13 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.util_panel.momentum_hor.setRange(0, len(self.data_handler.axes[0]))
 
         try:
-            self.load_saved_corrections(data_set)
+            self.load_saved_corrections(self.data_set)
         except AttributeError:
-            print('going with old settings.')
-            self.load_saved_corrections_old(data_set)
+            print('Old settings, corrections not loaded.')
+            pass
 
-        self.util_panel.set_metadata_window(raw_data)
-        self.put_sliders_in_initial_positions()
+        self.util_panel.set_metadata_window(self.data_set)
+        self.set_sliders_initial_positions()
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -324,7 +324,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
             l.setColumnMinimumWidth(i, 50)
             l.setColumnStretch(i, 1)
 
-    def closeEvent(self, event) :
+    def closeEvent(self, event):
         """ Ensure that this instance is un-registered from the DataBrowser. """
         del(self.db.data_viewers[self.index])
 
@@ -632,7 +632,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
         main_ver = self.main_plot.crosshair.vpos.get_value()
         return [main_hor, main_ver]
 
-    def put_sliders_in_initial_positions(self):
+    def set_sliders_initial_positions(self):
         if self.new_energy_axis is None:
             e_ax = self.data_handler.axes[1]
         else:

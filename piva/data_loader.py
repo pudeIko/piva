@@ -666,7 +666,7 @@ class DataloaderBloch(Dataloader):
                  ('A', 'phi', float),
                  ('P', 'theta', float),
                  ('T', 'tilt', float)]
-        # print('elo')
+
         # Load the zipfile
         with zipfile.ZipFile(filename, 'r') as z:
             # Get the created filename from the viewer
