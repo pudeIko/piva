@@ -1349,8 +1349,10 @@ class MainWindow3D(QtWidgets.QMainWindow):
     def convert_to_kspace(self):
         scanned_ax = self.data_handler.axes[scan_ax]
         anal_axis = self.data_handler.axes[slit_ax]
-        d_anal_ax = self.data_handler.axes[slit_ax][self.util_panel.axes_gamma_y.value()]
-        d_scan_ax = self.data_handler.axes[scan_ax][self.util_panel.axes_gamma_x.value()]
+        d_anal_ax = self.data_handler.axes[slit_ax][
+            self.util_panel.axes_gamma_y.value()]
+        d_scan_ax = self.data_handler.axes[scan_ax][
+            self.util_panel.axes_gamma_x.value()]
         orientation = self.util_panel.axes_slit_orient.currentText()
         a = self.util_panel.axes_conv_lc.value()
         # try:
@@ -1365,7 +1367,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
         info_box = QMessageBox()
         info_box.setIcon(QMessageBox.Information)
         info_box.setWindowTitle('K-space conversion.')
-        msg = 'Conversion might take a while,  depending on the datasets\' size.\n' \
+        msg = 'Conversion might take a while,  ' \
+              'depending on the dataset\'s size.\n' \
               'Make sure all parameters are correct and be patient.'.format()
         info_box.setText(msg)
         info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
@@ -1401,7 +1404,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
                 warning_box.setStandardButtons(QMessageBox.Ok)
                 if warning_box.exec() == QMessageBox.Ok:
                     return
-            kx, ky = wp.angle2kscape(scanned_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax, a=a,
+            kx, ky = wp.angle2kspace(scanned_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax, a=a,
                                      orientation=orientation, hv=hv, work_func=wf)
             kxx, kyy = np.meshgrid(kx[:, 0], ky[0, :])
             cut = self.main_plot.image_data

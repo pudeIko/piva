@@ -2172,7 +2172,8 @@ def k_fac(energy, Eb=0, hv=0, work_func=4.5):
     return np.sqrt(2 * me * (energy - Eb + hv - work_func)) / hbar
 
 
-def angle2kscape(scan_ax, anal_ax, d_scan_ax=0, d_anal_ax=0, orientation='horizontal', a=np.pi, energy=np.array([0]),
+def angle2kspace(scan_ax, anal_ax, d_scan_ax=0, d_anal_ax=0,
+                 orientation='horizontal', a=np.pi, energy=np.array([0]),
                  **kwargs):
     # Angle to radian conversion and setting offsets
     scan_ax, anal_ax, energy = np.array(scan_ax), np.array(anal_ax), np.array(energy)
@@ -2251,7 +2252,7 @@ def hv2kz(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi, energy=np.arra
     ang, hvs, energy = np.array(ang), np.array(hvs), np.array(energy)
     ky = []
     for hv in hvs:
-        kyi, _ = angle2kscape(np.array([1]), ang, hv=hv, energy=energy, **kwargs)
+        kyi, _ = angle2kspace(np.array([1]), ang, hv=hv, energy=energy, **kwargs)
         ky.append(kyi)
 
     ky = np.array(ky)

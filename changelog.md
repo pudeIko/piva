@@ -15,9 +15,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Deprecated
 
+
 ### Removed
 
+
 ### Fixed
+
+- minor bugs in `set_metadata_window`
+
 
 ## [1.1.0] = 2022-11-28
 

@@ -79,12 +79,12 @@ class DataHandler2D:
 
         **Parameters**
 
-        ====  ==================================================================
+        ====  =================================================================
         data  3d array; the data to display
         axes  len(3) list or array of 1d-arrays or None; the units along the
               x, y and z axes respectively. If any of those is *None*, pixels
               are used.
-        ====  ==================================================================
+        ====  =================================================================
         """
 
         self.data = ip.TracedVariable(data, name='data')
@@ -140,7 +140,8 @@ class DataHandler2D:
         try:
             self.main_window.image_data = data
         except IndexError:
-            print(('update_image_data(): z index {} out of range for data of length {}.'))
+            print(('update_image_data(): z index {} out '
+                   'of range for data of length {}.'))
 
 
 class MainWindow2D(QtWidgets.QMainWindow):
@@ -190,7 +191,8 @@ class MainWindow2D(QtWidgets.QMainWindow):
         # Create cut of cut_y
         self.plot_y = ip.CursorPlot(name='plot_y', orientation='vertical')
         # Create utilities panel
-        self.util_panel = ip.UtilitiesPanel(self, name='utilities_panel', dim=2)
+        self.util_panel = ip.UtilitiesPanel(self, name='utilities_panel',
+                                            dim=2)
         self.util_panel.positions_momentum_label.setText('Sliders')
         # self.util_panel.momentum_vert_label.setText('E:')
 
@@ -218,7 +220,8 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.org_image_data = self.data_handler.get_data()
 
         self.util_panel.energy_vert.setRange(0, len(self.data_handler.axes[1]))
-        self.util_panel.momentum_hor.setRange(0, len(self.data_handler.axes[0]))
+        self.util_panel.momentum_hor.setRange(0,
+                                              len(self.data_handler.axes[0]))
 
         try:
             self.load_saved_corrections(self.data_set)
@@ -250,20 +253,28 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.util_panel.image_invert_colors.stateChanged.connect(self.set_cmap)
         self.util_panel.image_gamma.valueChanged.connect(self.set_gamma)
         self.util_panel.image_colorscale.valueChanged.connect(self.set_alpha)
-        self.util_panel.image_normalize_edcs.stateChanged.connect(self.update_main_plot)
+        self.util_panel.image_normalize_edcs.stateChanged.connect(
+            self.update_main_plot)
         self.util_panel.image_smooth_button.clicked.connect(self.smoooth_data)
-        self.util_panel.image_curvature_button.clicked.connect(self.curvature_method)
+        self.util_panel.image_curvature_button.clicked.connect(
+            self.curvature_method)
 
-        self.util_panel.file_mdc_fitter_button.clicked.connect(self.open_mdc_fitter)
-        self.util_panel.file_edc_fitter_button.clicked.connect(self.open_edc_fitter)
+        self.util_panel.file_mdc_fitter_button.clicked.connect(
+            self.open_mdc_fitter)
+        self.util_panel.file_edc_fitter_button.clicked.connect(
+            self.open_edc_fitter)
 
         # binning utilities
         self.util_panel.bin_y.stateChanged.connect(self.update_binning_lines)
-        self.util_panel.bin_y_nbins.valueChanged.connect(self.update_binning_lines)
+        self.util_panel.bin_y_nbins.valueChanged.connect(
+            self.update_binning_lines)
         self.util_panel.bin_z.stateChanged.connect(self.update_binning_lines)
-        self.util_panel.bin_z_nbins.valueChanged.connect(self.update_binning_lines)
-        self.util_panel.energy_vert.valueChanged.connect(self.set_vert_energy_slider)
-        self.util_panel.momentum_hor.valueChanged.connect(self.set_hor_momentum_slider)
+        self.util_panel.bin_z_nbins.valueChanged.connect(
+            self.update_binning_lines)
+        self.util_panel.energy_vert.valueChanged.connect(
+            self.set_vert_energy_slider)
+        self.util_panel.momentum_hor.valueChanged.connect(
+            self.set_hor_momentum_slider)
 
         # buttons
         self.util_panel.close_button.clicked.connect(self.close)
@@ -271,12 +282,18 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.util_panel.pit_button.clicked.connect(self.open_pit)
 
         # energy and k-space concersion
-        self.util_panel.axes_energy_Ef.valueChanged.connect(self.apply_energy_correction)
-        self.util_panel.axes_energy_hv.valueChanged.connect(self.apply_energy_correction)
-        self.util_panel.axes_energy_wf.valueChanged.connect(self.apply_energy_correction)
-        self.util_panel.axes_energy_scale.currentIndexChanged.connect(self.apply_energy_correction)
-        self.util_panel.axes_do_kspace_conv.clicked.connect(self.convert_to_kspace)
-        self.util_panel.axes_reset_conv.clicked.connect(self.reset_kspace_conversion)
+        self.util_panel.axes_energy_Ef.valueChanged.connect(
+            self.apply_energy_correction)
+        self.util_panel.axes_energy_hv.valueChanged.connect(
+            self.apply_energy_correction)
+        self.util_panel.axes_energy_wf.valueChanged.connect(
+            self.apply_energy_correction)
+        self.util_panel.axes_energy_scale.currentIndexChanged.connect(
+            self.apply_energy_correction)
+        self.util_panel.axes_do_kspace_conv.clicked.connect(
+            self.convert_to_kspace)
+        self.util_panel.axes_reset_conv.clicked.connect(
+            self.reset_kspace_conversion)
 
         # Align all the gui elements
         self._align()
@@ -325,7 +342,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
             l.setColumnStretch(i, 1)
 
     def closeEvent(self, event):
-        """ Ensure that this instance is un-registered from the DataBrowser. """
+        """ Ensure that this instance is un-registered from the DataBrowser."""
         del(self.db.data_viewers[self.index])
 
     @staticmethod
@@ -369,11 +386,13 @@ class MainWindow2D(QtWidgets.QMainWindow):
         xaxis = self.data_handler.axes[1]
         yaxis = self.data_handler.axes[0]
         self.main_plot.set_xscale(range(0, len(xaxis)))
-        self.main_plot.set_ticks(xaxis[0], xaxis[-1], self.main_plot.main_xaxis)
+        self.main_plot.set_ticks(xaxis[0], xaxis[-1],
+                                 self.main_plot.main_xaxis)
         self.plot_x.set_ticks(xaxis[0], xaxis[-1], self.plot_x.main_xaxis)
         self.plot_x.set_secondary_axis(0, len(xaxis))
         self.main_plot.set_yscale(range(0, len(yaxis)))
-        self.main_plot.set_ticks(yaxis[0], yaxis[-1], self.main_plot.main_yaxis)
+        self.main_plot.set_ticks(yaxis[0], yaxis[-1],
+                                 self.main_plot.main_yaxis)
         self.plot_y.set_ticks(yaxis[0], yaxis[-1], self.plot_y.main_xaxis)
         self.plot_y.set_secondary_axis(0, len(yaxis))
         self.main_plot.fix_viewrange()
@@ -701,7 +720,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
             if warning_box.exec() == QMessageBox.Ok:
                 return
 
-        nma, erg = wp.angle2kscape(scan_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax,
+        nma, erg = wp.angle2kspace(scan_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax,
                                    orientation=orientation, a=a, energy=energy, hv=hv, work_func=wf)
         self.k_axis = nma[-1]
         new_range = [nma[-1][0], nma[-1][-1]]
@@ -852,8 +871,11 @@ class MainWindow2D(QtWidgets.QMainWindow):
                 fname_colision_box = QMessageBox()
                 fname_colision_box.setIcon(QMessageBox.Question)
                 fname_colision_box.setWindowTitle('File name already used.')
-                fname_colision_box.setText('File {} already exists.\nDo you want to overwrite it?'.format(fname))
-                fname_colision_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                fname_colision_box.setText('File {} already exists.\nDo you '
+                                           'want to overwrite '
+                                           'it?'.format(fname))
+                fname_colision_box.setStandardButtons(QMessageBox.Ok |
+                                                      QMessageBox.Cancel)
                 if fname_colision_box.exec() == QMessageBox.Ok:
                     file_selection = False
                 else:
@@ -861,15 +883,19 @@ class MainWindow2D(QtWidgets.QMainWindow):
             else:
                 file_selection = False
 
-        conditions = [up.axes_energy_Ef.value() != 0, up.axes_energy_hv.value() != 0, up.axes_energy_wf.value() != 0,
-                      up.axes_angle_off.value() != 0, up.axes_gamma_x.value() != 0]
+        conditions = [up.axes_energy_Ef.value() != 0,
+                      up.axes_energy_hv.value() != 0,
+                      up.axes_energy_wf.value() != 0,
+                      up.axes_angle_off.value() != 0,
+                      up.axes_gamma_x.value() != 0]
 
         if np.any(conditions):
             save_cor_box = QMessageBox()
             save_cor_box.setIcon(QMessageBox.Question)
             save_cor_box.setWindowTitle('Save data')
             save_cor_box.setText("Do you want to save applied corrections?")
-            save_cor_box.setStandardButtons(QMessageBox.No | QMessageBox.Ok | QMessageBox.Cancel)
+            save_cor_box.setStandardButtons(QMessageBox.No | QMessageBox.Ok |
+                                            QMessageBox.Cancel)
 
             box_return_value = save_cor_box.exec()
             if box_return_value == QMessageBox.Ok:
@@ -960,6 +986,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
     def keyPressEvent(self, event) :
         """ Use <Space> key to print debug info. """
         print(event.key())
-        if event.key() == QtCore.Qt.Key_Space :
+        if event.key() == QtCore.Qt.Key_Space:
             print(self.data_viewers)
 
