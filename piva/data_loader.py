@@ -597,8 +597,8 @@ class DataloaderSIS(Dataloader):
 
 class DataloaderBloch(Dataloader):
     """
-    Object that allows loading and saving of ARPES data from the BLOCH
-    beamline at maxIV which is in hd5 format.
+    Object that allows loading and saving of ARPES data from the SIS
+    beamline at PSI which is in hd5 format.
     """
     name = 'Bloch'
     # Number of cuts that need to be present to assume the data as a map
@@ -666,7 +666,7 @@ class DataloaderBloch(Dataloader):
                  ('A', 'phi', float),
                  ('P', 'theta', float),
                  ('T', 'tilt', float)]
-        # print('elo')
+
         # Load the zipfile
         with zipfile.ZipFile(filename, 'r') as z:
             # Get the created filename from the viewer
@@ -736,6 +736,43 @@ class DataloaderBloch(Dataloader):
                 res.__setattr__(key, M2[key])
         return res
 
+    @staticmethod
+    def read_viewer(viewer):
+        """ Extract the file ID from a SIS-ULTRA deflector mode output file. """
+        for line in viewer.readlines():
+            l = line.decode('UTF-8')
+            if l.startswith('name'):
+                # Make sure to split off unwanted whitespace
+                return l.split('=')[1].split()[0]
+
+    @staticmethod
+    def read_metadata(keys, metadata_file):
+        """ Read the metadata from a SIS-ULTRA deflector mode output file. """
+        # List of interesting keys and associated variable names
+        metadata = Namespace()
+        for line in metadata_file.readlines():
+            # Split at 'equals' sign
+            tokens = line.decode('utf-8').split('=')
+            for key, name, dtype in keys:
+                # print(tokens[0])
+                if tokens[0] == key:
+                    # Split off whitespace or garbage at the end
+                    value = tokens[1].split()[0]
+                    # And cast to right type
+                    value = dtype(value)
+                    metadata.__setattr__(name, value)
+                elif tokens[0] == 'Mode':
+                    if tokens[1].split()[0] == 'ARPES' and tokens[1].split()[1] == 'Mapping':
+                        metadata.__setattr__('scan_type', 'DA scan')
+                elif tokens[0] == 'Thetay_Low':
+                    metadata.__setattr__('scan_start', float(tokens[1].split()[0]))
+                elif tokens[0] == 'Thetay_High':
+                    metadata.__setattr__('scan_stop', float(tokens[1].split()[0]))
+                elif tokens[0] == 'Thetay_StepSize':
+                    metadata.__setattr__('scan_step', float(tokens[1].split()[0]))
+        return metadata
+
+
     def load_pxt(self, filename, metadata=False):
         """ Load and store the full h5 file and extract relevant information. """
         pxt = igorpy.load(filename)[0]
@@ -792,42 +829,6 @@ class DataloaderBloch(Dataloader):
             # Split at 'equals' sign
             tokens = line.split('=')
             for key, name, dtype in keys:
-                if tokens[0] == key:
-                    # Split off whitespace or garbage at the end
-                    value = tokens[1].split()[0]
-                    # And cast to right type
-                    value = dtype(value)
-                    metadata.__setattr__(name, value)
-                elif tokens[0] == 'Mode':
-                    if tokens[1].split()[0] == 'ARPES' and tokens[1].split()[1] == 'Mapping':
-                        metadata.__setattr__('scan_type', 'DA scan')
-                elif tokens[0] == 'Thetay_Low':
-                    metadata.__setattr__('scan_start', float(tokens[1].split()[0]))
-                elif tokens[0] == 'Thetay_High':
-                    metadata.__setattr__('scan_stop', float(tokens[1].split()[0]))
-                elif tokens[0] == 'Thetay_StepSize':
-                    metadata.__setattr__('scan_step', float(tokens[1].split()[0]))
-        return metadata
-
-    @staticmethod
-    def read_viewer(viewer):
-        """ Extract the file ID from a SIS-ULTRA deflector mode output file. """
-        for line in viewer.readlines():
-            l = line.decode('UTF-8')
-            if l.startswith('name'):
-                # Make sure to split off unwanted whitespace
-                return l.split('=')[1].split()[0]
-
-    @staticmethod
-    def read_metadata(keys, metadata_file):
-        """ Read the metadata from a SIS-ULTRA deflector mode output file. """
-        # List of interesting keys and associated variable names
-        metadata = Namespace()
-        for line in metadata_file.readlines():
-            # Split at 'equals' sign
-            tokens = line.decode('utf-8').split('=')
-            for key, name, dtype in keys:
-                # print(tokens[0])
                 if tokens[0] == key:
                     # Split off whitespace or garbage at the end
                     value = tokens[1].split()[0]
@@ -932,25 +933,25 @@ class Dataloaderi05(Dataloader):
                 xscale = np.arange(start, stop + 0.5 * step, step)
 
         # read metadata
-        x = infile['entry1/instrument/manipulator/sax'][0]
-        y = infile['entry1/instrument/manipulator/say'][0]
-        z = infile['entry1/instrument/manipulator/saz'][0]
-        theta = infile['entry1/instrument/manipulator/sapolar'][0]
-        phi = infile['entry1/instrument/manipulator/saazimuth'][0]
-        tilt = infile['entry1/instrument/manipulator/satilt'][0]
+        x = float(infile['entry1/instrument/manipulator/sax'][0])
+        y = float(infile['entry1/instrument/manipulator/say'][0])
+        z = float(infile['entry1/instrument/manipulator/saz'][0])
+        theta = float(infile['entry1/instrument/manipulator/sapolar'][0])
+        phi = float(infile['entry1/instrument/manipulator/saazimuth'][0])
+        tilt = float(infile['entry1/instrument/manipulator/satilt'][0])
 
-        PE = infile['entry1/instrument/analyser/pass_energy'][0]
-        n_sweeps = infile['entry1/instrument/analyser/number_of_iterations'][0]
+        PE = int(infile['entry1/instrument/analyser/pass_energy'][0])
+        n_sweeps = int(infile['entry1/instrument/analyser/number_of_iterations'][0])
         lens_mode = str(infile['entry1/instrument/analyser/lens_mode'][0])[2:-1]
         acq_mode = str(infile['entry1/instrument/analyser/acquisition_mode'][0])[2:-1]
-        DT = infile['entry1/instrument/analyser/time_for_frames'][0] * 1000
+        DT = int(infile['entry1/instrument/analyser/time_for_frames'][0] * 1000)
 
-        hv = infile['entry1/instrument/monochromator/energy'][0]
-        exit_slit = infile['entry1/instrument/monochromator/exit_slit_size'][0] * 1000
+        hv = float(infile['entry1/instrument/monochromator/energy'][0])
+        exit_slit = float(infile['entry1/instrument/monochromator/exit_slit_size'][0] * 1000)
         FE = round(infile['entry1/instrument/monochromator/s2_horizontal_slit_size'][0], 2)
         polarization = str(infile['entry1/instrument/insertion_device/beam/final_polarisation_label'][0])[2:-1]
-        temp = infile['entry1/sample/temperature'][0]
-        pressure = infile['entry1/sample/lc_pressure'][0]
+        temp = float(infile['entry1/sample/temperature'][0])
+        pressure = float(infile['entry1/sample/lc_pressure'][0])
 
         # get scan info
         if infile['entry1/scan_dimensions'][0] == 1:
@@ -985,8 +986,8 @@ class Dataloaderi05(Dataloader):
             temp=temp,
             pressure=pressure,
             hv=hv,
-            # wf=None,
-            # Ef=None,
+            wf=None,
+            Ef=None,
             polarization=polarization,
             PE=PE,
             exit_slit=exit_slit,
