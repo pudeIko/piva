@@ -3,17 +3,15 @@ matplotlib pcolormesh equivalent in pyqtgraph (more or less)
 """
 import os
 import subprocess
-from sys import platform
 
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, QLineEdit, \
     QMainWindow, QDialogButtonBox, QMessageBox, QScrollArea
-from PyQt5.QtGui import QColor, QPalette
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
 
-import piva.working_procedures as wp
+import piva.arpys_wp as wp
 import piva.data_loader as dl
 from piva.cmaps import cmaps, my_cmaps
 
@@ -26,7 +24,6 @@ util_panel_style = """
 QFrame{margin:5px; border:1px solid rgb(150,150,150);}
 QLabel{color: rgb(246, 246, 246); border:1px solid rgb(64, 64, 64);}
 QCheckBox{color: rgb(246, 246, 246);}
-QTabWidget{background-color: rgb(64, 64, 64);}
 """
 SIGNALS = 5
 MY_CMAPS = True
@@ -1016,8 +1013,6 @@ class UtilitiesPanel(QWidget):
         self.setup_gamma()
         self.setup_colorscale()
         self.setup_bin_z()
-        if platform == 'win32':
-            self.set_tabs_color()
 
     def align(self):
 
@@ -1041,8 +1036,6 @@ class UtilitiesPanel(QWidget):
         max_w = 80
         # create elements
         self.image_tab = QWidget()
-        # self.image_tab.setStyleSheet("color: rgb(64, 64, 64)")
-        # self.image_tab.setStyleSheet("QButton{background-color: rgb (64, 64, 64);}")
         itl = QtWidgets.QGridLayout()
         self.image_colors_label = QLabel('Colors')
         self.image_colors_label.setFont(bold_font)
@@ -1054,9 +1047,8 @@ class UtilitiesPanel(QWidget):
         self.image_gamma.setRange(0.05, 10)
         self.image_colorscale_label = QLabel('color scale:')
         self.image_colorscale = QDoubleSpinBox()
-        self.image_colorscale.setRange(0., 10.)
 
-        # self.image_pmesh = QCheckBox('pmesh')
+        self.image_pmesh = QCheckBox('pmesh')
 
         self.image_other_lbl = QLabel('Normalize')
         self.image_other_lbl.setFont(bold_font)
@@ -1114,7 +1106,7 @@ class UtilitiesPanel(QWidget):
         itl.addWidget(self.image_cmaps_label,           row * sd, 1)
         itl.addWidget(self.image_cmaps,                 row * sd, 2)
         itl.addWidget(self.image_invert_colors,         row * sd, 3)
-        # itl.addWidget(self.image_pmesh,                 row * sd, 4)
+        itl.addWidget(self.image_pmesh,                 row * sd, 4)
 
         row = 1
         itl.addWidget(self.image_gamma_label,           row * sd, 1)
@@ -1349,7 +1341,7 @@ class UtilitiesPanel(QWidget):
         self.axes_gamma_x = QSpinBox()
         self.axes_gamma_x.setRange(0, 5000)
 
-        self.axes_transform_kz = QCheckBox('kz')
+        self.axes_transform_kz = QCheckBox('Transform to kz')
 
         # self.axes_conv_hv_lbl = QLabel('h\u03BD (eV):')
         # self.axes_conv_hv = QDoubleSpinBox()
@@ -1383,7 +1375,7 @@ class UtilitiesPanel(QWidget):
 
         self.axes_slit_orient_lbl = QLabel('Slit:')
         self.axes_slit_orient = QComboBox()
-        self.axes_slit_orient.addItems(['horizontal', 'vertical'])
+        self.axes_slit_orient.addItems(['horizontal', 'vertical', 'deflection'])
         self.axes_copy_values = QPushButton('Copy from \'Orientate\'')
         self.axes_do_kspace_conv = QPushButton('Convert')
         self.axes_reset_conv = QPushButton('Reset')
@@ -1623,19 +1615,6 @@ class UtilitiesPanel(QWidget):
         self.file_tab.setLayout(ftl)
         self.tabs.addTab(self.file_tab, 'File')
 
-    def set_tabs_color(self):
-        """
-        Running piva on Windows machine requires to set QWidgets' colors by hand
-        """
-        to_change = ['QPushButton', 'QLineEdit', 'QSpinBox', 'QDoubleSpinBox', 'QComboBox']
-        for i in range(self.tabs.count()):
-            tab_i = self.tabs.widget(i)
-            tab_i.setStyleSheet("QWidget { background-color: rgb(64, 64, 64);}")
-            for wi in tab_i.children():
-                wi_name = wi.metaObject().className()
-                if wi_name in to_change:
-                    wi.setStyleSheet("QWidget {background-color: rgb(255, 255, 255);}")
-
     def setup_cmaps(self):
 
         cm = self.image_cmaps
@@ -1795,13 +1774,15 @@ class UtilitiesPanel(QWidget):
                     entries[str(row)]['value'] = QLabel(str(dataset[key]))
                     entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
             elif key == 'pressure':
+                entries[str(row)] = {}
+                entries[str(row)]['name'] = QLabel(key)
                 if dataset[key] is None:
-                    continue
+                    entries[str(row)]['value'] = QLabel('None')
+                    entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
                 else:
-                    entries[str(row)] = {}
-                    entries[str(row)]['name'] = QLabel(key)
                     entries[str(row)]['value'] = QLabel('{:.4e}'.format((dataset[key])))
                     entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+
             else:
                 entries[str(row)] = {}
                 entries[str(row)]['name'] = QLabel(key)
@@ -2268,4 +2249,16 @@ class TracedVariable(QtCore.QObject):
         else:
             ind = np.abs(self.allowed_values - value).argmin()
             return self.allowed_values[ind]
+
+
+class ThreadClass(QtCore.QThread):
+    any_signal = QtCore.pyqtSignal(int)
+
+    def __init__(self, parent=None, index=0):
+        super(ThreadClass, self).__init__(parent)
+        self.index = index
+        self.is_running = True
+
+    def stop(self):
+        self.quit()
 

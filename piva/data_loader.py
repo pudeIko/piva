@@ -597,8 +597,8 @@ class DataloaderSIS(Dataloader):
 
 class DataloaderBloch(Dataloader):
     """
-    Object that allows loading and saving of ARPES data from the SIS
-    beamline at PSI which is in hd5 format.
+    Object that allows loading and saving of ARPES data from the BLOCH
+    beamline at maxIV which is in hd5 format.
     """
     name = 'Bloch'
     # Number of cuts that need to be present to assume the data as a map
@@ -625,7 +625,7 @@ class DataloaderBloch(Dataloader):
         if filename.endswith('zip'):
             filedata = self.load_zip(filename, metadata=metadata)
         elif filename.endswith('pxt'):
-            filedata = self.load_pxt()
+            filedata = self.load_pxt(filename, metadata=metadata)
         else:
             raise NotImplementedError('File suffix not supported.')
 
@@ -666,7 +666,7 @@ class DataloaderBloch(Dataloader):
                  ('A', 'phi', float),
                  ('P', 'theta', float),
                  ('T', 'tilt', float)]
-
+        # print('elo')
         # Load the zipfile
         with zipfile.ZipFile(filename, 'r') as z:
             # Get the created filename from the viewer
@@ -735,6 +735,79 @@ class DataloaderBloch(Dataloader):
             if not (key[0] == '_'):
                 res.__setattr__(key, M2[key])
         return res
+
+    def load_pxt(self, filename, metadata=False):
+        """ Load and store the full h5 file and extract relevant information. """
+        pxt = igorpy.load(filename)[0]
+        data = pxt.data.T
+        shape = data.shape
+        meta = pxt.notes.decode('ASCII').split('\r')
+        keys1 = [('Excitation Energy', 'hv', float),
+                 ('Acquisition Mode', 'acq_mode', str),
+                 ('Pass Energy', 'PE', int),
+                 ('Lens Mode', 'lens_mode', str),
+                 ('Step Time', 'DT', int),
+                 ('Number of Sweeps', 'n_sweeps', int),
+                 ('ThetaX', 'thetaX', float),
+                 ('ThetaY', 'thetaY', float),
+                 ('A', 'azimuth', float), # phi
+                 ('P', 'polar', float), # theta
+                 ('T', 'tilt', float),
+                 ('X', 'x', float),
+                 ('Y', 'y', float),
+                 ('Z', 'z', float)]
+        meta_namespace = vars(self.read_pxt_ibw_metadata(keys1, meta))
+
+        if len(shape) == 2:
+            x = 1
+            y = pxt.axis[1].size
+            N_E = pxt.axis[0].size
+            # Make data 3D
+            data = data.reshape((1, y, N_E))
+            # Extract the limits
+            xlims = [1, 1]
+            xscale = start_step_n(*xlims, x)
+            yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
+            energies = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
+        else:
+            print('Only cuts of .pxt files are working.')
+            return
+
+        res = Namespace(
+            data=data,
+            xscale=xscale,
+            yscale=yscale,
+            zscale=energies
+        )
+
+        for key in meta_namespace.keys():
+            if not (key[0] == '_'):
+                res.__setattr__(key, meta_namespace[key])
+        return res
+
+    @staticmethod
+    def read_pxt_ibw_metadata(keys, meta):
+        metadata = Namespace()
+        for line in meta:
+            # Split at 'equals' sign
+            tokens = line.split('=')
+            for key, name, dtype in keys:
+                if tokens[0] == key:
+                    # Split off whitespace or garbage at the end
+                    value = tokens[1].split()[0]
+                    # And cast to right type
+                    value = dtype(value)
+                    metadata.__setattr__(name, value)
+                elif tokens[0] == 'Mode':
+                    if tokens[1].split()[0] == 'ARPES' and tokens[1].split()[1] == 'Mapping':
+                        metadata.__setattr__('scan_type', 'DA scan')
+                elif tokens[0] == 'Thetay_Low':
+                    metadata.__setattr__('scan_start', float(tokens[1].split()[0]))
+                elif tokens[0] == 'Thetay_High':
+                    metadata.__setattr__('scan_stop', float(tokens[1].split()[0]))
+                elif tokens[0] == 'Thetay_StepSize':
+                    metadata.__setattr__('scan_step', float(tokens[1].split()[0]))
+        return metadata
 
     @staticmethod
     def read_viewer(viewer):
@@ -859,25 +932,25 @@ class Dataloaderi05(Dataloader):
                 xscale = np.arange(start, stop + 0.5 * step, step)
 
         # read metadata
-        x = float(infile['entry1/instrument/manipulator/sax'][0])
-        y = float(infile['entry1/instrument/manipulator/say'][0])
-        z = float(infile['entry1/instrument/manipulator/saz'][0])
-        theta = float(infile['entry1/instrument/manipulator/sapolar'][0])
-        phi = float(infile['entry1/instrument/manipulator/saazimuth'][0])
-        tilt = float(infile['entry1/instrument/manipulator/satilt'][0])
+        x = infile['entry1/instrument/manipulator/sax'][0]
+        y = infile['entry1/instrument/manipulator/say'][0]
+        z = infile['entry1/instrument/manipulator/saz'][0]
+        theta = infile['entry1/instrument/manipulator/sapolar'][0]
+        phi = infile['entry1/instrument/manipulator/saazimuth'][0]
+        tilt = infile['entry1/instrument/manipulator/satilt'][0]
 
-        PE = int(infile['entry1/instrument/analyser/pass_energy'][0])
-        n_sweeps = int(infile['entry1/instrument/analyser/number_of_iterations'][0])
+        PE = infile['entry1/instrument/analyser/pass_energy'][0]
+        n_sweeps = infile['entry1/instrument/analyser/number_of_iterations'][0]
         lens_mode = str(infile['entry1/instrument/analyser/lens_mode'][0])[2:-1]
         acq_mode = str(infile['entry1/instrument/analyser/acquisition_mode'][0])[2:-1]
-        DT = int(infile['entry1/instrument/analyser/time_for_frames'][0] * 1000)
+        DT = infile['entry1/instrument/analyser/time_for_frames'][0] * 1000
 
-        hv = float(infile['entry1/instrument/monochromator/energy'][0])
-        exit_slit = float(infile['entry1/instrument/monochromator/exit_slit_size'][0] * 1000)
+        hv = infile['entry1/instrument/monochromator/energy'][0]
+        exit_slit = infile['entry1/instrument/monochromator/exit_slit_size'][0] * 1000
         FE = round(infile['entry1/instrument/monochromator/s2_horizontal_slit_size'][0], 2)
         polarization = str(infile['entry1/instrument/insertion_device/beam/final_polarisation_label'][0])[2:-1]
-        temp = float(infile['entry1/sample/temperature'][0])
-        pressure = float(infile['entry1/sample/lc_pressure'][0])
+        temp = infile['entry1/sample/temperature'][0]
+        pressure = infile['entry1/sample/lc_pressure'][0]
 
         # get scan info
         if infile['entry1/scan_dimensions'][0] == 1:
@@ -912,8 +985,8 @@ class Dataloaderi05(Dataloader):
             temp=temp,
             pressure=pressure,
             hv=hv,
-            wf=None,
-            Ef=None,
+            # wf=None,
+            # Ef=None,
             polarization=polarization,
             PE=PE,
             exit_slit=exit_slit,
