@@ -625,7 +625,7 @@ class DataloaderBloch(Dataloader):
         if filename.endswith('zip'):
             filedata = self.load_zip(filename, metadata=metadata)
         elif filename.endswith('pxt'):
-            filedata = self.load_pxt()
+            filedata = self.load_pxt(filename, metadata=metadata)
         else:
             raise NotImplementedError('File suffix not supported.')
 
@@ -755,6 +755,80 @@ class DataloaderBloch(Dataloader):
             tokens = line.decode('utf-8').split('=')
             for key, name, dtype in keys:
                 # print(tokens[0])
+                if tokens[0] == key:
+                    # Split off whitespace or garbage at the end
+                    value = tokens[1].split()[0]
+                    # And cast to right type
+                    value = dtype(value)
+                    metadata.__setattr__(name, value)
+                elif tokens[0] == 'Mode':
+                    if tokens[1].split()[0] == 'ARPES' and tokens[1].split()[1] == 'Mapping':
+                        metadata.__setattr__('scan_type', 'DA scan')
+                elif tokens[0] == 'Thetay_Low':
+                    metadata.__setattr__('scan_start', float(tokens[1].split()[0]))
+                elif tokens[0] == 'Thetay_High':
+                    metadata.__setattr__('scan_stop', float(tokens[1].split()[0]))
+                elif tokens[0] == 'Thetay_StepSize':
+                    metadata.__setattr__('scan_step', float(tokens[1].split()[0]))
+        return metadata
+
+
+    def load_pxt(self, filename, metadata=False):
+        """ Load and store the full h5 file and extract relevant information. """
+        pxt = igorpy.load(filename)[0]
+        data = pxt.data.T
+        shape = data.shape
+        meta = pxt.notes.decode('ASCII').split('\r')
+        keys1 = [('Excitation Energy', 'hv', float),
+                 ('Acquisition Mode', 'acq_mode', str),
+                 ('Pass Energy', 'PE', int),
+                 ('Lens Mode', 'lens_mode', str),
+                 ('Step Time', 'DT', int),
+                 ('Number of Sweeps', 'n_sweeps', int),
+                 ('ThetaX', 'thetaX', float),
+                 ('ThetaY', 'thetaY', float),
+                 ('A', 'azimuth', float), # phi
+                 ('P', 'polar', float), # theta
+                 ('T', 'tilt', float),
+                 ('X', 'x', float),
+                 ('Y', 'y', float),
+                 ('Z', 'z', float)]
+        meta_namespace = vars(self.read_pxt_ibw_metadata(keys1, meta))
+
+        if len(shape) == 2:
+            x = 1
+            y = pxt.axis[1].size
+            N_E = pxt.axis[0].size
+            # Make data 3D
+            data = data.reshape((1, y, N_E))
+            # Extract the limits
+            xlims = [1, 1]
+            xscale = start_step_n(*xlims, x)
+            yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
+            energies = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
+        else:
+            print('Only cuts of .pxt files are working.')
+            return
+
+        res = Namespace(
+            data=data,
+            xscale=xscale,
+            yscale=yscale,
+            zscale=energies
+        )
+
+        for key in meta_namespace.keys():
+            if not (key[0] == '_'):
+                res.__setattr__(key, meta_namespace[key])
+        return res
+
+    @staticmethod
+    def read_pxt_ibw_metadata(keys, meta):
+        metadata = Namespace()
+        for line in meta:
+            # Split at 'equals' sign
+            tokens = line.split('=')
+            for key, name, dtype in keys:
                 if tokens[0] == key:
                     # Split off whitespace or garbage at the end
                     value = tokens[1].split()[0]
