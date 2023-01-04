@@ -1,9 +1,9 @@
 Installation
 ============
 
-The installation of ``piva`` has been tested on Linux.
+The installation of ``piva`` has been tested on Linux and macOS.
 
-he easiest way to install the package is to use 
+The easiest way to install the package is to use 
 `pip <https://pip.pypa.io/en/stable/>`_. Just type the following on a command 
 line::
 
