@@ -1,5 +1,3 @@
-# moje funkcje do obróbki danych, a przynajmniej taki jest zamysł
-
 import math
 from itertools import groupby
 
@@ -24,7 +22,7 @@ import piva.data_loader as dl
 import piva.my_constants as const
 
 # +-------------------------------------+ #
-# | Data fitting functions and routines | # =========================
+# | Data fitting functions and routines | # ===================================
 # +-------------------------------------+ #
 
 
@@ -39,20 +37,47 @@ def gaussian(x, a=1, mu=0, sigma=1):
 
     **Parameters**
 
-    =====  =====================================================================
+    =====  ====================================================================
     x      array; variable at which to evaluate f(x)
     a      float; amplitude (maximum value of curve)
     mu     float; mean of curve (location of maximum)
     sigma  float; standard deviation (`width` of the curve)
-    =====  =====================================================================
+    =====  ====================================================================
 
     **Returns**
 
-    ===  =======================================================================
+    ===  ======================================================================
     res  array containing the value of the Gaussian at every point of input x
-    ===  =======================================================================
+    ===  ======================================================================
     """
     return a * np.exp(-0.5 * (x - mu) ** 2 / sigma ** 2)
+
+
+def two_gaussians(x, a0=1, mu0=0, sigma0=1, a1=1, mu1=0, sigma1=1):
+    """
+    Implement a Gaussian bell curve f(x) given by the expression::
+
+                                         2
+                          1    / (x-mu) \
+        f(x) = a * exp( - - * ( -------  ) )
+                          2    \ sigma  /
+
+    **Parameters**
+
+    =====  ====================================================================
+    x      array; variable at which to evaluate f(x)
+    a      float; amplitude (maximum value of curve)
+    mu     float; mean of curve (location of maximum)
+    sigma  float; standard deviation (`width` of the curve)
+    =====  ====================================================================
+
+    **Returns**
+
+    ===  ======================================================================
+    res  array containing the value of the Gaussian at every point of input x
+    ===  ======================================================================
+    """
+    return gaussian(x, a0, mu0, sigma0) + gaussian(x, a1, mu1, sigma1)
 
 
 def lorentzian(x, a0, mu, gamma, resol=0):
@@ -83,10 +108,12 @@ def dynes_formula(omega, n0, gamma, delta):
 def asym_lorentzian(x, a0, mu, gamma, alpha=0, resol=0):
     if resol == 0:
         gamma *= 2 / (1 + np.exp(alpha * (x - mu)))
-        return a0 * (1 / (2 * np.pi)) * gamma / ((x - mu) ** 2 + (.5 * gamma) ** 2)
+        return a0 * (1 / (2 * np.pi)) * gamma / \
+               ((x - mu) ** 2 + (.5 * gamma) ** 2)
     else:
         gamma *= 2 / (1 + np.exp(alpha * (x - mu)))
-        y = a0 * (1 / (2 * np.pi)) * gamma / ((x - mu) ** 2 + (.5 * gamma) ** 2)
+        y = a0 * (1 / (2 * np.pi)) * gamma / \
+            ((x - mu) ** 2 + (.5 * gamma) ** 2)
         return ndimage.gaussian_filter(y, sigma=resol)
 
 
@@ -95,12 +122,15 @@ def two_lorentzians(x, a0, mu0, gamma0, a1, mu1, gamma1):
 
 
 def three_lorentzians(x, a0, mu0, gamma0, a1, mu1, gamma1, a2, mu2, gamma2):
-    return lorentzian(x, a0, mu0, gamma0) + lorentzian(x, a1, mu1, gamma1) + lorentzian(x, a2, mu2, gamma2)
+    return lorentzian(x, a0, mu0, gamma0) + lorentzian(x, a1, mu1, gamma1) + \
+           lorentzian(x, a2, mu2, gamma2)
 
 
 def four_lorentzians(x, a, mu, gamma):
-    return lorentzian(x, a[0], mu[0], gamma[0]) + lorentzian(x, a[1], mu[1], gamma[1]) + \
-           lorentzian(x, a[2], mu[2], gamma[2]) + lorentzian(x, a[3], mu[3], gamma[3])
+    return lorentzian(x, a[0], mu[0], gamma[0]) + \
+           lorentzian(x, a[1], mu[1], gamma[1]) + \
+           lorentzian(x, a[2], mu[2], gamma[2]) + \
+           lorentzian(x, a[3], mu[3], gamma[3])
 
 
 def lorentzian_dublet(x, *p, delta=1, line='f'):
@@ -121,10 +151,12 @@ def lorentzian_dublet(x, *p, delta=1, line='f'):
     else:
         coeff = 1
     p = p[0]
-    return lorentzian(x, p[0], p[1], p[2]) + lorentzian(x, p[0] * coeff, p[1] - delta, p[2])
+    return lorentzian(x, p[0], p[1], p[2]) + \
+           lorentzian(x, p[0] * coeff, p[1] - delta, p[2])
 
 
-def fit_n_dublets(data, x, a0, mu, gamma, delta, constr=None, fit_delta=False, line='f'):
+def fit_n_dublets(data, x, a0, mu, gamma, delta, constr=None, fit_delta=False,
+                  line='d'):
     pars = []
     pcovs = []
     errs = []
@@ -137,7 +169,7 @@ def fit_n_dublets(data, x, a0, mu, gamma, delta, constr=None, fit_delta=False, l
 
     if fit_delta:
         def fit_func(x, a0, mu, gamma, delta):
-            return lorentzian_dublet(x, a0, mu, gamma, delta)
+            return lorentzian_dublet(x, a0, mu, gamma, delta, line=line)
     else:
         def fit_func(x, *pars):
             n = len(pars) // 3
@@ -154,6 +186,7 @@ def fit_n_dublets(data, x, a0, mu, gamma, delta, constr=None, fit_delta=False, l
         popt, pcov = curve_fit(fit_func, x, data, p0=pi, bounds=constr)
     if fit_delta:
         print('not working yet')
+        return
     else:
         fitted_profiles = lorentzian_dublet(x, popt[0:3], delta=delta)
         pars.append(popt[0:3])
@@ -182,7 +215,7 @@ def fit_n_dublets(data, x, a0, mu, gamma, delta, constr=None, fit_delta=False, l
             dgammas.append(errs[i][2])
             mus2.append(pars[i][1]-delta)
             as0.append(pars[i][0])
-        d = {'a0': normalize(np.array(as0)),
+        d = {'a0': np.array(as0),
              'mu_0, eV': mus,
              # 'dmu_0, eV': dmus,
              # 'mu_1, eV': mus2,
@@ -218,7 +251,8 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
 
     # Sanity check: Do we actually have data to process here?
     if not (x.any() and y.any()):
-        print("specs.shirley_calculate: One of the arrays x or y is empty. Returning zero background.")
+        print("specs.shirley_calculate: One of the arrays x or y is empty. "
+              "Returning zero background.")
         return np.zeros(x.shape)
 
     # Next ensure the energy values are *decreasing* in the array,
@@ -236,7 +270,8 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
     # It's possible that maxidx will be 0 or -1. If that is the case,
     # we can't use this algorithm, we return a zero background.
     if maxidx == 0 or maxidx >= len(y) - 1:
-        print("specs.shirley_calculate: Boundaries too high for algorithm: returning a zero background.")
+        print("specs.shirley_calculate: Boundaries too high for algorithm: "
+              "returning a zero background.")
         return np.zeros(x.shape)
 
     # Locate the minima either side of maxidx.
@@ -268,8 +303,8 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
         for i in range(lmidx, rmidx):
             ysum = 0.0
             for j in range(i, imax):
-                ysum += (x[j] - x[j + 1]) * 0.5 * (y[j] +
-                                                   y[j + 1] - 2 * yr - B[j] - B[j + 1])
+                ysum += (x[j] - x[j + 1]) * \
+                        0.5 * (y[j] + y[j + 1] - 2 * yr - B[j] - B[j + 1])
             Bnew[i] = k * ysum
         # If Bnew is close to B, exit.
         if norm(Bnew - B) < tol:
@@ -280,7 +315,8 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
         it += 1
 
     if it >= maxit:
-        print("specs.shirley_calculate: Max iterations exceeded before convergence.")
+        print("specs.shirley_calculate: "
+              "Max iterations exceeded before convergence.")
     if is_reversed:
         return (yr + B)[::-1]
     else:
@@ -322,8 +358,10 @@ def fit_bgr(bgr_poly_order, xdata, ydata, fit_range, peak_range):
     return [fit_x, bgr_fit, bgr_peak, coefs_bgr]
 
 
-def fit_multiple_with_bgr(fun, bgr_poly_order, data, k_axis, erg_axis, data_range, k_limits, peak_limits, step=None,
-                          n=5, smoothing=None,  plotting=False, y_offset=5, x_offset=0, p0=None):
+def fit_multiple_with_bgr(fun, bgr_poly_order, data, k_axis, erg_axis,
+                          data_range, k_limits, peak_limits, step=None,
+                          n=5, smoothing=None,  plotting=False, y_offset=5,
+                          x_offset=0, p0=None):
     """
         Function for fitting stack of MDCs within a given cut, with polynomial
         background of given order. For description check also 'fit_multiple' and
@@ -464,8 +502,8 @@ def fit_multiple_with_bgr(fun, bgr_poly_order, data, k_axis, erg_axis, data_rang
     return [cuts_to_fit, pars, errs, pcovs, df]
 
 
-def fit_multiple(fun, data, xdata, data_range, upper_limits, lower_limits, step=100, n=5, plotting=False, y_offset=500,
-                 x_offset=0):
+def fit_multiple(fun, data, xdata, data_range, upper_limits, lower_limits,
+                 step=100, n=5, plotting=False, y_offset=500, x_offset=0):
     """ Function for fitting stack of MDCs within a given cut. With additional option for plotting.
 
         **Parameters**
@@ -554,7 +592,8 @@ def fit_multiple(fun, data, xdata, data_range, upper_limits, lower_limits, step=
     return [cuts_to_fit, pars, errs, pcovs]
 
 
-def lorentzian_with_poly_bgr(peak_fun, bgr_poly_order, xdata, ydata, fit_range, peak_range):
+def lorentzian_with_poly_bgr(peak_fun, bgr_poly_order, xdata, ydata, fit_range,
+                             peak_range):
     """ Function for fitting a curve with polynomial background of given order.
 
         **Parameters**
@@ -825,7 +864,7 @@ def set_fit_fun(p00, fit_alpha, fit_resol):
 
 
 # +--------------------------------------------------+ #
-# | Resolution fitting functions and PGM calibration | # =========================
+# | Resolution fitting functions and PGM calibration | # ======================
 # +--------------------------------------------------+ #
 
 def step_function_core(x, step_x=0, flip=False):
@@ -932,14 +971,15 @@ def fermi_fit_func(E, E_F, sigma, a0, b0, a1, b1, T=5):
     return y
 
 
-def fit_fermi_dirac(energies, edc, e_0, T=5, sigma0=10, a0=0, b0=-0.1, a1=0, b1=-0.1):
+def fit_fermi_dirac(energies, edc, e_0, T=5, sigma0=10, a0=0, b0=-0.1, a1=0,
+                    b1=-0.1):
     """ Try fitting a Fermi Dirac distribution convoluted by a Gaussian
     (simulating the instrument resolution) plus a linear component on the
     side with E<E_F to a given energy distribution curve.
 
     **Parameters**
 
-    ========  ==================================================================
+    ========  =================================================================
     energies  1D array of float; energy values.
     edc       1D array of float; corresponding intensity counts.
     e_0       float; starting guess for the Fermi energy. The fitting
@@ -949,18 +989,18 @@ def fit_fermi_dirac(energies, edc, e_0, T=5, sigma0=10, a0=0, b0=-0.1, a1=0, b1=
               Gaussian in units of pixels (i.e. the step size in *energies*).
     a0        float; starting guess for the slope of the linear component.
     b0        float; starting guess for the linear offset.
-    ========  ==================================================================
+    ========  =================================================================
 
     **Returns**
 
-    ========  ==================================================================
+    ========  =================================================================
     p         list of float; contains the fit results for [E_F, sigma, a, b].
                 NOTE: sigma in convoluted gaussian is converted to FWHM (since
                 that corresponds to the actual resolution).
     res_func  callable; the fit function with the optimized parameters. With
               this you can just do res_func(E) to get the value of the
               Fermi-Dirac distribution at energy E.
-    ========  ==================================================================
+    ========  =================================================================
     """
     # Normalize the EDC to interval [0, 1]
     # edc = normalize(edc)
@@ -977,8 +1017,10 @@ def fit_fermi_dirac(energies, edc, e_0, T=5, sigma0=10, a0=0, b0=-0.1, a1=0, b1=
 
     # Carry out the fit
     p, cov = curve_fit(fit_func, energies, edc, p0=p0, bounds=(lower, upper))
-    resolution = 2 * np.sqrt(2 * np.log(2)) * p[1] * np.abs(energies[1] - energies[0])
-    resolution_err = 2 * np.sqrt(2 * np.log(2)) * np.sqrt(cov[1][1]) * np.abs(energies[1] - energies[0])
+    resolution = 2 * np.sqrt(2 * np.log(2)) * p[1] * \
+                 np.abs(energies[1] - energies[0])
+    resolution_err = 2 * np.sqrt(2 * np.log(2)) * np.sqrt(cov[1][1]) * \
+                     np.abs(energies[1] - energies[0])
 
     res_func = lambda x: fit_func(x, *p)
     return p, res_func, cov, resolution, resolution_err
@@ -999,7 +1041,8 @@ def fermi_dirac(E, mu=0, T=4.2):
     return res
 
 
-def fit_binned(data, energies, angles, nbinned=10, T=5, units=1000, excluded=[], plot=False, fname=None):
+def fit_binned(data, energies, angles, nbinned=10, T=5, units=1000,
+               excluded=[], plot=False, fname=None):
     """
     Bin EDCs from 'binned' channels, fit FD to each bin and fit constant to obtained resolution
     :param data:            np.array; intensities
@@ -1112,7 +1155,8 @@ def fit_constant(x, y):
     return p, cov
 
 
-def PGM_calibration(hv, error_offset, dtheta, dbeta, cff=2.25, k=1, lines_per_mm=300):
+def PGM_calibration(hv, error_offset, dtheta, dbeta, cff=2.25, k=1,
+                    lines_per_mm=300):
     """
     Function for PGM motors calibration. Based on:
         Absolute Energy Calibration for Plane Grating Monochromators, Nucl. Instrum. Meth. A 467-468, 482-484 (2001)
@@ -1148,7 +1192,8 @@ def PGM_calibration(hv, error_offset, dtheta, dbeta, cff=2.25, k=1, lines_per_mm
     return const.convert_eV_nm(actualEnergy) - hv + error_offset
 
 
-def fit_PGM_calibration(data, hv, error_offset=-0.06, dtheta=0.001, dbeta=-0.001, cff=2.25, k=1, lines_per_mm=300):
+def fit_PGM_calibration(data, hv, error_offset=-0.06, dtheta=0.001,
+                        dbeta=-0.001, cff=2.25, k=1, lines_per_mm=300):
     # Initial guess and bounds for parameters
     p0 = [error_offset, dtheta, dbeta]
     lower = [-100, -1, -1]
@@ -1164,7 +1209,7 @@ def fit_PGM_calibration(data, hv, error_offset=-0.06, dtheta=0.001, dbeta=-0.001
 
 
 # +-----------------+ #
-# | Gap analysis    | # ==============================================================
+# | Gap analysis    | # =======================================================
 # +-----------------+ #
 
 
@@ -1249,7 +1294,7 @@ def symmetrize_edc_around_Ef(data, energies):
 
 
 # +--------------+ #
-# | Utilities    | # ==============================================================
+# | Utilities    | # ==========================================================
 # +--------------+ #
 
 
@@ -1526,7 +1571,8 @@ def sum_XPS(data, crop=None, plot=False):
     return spectrum, energy
 
 
-def gradient_fill(x, y, fill_color=None, ax=None, origin='upper', lower_curve=None, ymin=None, upper_curve=None,
+def gradient_fill(x, y, fill_color=None, ax=None, origin='upper',
+                  lower_curve=None, ymin=None, upper_curve=None,
                   **kwargs):
     """
     Plot a line with a linear alpha gradient filled beneath it.
@@ -1589,7 +1635,8 @@ def gradient_fill(x, y, fill_color=None, ax=None, origin='upper', lower_curve=No
     return line, im
 
 
-def scan_whole_FS_for_gaps(data1, data2, erg1, erg2, e_range=None, gap_cutoff=10, bin_edcs=False, n_bin=3):
+def scan_whole_FS_for_gaps(data1, data2, erg1, erg2, e_range=None,
+                           gap_cutoff=10, bin_edcs=False, n_bin=3):
 
     data1 = normalize(data1)
     data2 = normalize(data2)
@@ -1633,7 +1680,7 @@ def scan_whole_FS_for_gaps(data1, data2, erg1, erg2, e_range=None, gap_cutoff=10
 
 
 # +-----------------------+ #
-# | Plotting functions    | # ==============================================================
+# | Plotting functions    | # =================================================
 # +-----------------------+ #
 
 
@@ -1653,7 +1700,8 @@ def set_mpl_rcparams(fontsize=9, color='b1b6d5', print_params=False):
         print(mpl.rcParams.keys())
 
 
-def plot_n_bandmaps(data, momentum, energies, names, e_cutoff=None, gamma=1, fsize=12):
+def plot_n_bandmaps(data, momentum, energies, names, e_cutoff=None, gamma=1,
+                    fsize=12):
 
     n = len(data)
     if n < 4:
@@ -1722,7 +1770,8 @@ def plot_n_bandmaps(data, momentum, energies, names, e_cutoff=None, gamma=1, fsi
                 idx += 1
 
 
-def plot_n_const_E_maps(data, kx, ky, energies, names, E=0, bin=3, e_cutoff=None, gamma=1, fsize=12, points=None):
+def plot_n_const_E_maps(data, kx, ky, energies, names, E=0, bin=3,
+                        e_cutoff=None, gamma=1, fsize=12, points=None):
 
     n = len(data)
     if n < 4:
@@ -1800,7 +1849,8 @@ def plot_n_const_E_maps(data, kx, ky, energies, names, E=0, bin=3, e_cutoff=None
                 idx += 1
 
 
-def plot_kz_in_kspace(data, ang, hvs, work_func=4.5, E0=0, trans_kz=False, gamma=1, plot=False, **kwargs):
+def plot_kz_in_kspace(data, ang, hvs, work_func=4.5, E0=0, trans_kz=False,
+                      gamma=1, plot=False, **kwargs):
 
     data, ang, hvs = np.array(data), np.array(ang), np.array(hvs)
     kx_init = []
@@ -1851,7 +1901,7 @@ def plot_kz_in_kspace(data, ang, hvs, work_func=4.5, E0=0, trans_kz=False, gamma
 
 
 # +---------------------+ #
-# | Image processing    | # ==============================================================
+# | Image processing    | # ===================================================
 # +---------------------+ #
 
 def find_gamma(FS, x0, y0, method='Nelder-Mead', print_output=False):
@@ -1958,12 +2008,12 @@ def imgs_corr(img1, img2):
     return num / np.sqrt(den1 * den2)
 
 
-def curvature_1d(data, a0=0.0005, nb=None, rl=None, xaxis=None):
+def curvature_1d(data, dx, a0=0.0005, nb=None, rl=None, xaxis=None):
 
     if (nb is not None) and (rl is not None):
         data = smooth(data, n_box=nb, recursion_level=rl)
-    df = np.gradient(data)
-    d2f = np.gradient(df)
+    df = np.gradient(data, dx)
+    d2f = np.gradient(df, dx)
     # df = df
     # d2f = d2f
 
@@ -1981,11 +2031,11 @@ def curvature_2d(data, dx, dy, a0=100, nb=None, rl=None, eaxis=None):
     if (nb is not None) and (rl is not None):
         data = smooth_2d(data, n_box=nb, recursion_level=rl)
 
-    dfdx = np.gradient(data, axis=0)
-    dfdy = np.gradient(data, axis=1)
-    d2fdx2 = np.gradient(dfdx, axis=0)
-    d2fdy2 = np.gradient(dfdy, axis=1)
-    d2fdxdy = np.gradient(dfdx, axis=1)
+    dfdx = np.gradient(data, dx, axis=0)
+    dfdy = np.gradient(data, dy, axis=1)
+    d2fdx2 = np.gradient(dfdx, dx, axis=0)
+    d2fdy2 = np.gradient(dfdy, dy, axis=1)
+    d2fdxdy = np.gradient(dfdx, dy, axis=1)
 
     cx = a0 * (dx ** 2)
     cy = a0 * (dy ** 2)
@@ -2162,7 +2212,7 @@ def shape_area(x, y):
 
 
 # +-----------------------+ #
-# | K-space conversion    | # ==============================================================
+# | K-space conversion    | # =================================================
 # +-----------------------+ #
 
 
@@ -2247,20 +2297,28 @@ def angle2kspace(scan_ax, anal_ax, d_scan_ax=0, d_anal_ax=0,
         return kx, ky
 
 
-def hv2kz(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi, energy=np.array([0]), **kwargs):
+def hv2kz(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi,
+          energy=np.array([0]), **kwargs):
 
     ang, hvs, energy = np.array(ang), np.array(hvs), np.array(energy)
     ky = []
     for hv in hvs:
-        kyi, _ = angle2kspace(np.array([1]), ang, hv=hv, energy=energy, **kwargs)
+        kyi, _ = angle2kspace(np.array([1]), ang, hv=hv, energy=energy,
+                              **kwargs)
         ky.append(kyi)
+
+    if 'd_anal_ax' in kwargs.keys():
+        anal_ax_off = kwargs['d_anal_ax']
+    else:
+        anal_ax_off = 0
 
     ky = np.array(ky)
     kz = np.zeros_like(ky)
     me = const.m_e / const.eV / 1e20
     hbar = const.hbar_eV
     k0 = np.sqrt(2 * me) / hbar
-    k0 *= (c / np.pi)
+    k0 *= (c / (2 * np.pi))
+    ang = ang - anal_ax_off
 
     if trans_kz:
         for kz_i in range(kz.shape[0]):

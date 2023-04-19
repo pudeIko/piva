@@ -1101,9 +1101,9 @@ class UtilitiesPanel(QWidget):
         self.image_curvature_method.addItems(curvature_methods)
         self.image_curvature_a_lbl = QLabel('a:')
         self.image_curvature_a = QDoubleSpinBox()
-        self.image_curvature_a.setRange(0, 1e10)
-        self.image_curvature_a.setSingleStep(0.0001)
-        self.image_curvature_a.setValue(100.)
+        self.image_curvature_a.setRange(-10, 10)
+        self.image_curvature_a.setSingleStep(0.1)
+        self.image_curvature_a.setValue(10.)
         self.image_curvature_a.setMaximumWidth(max_w)
         self.image_curvature_button = QPushButton('Do curvature')
 
@@ -1681,16 +1681,17 @@ class UtilitiesPanel(QWidget):
         self.oi_scanned_lbl = QLabel('Scanned (-> +)')
         self.oi_scanned_lbl.setFont(bold_font)
 
-        entries = [['SIS (SLS, SIStem)',    'phi -> -',     'theta -> +',   'tilt -> -'],
-                   ['SIS (SLS, SES)',       'phi -> +',     'theta -> -',   'tilt -> -'],
-                   ['Bloch (MaxIV)',        'azimuth -> +', 'tilt -> -',    'polar -> -'],
-                   ['CASSIOPEE (SOLEIL)',   '-',            '-',            '-'],
-                   ['I05 (Diamond)',        '-',            '-',            '-'],
-                   ['UARPES (SOLARIS)',     '-',            '-',            '-'],
-                   ['APE (Elettra)',        '-',            '-',            '-'],
-                   ['ADDRES (SLS)',         '-',            '-',            '-'],
-                   ['-',                    '-',            '-',            '-'],
-                   ['-',                    '-',            '-',            '-']]
+        entries = [
+            ['SIS (SLS, SIStem)',  'phi -> -',     'theta -> +', 'tilt -> -'],
+            ['SIS (SLS, SES)',     'phi -> +',     'theta -> -', 'tilt -> -'],
+            ['Bloch (MaxIV)',      'azimuth -> +', 'tilt -> -',  'polar -> -'],
+            ['CASSIOPEE (SOLEIL)', '-',            '-',          '-'],
+            ['I05 (Diamond)',      '-',            '-',          '-'],
+            ['URANOS (SOLARIS)',   '-',            'R3 -> ?',    'R1 -> -'],
+            ['APE (Elettra)',      '-',            '-',          '-'],
+            ['ADDRES (SLS)',       '-',            '-',          '-'],
+            ['-',                  '-',            '-',          '-'],
+            ['-',                  '-',            '-',          '-']]
         labels = {}
 
         sd = 1

@@ -687,12 +687,15 @@ class MainWindow2D(QtWidgets.QMainWindow):
         new_energy_axis = self.data_handler.axes[1] + Ef - hv + wf
         self.new_energy_axis = new_energy_axis
         new_range = [new_energy_axis[0], new_energy_axis[-1]]
-        self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_range)
-        self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_range)
+        self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(
+            *new_range)
+        self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(
+            *new_range)
 
         # update energy labels
         erg_idx = self.main_plot.crosshair.vpos.get_value()
-        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.new_energy_axis[erg_idx]))
+        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+            self.new_energy_axis[erg_idx]))
 
     def convert_to_kspace(self):
         scan_ax = np.array([0])
@@ -756,6 +759,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.curvature = not self.curvature
         if self.curvature:
             a = self.util_panel.image_curvature_a.value()
+            a = 10 ** a
             if self.k_axis is None:
                 dx = wp.get_step(self.data_handler.axes[0])
             else:
@@ -767,13 +771,16 @@ class MainWindow2D(QtWidgets.QMainWindow):
             self.smooth_data = deepcopy(self.image_data)
             method = self.util_panel.image_curvature_method.currentText()
             if method == '2D':
-                self.image_data = wp.curvature_2d(self.image_data, dx, dy, a0=a)
+                self.image_data = wp.curvature_2d(self.image_data, dx, dy,
+                                                  a0=a)
             elif method == '1D (EDC)':
                 for idx in range(self.image_data.shape[1]):
-                    self.image_data[:, idx] = wp.curvature_1d(self.image_data[:, idx], a0=a)
+                    self.image_data[:, idx] = \
+                        wp.curvature_1d(self.image_data[:, idx], dy, a0=a)
             elif method == '1D (MDC)':
                 for idx in range(self.image_data.shape[0]):
-                    self.image_data[idx, :] = wp.curvature_1d(self.image_data[idx, :], a0=a)
+                    self.image_data[idx, :] = \
+                        wp.curvature_1d(self.image_data[idx, :], dx, a0=a)
             self.set_image()
             self.util_panel.image_curvature_button.setText('Reset')
         else:

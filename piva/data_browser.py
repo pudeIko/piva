@@ -12,12 +12,14 @@ import piva._2Dviewer as p2d
 import piva.plot_tool as pt
 
 start_time = time.time()
-testing = False
+testing = True
 all_dls = {
     'SIS': dl.DataloaderSIS,
     'Pickle': dl.DataloaderPickle,
     'Bloch': dl.DataloaderBloch,
     'i05': dl.Dataloaderi05,
+    '*Merlin': dl.DataloaderMerlin,
+    '*URANOS': dl.DataloaderURANOS,
     '*CASSIOPEE': dl.DataloaderCASSIOPEE,
     '*ADRESS': dl.DataloaderADRESS,
     '*ALS': dl.DataloaderALS}
