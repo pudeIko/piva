@@ -23,8 +23,6 @@ QTabWidget{background-color: rgb(64,64,64);}
 """
 DEFAULT_CMAP = 'viridis'
 ORIENTLINES_LINECOLOR = (164, 37, 22, 255)
-erg_ax = 2
-scan_ax = 0
 
 
 class DataHandler2D:
@@ -224,7 +222,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
                                               len(self.data_handler.axes[0]))
 
         try:
-            self.load_saved_corrections(self.data_set)
+            self.load_corrections(self.data_set)
         except AttributeError:
             print('Old settings, corrections not loaded.')
             pass
@@ -656,11 +654,10 @@ class MainWindow2D(QtWidgets.QMainWindow):
             e_ax = self.data_handler.axes[1]
         else:
             e_ax = self.new_energy_axis
-        if (e_ax.min() < 0) and (e_ax.max() > 0):
-            mid_energy = wp.indexof(-0.005, e_ax)
-        else:
+        if e_ax.min() > 0:
             mid_energy = int(len(e_ax) / 2)
-            self.util_panel.axes_energy_scale.setCurrentIndex(1)
+        else:
+            mid_energy = wp.indexof(-0.005, e_ax)
 
         if self.k_axis is None:
             mom_ax = self.data_handler.axes[0]
@@ -676,11 +673,20 @@ class MainWindow2D(QtWidgets.QMainWindow):
 
     def apply_energy_correction(self):
         Ef = self.util_panel.axes_energy_Ef.value()
-        hv = self.util_panel.axes_energy_hv.value()
-        wf = self.util_panel.axes_energy_wf.value()
 
         scale = self.util_panel.axes_energy_scale.currentText()
-        if scale == 'binding':
+        if self.data_handler.axes[1].min() > 0:
+            org_is_kin = True
+        else:
+            org_is_kin = False
+
+        if (not org_is_kin) and (scale == 'kinetic'):
+            hv = -self.util_panel.axes_energy_hv.value()
+            wf = -self.util_panel.axes_energy_wf.value()
+        elif org_is_kin and (scale == 'binding'):
+            hv = self.util_panel.axes_energy_hv.value()
+            wf = self.util_panel.axes_energy_wf.value()
+        else:
             hv = 0
             wf = 0
 
@@ -928,7 +934,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
 
         dl.dump(dataset, (savedir + fname), force=True)
 
-    def load_saved_corrections(self, data_set):
+    def load_corrections(self, data_set):
 
         if hasattr(data_set, 'saved'):
             raise AttributeError
@@ -937,52 +943,19 @@ class MainWindow2D(QtWidgets.QMainWindow):
         if not (data_set.hv is None):
             self.util_panel.axes_energy_hv.setValue(data_set.hv)
         if not (data_set.wf is None):
+            self.util_panel.axes_energy_scale.setCurrentIndex(0)
             self.util_panel.axes_energy_wf.setValue(data_set.wf)
         if not (data_set.kyscale is None):
             self.k_axis = data_set.kyscale
             new_range = [self.k_axis[0], self.k_axis[-1]]
-            self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_range)
-            self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
+            self.main_plot.plotItem.getAxis(
+                self.main_plot.main_yaxis).setRange(*new_range)
+            self.plot_y.plotItem.getAxis(
+                self.plot_y.main_xaxis).setRange(*new_range)
             self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
                 self.k_axis[self.main_plot.pos[1].get_value()]))
 
-    def load_saved_corrections_old(self, data_set):
-
-        if hasattr(data_set, 'saved'):
-            saved = data_set.saved
-            if 'Ef' in saved.keys():
-                self.util_panel.axes_energy_Ef.setValue(saved['Ef'])
-            if 'hv' in saved.keys():
-                self.util_panel.axes_energy_hv.setValue(saved['hv'])
-            if 'wf' in saved.keys():
-                self.util_panel.axes_energy_wf.setValue(saved['wf'])
-            if 'angle_off' in saved.keys():
-                self.util_panel.axes_angle_off.setValue(saved['angle_off'])
-            if 'k' in saved.keys():
-                self.k_axis = saved['k']
-                new_range = [self.k_axis[0], self.k_axis[-1]]
-                self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_range)
-                self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
-                self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-                    self.k_axis[self.main_plot.pos[1].get_value()]))
-            if 'k_axis' in saved.keys():
-                self.k_axis = saved['k_axis']
-                new_range = [self.k_axis[0], self.k_axis[-1]]
-                self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_range)
-                self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
-                self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-                    self.k_axis[self.main_plot.pos[1].get_value()]))
-        else:
-            pass
-
-        if not (data_set.Ef is None):
-            self.util_panel.axes_energy_Ef.setValue(float(data_set.Ef))
-        if not (data_set.hv is None):
-            self.util_panel.axes_energy_hv.setValue(float(data_set.hv))
-        if not (data_set.wf is None):
-            self.util_panel.axes_energy_wf.setValue(float(data_set.wf))
-
-    def open_pit(self) :
+    def open_pit(self):
         """ Open the data in an instance of 
         :class:`data_slicer.pit.MainWindow`, which has the benefit of 
         providing a free-slicing ROI.
@@ -993,7 +966,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
         mw.data_handler.set_data(data, axes=self.data_handler.axes)
         mw.set_cmap(self.cmap_name)
 
-    def keyPressEvent(self, event) :
+    def keyPressEvent(self, event):
         """ Use <Space> key to print debug info. """
         print(event.key())
         if event.key() == QtCore.Qt.Key_Space:

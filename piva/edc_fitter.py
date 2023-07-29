@@ -40,7 +40,7 @@ bold_font.setBold(True)
 
 
 class EDCFitter(QMainWindow):
-    
+
     def __init__(self, data_viewer, data_set, axes, title, index=None):
         super(EDCFitter, self).__init__()
 

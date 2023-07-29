@@ -16,12 +16,14 @@ import piva._2Dviewer as p2d
 import piva.working_procedures as wp
 import piva.data_loader as dl
 import piva.imageplot as ip
-from piva._2Dviewer import ORIENTLINES_LINECOLOR, erg_ax, scan_ax
+from piva._2Dviewer import ORIENTLINES_LINECOLOR
 from piva.cmaps import cmaps
 
 import time
 
+scan_ax = 0
 slit_ax = 1
+erg_ax = 2
 
 
 class DataHandler3D:
@@ -435,25 +437,32 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.data_handler.prepare_data(D.data, [D.xscale, D.yscale, D.zscale])
         self.set_sliders_labels(D)
 
-        self.util_panel.energy_main.setRange(0, len(self.data_handler.axes[erg_ax]))
-        self.util_panel.energy_hor.setRange(0, len(self.data_handler.axes[erg_ax]))
-        self.util_panel.energy_vert.setRange(0, len(self.data_handler.axes[erg_ax]))
-        self.util_panel.momentum_hor.setRange(0, len(self.data_handler.axes[slit_ax]))
-        self.util_panel.momentum_vert.setRange(0, len(self.data_handler.axes[scan_ax]))
-        self.util_panel.orientate_init_x.setRange(0, self.data_handler.axes[scan_ax].size)
-        self.util_panel.orientate_init_y.setRange(0, self.data_handler.axes[slit_ax].size)
+        self.util_panel.energy_main.setRange(
+            0, len(self.data_handler.axes[erg_ax]))
+        self.util_panel.energy_hor.setRange(
+            0, len(self.data_handler.axes[erg_ax]))
+        self.util_panel.energy_vert.setRange(
+            0, len(self.data_handler.axes[erg_ax]))
+        self.util_panel.momentum_hor.setRange(
+            0, len(self.data_handler.axes[slit_ax]))
+        self.util_panel.momentum_vert.setRange(
+            0, len(self.data_handler.axes[scan_ax]))
+        self.util_panel.orientate_init_x.setRange(
+            0, self.data_handler.axes[scan_ax].size)
+        self.util_panel.orientate_init_y.setRange(
+            0, self.data_handler.axes[slit_ax].size)
 
         # create a single point EDC at crossing point of momentum sliders
         self.sp_EDC = self.plot_z.plot()
         self.set_sp_EDC_data()
 
         try:
-            self.load_saved_corrections(data_set)
+            self.load_corrections(data_set)
         except AttributeError:
-            print('going with old settings.')
-            self.load_saved_corrections_old(data_set)
+            print('Old settings, corrections not loaded.')
+            pass
 
-        self.put_sliders_in_initial_positions()
+        self.set_sliders_initial_positions()
         self.set_pmesh_axes()
 
     def initUI(self):
@@ -523,24 +532,40 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.util_panel.pit_button.clicked.connect(self.open_pit)
 
         # energy and k-space concersion
-        self.util_panel.axes_energy_Ef.valueChanged.connect(self.apply_energy_correction)
-        self.util_panel.axes_energy_hv.valueChanged.connect(self.apply_energy_correction)
-        self.util_panel.axes_energy_wf.valueChanged.connect(self.apply_energy_correction)
-        self.util_panel.axes_energy_scale.currentIndexChanged.connect(self.apply_energy_correction)
-        self.util_panel.axes_conv_lc.valueChanged.connect(self.update_main_plot)
-        self.util_panel.axes_copy_values.clicked.connect(self.copy_values_orientate_to_axes)
-        self.util_panel.axes_do_kspace_conv.clicked.connect(self.convert_to_kspace)
-        self.util_panel.axes_reset_conv.clicked.connect(self.reset_kspace_conversion)
+        self.util_panel.axes_energy_Ef.valueChanged.connect(
+            self.apply_energy_correction)
+        self.util_panel.axes_energy_hv.valueChanged.connect(
+            self.apply_energy_correction)
+        self.util_panel.axes_energy_wf.valueChanged.connect(
+            self.apply_energy_correction)
+        self.util_panel.axes_energy_scale.currentIndexChanged.connect(
+            self.apply_energy_correction)
+        self.util_panel.axes_conv_lc.valueChanged.connect(
+            self.update_main_plot)
+        self.util_panel.axes_copy_values.clicked.connect(
+            self.copy_values_orientate_to_axes)
+        self.util_panel.axes_do_kspace_conv.clicked.connect(
+            self.convert_to_kspace)
+        self.util_panel.axes_reset_conv.clicked.connect(
+            self.reset_kspace_conversion)
 
         # orientating options
-        self.util_panel.orientate_init_x.valueChanged.connect(self.set_orientating_lines)
-        self.util_panel.orientate_init_y.valueChanged.connect(self.set_orientating_lines)
-        self.util_panel.orientate_find_gamma.clicked.connect(self.find_gamma)
-        self.util_panel.orientate_copy_coords.clicked.connect(self.copy_values_volume_to_orientate)
-        self.util_panel.orientate_hor_line.stateChanged.connect(self.set_orientating_lines)
-        self.util_panel.orientate_ver_line.stateChanged.connect(self.set_orientating_lines)
-        self.util_panel.orientate_angle.valueChanged.connect(self.set_orientating_lines)
-        self.util_panel.orientate_info_button.clicked.connect(self.show_orientation_info)
+        self.util_panel.orientate_init_x.valueChanged.connect(
+            self.set_orientating_lines)
+        self.util_panel.orientate_init_y.valueChanged.connect(
+            self.set_orientating_lines)
+        self.util_panel.orientate_find_gamma.clicked.connect(
+            self.find_gamma)
+        self.util_panel.orientate_copy_coords.clicked.connect(
+            self.copy_values_volume_to_orientate)
+        self.util_panel.orientate_hor_line.stateChanged.connect(
+            self.set_orientating_lines)
+        self.util_panel.orientate_ver_line.stateChanged.connect(
+            self.set_orientating_lines)
+        self.util_panel.orientate_angle.valueChanged.connect(
+            self.set_orientating_lines)
+        self.util_panel.orientate_info_button.clicked.connect(
+            self.show_orientation_info)
 
         # Align all the gui elements
         self._align()
@@ -1150,16 +1175,15 @@ class MainWindow3D(QtWidgets.QMainWindow):
         angle = self.util_panel.momentum_vert.value()
         self.main_plot.pos[0].set_value(angle)
 
-    def put_sliders_in_initial_positions(self):
+    def set_sliders_initial_positions(self):
         if self.new_energy_axis is None:
             e_ax = self.data_handler.axes[erg_ax]
         else:
             e_ax = self.new_energy_axis
-        if (e_ax.min() < 0) and (e_ax.max() > 0):
-            mid_energy = wp.indexof(-0.005, e_ax)
-        else:
+        if e_ax.min() > 0:
             mid_energy = int(len(e_ax) / 2)
-            self.util_panel.axes_energy_scale.setCurrentIndex(1)
+        else:
+            mid_energy = wp.indexof(-0.005, e_ax)
 
         if self.kx_axis is None:
             mh_ax = self.data_handler.axes[scan_ax]
@@ -1233,11 +1257,20 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
     def apply_energy_correction(self):
         Ef = self.util_panel.axes_energy_Ef.value()
-        hv = self.util_panel.axes_energy_hv.value()
-        wf = self.util_panel.axes_energy_wf.value()
 
         scale = self.util_panel.axes_energy_scale.currentText()
-        if scale == 'binding':
+        if self.data_handler.axes[erg_ax].min() > 0:
+            org_is_kin = True
+        else:
+            org_is_kin = False
+
+        if (not org_is_kin) and (scale == 'kinetic'):
+            hv = -self.util_panel.axes_energy_hv.value()
+            wf = -self.util_panel.axes_energy_wf.value()
+        elif org_is_kin and (scale == 'binding'):
+            hv = self.util_panel.axes_energy_hv.value()
+            wf = self.util_panel.axes_energy_wf.value()
+        else:
             hv = 0
             wf = 0
 
@@ -1246,15 +1279,19 @@ class MainWindow3D(QtWidgets.QMainWindow):
         new_range = [new_energy_axis[0], new_energy_axis[-1]]
         self.cut_x.plotItem.getAxis(self.cut_x.main_yaxis).setRange(*new_range)
         self.cut_y.plotItem.getAxis(self.cut_y.main_yaxis).setRange(*new_range)
-        self.plot_z.plotItem.getAxis(self.plot_z.main_xaxis).setRange(*new_range)
+        self.plot_z.plotItem.getAxis(self.plot_z.main_xaxis).setRange(
+            *new_range)
 
         # update energy labels
         main_erg_idx = self.plot_z.pos.get_value()
         cut_x_erg_idx = self.cut_x.crosshair.hpos.get_value()
         cut_y_erg_idx = self.cut_y.crosshair.hpos.get_value()
-        self.util_panel.energy_main_value.setText('({:.4f})'.format(self.new_energy_axis[main_erg_idx]))
-        self.util_panel.energy_hor_value.setText('({:.4f})'.format(self.new_energy_axis[cut_x_erg_idx]))
-        self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.new_energy_axis[cut_y_erg_idx]))
+        self.util_panel.energy_main_value.setText('({:.4f})'.format(
+            self.new_energy_axis[main_erg_idx]))
+        self.util_panel.energy_hor_value.setText('({:.4f})'.format(
+            self.new_energy_axis[cut_x_erg_idx]))
+        self.util_panel.energy_vert_value.setText('({:.4f})'.format(
+            self.new_energy_axis[cut_y_erg_idx]))
 
     # analysis options
     def find_gamma(self):
@@ -1706,12 +1743,13 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
         dl.dump(dataset, (savedir + fname), force=True)
 
-    def load_saved_corrections(self, data_set):
+    def load_corrections(self, data_set):
         if type(data_set.Ef) == float:
             self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
         if type(data_set.hv) == float:
             self.util_panel.axes_energy_hv.setValue(data_set.hv)
         if type(data_set.wf) == float:
+            self.util_panel.axes_energy_scale.setCurrentIndex(0)
             self.util_panel.axes_energy_wf.setValue(data_set.wf)
         if type(data_set.Ef) == float:
             self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
@@ -1720,45 +1758,45 @@ class MainWindow3D(QtWidgets.QMainWindow):
         if hasattr(data_set, 'kyscale'):
             self.ky_axis = data_set.kyscale
 
-    def load_saved_corrections_old(self, data_set):
-        if hasattr(data_set, 'saved'):
-            saved = data_set.saved
-            if 'Ef' in saved.keys():
-                self.util_panel.axes_energy_Ef.setValue(saved['Ef'])
-            if 'hv' in saved.keys():
-                self.util_panel.axes_energy_hv.setValue(saved['hv'])
-            if 'wf' in saved.keys():
-                self.util_panel.axes_energy_wf.setValue(saved['wf'])
-            if 'gamma_x' in saved.keys():
-                self.util_panel.axes_gamma_x.setValue(saved['gamma_x'])
-                self.util_panel.orientate_init_x.setValue(saved['gamma_x'])
-                self.util_panel.orientate_find_gamma_message.setText('Values loaded from file.')
-            if 'gamma_y' in saved.keys():
-                self.util_panel.axes_gamma_y.setValue(saved['gamma_y'])
-                self.util_panel.orientate_init_y.setValue(saved['gamma_y'])
-                self.util_panel.orientate_find_gamma_message.setText('Values loaded from file.')
-            if 'kx' in saved.keys() and 'ky' in saved.keys():
-                self.kx_axis = saved['kx']
-                self.ky_axis = saved['ky']
-                new_hor_range = [saved['kx'][0], saved['kx'][-1]]
-                new_ver_range = [saved['ky'][0], saved['ky'][-1]]
-                self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_hor_range)
-                self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_ver_range)
-                self.cut_x.plotItem.getAxis(self.cut_x.main_xaxis).setRange(*new_hor_range)
-                self.cut_y.plotItem.getAxis(self.cut_y.main_xaxis).setRange(*new_ver_range)
-                self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_hor_range)
-                self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_ver_range)
-                self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-                    self.ky_axis[self.main_plot.pos[1].get_value()]))
-                self.util_panel.momentum_vert_value.setText('({:.4f})'.format(
-                    self.kx_axis[self.main_plot.pos[0].get_value()]))
-        else:
-            pass
-
-        if not (data_set.Ef is None):
-            self.util_panel.axes_energy_Ef.setValue(float(data_set.Ef))
-        if not (data_set.hv is None):
-            self.util_panel.axes_energy_hv.setValue(float(data_set.hv))
-        if not (data_set.wf is None):
-            self.util_panel.axes_energy_wf.setValue(float(data_set.wf))
+    # def load_saved_corrections_old(self, data_set):
+    #     if hasattr(data_set, 'saved'):
+    #         saved = data_set.saved
+    #         if 'Ef' in saved.keys():
+    #             self.util_panel.axes_energy_Ef.setValue(saved['Ef'])
+    #         if 'hv' in saved.keys():
+    #             self.util_panel.axes_energy_hv.setValue(saved['hv'])
+    #         if 'wf' in saved.keys():
+    #             self.util_panel.axes_energy_wf.setValue(saved['wf'])
+    #         if 'gamma_x' in saved.keys():
+    #             self.util_panel.axes_gamma_x.setValue(saved['gamma_x'])
+    #             self.util_panel.orientate_init_x.setValue(saved['gamma_x'])
+    #             self.util_panel.orientate_find_gamma_message.setText('Values loaded from file.')
+    #         if 'gamma_y' in saved.keys():
+    #             self.util_panel.axes_gamma_y.setValue(saved['gamma_y'])
+    #             self.util_panel.orientate_init_y.setValue(saved['gamma_y'])
+    #             self.util_panel.orientate_find_gamma_message.setText('Values loaded from file.')
+    #         if 'kx' in saved.keys() and 'ky' in saved.keys():
+    #             self.kx_axis = saved['kx']
+    #             self.ky_axis = saved['ky']
+    #             new_hor_range = [saved['kx'][0], saved['kx'][-1]]
+    #             new_ver_range = [saved['ky'][0], saved['ky'][-1]]
+    #             self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_hor_range)
+    #             self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_ver_range)
+    #             self.cut_x.plotItem.getAxis(self.cut_x.main_xaxis).setRange(*new_hor_range)
+    #             self.cut_y.plotItem.getAxis(self.cut_y.main_xaxis).setRange(*new_ver_range)
+    #             self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_hor_range)
+    #             self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_ver_range)
+    #             self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+    #                 self.ky_axis[self.main_plot.pos[1].get_value()]))
+    #             self.util_panel.momentum_vert_value.setText('({:.4f})'.format(
+    #                 self.kx_axis[self.main_plot.pos[0].get_value()]))
+    #     else:
+    #         pass
+    #
+    #     if not (data_set.Ef is None):
+    #         self.util_panel.axes_energy_Ef.setValue(float(data_set.Ef))
+    #     if not (data_set.hv is None):
+    #         self.util_panel.axes_energy_hv.setValue(float(data_set.hv))
+    #     if not (data_set.wf is None):
+    #         self.util_panel.axes_energy_wf.setValue(float(data_set.wf))
 

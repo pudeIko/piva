@@ -1,8 +1,8 @@
-
 import os
 import time
 
-from PyQt5.QtWidgets import QAction, QHBoxLayout, QLabel, QVBoxLayout, QLineEdit, QMessageBox
+from PyQt5.QtWidgets import QAction, QHBoxLayout, QLabel, QVBoxLayout, \
+    QLineEdit, QMessageBox, QMainWindow
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
 import piva.data_loader as dl
@@ -12,20 +12,20 @@ import piva._2Dviewer as p2d
 import piva.plot_tool as pt
 
 start_time = time.time()
-testing = True
+testing = False
 all_dls = {
-    'SIS': dl.DataloaderSIS,
     'Pickle': dl.DataloaderPickle,
-    'Bloch': dl.DataloaderBloch,
-    'i05': dl.Dataloaderi05,
-    '*Merlin': dl.DataloaderMerlin,
-    '*URANOS': dl.DataloaderURANOS,
-    '*CASSIOPEE': dl.DataloaderCASSIOPEE,
-    '*ADRESS': dl.DataloaderADRESS,
-    '*ALS': dl.DataloaderALS}
+    'SLS - SIS': dl.DataloaderSIS,
+    'MAX IV - Bloch': dl.DataloaderBloch,
+    'Diamond - i05': dl.Dataloaderi05,
+    '*ALS - MERLIN (4.0.3)': dl.DataloaderALSMerlin,
+    '*SOLARIS - URANOS': dl.DataloaderURANOS,
+    '*SOLEIL - CASSIOPEE': dl.DataloaderCASSIOPEE,
+    '*SLS - ADRESS': dl.DataloaderADRESS,
+    '*ALS - MAESTRO (7.0.2)': dl.DataloaderALSMaestro}
 
 
-class DataBrowser(QtWidgets.QMainWindow):
+class DataBrowser(QMainWindow):
 
     def __init__(self):
 
@@ -543,7 +543,7 @@ class DataBrowser(QtWidgets.QMainWindow):
         self.shown_columns = [0, 1, 2, 3]
         self.hidden_columns = [1, 2, 3]
         # Remove unnecessary columns
-        for i in self.hidden_columns :
+        for i in self.hidden_columns:
             file_explorer.hideColumn(i)
             self.shown_columns.remove(i)
 
@@ -677,4 +677,3 @@ class DataBrowser(QtWidgets.QMainWindow):
                 self.dp_bl_fe.setText('{}'.format(float(data.FE)))
         except AttributeError:
             self.reset_detail_panel()
-

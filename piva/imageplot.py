@@ -1342,6 +1342,7 @@ class UtilitiesPanel(QWidget):
         self.axes_energy_scale_lbl = QLabel('scale:')
         self.axes_energy_scale = QComboBox()
         self.axes_energy_scale.addItems(['binding', 'kinetic'])
+        self.axes_energy_scale.setCurrentIndex(1)
 
         self.axes_momentum_main_lbl = QLabel('k-space conversion')
         self.axes_momentum_main_lbl.setFont(bold_font)
