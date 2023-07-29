@@ -846,14 +846,17 @@ class MainWindow2D(QtWidgets.QMainWindow):
             k_ax = self.data_set.yscale
         axes = [k_ax, erg_ax]
         try:
-            self.data_viewers[thread_idx] = EDCFitter(self, self.data_set, axes, title, index=thread_idx)
-        except Exception:
-            error_box = QMessageBox()
-            error_box.setIcon(QMessageBox.Information)
-            error_box.setText('Couldn\'t load data,  something went wrong.')
-            error_box.setStandardButtons(QMessageBox.Ok)
-            if error_box.exec() == QMessageBox.Ok:
-                return
+            self.data_viewers[thread_idx] = \
+                EDCFitter(self, self.data_set, axes, title, index=thread_idx)
+        except Exception as e:
+            raise e
+            # error_box = QMessageBox()
+            # error_box.setIcon(QMessageBox.Information)
+            # error_box.setText('Couldn\'t load data,  something went wrong.')
+            # error_box.setStandardButtons(QMessageBox.Ok)
+            # raise e
+            # if error_box.exec() == QMessageBox.Ok:
+            #     return
 
     def save_to_pickle(self):
         # TODO change 'k_axis' to 'k' for all cuts: add 'change attrs name'

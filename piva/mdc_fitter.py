@@ -36,7 +36,6 @@ bold_font.setBold(True)
 
 
 class MDCFitter(QMainWindow):
-    # TODO Smoothing
 
     def __init__(self, data_viewer, data_set, axes, title, index=None):
         super(MDCFitter, self).__init__()
@@ -77,6 +76,7 @@ class MDCFitter(QMainWindow):
         self.image_e_pos.valueChanged.connect(self.update_mdc_slider)
         self.image_bin.stateChanged.connect(self.set_binning_lines)
         self.image_bin_n.valueChanged.connect(self.set_binning_lines)
+        self.image_k_pos.valueChanged.connect(self.update_edc_slider)
         self.image_close_button.clicked.connect(self.close)
 
         self.fitting_button.clicked.connect(self.fit_mdc)
@@ -212,7 +212,8 @@ class MDCFitter(QMainWindow):
         self.fitting_bgr_range_first.setValue(-0.66)
 
         self.fitting_bgr_range_second = QDoubleSpinBox()
-        self.fitting_bgr_range_second.setRange(self.k_ax.min(), self.k_ax.max())
+        self.fitting_bgr_range_second.setRange(self.k_ax.min(),
+                                               self.k_ax.max())
         self.fitting_bgr_range_second.setSingleStep(wp.get_step(self.k_ax))
         self.fitting_bgr_range_second.setDecimals(6)
         # self.fitting_bgr_range_second.setValue(self.k_ax.max())
@@ -286,10 +287,10 @@ class MDCFitter(QMainWindow):
 
     def set_cmap(self):
         """ Set the colormap to *cmap* where *cmap* is one of the names
-        registered in :mod:`<data_slicer.cmaps>` which includes all matplotlib and
-        kustom cmaps.
-        WP: small changes made to use only my list of cmaps (see cmaps.py) and to shorten the list
-        by using 'invert_colors' checkBox
+        registered in :mod:`<data_slicer.cmaps>` which includes all matplotlib
+        and custom cmaps.
+        WP: small changes made to use only my list of cmaps (see cmaps.py) and
+        to shorten the list by using 'invert_colors' checkBox
         """
         try:
             cmap = self.image_cmaps.currentText()
@@ -369,7 +370,8 @@ class MDCFitter(QMainWindow):
         self.set_ticks(self.k_ax.min(), self.k_ax.max(), 'bottom')
         self.set_ticks(self.erg_ax.min(), self.erg_ax.max(), 'left')
         k_min, k_max, e_min, e_max = 0, self.k_ax.size, 0, self.erg_ax.size
-        self.cut_panel.setLimits(xMin=k_min, xMax=k_max, yMin=e_min, yMax=e_max, maxXRange=k_max - k_min,
+        self.cut_panel.setLimits(xMin=k_min, xMax=k_max, yMin=e_min,
+                                 yMax=e_max, maxXRange=k_max - k_min,
                                  maxYRange=e_max - e_min)
 
         self.set_mdc_line()
@@ -388,7 +390,8 @@ class MDCFitter(QMainWindow):
         self.mdc_line.setPen(BASE_LINECOLOR)
         self.mdc_line.setHoverPen(HOVER_COLOR)
 
-        self.image_e_pos_value_lbl.setText('({:.4f})'.format(self.erg_ax[int(self.mdc_pos.get_value())]))
+        self.image_e_pos_value_lbl.setText('({:.4f})'.format(
+            self.erg_ax[int(self.mdc_pos.get_value())]))
         self.image_e_pos.setValue(int(self.mdc_pos.get_value()))
         self.cut_panel.addItem(self.mdc_line)
 
@@ -401,12 +404,13 @@ class MDCFitter(QMainWindow):
 
         k_idx = self.k_ax.size // 2
         self.edc_line_cut = InfiniteLine(k_idx, movable=True, angle=90)
-        self.edc_line_mdc = InfiniteLine(self.k_ax[k_idx], movable=True, angle=90)
+        self.edc_line_mdc = InfiniteLine(self.k_ax[k_idx], movable=True,
+                                         angle=90)
         self.edc_line_cut.setBounds([1, self.k_ax.size - 1])
         self.edc_line_mdc.setBounds([self.k_ax.min(), self.k_ax.max()])
         self.edc_pos = TracedVariable(k_idx, name='pos')
         self.edc_pos.set_allowed_values(np.arange(1, self.k_ax.size - 1, 1))
-        # self.edc_pos.sig_value_changed.connect(self.update_position)
+        self.edc_pos.sig_value_changed.connect(self.update_position)
         self.edc_line_cut.sigDragged.connect(self.on_dragged_cut_edc)
         self.edc_line_mdc.sigDragged.connect(self.on_dragged_mdc_edc)
         self.edc_line_cut.setPen(BASE_LINECOLOR)
@@ -414,7 +418,8 @@ class MDCFitter(QMainWindow):
         self.edc_line_mdc.setPen((202, 49, 66))
         self.edc_line_mdc.setHoverPen((240, 149, 115))
 
-        self.image_k_pos_value_lbl.setText('({:.4f})'.format(self.k_ax[int(self.edc_pos.get_value())]))
+        self.image_k_pos_value_lbl.setText('({:.4f})'.format(
+            self.k_ax[int(self.edc_pos.get_value())]))
         self.image_k_pos.setValue(int(self.edc_pos.get_value()))
         self.fitting_mu.setValue(self.edc_line_mdc.value())
         self.cut_panel.addItem(self.edc_line_cut)
@@ -443,13 +448,18 @@ class MDCFitter(QMainWindow):
 
     def update_position(self):
         self.mdc_line.setValue(self.mdc_pos.get_value())
+        # print(self.edc_pos.get_value())
+        self.edc_line_cut.setValue(self.edc_pos.get_value())
+        self.edc_line_mdc.setValue(self.k_ax[self.edc_pos.get_value()])
         self.set_mdc_panel()
 
     def on_dragged(self):
         self.mdc_pos.set_value(self.mdc_line.value())
-        self.image_e_pos_value_lbl.setText('({:.4f})'.format(self.erg_ax[int(self.mdc_pos.get_value())]))
+        self.image_e_pos_value_lbl.setText('({:.4f})'.format(
+            self.erg_ax[int(self.mdc_pos.get_value())]))
         self.image_e_pos.setValue(int(self.mdc_pos.get_value()))
-        # if it's an energy plot, and binning option is active, update also binning boundaries
+        # if it's an energy plot, and binning option is active,
+        # update also binning boundaries
         if self.image_bin.isChecked():
             pos = self.mdc_line.value()
             n = self.image_bin_n.value()
@@ -459,22 +469,34 @@ class MDCFitter(QMainWindow):
     def on_dragged_cut_edc(self):
         self.edc_pos.set_value(self.edc_line_cut.value())
         self.edc_line_mdc.setValue(self.k_ax[int(self.edc_line_cut.value())])
-        self.image_k_pos_value_lbl.setText('({:.4f})'.format(self.k_ax[int(self.edc_pos.get_value())]))
+        self.image_k_pos_value_lbl.setText('({:.4f})'.format(
+            self.k_ax[int(self.edc_pos.get_value())]))
         self.image_k_pos.setValue(int(self.edc_pos.get_value()))
         self.fitting_mu.setValue(self.edc_line_mdc.value())
 
     def on_dragged_mdc_edc(self):
-        self.edc_pos.set_value(wp.indexof(self.edc_line_mdc.value(), self.k_ax))
-        self.edc_line_cut.setValue(wp.indexof(self.edc_line_mdc.value(), self.k_ax))
-        self.image_k_pos_value_lbl.setText('({:.4f})'.format(self.k_ax[int(self.edc_pos.get_value())]))
+        self.edc_pos.set_value(wp.indexof(
+            self.edc_line_mdc.value(), self.k_ax))
+        self.edc_line_cut.setValue(wp.indexof(
+            self.edc_line_mdc.value(), self.k_ax))
+        self.image_k_pos_value_lbl.setText('({:.4f})'.format(
+            self.k_ax[int(self.edc_pos.get_value())]))
         self.image_k_pos.setValue(int(self.edc_pos.get_value()))
         self.fitting_mu.setValue(self.edc_line_mdc.value())
+
+    def update_edc_slider(self):
+        k = self.image_k_pos.value()
+        self.edc_pos.set_value(k)
+        # self.set_mdc_panel()
+        self.image_k_pos_value_lbl.setText('({:.4f})'.format(
+            self.k_ax[int(self.edc_pos.get_value())]))
 
     def update_mdc_slider(self):
         e = self.image_e_pos.value()
         self.mdc_pos.set_value(e)
         self.set_binning_lines()
-        self.image_e_pos_value_lbl.setText('({:.4f})'.format(self.erg_ax[int(self.mdc_pos.get_value())]))
+        self.image_e_pos_value_lbl.setText('({:.4f})'.format(
+            self.erg_ax[int(self.mdc_pos.get_value())]))
 
     def update_allowed_values(self, min, max):
         """ Update the allowed values silently.
@@ -526,41 +548,54 @@ class MDCFitter(QMainWindow):
         e_idx = self.mdc_pos.get_value()
         if self.image_bin.isChecked():
             n = self.image_bin_n.value()
-            self.mdc = np.sum(self.data_set.data[0, :, (e_idx - n):(e_idx + n)], axis=1)
+            self.mdc = np.sum(
+                self.data_set.data[0, :, (e_idx - n):(e_idx + n)], axis=1)
         else:
             self.mdc = self.data_set.data[0, :, e_idx]
 
-        range_start, range_stop = self.fitting_range_start.value(), self.fitting_range_stop.value()
-        bgr_range_f, bgr_range_s = self.fitting_bgr_range_first.value(), self.fitting_bgr_range_second.value()
+        range_start, range_stop = self.fitting_range_start.value(), \
+                                  self.fitting_range_stop.value()
+        bgr_range_f, bgr_range_s = self.fitting_bgr_range_first.value(), \
+                                   self.fitting_bgr_range_second.value()
         self.fitting_range_start.setRange(self.k_ax.min(), range_stop)
         self.fitting_range_stop.setRange(range_start, self.k_ax.max())
         self.fitting_bgr_range_first.setRange(range_start, range_stop)
         self.fitting_bgr_range_second.setRange(range_start, range_stop)
 
         mdc_plot.plot(self.k_ax, self.mdc, pen=mkPen('k', width=2))
-        shadow_bottom = PlotDataItem([range_start, range_stop], [-self.mdc.max(), -self.mdc.max()])
-        shadow_top = PlotDataItem([range_start, range_stop], [2 * self.mdc.max(), 2 * self.mdc.max()])
+        shadow_bottom = PlotDataItem([range_start, range_stop],
+                                     [-self.mdc.max(), -self.mdc.max()])
+        shadow_top = PlotDataItem([range_start, range_stop],
+                                  [2 * self.mdc.max(), 2 * self.mdc.max()])
 
         try:
             mdc_plot.removeItem(self.shadow)
         except AttributeError:
             pass
-        self.shadow = FillBetweenItem(shadow_top, shadow_bottom, mkBrush((229, 229, 229)))
+        self.shadow = FillBetweenItem(shadow_top, shadow_bottom,
+                                      mkBrush((229, 229, 229)))
 
         self.bgr_first = PlotDataItem([bgr_range_f, bgr_range_f],
-                                      [-self.mdc.max(), self.mdc[wp.indexof(bgr_range_f, self.k_ax)]],
+                                      [-self.mdc.max(),
+                                       self.mdc[wp.indexof(bgr_range_f,
+                                                           self.k_ax)]],
                                       pen=mkPen('k', style=QtCore.Qt.DashLine))
         self.bgr_second = PlotDataItem([bgr_range_s, bgr_range_s],
-                                       [-self.mdc.max(), self.mdc[wp.indexof(bgr_range_s, self.k_ax)]],
-                                       pen=mkPen('k', style=QtCore.Qt.DashLine))
+                                       [-self.mdc.max(),
+                                        self.mdc[wp.indexof(bgr_range_s,
+                                                            self.k_ax)]],
+                                       pen=mkPen('k',
+                                                 style=QtCore.Qt.DashLine))
         mdc_plot.addItem(self.shadow)
         mdc_plot.addItem(self.bgr_first)
         mdc_plot.addItem(self.bgr_second)
         mdc_plot.setYRange(0, self.mdc.max())
 
     def fit_bgr(self):
-        bgr0, bgr1 = self.fitting_range_start.value(), self.fitting_bgr_range_first.value()
-        bgr2, bgr3 = self.fitting_bgr_range_second.value(), self.fitting_range_stop.value()
+        bgr0, bgr1 = self.fitting_range_start.value(), \
+                     self.fitting_bgr_range_first.value()
+        bgr2, bgr3 = self.fitting_bgr_range_second.value(), \
+                     self.fitting_range_stop.value()
         bgr0, bgr1 = wp.indexof(bgr0, self.k_ax), wp.indexof(bgr1, self.k_ax)
         bgr2, bgr3 = wp.indexof(bgr2, self.k_ax), wp.indexof(bgr3, self.k_ax)
 
@@ -577,7 +612,8 @@ class MDCFitter(QMainWindow):
         except AttributeError:
             pass
 
-        self.bgr = PlotDataItem(self.fit_k, self.bgr_fit, pen=mkPen('c', width=2))
+        self.bgr = PlotDataItem(self.fit_k, self.bgr_fit,
+                                pen=mkPen('c', width=2))
         self.mdc_panel.addItem(self.bgr)
 
     def fit_mdc(self):
@@ -603,8 +639,11 @@ class MDCFitter(QMainWindow):
             self.fitting_message_cell.setText(message)
             return
 
-        a, mu, gamma, alpha, beta = self.fitting_a.value(), self.fitting_mu.value(), self.fitting_gamma.value(), \
-                                    self.fitting_alpha.value(), self.fitting_beta.value()
+        a, mu, gamma, alpha, beta = self.fitting_a.value(), \
+                                    self.fitting_mu.value(), \
+                                    self.fitting_gamma.value(), \
+                                    self.fitting_alpha.value(), \
+                                    self.fitting_beta.value()
         if alpha == 1:
             fit_alpha = False
         else:
@@ -636,23 +675,29 @@ class MDCFitter(QMainWindow):
         self.mdc_panel.addItem(self.fit)
 
     def set_fit_fun(self, fit_alpha, fit_beta):
-        self.p0 = [self.fitting_a.value(), self.fitting_mu.value(), self.fitting_gamma.value()]
+        self.p0 = [self.fitting_a.value(), self.fitting_mu.value(),
+                   self.fitting_gamma.value()]
         if fit_alpha and fit_beta:
-            self.fit_fun = lambda x, a0, mu, gamma, alpha, beta: wp.asym_lorentzian(x, a0, mu, gamma, alpha, beta)
+            self.fit_fun = lambda x, a0, mu, gamma, alpha, beta: \
+                wp.asym_lorentzian(x, a0, mu, gamma, alpha, beta)
             self.p0.append(self.fitting_alpha.value())
             self.p0.append(self.fitting_beta.value())
         elif fit_alpha and not fit_beta:
-            self.fit_fun = lambda x, a0, mu, gamma, alpha: wp.asym_lorentzian(x, a0, mu, gamma, alpha=alpha)
+            self.fit_fun = lambda x, a0, mu, gamma, alpha: \
+                wp.asym_lorentzian(x, a0, mu, gamma, alpha=alpha)
             self.p0.append(self.fitting_alpha.value())
         elif not fit_alpha and fit_beta:
-            self.fit_fun = lambda x, a0, mu, gamma, beta: wp.asym_lorentzian(x, a0, mu, gamma, beta=beta)
+            self.fit_fun = lambda x, a0, mu, gamma, beta: \
+                wp.asym_lorentzian(x, a0, mu, gamma, beta=beta)
             self.p0.append(self.fitting_beta.value())
         else:
-            self.fit_fun = lambda x, a0, mu, gamma: wp.asym_lorentzian(x, a0, mu, gamma)
+            self.fit_fun = lambda x, a0, mu, gamma: \
+                wp.asym_lorentzian(x, a0, mu, gamma)
 
     def set_fitting_message(self, fit_alpha, fit_beta):
         e = self.erg_ax[int(self.mdc_pos.get_value())]
-        message = 'E = {:.4f};  a = {:.1f};  \u03BC = {:.4f};  \u0393 = {:.4f}'.format(e, self.p[0], self.p[1], self.p[2])
+        message = 'E = {:.4f};  a = {:.1f};  \u03BC = {:.4f};  ' \
+                  '\u0393 = {:.4f}'.format(e, self.p[0], self.p[1], self.p[2])
         if fit_alpha:
             message += ';  \u03B1 = {:.4f}'.format(self.p[3])
         else:
@@ -697,7 +742,8 @@ class MDCFitter(QMainWindow):
         if len(self.fit_results.shape) == 1:
             pass
         else:
-            self.fit_results = np.flip(np.sort(self.fit_results, axis=0), axis=0)
+            self.fit_results = np.flip(np.sort(self.fit_results, axis=0),
+                                       axis=0)
 
         try:
             self.cut_panel.removeItem(self.fit_points)
@@ -705,9 +751,12 @@ class MDCFitter(QMainWindow):
             pass
 
         try:
-            fit_points_k = np.array([wp.indexof(ki, self.k_ax) for ki in self.fit_results[:, 2]])
-            fit_points_e = np.array([wp.indexof(ei, self.erg_ax) for ei in self.fit_results[:, 0]])
-            self.fit_points = ScatterPlotItem(fit_points_k, fit_points_e, symbol='h')
+            fit_points_k = np.array([wp.indexof(ki, self.k_ax)
+                                     for ki in self.fit_results[:, 2]])
+            fit_points_e = np.array([wp.indexof(ei, self.erg_ax)
+                                     for ei in self.fit_results[:, 0]])
+            self.fit_points = ScatterPlotItem(fit_points_k, fit_points_e,
+                                              symbol='h')
             self.cut_panel.addItem(self.fit_points)
         except IndexError:
             pass
@@ -726,7 +775,8 @@ class MDCFitter(QMainWindow):
                 pass
 
         f = open(fname, 'w+')
-        line = 'E [eV]\t\t\ta [a.u.] \t\t mu [1/A]\t\tgamma [1/A]\t\talpha\tbeta [a.u]\n'
+        line = 'E [eV]\t\t\ta [a.u.] \t\t mu [1/A]\t\tgamma [1/A]\t\t' \
+               'alpha\tbeta [a.u]\n'
         f.write(line)
         try:
             for result in self.fit_results:
@@ -766,7 +816,8 @@ class MDCFitter(QMainWindow):
 
         overwriting_box = QMessageBox()
         overwriting_box.setIcon(QMessageBox.Question)
-        overwriting_box.setText('Fit results will be overwritten, sure to proceed?')
+        overwriting_box.setText('Fit results will be overwritten, '
+                                'sure to proceed?')
         overwriting_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         if overwriting_box.exec() == QMessageBox.Cancel:
             return
@@ -791,9 +842,12 @@ class MDCFitter(QMainWindow):
             pass
 
         try:
-            fit_points_k = np.array([wp.indexof(ki, self.k_ax) for ki in self.fit_results[:, 2]])
-            fit_points_e = np.array([wp.indexof(ei, self.erg_ax) for ei in self.fit_results[:, 0]])
-            self.fit_points = ScatterPlotItem(fit_points_k, fit_points_e, symbol='h')
+            fit_points_k = np.array([wp.indexof(ki, self.k_ax)
+                                     for ki in self.fit_results[:, 2]])
+            fit_points_e = np.array([wp.indexof(ei, self.erg_ax)
+                                     for ei in self.fit_results[:, 0]])
+            self.fit_points = ScatterPlotItem(fit_points_k, fit_points_e,
+                                              symbol='h')
             self.cut_panel.addItem(self.fit_points)
         except IndexError:
             pass

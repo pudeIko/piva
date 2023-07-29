@@ -1585,36 +1585,44 @@ class UtilitiesPanel(QWidget):
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
         row = 0
-        ftl.addWidget(self.file_add_md_lbl,                     row * sd, 0 * sd, 1, 2)
-        ftl.addWidget(self.file_show_md_button,                 row * sd, 8 * sd, 1, 2)
+        ftl.addWidget(self.file_add_md_lbl,                  row * sd, 0 * sd,
+                      1, 2)
+        ftl.addWidget(self.file_show_md_button,              row * sd, 8 * sd,
+                      1, 2)
 
         row = 1
-        ftl.addWidget(self.file_md_name_lbl,                    row * sd, 0 * sd)
-        ftl.addWidget(self.file_md_name,                        row * sd, 1 * sd, 1, 3)
-        ftl.addWidget(self.file_md_value_lbl,                   row * sd, 4 * sd)
-        ftl.addWidget(self.file_md_value,                       row * sd, 5 * sd, 1, 3)
-        ftl.addWidget(self.file_add_md_button,                  row * sd, 8 * sd)
-        ftl.addWidget(self.file_remove_md_button,               row * sd, 9 * sd)
+        ftl.addWidget(self.file_md_name_lbl,                 row * sd, 0 * sd)
+        ftl.addWidget(self.file_md_name,                     row * sd, 1 * sd,
+                      1, 3)
+        ftl.addWidget(self.file_md_value_lbl,                row * sd, 4 * sd)
+        ftl.addWidget(self.file_md_value,                    row * sd, 5 * sd,
+                      1, 3)
+        ftl.addWidget(self.file_add_md_button,               row * sd, 8 * sd)
+        ftl.addWidget(self.file_remove_md_button,            row * sd, 9 * sd)
 
         row = 2
-        ftl.addWidget(self.file_sum_datasets_lbl,               row * sd, 0 * sd, 1, 2)
-        # ftl.addWidget(self.file_sum_datasets_fname_lbl,         row * sd, 2 * sd)
-        ftl.addWidget(self.file_sum_datasets_fname,             row * sd, 2 * sd, 1, 6)
-        ftl.addWidget(self.file_sum_datasets_sum_button,        row * sd, 8 * sd)
-        ftl.addWidget(self.file_sum_datasets_reset_button,      row * sd, 9 * sd)
+        ftl.addWidget(self.file_sum_datasets_lbl,            row * sd, 0 * sd,
+                      1, 2)
+        # ftl.addWidget(self.file_sum_datasets_fname_lbl,     row * sd, 2 * sd)
+        ftl.addWidget(self.file_sum_datasets_fname,          row * sd, 2 * sd,
+                      1, 6)
+        ftl.addWidget(self.file_sum_datasets_sum_button,     row * sd, 8 * sd)
+        ftl.addWidget(self.file_sum_datasets_reset_button,   row * sd, 9 * sd)
 
         row = 3
-        ftl.addWidget(self.file_jn_main_lbl,                    row * sd, 0 * sd, 1, 2)
-        # ftl.addWidget(self.file_jn_fname_lbl,                   row * sd, 2 * sd)
-        ftl.addWidget(self.file_jn_fname,                       row * sd, 2 * sd, 1, 6)
-        ftl.addWidget(self.file_jn_button,                      row * sd, 8 * sd)
+        ftl.addWidget(self.file_jn_main_lbl,                 row * sd, 0 * sd,
+                      1, 2)
+        # ftl.addWidget(self.file_jn_fname_lbl,               row * sd, 2 * sd)
+        ftl.addWidget(self.file_jn_fname,                    row * sd, 2 * sd,
+                      1, 6)
+        ftl.addWidget(self.file_jn_button,                   row * sd, 8 * sd)
 
         if self.dim == 2:
             row = 4
-            ftl.addWidget(self.file_mdc_fitter_lbl,             row * sd, 0, 1, 2)
-            ftl.addWidget(self.file_mdc_fitter_button,          row * sd, 2)
-            ftl.addWidget(self.file_edc_fitter_lbl,             row * sd, 4, 1, 2)
-            ftl.addWidget(self.file_edc_fitter_button,          row * sd, 6)
+            ftl.addWidget(self.file_mdc_fitter_lbl,          row * sd, 0, 1, 2)
+            ftl.addWidget(self.file_mdc_fitter_button,       row * sd, 2)
+            ftl.addWidget(self.file_edc_fitter_lbl,          row * sd, 4, 1, 2)
+            ftl.addWidget(self.file_edc_fitter_button,       row * sd, 6)
 
         # dummy lbl
         # dummy_lbl = QLabel('')

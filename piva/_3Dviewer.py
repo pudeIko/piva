@@ -1556,23 +1556,27 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
         if cut_orient[0] == 'h':
             cut = self.data_handler.cut_x_data
-            dim_value = self.data_set.yscale[self.main_plot.crosshair.hpos.get_value()]
+            dim_value = self.data_set.yscale[
+                self.main_plot.crosshair.hpos.get_value()]
             data_set.yscale = data_set.xscale
             idx = self.main_plot.crosshair.hpos.get_value()
             lbl = self.util_panel.momentum_hor_label.text()[:-1]
             if self.util_panel.bin_y.isChecked():
                 n_bin = self.util_panel.bin_y_nbins.value()
-                thread_idx = '{}: {} [{}]; nbin [{}]'.format(self.index, lbl, str(idx), str(n_bin))
+                thread_idx = '{}: {} [{}]; nbin [{}]'.format(
+                    self.index, lbl, str(idx), str(n_bin))
             else:
                 thread_idx = '{}: {} [{}]'.format(self.index, lbl, str(idx))
         else:
             cut = self.data_handler.cut_y_data.T
-            dim_value = self.data_set.xscale[self.main_plot.crosshair.vpos.get_value()]
+            dim_value = self.data_set.xscale[
+                self.main_plot.crosshair.vpos.get_value()]
             idx = self.main_plot.crosshair.vpos.get_value()
             lbl = self.util_panel.momentum_vert_label.text()[:-1]
             if self.util_panel.bin_x.isChecked():
                 n_bin = self.util_panel.bin_x_nbins.value()
-                thread_idx = '{}: {} [{}]; nbin [{}]'.format(self.index, lbl, str(idx), str(n_bin))
+                thread_idx = '{}: {} [{}]; nbin [{}]'.format(
+                    self.index, lbl, str(idx), str(n_bin))
             else:
                 thread_idx = '{}: {} [{}]'.format(self.index, lbl, str(idx))
 
@@ -1582,10 +1586,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
         data_set.xscale = np.array([1])
         data_set.scan_type = 'cut'
 
-        # self.title = fname.split('/')[-1]
-        # self.fname = fname
-
-        if (data_set.scan_type == 'tilt scan') or (data_set.scan_type == 'DA scan'):
+        if (data_set.scan_type == 'tilt scan') or \
+                (data_set.scan_type == 'DA scan'):
             data_set.tilt = dim_value
             thread_idx += '_@{:.3}deg'.format(dim_value)
         elif data_set.scan_type == 'hv scan':
@@ -1603,7 +1605,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
         try:
             self.db.data_viewers[thread_idx] = \
-                p2d.MainWindow2D(self.db, data_set=data_set, index=thread_idx, slice=True)
+                p2d.MainWindow2D(self.db, data_set=data_set,
+                                 index=thread_idx, slice=True)
         except Exception as e:
             raise e
             error_box = QMessageBox()

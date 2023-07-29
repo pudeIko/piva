@@ -40,8 +40,7 @@ bold_font.setBold(True)
 
 
 class EDCFitter(QMainWindow):
-    # TODO Smoothing
-
+    
     def __init__(self, data_viewer, data_set, axes, title, index=None):
         super(EDCFitter, self).__init__()
 
@@ -99,7 +98,6 @@ class EDCFitter(QMainWindow):
     def set_settings_panel(self):
 
         self.set_image_tab()
-        self.set_fitting_tab()
 
     def set_image_tab(self):
         # create elements
@@ -132,18 +130,20 @@ class EDCFitter(QMainWindow):
         self.image_edc_range_lbl = QLabel('EDC range:')
         self.image_edc_range_lbl.setFont(bold_font)
         self.image_edc_range_start = QDoubleSpinBox()
-        self.image_edc_range_start.setRange(self.erg_ax.min(), self.erg_ax.max())
+        self.image_edc_range_start.setRange(self.erg_ax.min(),
+                                            self.erg_ax.max())
         self.image_edc_range_start.setSingleStep(wp.get_step(self.erg_ax))
         self.image_edc_range_start.setDecimals(6)
-        # self.image_edc_range_start.setValue(self.erg_ax.min())
-        self.image_edc_range_start.setValue(-0.77)
+        self.image_edc_range_start.setValue(self.erg_ax.min())
+
+        self.symmetrize_box = QCheckBox('symmetrize')
 
         self.image_edc_range_stop = QDoubleSpinBox()
-        self.image_edc_range_stop.setRange(self.erg_ax.min(), self.erg_ax.max())
+        self.image_edc_range_stop.setRange(self.erg_ax.min(),
+                                           self.erg_ax.max())
         self.image_edc_range_stop.setSingleStep(wp.get_step(self.erg_ax))
         self.image_edc_range_stop.setDecimals(6)
-        # self.image_edc_range_stop.setValue(self.erg_ax.max())
-        self.image_edc_range_stop.setValue(0.1)
+        self.image_edc_range_stop.setValue(self.erg_ax.max())
 
         self.image_close_button = QPushButton('close')
 
@@ -162,6 +162,7 @@ class EDCFitter(QMainWindow):
         itl.addWidget(self.image_k_pos_value_lbl,   row, 2)
         itl.addWidget(self.image_bin,               row, 3)
         itl.addWidget(self.image_bin_n,             row, 4)
+        itl.addWidget(self.symmetrize_box,          row, 5)
 
         row = 2
         itl.addWidget(self.image_cmaps_label,       row, 0)
@@ -178,19 +179,6 @@ class EDCFitter(QMainWindow):
         self.image_tab.setLayout(itl)
         self.tabs.addTab(self.image_tab, 'Image')
 
-    def set_fitting_tab(self):
-        self.symmetrize_tab = QWidget()
-        stl = QtWidgets.QGridLayout()
-
-        self.symmetrize_box = QCheckBox('symmetrize')
-
-        row = 0
-        stl.addWidget(self.symmetrize_box,  row, 0)
-
-        self.symmetrize_tab.layout = stl
-        self.symmetrize_tab.setLayout(stl)
-        self.tabs.addTab(self.symmetrize_tab, 'Symmetrize')
-
     def setup_cmaps(self):
 
         cm = self.image_cmaps
@@ -203,10 +191,10 @@ class EDCFitter(QMainWindow):
 
     def set_cmap(self):
         """ Set the colormap to *cmap* where *cmap* is one of the names
-        registered in :mod:`<data_slicer.cmaps>` which includes all matplotlib and
-        kustom cmaps.
-        WP: small changes made to use only my list of cmaps (see cmaps.py) and to shorten the list
-        by using 'invert_colors' checkBox
+        registered in :mod:`<data_slicer.cmaps>` which includes all matplotlib
+        and custom cmaps.
+        WP: small changes made to use only my list of cmaps (see cmaps.py) and
+        to shorten the list by using 'invert_colors' checkBox
         """
         try:
             cmap = self.image_cmaps.currentText()
@@ -286,7 +274,8 @@ class EDCFitter(QMainWindow):
         self.set_ticks(self.k_ax.min(), self.k_ax.max(), 'left')
         self.set_ticks(self.erg_ax.min(), self.erg_ax.max(), 'bottom')
         k_min, k_max, e_min, e_max = 0, self.k_ax.size, 0, self.erg_ax.size
-        self.cut_panel.setLimits(xMin=e_min, xMax=e_max, yMin=k_min, yMax=k_max, maxXRange=e_max - e_min,
+        self.cut_panel.setLimits(xMin=e_min, xMax=e_max, yMin=k_min,
+                                 yMax=k_max, maxXRange=e_max - e_min,
                                  maxYRange=k_max - k_min)
         self.set_edc_line()
 
@@ -304,7 +293,8 @@ class EDCFitter(QMainWindow):
         self.edc_line.setPen(BASE_LINECOLOR)
         self.edc_line.setHoverPen(HOVER_COLOR)
 
-        self.image_k_pos_value_lbl.setText('({:.4f})'.format(self.k_ax[int(self.edc_pos.get_value())]))
+        self.image_k_pos_value_lbl.setText('({:.4f})'.format(
+            self.k_ax[int(self.edc_pos.get_value())]))
         self.image_k_pos.setValue(int(self.edc_pos.get_value()))
         self.cut_panel.addItem(self.edc_line)
 
@@ -317,7 +307,8 @@ class EDCFitter(QMainWindow):
 
         e_idx = self.erg_ax.size // 2
         self.mdc_line_cut = InfiniteLine(e_idx, movable=True, angle=90)
-        self.mdc_line_edc = InfiniteLine(self.erg_ax[e_idx], movable=True, angle=90)
+        self.mdc_line_edc = InfiniteLine(self.erg_ax[e_idx], movable=True,
+                                         angle=90)
         self.mdc_line_cut.setBounds([1, self.erg_ax.size - 1])
         self.mdc_line_edc.setBounds([self.erg_ax.min(), self.erg_ax.max()])
         self.mdc_pos = TracedVariable(e_idx, name='pos')
@@ -329,7 +320,8 @@ class EDCFitter(QMainWindow):
         self.mdc_line_edc.setPen((202, 49, 66))
         self.mdc_line_edc.setHoverPen((240, 149, 115))
 
-        self.image_e_pos_value_lbl.setText('({:.4f})'.format(self.erg_ax[int(self.mdc_pos.get_value())]))
+        self.image_e_pos_value_lbl.setText('({:.4f})'.format(
+            self.erg_ax[int(self.mdc_pos.get_value())]))
         self.image_e_pos.setValue(int(self.mdc_pos.get_value()))
         self.cut_panel.addItem(self.mdc_line_cut)
         self.edc_panel.addItem(self.mdc_line_edc)
@@ -361,9 +353,11 @@ class EDCFitter(QMainWindow):
 
     def on_dragged(self):
         self.edc_pos.set_value(self.edc_line.value())
-        self.image_k_pos_value_lbl.setText('({:.4f})'.format(self.k_ax[int(self.edc_pos.get_value())]))
+        self.image_k_pos_value_lbl.setText('({:.4f})'.format(
+            self.k_ax[int(self.edc_pos.get_value())]))
         self.image_k_pos.setValue(int(self.edc_pos.get_value()))
-        # if it's an energy plot, and binning option is active, update also binning boundaries
+        # if it's an energy plot, and binning option is active,
+        # update also binning boundaries
         if self.image_bin.isChecked():
             pos = self.edc_line.value()
             n = self.image_bin_n.value()
@@ -373,13 +367,17 @@ class EDCFitter(QMainWindow):
     def on_dragged_cut_mdc(self):
         self.mdc_pos.set_value(self.mdc_line_cut.value())
         self.mdc_line_edc.setValue(self.erg_ax[int(self.mdc_line_cut.value())])
-        self.image_e_pos_value_lbl.setText('({:.4f})'.format(self.erg_ax[int(self.mdc_pos.get_value())]))
+        self.image_e_pos_value_lbl.setText('({:.4f})'.format(
+            self.erg_ax[int(self.mdc_pos.get_value())]))
         self.image_e_pos.setValue(int(self.mdc_pos.get_value()))
 
     def on_dragged_edc_mdc(self):
-        self.mdc_pos.set_value(wp.indexof(self.mdc_line_edc.value(), self.erg_ax))
-        self.mdc_line_cut.setValue(wp.indexof(self.mdc_line_edc.value(), self.erg_ax))
-        self.image_e_pos_value_lbl.setText('({:.4f})'.format(self.erg_ax[int(self.mdc_pos.get_value())]))
+        self.mdc_pos.set_value(wp.indexof(self.mdc_line_edc.value(),
+                                          self.erg_ax))
+        self.mdc_line_cut.setValue(wp.indexof(self.mdc_line_edc.value(),
+                                              self.erg_ax))
+        self.image_e_pos_value_lbl.setText('({:.4f})'.format(
+            self.erg_ax[int(self.mdc_pos.get_value())]))
         self.image_e_pos.setValue(int(self.mdc_pos.get_value()))
 
     def update_mdc_slider(self):
@@ -388,7 +386,8 @@ class EDCFitter(QMainWindow):
         self.mdc_line_cut.setValue(e)
         self.mdc_line_edc.setValue(self.erg_ax[e])
         self.set_binning_lines()
-        self.image_e_pos_value_lbl.setText('({:.4f})'.format(self.erg_ax[int(self.mdc_pos.get_value())]))
+        self.image_e_pos_value_lbl.setText('({:.4f})'.format(
+            self.erg_ax[int(self.mdc_pos.get_value())]))
 
     def update_edc_slider(self):
         k = self.image_k_pos.value()
@@ -445,24 +444,38 @@ class EDCFitter(QMainWindow):
                 pass
 
         k_idx = self.edc_pos.get_value()
-        e_start, e_stop = self.image_edc_range_start.value(), self.image_edc_range_stop.value()
-        e_start, e_stop = wp.indexof(e_start, self.erg_ax), wp.indexof(e_stop, self.erg_ax)
+        e_start, e_stop = self.image_edc_range_start.value(), \
+                          self.image_edc_range_stop.value()
+        e_start, e_stop = wp.indexof(e_start, self.erg_ax), \
+                          wp.indexof(e_stop, self.erg_ax)
+
         try:
             self.mdc_line_cut.setBounds([e_start, e_stop])
-            self.mdc_line_edc.setBounds([self.erg_ax[e_start], self.erg_ax[e_stop]])
+            self.mdc_line_edc.setBounds([self.erg_ax[e_start],
+                                         self.erg_ax[e_stop]])
             self.image_e_pos.setRange(e_start, e_stop)
         except AttributeError:
             pass
 
         if self.image_bin.isChecked():
             n = self.image_bin_n.value()
-            self.edc = np.sum(self.data_set.data[0, (k_idx - n):(k_idx + n), e_start:e_stop], axis=0)
+            self.edc = np.sum(self.data_set.data[0, (k_idx - n):(k_idx + n),
+                              e_start:e_stop], axis=0)
         else:
             self.edc = self.data_set.data[0, k_idx, e_start:e_stop]
         self.edc_erg_ax = self.erg_ax[e_start:e_stop]
 
         if self.symmetrize_box.isChecked():
-            self.edc, self.edc_erg_ax = wp.symmetrize_edc(self.edc, self.edc_erg_ax)
+            if self.image_edc_range_start.value() > 0:
+                kin_erg_box = QMessageBox()
+                kin_erg_box.setIcon(QMessageBox.Information)
+                kin_erg_box.setText('Energy must be in binding')
+                kin_erg_box.setStandardButtons(QMessageBox.Ok)
+                if kin_erg_box.exec() == QMessageBox.Ok:
+                    self.symmetrize_box.setChecked(False)
+            else:
+                self.edc, self.edc_erg_ax = wp.symmetrize_edc(self.edc,
+                                                              self.edc_erg_ax)
 
         edc_plot.plot(self.edc_erg_ax, self.edc, pen=mkPen('k', width=2))
 
@@ -475,10 +488,12 @@ class EDCFitter(QMainWindow):
         edc_plot.setYRange(0, self.edc.max())
         edc_plot.setXRange(self.edc_erg_ax.min(), self.edc_erg_ax.max())
 
-        self.edc_line_start = PlotDataItem([e_start, e_start], [0, self.k_ax.size],
-                                           pen=mkPen('m', style=QtCore.Qt.DashLine))
-        self.edc_line_stop = PlotDataItem([e_stop, e_stop], [0, self.k_ax.size],
-                                          pen=mkPen('m', width=2, style=QtCore.Qt.DashLine))
+        self.edc_line_start = PlotDataItem(
+            [e_start, e_start], [0, self.k_ax.size],
+            pen=mkPen('m', style=QtCore.Qt.DashLine))
+        self.edc_line_stop = PlotDataItem(
+            [e_stop, e_stop], [0, self.k_ax.size],
+            pen=mkPen('m', width=2, style=QtCore.Qt.DashLine))
         self.cut_panel.addItem(self.edc_line_start)
         self.cut_panel.addItem(self.edc_line_stop)
 
