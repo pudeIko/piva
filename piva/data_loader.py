@@ -68,6 +68,7 @@ everything in this module) and previously pickled files.
 """
 import ast
 import os
+import sys
 import pickle
 import re
 import zipfile
@@ -75,6 +76,10 @@ from copy import deepcopy
 from argparse import Namespace
 from errno import ENOENT
 from warnings import catch_warnings, simplefilter  # , warn
+from PyQt5.QtWidgets import QMessageBox, QDialog, QLabel, QComboBox, \
+    QTableWidget, QTableWidgetItem, QDialogButtonBox, QGridLayout, QApplication
+from PyQt5 import QtCore, QtGui
+# from PyQt5.QtCore import QStri
 
 import h5py
 import numpy as np
@@ -2330,8 +2335,8 @@ class DataloaderCASSIOPEE(Dataloader):
 
 class DataloaderURANOS(Dataloader):
     """
-    Object that allows loading and saving of ARPES data from the SIS
-    beamline at PSI which is in hd5 format.
+    Object that allows loading and saving of ARPES data from the URANOS
+    beamline at SOLARIS which is in zip and pxt format.
     """
     name = 'URANOS'
     # Number of cuts that need to be present to assume the data as a map
@@ -2518,15 +2523,13 @@ class DataloaderURANOS(Dataloader):
                  ('Number of Sweeps', 'n_sweeps', int),
                  ('ThetaX', 'thetaX', float),
                  ('ThetaY', 'thetaY', float),
-                 ('A', 'azimuth', float), # phi
-                 ('P', 'polar', float), # theta
-                 ('T', 'tilt', float),
+                 ('R1', 'theta', float), # theta
+                 ('R3', 'tilt', float),
                  ('X', 'x', float),
                  ('Y', 'y', float),
                  ('Z', 'z', float)]
         meta_namespace = vars(self.read_pxt_ibw_metadata(keys1, meta))
 
-        print(shape)
         if len(shape) == 2:
             x = 1
             y = pxt.axis[1].size
@@ -2539,9 +2542,12 @@ class DataloaderURANOS(Dataloader):
             yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
             energies = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
         else:
-            # print('Only cuts of .pxt files are working.')
-            # return
-            data = data[1, :, :]
+            self.multiple_cuts_box = PXT_Dialog(shape[0])
+            box_return_value = self.multiple_cuts_box.exec()
+            selection = self.multiple_cuts_box.selection_box.currentIndex()
+            if box_return_value == 0:
+                return
+            data = data[selection, :, :]
             x = 1
             y = pxt.axis[1].size
             N_E = pxt.axis[0].size
@@ -2553,12 +2559,12 @@ class DataloaderURANOS(Dataloader):
             yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
             energies = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
 
-
         res = Namespace(
             data=data,
             xscale=xscale,
             yscale=yscale,
-            zscale=energies
+            zscale=energies,
+            scan_type='cut'
         )
 
         for key in meta_namespace.keys():
@@ -2580,20 +2586,72 @@ class DataloaderURANOS(Dataloader):
                     value = dtype(value)
                     metadata.__setattr__(name, value)
                 elif tokens[0] == 'Mode':
-                    if tokens[1].split()[0] == 'ARPES' and tokens[1].split()[1] == 'Mapping':
+                    if tokens[1].split()[0] == 'ARPES' and \
+                            tokens[1].split()[1] == 'Mapping':
                         metadata.__setattr__('scan_type', 'DA scan')
                 elif tokens[0] == 'Thetay_Low':
-                    metadata.__setattr__('scan_start', float(tokens[1].split()[0]))
+                    metadata.__setattr__('scan_start',
+                                         float(tokens[1].split()[0]))
                 elif tokens[0] == 'Thetay_High':
-                    metadata.__setattr__('scan_stop', float(tokens[1].split()[0]))
+                    metadata.__setattr__('scan_stop',
+                                         float(tokens[1].split()[0]))
                 elif tokens[0] == 'Thetay_StepSize':
-                    metadata.__setattr__('scan_step', float(tokens[1].split()[0]))
+                    metadata.__setattr__('scan_step',
+                                         float(tokens[1].split()[0]))
         return metadata
 
 
 # +-------+ #
 # | Tools | # =================================================================
 # +-------+ #
+
+
+class PXT_Dialog(QDialog):
+
+    def __init__(self, n_cuts=None, parent=None):
+        super(PXT_Dialog, self).__init__(parent)
+
+        label = QLabel(f"Data file contains {n_cuts} slices.\n"
+                       f"Choose the one to open.")
+        combo = QComboBox()
+        opts = [str(x + 1) for x in np.arange(n_cuts)]
+        combo.addItems(opts)
+
+        # self.tableWidget = QTableWidget(2, 3)
+        # self.tableWidget.setHorizontalHeaderLabels(
+        #     QString("Nuke Script;File Modification Time;User").split(";"))
+
+        # header = self.tableWidget.horizontalHeader()
+        # header.ResizeMode(0, QHeaderView.ResizeToContents)
+        # header.ResizeMode(1, QHeaderView.Stretch)
+        # header.ResizeMode(2, QHeaderView.Stretch)
+        # header.ResizeMode()
+
+        # stringlist = {
+        #     u"1": u"a",
+        #     u"2": u"b",
+        # }
+
+        # for row, (key, value) in enumerate(stringlist.iteritems()):
+        #     nameitem = QTableWidgetItem(str(key))
+        #     codeitem = QTableWidgetItem(str(value))
+        #     self.tableWidget.setItem(row, 0, nameitem)
+        #     self.tableWidget.setItem(row, 1, codeitem)
+
+        box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+                               centerButtons=True)
+        box.accepted.connect(self.accept)
+        box.rejected.connect(self.reject)
+        self.buttons_box = box
+        self.selection_box = combo
+
+        lay = QGridLayout(self)
+        lay.addWidget(label, 0, 0, 1, 2)
+        lay.addWidget(self.selection_box, 1, 0, 1, 2)
+        # lay.addWidget(self.tableWidget, 1, 0, 1, 2)
+        lay.addWidget(self.buttons_box, 2, 0, 1, 2)
+        self.resize(240, 140)
+
 
 # List containing all reasonably defined dataloaders
 all_dls = [

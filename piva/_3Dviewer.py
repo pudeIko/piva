@@ -1379,9 +1379,10 @@ class MainWindow3D(QtWidgets.QMainWindow):
             return
 
         if self.util_panel.axes_transform_kz.isChecked():
-            ky, _ = wp.hv2kz(anal_axis, scanned_ax, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax, a=a,
-                             orientation = orientation)
-            y_min, y_max, min_step = ky[-1].min(), ky[-1].max(), wp.get_step(ky[0])
+            ky, _ = wp.hv2kz(anal_axis, scanned_ax, d_scan_ax=d_scan_ax,
+                             d_anal_ax=d_anal_ax, a=a, orientation=orientation)
+            y_min, y_max, min_step = ky[-1].min(), ky[-1].max(), \
+                                     wp.get_step(ky[0])
             new_yscale = np.arange(y_min, y_max, min_step)
 
             print('rescaling data: ', end='')
@@ -1679,7 +1680,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
             save_cor_box.setIcon(QMessageBox.Question)
             save_cor_box.setWindowTitle('Save data')
             save_cor_box.setText("Do you want to save applied corrections?")
-            save_cor_box.setStandardButtons(QMessageBox.No | QMessageBox.Ok | QMessageBox.Cancel)
+            save_cor_box.setStandardButtons(QMessageBox.No | QMessageBox.Ok |
+                                            QMessageBox.Cancel)
 
             box_return_value = save_cor_box.exec()
             if box_return_value == QMessageBox.Ok:

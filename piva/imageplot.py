@@ -7,8 +7,9 @@ from sys import platform
 
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, QLineEdit, \
-    QMainWindow, QDialogButtonBox, QMessageBox, QScrollArea
+from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QComboBox, \
+    QDoubleSpinBox, QSpinBox, QPushButton, QLineEdit, QMainWindow, \
+    QDialogButtonBox, QMessageBox, QScrollArea
 from PyQt5.QtGui import QColor, QPalette
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
@@ -936,8 +937,8 @@ class CursorPlot(pg.PlotWidget):
 
 
 class UtilitiesPanel(QWidget):
-    """ Utilities panel on the top. Mostly just creating and aligning the stuff, signals and callbacks are
-    handled in 'MainWindow' """
+    """ Utilities panel on the top. Mostly just creating and aligning the
+    stuff, signals and callbacks are handled in 'MainWindow' """
     # TODO Fermi edge fitting
     # TODO k-space conversion
     # TODO ROI
@@ -1567,11 +1568,11 @@ class UtilitiesPanel(QWidget):
         self.file_sum_datasets_sum_button = QPushButton('sum')
         self.file_sum_datasets_reset_button = QPushButton('reset')
 
-        self.file_jn_main_lbl = QLabel('Jupyter')
+        self.file_jn_main_lbl = QLabel('Jupyter-lab')
         self.file_jn_main_lbl.setFont(bold_font)
         self.file_jn_fname_lbl = QLabel('file name:')
         self.file_jn_fname = QLineEdit(self.mw.title.split('.')[0])
-        self.file_jn_button = QPushButton('open in jn')
+        self.file_jn_button = QPushButton('open in jl')
 
         self.file_mdc_fitter_lbl = QLabel('MDC fitter')
         self.file_mdc_fitter_lbl.setFont(bold_font)
@@ -1986,16 +1987,31 @@ class UtilitiesPanel(QWidget):
             return
 
     def open_jupyter_notebook(self):
-        file_path = self.mw.fname[:-len(self.mw.title)] + self.file_jn_fname.text() + '.ipynb'
+        file_path = self.mw.fname[:-len(self.mw.title)] + \
+                    self.file_jn_fname.text() + '.ipynb'
         template_path = os.path.dirname(os.path.abspath(__file__)) + '/'
         template_fname = 'template.ipynb'
+
+        if os.path.isfile(file_path):
+            file_exists_box = QMessageBox()
+            file_exists_box.setIcon(QMessageBox.Information)
+            file_exists_box.setText('File already exists.\nOverwrite?')
+            file_exists_box.setStandardButtons(QMessageBox.Ok |
+                                               QMessageBox.Cancel)
+            if file_exists_box.exec() == QMessageBox.Cancel:
+                return
+
         self.edit_file((template_path + template_fname), file_path)
 
-        # Open jupyter notebook as a subprocess
-        openJupyter = "jupyter notebook"
-        subprocess.Popen(openJupyter, shell=True, cwd=self.mw.fname[:-len(self.mw.title)])
+        if not self.mw.db.jupyter_lab_opened:
+            # Open jupyter notebook as a subprocess
+            openJupyter = "jupyter lab"
+            subprocess.Popen(openJupyter, shell=True,
+                             cwd=self.mw.fname[:-len(self.mw.title)])
+            self.mw.db.jupyter_lab_opened = True
 
     def edit_file(self, template, new_file_name):
+
         os.system('touch ' + new_file_name)
 
         templ_file = open(template, 'r')
@@ -2007,16 +2023,30 @@ class UtilitiesPanel(QWidget):
         # writing to file
         for line in templ_lines:
             if 'path = ' in line:
-                line = '    "path = \'{}\'\\n",'.format(self.mw.fname[:-len(self.mw.title)])
+                line = '    "path = \'{}\'\\n",'.format(
+                    self.mw.fname[:-len(self.mw.title)])
             if 'fname = ' in line:
                 line = '    "fname = \'{}\'\\n",'.format(self.mw.title)
             if 'slit_idx, e_idx =' in line:
                 if self.dim == 2:
                     line = '    "slit_idx, e_idx = {}, {}\\n",'.format(
                         self.momentum_hor.value(), self.energy_vert.value())
+                    line = line + '    "bm = data[0, :, :]\\n",\n'
+                    line = line + '    "plot_x = ' \
+                                  'data[0, slit_idx, e_idx]\\n",\n'
+                    line = line + '    "plot_y = data[0, :, e_idx]"\n'
                 elif self.dim == 3:
-                    line = '    "scan_idx, slit_idx, e_idx = {}, {}, {}\\n",'.format(
-                        self.momentum_vert.value(), self.momentum_hor.value(), self.energy_vert.value())
+                    line = '    "scan_idx, slit_idx, e_idx = ' \
+                           '{}, {}, {}\\n",'.format(
+                        self.momentum_vert.value(),
+                        self.momentum_hor.value(),
+                        self.energy_vert.value())
+                    line = line + '    "main_cut = data[:, :, e_idx]\\n",\n'
+                    line = line + '    "cut_x = data[:, slit_idx, :]\\n",\n'
+                    line = line + '    "cut_y = data[scan_idx, :, :]\\n",\n'
+                    line = line + '    "plot_x = ' \
+                                  'data[:, slit_idx, e_idx]\\n",\n'
+                    line = line + '    "plot_y = data[scan_idx, :, e_idx]"\n'
             new_lines.append(line)
 
         new_file = open(new_file_name, 'w')
@@ -2143,7 +2173,7 @@ class TracedVariable(QtCore.QObject):
 
     **Attributes**
 
-    ==========================  ================================================
+    ==========================  ===============================================
     _value                      the python object represented by this
                                 TracedVariable instance. Should never be
                                 accessed directly but only through the getter
@@ -2162,7 +2192,7 @@ class TracedVariable(QtCore.QObject):
                                 assume. If set, all tries to set the value
                                 will automatically set it to the closest
                                 allowed one.
-    ==========================  ================================================
+    ==========================  ===============================================
     """
     sig_value_changed = QtCore.Signal()
     sig_value_read = QtCore.Signal()
@@ -2225,12 +2255,12 @@ class TracedVariable(QtCore.QObject):
 
         **Parameters**
 
-        ======  =================================================================
+        ======  ===============================================================
         values  iterable; The complete list of allowed (numerical) values. This
                 is converted to a sorted np.array internally. If values is
                 `None`, all restrictions on allowed values will be lifted and
                 all values are allowed.
-        ======  =================================================================
+        ======  ===============================================================
         """
         if values is None:
             # Reset the allowed values, i.e. all values are allowed

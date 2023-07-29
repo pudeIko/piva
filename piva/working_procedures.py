@@ -17,6 +17,7 @@ from scipy.optimize import curve_fit, minimize, fsolve
 from scipy.signal import convolve2d
 from scipy.optimize import OptimizeWarning
 from scipy.fft import fft, ifft, fft2, ifft2, fftshift, ifftshift
+# from mp_api.client import MPRester
 
 import piva.data_loader as dl
 import piva.my_constants as const
@@ -117,13 +118,16 @@ def asym_lorentzian(x, a0, mu, gamma, alpha=0, resol=0):
         return ndimage.gaussian_filter(y, sigma=resol)
 
 
-def two_lorentzians(x, a0, mu0, gamma0, a1, mu1, gamma1):
-    return lorentzian(x, a0, mu0, gamma0) + lorentzian(x, a1, mu1, gamma1)
+def two_lorentzians(x, a0, mu0, gamma0, a1, mu1, gamma1, resol=0):
+    y = lorentzian(x, a0, mu0, gamma0) + lorentzian(x, a1, mu1, gamma1)
+    return ndimage.gaussian_filter(y, resol)
 
 
-def three_lorentzians(x, a0, mu0, gamma0, a1, mu1, gamma1, a2, mu2, gamma2):
-    return lorentzian(x, a0, mu0, gamma0) + lorentzian(x, a1, mu1, gamma1) + \
+def three_lorentzians(x, a0, mu0, gamma0, a1, mu1, gamma1, a2, mu2, gamma2,
+                      resol=0):
+    y = lorentzian(x, a0, mu0, gamma0) + lorentzian(x, a1, mu1, gamma1) + \
            lorentzian(x, a2, mu2, gamma2)
+    return ndimage.gaussian_filter(y, resol)
 
 
 def four_lorentzians(x, a, mu, gamma):
@@ -131,6 +135,18 @@ def four_lorentzians(x, a, mu, gamma):
            lorentzian(x, a[1], mu[1], gamma[1]) + \
            lorentzian(x, a[2], mu[2], gamma[2]) + \
            lorentzian(x, a[3], mu[3], gamma[3])
+
+
+def voigt(x, a, mu, gamma, sigma):
+    """
+        Return the Voigt line shape at x with Lorentzian component FWHM gamma
+        and Gaussian component FWHM sigma.
+
+    """
+
+    # return a * np.real(wofz((x - mu + 1j * gamma) / sigma / np.sqrt(2))) / sigma / np.sqrt(2 * np.pi)
+    # args = x - mu
+    return a * voigt_profile(x - mu, sigma, gamma)
 
 
 def lorentzian_dublet(x, *p, delta=1, line='f'):
@@ -651,17 +667,6 @@ def exp(x, a, k):
     return a * np.exp(k * x)
 
 
-def voigt(x, a, mu, gamma, sigma):
-    """
-        Return the Voigt line shape at x with Lorentzian component FWHM gamma
-        and Gaussian component FWHM sigma.
-
-    """
-
-    # return a * np.real(wofz((x - mu + 1j * gamma) / sigma / np.sqrt(2))) / sigma / np.sqrt(2 * np.pi)
-    args = x - mu
-    return a * voigt_profile(args, sigma, gamma)
-
 
 def print_fit_results(p, cov, labels=None):
     if labels is None:
@@ -863,9 +868,50 @@ def set_fit_fun(p00, fit_alpha, fit_resol):
     return fit_fun, p0
 
 
+def kk_im2re(gamma, vF=1):
+
+    im = 0.5 * vF * np.array(gamma) * 1j
+    im = np.hstack((im, np.flip(im[1:])))
+    im[0] *= 0.5
+    im_t = np.fft.ifft(im)
+    n = im.size // 2 + 1
+    im_t[n:] = np.zeros(n - 1)
+    re = 2 * np.fft.fftshift(np.fft.fft(im_t))
+    return re
+
+
+def kk_re2im(re):
+
+    re = np.array(re)
+    re = np.hstack((np.array(re), np.flip(re[1:])))
+    re[0] *= 0.5
+    re_t = np.fft.ifft(re)
+    n = re.size // 2 + 1
+    re_t[n:] = np.zeros(n - 1)
+    re = 2 * np.fft.fftshift(np.fft.fft(re_t))
+    return re
+
+
+def find_vF(gamma, re_disp, vF0=3, method='Nelder-Mead'):
+
+    def disp_kk_diff(vF, gamma, re_disp):
+        re_kk = kk_im2re(gamma, vF=vF).real
+        return np.sum(np.abs(re_kk[:re_disp.size] - re_disp))
+
+    res = minimize(disp_kk_diff, x0=vF0, args=(gamma, re_disp,), method=method)
+    return res
+
+
+def McMillan_Tc(omega_D=1, lam=1, mu=1):
+    frac = 1.04 * (1 + lam) / (lam - mu * (1 + 0.62 * lam))
+    Tc = (omega_D / 1.45) * np.exp(-frac)
+    return Tc
+
+
 # +--------------------------------------------------+ #
 # | Resolution fitting functions and PGM calibration | # ======================
 # +--------------------------------------------------+ #
+
 
 def step_function_core(x, step_x=0, flip=False):
     """ Implement a perfect step function f(x) with step at `step_x`::
@@ -1492,6 +1538,35 @@ def average_over_range(data, center, n):
     return normalize(avr)
 
 
+def rotate(matrix, alpha, deg=True):
+
+    matrix = np.array(matrix)
+    if deg:
+        alpha = np.deg2rad(alpha)
+
+    r = np.array([[np.cos(alpha), -np.sin(alpha)],
+                  [np.sin(alpha),  np.cos(alpha)]])
+
+    if len(matrix.shape) == 1:
+        return r @ matrix
+    elif len(matrix.shape) == 2:
+        rotated = np.zeros_like(matrix)
+        for vi in range(matrix.shape[0]):
+            rotated[vi] = r @ matrix[vi]
+        return rotated
+    else:
+        print('matrix size not supported.')
+        return
+
+
+def trapezoid_integral(y, dx=1, c0=0):
+    y = np.array(y)
+    integ = c0
+    for idx in range(y.size - 1):
+        integ += (0.5 * (y[idx] + y[idx + 1]) * dx)
+    return integ
+
+
 def sum_edcs_around_k(data, kx, ky, ik=0):
     dkx = np.abs(data.xscale[0] - data.xscale[1])
     min_kx = indexof(kx - ik * dkx, data.xscale)
@@ -1679,6 +1754,71 @@ def scan_whole_FS_for_gaps(data1, data2, erg1, erg2, e_range=None,
     return [np.array(points_x), np.array(points_y), gaps]
 
 
+def get_cuts_from_mp_banstructure(band_structure, cuts=None):
+    print(band_structure.__dir__())
+    print(type(band_structure))
+    print(band_structure.labels_dict)
+    # print(bs_sc.kpoints)
+    # print(bs_sc.eigenvals)
+    # print(bs_sc.structure)
+    print(list(band_structure.projections.values())[0].shape)
+    # print(list(bs_sc))
+    print(list(band_structure.bands.values())[0].shape)
+    print(band_structure.nb_bands)
+    print(len(band_structure.distance))
+    print(band_structure.branches)
+    bands = list(band_structure.bands.values())[0]
+    k = np.array(band_structure.distance)
+    # print(bs_sc.get_band_gap())
+    # print(bs_sc.is_metget_direct_band_gapal)
+    # print(bs_sc.get_sym_eq_kpoints())
+    # print(bs_sc.get_kpoint_degeneracy())
+
+
+def get_conc_from_xps(I, elem, line, imfp=1):
+    K_sf = {'2s': 2.27, '2p_1': 1.35, '2p_3': 2.62}
+    Ba_sf = {'3p_1': 5.42, '3p_3': 11.71, '3d_3': 17.92, '3d_5': 25.84,
+             '4s': 1.13, '4p_1': 1.34, '4p_3': 2.73, '4d_3': 2.4, '4d_5': 3.46}
+    Bi_sf = {'4s': 1.96, '4p_1': 2.1, '4p_3': 6.48, '4d_3': 9.14,
+             '4d_5': 13.44, '4f_5': 10.93, '4f_7': 13.9, '5s': 0.563,
+             '5p_1': 0.546, '5p_3': 1.41, '5d_3': 1.24, '5d_5': 1.76}
+    sf = {'K': K_sf, 'Ba': Ba_sf, 'Bi': Bi_sf}
+
+    try:
+        return I / (sf[elem][line] * imfp)
+    except KeyError:
+        print('Element or line not found.')
+
+
+def append_xps_fit_results(tab, label, elem, line, res, delta=0):
+    area = 0.5 * np.pi * res[0] * res[2]
+    if 'p_1' in line:
+        area *= 0.5
+    elif 'd_3' in line:
+        area *= 2/3
+    elif 'f_5' in line:
+        area *= 0.75
+    tab['label'].append(label)
+    tab['element'].append(elem)
+    tab['line'].append(line)
+    tab['area'].append(np.round(get_conc_from_xps(area, elem, line), 3))
+    tab['mu'].append(np.round(res[1] - delta, 3))
+    tab['gamma'].append(np.round(res[2], 3))
+
+
+@njit(parallel=True)
+def get_kz_coordinates(ky, kz, KY, KZ):
+    y, z = 0, 0
+    d = 1e6
+    for zi in range(KY.shape[0]):
+        for yi in range(KY.shape[1]):
+            new_d = np.sqrt((ky - KY[zi, yi])**2 + (kz - KZ[zi, yi])**2)
+            if new_d < d:
+                d = new_d
+                y, z = yi, zi
+    return y, z
+
+
 # +-----------------------+ #
 # | Plotting functions    | # =================================================
 # +-----------------------+ #
@@ -1851,11 +1991,11 @@ def plot_n_const_E_maps(data, kx, ky, energies, names, E=0, bin=3,
 
 def plot_kz_in_kspace(data, ang, hvs, work_func=4.5, E0=0, trans_kz=False,
                       gamma=1, plot=False, **kwargs):
-
+    print('*** deprecated ***')
     data, ang, hvs = np.array(data), np.array(ang), np.array(hvs)
     kx_init = []
-    for hv in hvs:
-        kx_init.append(a2k_single_axis(ang, hv, **kwargs))
+    # for hv in hvs:
+    #     kx_init.append(a2k_single_axis(ang, hv, **kwargs))
     kx_init = np.array(kx_init)
 
     if trans_kz:
@@ -1904,14 +2044,18 @@ def plot_kz_in_kspace(data, ang, hvs, work_func=4.5, E0=0, trans_kz=False,
 # | Image processing    | # ===================================================
 # +---------------------+ #
 
+
 def find_gamma(FS, x0, y0, method='Nelder-Mead', print_output=False):
     """
     Wrapper for doing minimization and finding Gamma in Fermi surface.
     :param FS:              np.array; FS 2D data
     :param x0:              int; initial guess for x-axis coordinate
     :param y0:              int; initial guess for y-axis coordinate
-    :param method:          string; method used for scipy minimization; default: simplex, which was tested and should be enough.
-                            For other methods check documentation for <scipy.optimize.minimize>.
+    :param method:          string; method used for scipy minimization;
+                                default: simplex, which was tested and should
+                                be enough.
+                            For other methods check documentation for
+                            <scipy.optimize.minimize>.
     :param print_output:    bool; printing option
     :return:
             res.x   np.array; [x0, y0] minimized values
@@ -1926,7 +2070,8 @@ def find_gamma(FS, x0, y0, method='Nelder-Mead', print_output=False):
         else:
             status = 'failed'
         labels = ['status', 'r value', 'niter', 'x0', 'y0']
-        entries = [status, '{:.4f}'.format(-res.fun), res.nit, '{:.2f}'.format(res.x[0]), '{:.2f}'.format(res.x[1])]
+        entries = [status, '{:.4f}'.format(-res.fun), res.nit,
+                   '{:.2f}'.format(res.x[0]), '{:.2f}'.format(res.x[1])]
 
         d = {'param': labels,
              'value': entries}
@@ -1968,7 +2113,7 @@ def rotate_around_xy(init_guess, data_org):
     else:
         y = y_org - y0
 
-    # specify boundries
+    # specify boundaries
     x_start = int(np.max([0, x0 - x]))
     x_stop = int(np.min([x + x0, x_org]))
     y_start = int(np.max([0, y0 - y]))
@@ -1976,7 +2121,8 @@ def rotate_around_xy(init_guess, data_org):
 
     data = data_org[x_start:x_stop, y_start:y_stop]
 
-    # calculate correlation coeffitient (minus, because we actually want to maximize it)
+    # calculate correlation coefficient (minus, because we actually want to
+    # maximize it)
     if transposed:
         return -imgs_corr(data.T, np.flip(data).T)
     else:
@@ -2107,7 +2253,8 @@ def fit_ellipse(data, xscale, yscale, r, intensity_cutoff, printing=True):
             xx:                 np.array; 1D array of ellipse's x coordinates
             yy:                 np.array; 1D array of ellipse's y coordinates
     """
-    # prepare points for fit. Be careful, your destiny depends highly on your choices here
+    # prepare points for fit. Be careful, your destiny depends highly
+    # on your choices here
     x, y = get_points(data, xscale, yscale, r, intensity_cutoff)
 
     def __fit_ellipse(x, y):

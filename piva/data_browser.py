@@ -40,6 +40,7 @@ class DataBrowser(QtWidgets.QMainWindow):
         self.plotting_tools = {}
         self.file_explorer = None
         self.model = None
+        self.jupyter_lab_opened = False
         self.sb_timeout = 2500
         self.set_file_explorer()
         self.set_menu_bar()
@@ -49,7 +50,8 @@ class DataBrowser(QtWidgets.QMainWindow):
         self.setWindowTitle('piva data browser - ' + self.working_dir)
         self.show()
         time_init = time.time()
-        print("initializing piva browser: {:.3f} s".format(time_init - time_packages))
+        print("initializing piva browser: {:.3f} s".format(time_init -
+                                                           time_packages))
 
     @staticmethod
     def add_slash(path):
@@ -95,7 +97,8 @@ class DataBrowser(QtWidgets.QMainWindow):
         self.open_dv(fname)
 
     def mb_open_dir(self):
-        chosen_dir = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory', self.working_dir))
+        chosen_dir = str(QtWidgets.QFileDialog.getExistingDirectory(
+            self, 'Select Directory', self.working_dir))
         try:
             self.working_dir = self.add_slash(chosen_dir)
             self.change_working_dir(self.working_dir)
@@ -116,11 +119,14 @@ class DataBrowser(QtWidgets.QMainWindow):
 
         try:
             if data_set.xscale.size == 1:
-                self.data_viewers[fname] = p2d.MainWindow2D(self, data_set=data_set, index=fname)
+                self.data_viewers[fname] = \
+                    p2d.MainWindow2D(self, data_set=data_set, index=fname)
             else:
-                self.data_viewers[fname] = p3d.MainWindow3D(self, data_set=data_set, index=fname)
+                self.data_viewers[fname] = \
+                    p3d.MainWindow3D(self, data_set=data_set, index=fname)
         except Exception as e:
-            self.sb.showMessage('Couldn\'t load data,  format not supported.', self.sb_timeout)
+            self.sb.showMessage('Couldn\'t load data,  format not supported.',
+                                self.sb_timeout)
             if testing:
                 raise e
 
@@ -131,9 +137,11 @@ class DataBrowser(QtWidgets.QMainWindow):
     def single_plotting_tool(self, thread_index):
         print(f'[Debug]data_browser.single_plotting_tool({thread_index})')
         try:
-            self.plotting_tools[thread_index] = pt.PlotTool(self, title=thread_index)
+            self.plotting_tools[thread_index] = pt.PlotTool(self,
+                                                            title=thread_index)
         except Exception:
-            self.sb.showMessage('Couldn\'t open plotting tool', self.sb_timeout)
+            self.sb.showMessage('Couldn\'t open plotting tool',
+                                self.sb_timeout)
         finally:
             self.thread_count += 1
 
@@ -540,12 +548,14 @@ class DataBrowser(QtWidgets.QMainWindow):
             self.shown_columns.remove(i)
 
         # Connect signal for changing selection in the QTreeView
-        file_explorer.selectionModel().selectionChanged.connect(self.on_selection_change)
+        file_explorer.selectionModel().selectionChanged.connect(
+            self.on_selection_change)
         self.file_explorer = file_explorer
         self.model = model
 
     def change_working_dir(self, path):
-        """ Change working directory in a shell and update data_browser tree view"""
+        """ Change working directory in a shell and update data_browser
+        tree view"""
         if QtCore.QDir.exists(QtCore.QDir(), path):
             os.chdir(path)
         else:
@@ -570,7 +580,8 @@ class DataBrowser(QtWidgets.QMainWindow):
 
     def update_details_panel(self):
         """ Try reading the file currently selected by the QTreeView. In case 
-        of success, fill the details panel with metadata from the selected file.
+        of success, fill the details panel with metadata from the selected
+        file.
         """
         selected_loader = self.dp_dl_picker.currentText()
         fname = self.get_selected_path()
@@ -585,53 +596,85 @@ class DataBrowser(QtWidgets.QMainWindow):
         except FileNotFoundError:
             return
         except NotImplementedError:
-            self.sb.showMessage('File extension not implemented for a chosen data loader.', self.sb_timeout)
+            self.sb.showMessage('File extension not implemented '
+                                'for a chosen data loader.', self.sb_timeout)
             return
         except Exception as e:
-            self.sb.showMessage('Couldn\'t load data, file format not supported.', self.sb_timeout)
+            self.sb.showMessage('Couldn\'t load data, '
+                                'file format not supported.', self.sb_timeout)
             if testing:
                 raise e
             return
         finally:
-            # Better clean up the details panel before we fill it with new info.
+            # Clean up the details panel before we fill it with new info.
             self.reset_detail_panel()
 
         # Reaching this point means we have succeeded in loading *something*.
         try:
             # scan
-            if not (data.scan_type is None): self.dp_scan_type.setText('{}'.format(data.scan_type))
+            if not (data.scan_type is None):
+                self.dp_scan_type.setText('{}'.format(data.scan_type))
             if not (data.scan_dim is None):
                 sd = data.scan_dim
                 if len(sd) == 0:
                     pass
                 else:
-                    if hasattr(data, 'scan_dim'): self.dp_scan_start.setText('{:.2f}'.format(float(data.scan_dim[0])))
-                    if hasattr(data, 'scan_dim'): self.dp_scan_stop.setText('{:.2f}'.format(float(data.scan_dim[1])))
-                    if hasattr(data, 'scan_dim'): self.dp_scan_step.setText('{:.2f}'.format(float(data.scan_dim[2])))
+                    if hasattr(data, 'scan_dim'):
+                        self.dp_scan_start.setText('{:.2f}'.format(
+                            float(data.scan_dim[0])))
+                    if hasattr(data, 'scan_dim'):
+                        self.dp_scan_stop.setText('{:.2f}'.format(
+                            float(data.scan_dim[1])))
+                    if hasattr(data, 'scan_dim'):
+                        self.dp_scan_step.setText('{:.2f}'.format(
+                            float(data.scan_dim[2])))
             # manipulator
-            if not (data.x is None): self.dp_manip_x.setText('{:.2f}'.format(float(data.x)))
-            if not (data.y is None): self.dp_manip_y.setText('{:.2f}'.format(float(data.y)))
-            if not (data.z is None): self.dp_manip_z.setText('{:.2f}'.format(float(data.z)))
-            if not (data.theta is None): self.dp_manip_theta.setText('{:.2f}'.format(float(data.theta)))
-            if not (data.phi is None): self.dp_manip_phi.setText('{:.2f}'.format(float(data.phi)))
-            if not (data.tilt is None): self.dp_manip_tilt.setText('{:.2f}'.format(float(data.tilt)))
-            if not (data.temp is None): self.dp_manip_temp.setText('{:.1f}'.format(float(data.temp)))
-            if not (data.pressure is None): self.dp_manip_press.setText('{:.2e}'.format(float(data.pressure)))
+            if not (data.x is None):
+                self.dp_manip_x.setText('{:.2f}'.format(float(data.x)))
+            if not (data.y is None):
+                self.dp_manip_y.setText('{:.2f}'.format(float(data.y)))
+            if not (data.z is None):
+                self.dp_manip_z.setText('{:.2f}'.format(float(data.z)))
+            if not (data.theta is None):
+                self.dp_manip_theta.setText('{:.2f}'.format(float(data.theta)))
+            if not (data.phi is None):
+                self.dp_manip_phi.setText('{:.2f}'.format(float(data.phi)))
+            if not (data.tilt is None):
+                self.dp_manip_tilt.setText('{:.2f}'.format(float(data.tilt)))
+            if not (data.temp is None):
+                self.dp_manip_temp.setText('{:.1f}'.format(float(data.temp)))
+            if not (data.pressure is None):
+                self.dp_manip_press.setText('{:.2e}'.format(
+                    float(data.pressure)))
 
             # analyzer
-            if not (data.zscale is None): self.dp_anal_e0.setText('{:.4f}'.format(data.zscale[0]))
-            if not (data.zscale is None): self.dp_anal_e1.setText('{:.4f}'.format(data.zscale[-1]))
-            if not (data.zscale is None): self.dp_anal_de.setText('{:.2e}'.format(wp.get_step(data.zscale)))
-            if not (data.PE is None): self.dp_anal_pe.setText('{}'.format(int(data.PE)))
-            if not (data.lens_mode is None): self.dp_anal_lm.setText('{}'.format(data.lens_mode))
-            if not (data.acq_mode is None): self.dp_anal_am.setText('{}'.format(data.acq_mode))
-            if not (data.n_sweeps is None): self.dp_anal_n_sweeps.setText('{}'.format(int(data.n_sweeps)))
-            if not (data.DT is None): self.dp_anal_dt.setText('{}'.format(int(data.DT)))
+            if not (data.zscale is None):
+                self.dp_anal_e0.setText('{:.4f}'.format(data.zscale[0]))
+            if not (data.zscale is None):
+                self.dp_anal_e1.setText('{:.4f}'.format(data.zscale[-1]))
+            if not (data.zscale is None):
+                self.dp_anal_de.setText('{:.2e}'.format(
+                    wp.get_step(data.zscale)))
+            if not (data.PE is None):
+                self.dp_anal_pe.setText('{}'.format(int(data.PE)))
+            if not (data.lens_mode is None):
+                self.dp_anal_lm.setText('{}'.format(data.lens_mode))
+            if not (data.acq_mode is None):
+                self.dp_anal_am.setText('{}'.format(data.acq_mode))
+            if not (data.n_sweeps is None):
+                self.dp_anal_n_sweeps.setText('{}'.format(int(data.n_sweeps)))
+            if not (data.DT is None):
+                self.dp_anal_dt.setText('{}'.format(int(data.DT)))
 
             # beamline
-            if not (data.hv is None): self.dp_bl_hv.setText('{:.1f}'.format(float(data.hv)))
-            if not (data.polarization is None): self.dp_bl_polar.setText(data.polarization)
-            if not (data.exit_slit is None): self.dp_bl_exit.setText('{}'.format(float(data.exit_slit)))
-            if not (data.FE is None): self.dp_bl_fe.setText('{}'.format(float(data.FE)))
+            if not (data.hv is None):
+                self.dp_bl_hv.setText('{:.1f}'.format(float(data.hv)))
+            if not (data.polarization is None):
+                self.dp_bl_polar.setText(data.polarization)
+            if not (data.exit_slit is None):
+                self.dp_bl_exit.setText('{}'.format(float(data.exit_slit)))
+            if not (data.FE is None):
+                self.dp_bl_fe.setText('{}'.format(float(data.FE)))
         except AttributeError:
             self.reset_detail_panel()
+
