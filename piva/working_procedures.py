@@ -1506,7 +1506,7 @@ def smooth_2d(x, n_box=5, recursion_level=1):
         return smooth_2d(smoothened, n_box, recursion_level - 1)
 
 
-def normalize(data):
+def normalize(data, axis=2):
     if len(data.shape) == 1:
         if data.max() == 0:
             normalized = 0
@@ -1514,14 +1514,53 @@ def normalize(data):
             normalized = data / data.max()
     elif len(data.shape) == 2:
         normalized = np.zeros_like(data)
-        for i in range(data.shape[0]):
-            normalized[i, :] = normalize(data[i, :])
+        if axis == 0:
+            for i in range(data.shape[axis]):
+                normalized[i, :] = normalize(data[i, :])
+        elif axis == 1:
+            for i in range(data.shape[axis]):
+                normalized[:, i] = normalize(data[:, i])
     elif len(data.shape) == 3:
         normalized = np.zeros_like(data)
-        for i in range(data.shape[0]):
-            for j in range(data.shape[1]):
-                normalized[i, j, :] = normalize(data[i, j, :])
+        if axis == 2:
+            for i in range(data.shape[0]):
+                for j in range(data.shape[1]):
+                    normalized[i, j, :] = normalize(data[i, j, :])
+        elif axis == 1:
+            for i in range(data.shape[0]):
+                for j in range(data.shape[2]):
+                    normalized[i, :, j] = normalize(data[i, :, j])
+        elif axis == 0:
+            for i in range(data.shape[1]):
+                for j in range(data.shape[2]):
+                    normalized[:, i, j] = normalize(data[:, i, j])
+    else:
+        print('Not implemented dimensions')
+        return
     return normalized
+
+
+def normalize_to_sum(data, axis=0):
+    norm_data = np.zeros_like(data)
+    if axis == 0:
+        for i in range(data.shape[axis]):
+            if np.sum(data[i, :, :]) == 0:
+                norm_data[i, :, :] = data[i, :, :]
+            else:
+                norm_data[i, :, :] = data[i, :, :] / np.sum(data[i, :, :])
+    elif axis == 1:
+        for i in range(data.shape[axis]):
+            if np.sum(data[:, i, :]) == 0:
+                norm_data[:, i, :] = data[:, i, :]
+            else:
+                norm_data[:, i, :] = data[:, i, :] / np.sum(data[:, i, :])
+    elif axis == 2:
+        for i in range(data.shape[axis]):
+            if np.sum(data[:, :, i]) == 0:
+                norm_data[:, :, i] = data[i, :, :]
+            else:
+                norm_data[:, :, i] = data[:, :, i] / np.sum(data[:, :, i])
+    return norm_data
 
 
 def average_over_range(data, center, n):

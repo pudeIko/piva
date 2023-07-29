@@ -998,8 +998,9 @@ class UtilitiesPanel(QWidget):
             self.momentum_hor_value.setFixedWidth(momentum_labels_width)
             self.momentum_vert_value.setFixedWidth(momentum_labels_width)
 
-        self.layout.addWidget(self.tabs,            0, 0, self.tabs_rows_span, self.tabs_cols_span)
-        self.layout.addWidget(self.buttons,         0, self.tabs_cols_span + 1)
+        self.layout.addWidget(self.tabs,    0, 0, self.tabs_rows_span,
+                              self.tabs_cols_span)
+        self.layout.addWidget(self.buttons, 0, self.tabs_cols_span + 1)
         self.setLayout(self.layout)
 
         # file options
@@ -1007,7 +1008,8 @@ class UtilitiesPanel(QWidget):
         self.file_add_md_button.clicked.connect(self.add_metadata)
         self.file_remove_md_button.clicked.connect(self.remove_metadata)
         self.file_sum_datasets_sum_button.clicked.connect(self.sum_datasets)
-        self.file_sum_datasets_reset_button.clicked.connect(self.reset_summation)
+        self.file_sum_datasets_reset_button.clicked.connect(
+            self.reset_summation)
         self.file_jn_button.clicked.connect(self.open_jupyter_notebook)
 
         # connect callbacks
@@ -1059,9 +1061,13 @@ class UtilitiesPanel(QWidget):
 
         # self.image_pmesh = QCheckBox('pmesh')
 
-        self.image_other_lbl = QLabel('Normalize')
-        self.image_other_lbl.setFont(bold_font)
-        self.image_normalize_edcs = QCheckBox('normalize by each EDC')
+        self.image_normalize_lbl = QLabel('Normalization')
+        self.image_normalize_lbl.setFont(bold_font)
+        self.image_normalize_to_lbl = QLabel('to:')
+        self.image_normalize_to = QComboBox()
+        self.image_normalize_along_lbl = QLabel('along axis:')
+        self.image_normalize_along = QComboBox()
+        self.image_normalize = QCheckBox('normalize')
 
         self.image_BZ_contour_lbl = QLabel('BZ contour')
         self.image_BZ_contour_lbl.setFont(bold_font)
@@ -1124,10 +1130,18 @@ class UtilitiesPanel(QWidget):
         itl.addWidget(self.image_colorscale,            row * sd, 4)
 
         row = 2
-        itl.addWidget(self.image_other_lbl,             row * sd, 0)
-        itl.addWidget(self.image_normalize_edcs,        row * sd, 1, 1, 2)
+        itl.addWidget(self.image_normalize_lbl,         row * sd, 0)
+        itl.addWidget(self.image_normalize_to_lbl,      row * sd, 1)
+        itl.addWidget(self.image_normalize_to,          row * sd, 2)
+        itl.addWidget(self.image_normalize_along_lbl,   row * sd, 3)
+        itl.addWidget(self.image_normalize_along,       row * sd, 4)
+        itl.addWidget(self.image_normalize,             row * sd, 5)
 
         if self.dim == 2:
+
+            self.image_normalize_to.addItems(['maximum', 'intensity sum'])
+            self.image_normalize_along.addItems(['slit', 'energy'])
+
             row = 3
             itl.addWidget(self.image_smooth_lbl,        row * sd, 0)
             itl.addWidget(self.image_smooth_n_lbl,      row * sd, 1)
@@ -1145,6 +1159,10 @@ class UtilitiesPanel(QWidget):
             itl.addWidget(self.image_curvature_button,      row * sd, 5, 1, 2)
 
         if self.dim == 3:
+
+            self.image_normalize_to.addItems(['maximum', 'intensity sum'])
+            self.image_normalize_along.addItems(['scanned', 'slit', 'energy'])
+
             row = 3
             itl.addWidget(self.image_BZ_contour_lbl,    row * sd, 0)
             itl.addWidget(self.image_symmetry_label,    row * sd, 1)

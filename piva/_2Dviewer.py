@@ -60,7 +60,7 @@ class DataHandler2D:
         """ Convenience `getter` method. Allows writing ``self.get_data()``
         instead of ``self.data.get_value()``.
         """
-        if self.main_window.util_panel.image_normalize_edcs.isChecked():
+        if self.main_window.util_panel.image_normalize.isChecked():
             return self.norm_data
         else:
             return self.data.get_value()[0, :, :]
@@ -251,8 +251,13 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.util_panel.image_invert_colors.stateChanged.connect(self.set_cmap)
         self.util_panel.image_gamma.valueChanged.connect(self.set_gamma)
         self.util_panel.image_colorscale.valueChanged.connect(self.set_alpha)
-        self.util_panel.image_normalize_edcs.stateChanged.connect(
-            self.update_main_plot)
+        self.util_panel.image_normalize.stateChanged.connect(
+            self.normalize_data)
+        self.util_panel.image_normalize_to.currentIndexChanged.connect(
+            self.normalize_data)
+        self.util_panel.image_normalize_to.setDisabled(True)
+        self.util_panel.image_normalize_along.currentIndexChanged.connect(
+            self.normalize_data)
         self.util_panel.image_smooth_button.clicked.connect(self.smoooth_data)
         self.util_panel.image_curvature_button.clicked.connect(
             self.curvature_method)
@@ -702,6 +707,15 @@ class MainWindow2D(QtWidgets.QMainWindow):
         erg_idx = self.main_plot.crosshair.vpos.get_value()
         self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
             self.new_energy_axis[erg_idx]))
+
+    def normalize_data(self):
+        if self.util_panel.image_normalize.isChecked():
+            data = self.data_handler.data.get_value()[0, :, :]
+            norm_along = self.util_panel.image_normalize_along.currentIndex()
+            self.data_handler.norm_data = wp.normalize(data, axis=norm_along)
+        else:
+            pass
+        self.update_main_plot()
 
     def convert_to_kspace(self):
         scan_ax = np.array([0])

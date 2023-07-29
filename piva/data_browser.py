@@ -17,9 +17,9 @@ all_dls = {
     'Pickle': dl.DataloaderPickle,
     'SLS - SIS': dl.DataloaderSIS,
     'MAX IV - Bloch': dl.DataloaderBloch,
+    'ALS - MERLIN (4.0.3)': dl.DataloaderALSMerlin,
     'Diamond - i05': dl.Dataloaderi05,
-    '*ALS - MERLIN (4.0.3)': dl.DataloaderALSMerlin,
-    '*SOLARIS - URANOS': dl.DataloaderURANOS,
+    'SOLARIS - URANOS': dl.DataloaderURANOS,
     '*SOLEIL - CASSIOPEE': dl.DataloaderCASSIOPEE,
     '*SLS - ADRESS': dl.DataloaderADRESS,
     '*ALS - MAESTRO (7.0.2)': dl.DataloaderALSMaestro}

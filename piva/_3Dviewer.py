@@ -62,7 +62,7 @@ class DataHandler3D:
         """ Convenience `getter` method. Allows writing ``self.get_data()``
         instead of ``self.data.get_value()``.
         """
-        if self.main_window.util_panel.image_normalize_edcs.isChecked():
+        if self.main_window.util_panel.image_normalize.isChecked():
             return self.norm_data
         else:
             return self.data.get_value()
@@ -97,7 +97,8 @@ class DataHandler3D:
         self.on_z_dim_change()
 
         # Connect signal handling so changes in data are immediately reflected
-        self.z.sig_value_changed.connect(lambda: self.main_window.update_main_plot(emit=False))
+        self.z.sig_value_changed.connect(
+            lambda: self.main_window.update_main_plot(emit=False))
         # self.data.sig_value_changed.connect(self.on_data_change)
 
         self.main_window.update_main_plot()
@@ -495,31 +496,50 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.util_panel.image_cmaps.currentIndexChanged.connect(self.set_cmap)
         self.util_panel.image_invert_colors.stateChanged.connect(self.set_cmap)
         self.util_panel.image_gamma.valueChanged.connect(self.set_gamma)
-        self.util_panel.image_colorscale.valueChanged.connect(self.set_colorscale)
-        self.util_panel.image_normalize_edcs.stateChanged.connect(self.update_main_plot)
-        self.util_panel.image_show_BZ.stateChanged.connect(self.update_main_plot)
-        self.util_panel.image_symmetry.valueChanged.connect(self.update_main_plot)
-        self.util_panel.image_rotate_BZ.valueChanged.connect(self.update_main_plot)
+        self.util_panel.image_colorscale.valueChanged.connect(
+            self.set_colorscale)
+        self.util_panel.image_normalize.stateChanged.connect(
+            self.normalize_data)
+        self.util_panel.image_normalize_to.currentIndexChanged.connect(
+            self.normalize_data)
+        self.util_panel.image_normalize_along.currentIndexChanged.connect(
+            self.normalize_data)
+        self.util_panel.image_show_BZ.stateChanged.connect(
+            self.update_main_plot)
+        self.util_panel.image_symmetry.valueChanged.connect(
+            self.update_main_plot)
+        self.util_panel.image_rotate_BZ.valueChanged.connect(
+            self.update_main_plot)
         self.util_panel.image_2dv_button.clicked.connect(self.open_2dviewer)
 
         # binning signals
         self.util_panel.bin_x.stateChanged.connect(self.set_x_binning_lines)
-        self.util_panel.bin_x_nbins.valueChanged.connect(self.set_x_binning_lines)
+        self.util_panel.bin_x_nbins.valueChanged.connect(
+            self.set_x_binning_lines)
         self.util_panel.bin_y.stateChanged.connect(self.set_y_binning_lines)
-        self.util_panel.bin_y_nbins.valueChanged.connect(self.set_y_binning_lines)
+        self.util_panel.bin_y_nbins.valueChanged.connect(
+            self.set_y_binning_lines)
         self.util_panel.bin_z.stateChanged.connect(self.update_z_binning_lines)
-        self.util_panel.bin_z_nbins.valueChanged.connect(self.update_z_binning_lines)
+        self.util_panel.bin_z_nbins.valueChanged.connect(
+            self.update_z_binning_lines)
         self.util_panel.bin_zx.stateChanged.connect(self.set_zx_binning_line)
-        self.util_panel.bin_zx_nbins.valueChanged.connect(self.set_zx_binning_line)
+        self.util_panel.bin_zx_nbins.valueChanged.connect(
+            self.set_zx_binning_line)
         self.util_panel.bin_zy.stateChanged.connect(self.set_zy_binning_line)
-        self.util_panel.bin_zy_nbins.valueChanged.connect(self.set_zy_binning_line)
+        self.util_panel.bin_zy_nbins.valueChanged.connect(
+            self.set_zy_binning_line)
 
         # sliders signals
-        self.util_panel.energy_main.valueChanged.connect(self.set_main_energy_slider)
-        self.util_panel.energy_hor.valueChanged.connect(self.set_hor_energy_slider)
-        self.util_panel.energy_vert.valueChanged.connect(self.set_vert_energy_slider)
-        self.util_panel.momentum_hor.valueChanged.connect(self.set_hor_momentum_slider)
-        self.util_panel.momentum_vert.valueChanged.connect(self.set_vert_momentum_slider)
+        self.util_panel.energy_main.valueChanged.connect(
+            self.set_main_energy_slider)
+        self.util_panel.energy_hor.valueChanged.connect(
+            self.set_hor_energy_slider)
+        self.util_panel.energy_vert.valueChanged.connect(
+            self.set_vert_energy_slider)
+        self.util_panel.momentum_hor.valueChanged.connect(
+            self.set_hor_momentum_slider)
+        self.util_panel.momentum_vert.valueChanged.connect(
+            self.set_vert_momentum_slider)
         self.util_panel.bin_x_nbins.setValue(2)
         self.util_panel.bin_y_nbins.setValue(10)
         self.util_panel.bin_z_nbins.setValue(10)
@@ -828,7 +848,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
         try:
             xpos = self.main_plot.crosshair.vpos.get_value()
             ypos = self.main_plot.crosshair.hpos.get_value()
-            bin_x, bin_y = self.util_panel.bin_x.isChecked(), self.util_panel.bin_y.isChecked()
+            bin_x, bin_y = self.util_panel.bin_x.isChecked(), \
+                           self.util_panel.bin_y.isChecked()
             if bin_x and bin_y:
                 nbx = self.util_panel.bin_x_nbins.value()
                 nby = self.util_panel.bin_y_nbins.value()
@@ -1294,6 +1315,21 @@ class MainWindow3D(QtWidgets.QMainWindow):
             self.new_energy_axis[cut_y_erg_idx]))
 
     # analysis options
+    def normalize_data(self):
+        if self.util_panel.image_normalize.isChecked():
+            data = self.data_handler.data.get_value()
+            norm_along = self.util_panel.image_normalize_along.currentIndex()
+            norm_to = self.util_panel.image_normalize_to.currentIndex()
+            if norm_to == 0:
+                self.data_handler.norm_data = \
+                    wp.normalize(data, axis=norm_along)
+            elif norm_to == 1:
+                self.data_handler.norm_data = \
+                    wp.normalize_to_sum(data, axis=norm_along)
+        else:
+            pass
+        self.update_main_plot()
+
     def find_gamma(self):
         fs = self.image_data.T
         x_init = self.util_panel.orientate_init_x.value()
@@ -1392,10 +1428,6 @@ class MainWindow3D(QtWidgets.QMainWindow):
             self.util_panel.axes_gamma_x.value()]
         orientation = self.util_panel.axes_slit_orient.currentText()
         a = self.util_panel.axes_conv_lc.value()
-        # try:
-        #     energy = self.new_energy_axis[self.data_handler.z.get_value()]
-        # except TypeError:
-        #     energy = self.data_handler.axes[erg_ax][self.data_handler.z.get_value()]
         hv = self.util_panel.axes_energy_hv.value()
         wf = self.util_panel.axes_energy_wf.value()
         ds = self.data_set
@@ -1424,8 +1456,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
             print('rescaling data: ', end='')
             start_time = time.time()
-            dataset_rescaled = wp.rescale_data(ds.data, ky, new_yscale)  # , ProgressBar(total=ds.zscale.size))
-            # dataset_rescaled = wp.rescale_data(ds.data, ds.yscale, new_yscale, ProgressBar(total=ds.zscale.size))
+            dataset_rescaled = wp.rescale_data(ds.data, ky, new_yscale)
             print('{:.4} s'.format(time.time() - start_time))
         else:
             if hv == 0 or wf == 0:
@@ -1442,8 +1473,10 @@ class MainWindow3D(QtWidgets.QMainWindow):
                 warning_box.setStandardButtons(QMessageBox.Ok)
                 if warning_box.exec() == QMessageBox.Ok:
                     return
-            kx, ky = wp.angle2kspace(scanned_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax, a=a,
-                                     orientation=orientation, hv=hv, work_func=wf)
+            kx, ky = wp.angle2kspace(scanned_ax, anal_axis,
+                                     d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax,
+                                     a=a, orientation=orientation, hv=hv,
+                                     work_func=wf)
             kxx, kyy = np.meshgrid(kx[:, 0], ky[0, :])
             cut = self.main_plot.image_data
             plt.pcolormesh(kxx, kyy, cut.T)
@@ -1452,8 +1485,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
             print('rescaling data: ', end='')
             start_time = time.time()
-            dataset_rescaled = wp.rescale_data(ds.data, ky, new_yscale)  # , ProgressBar(total=ds.zscale.size))
-            # dataset_rescaled = wp.rescale_data(ds.data, ds.yscale, new_yscale, ProgressBar(total=ds.zscale.size))
+            dataset_rescaled = wp.rescale_data(ds.data, ky, new_yscale)
             print('{:.4} s'.format(time.time() - start_time))
             new_dataset.xscale = kx[:, 0]
             new_dataset.kxscale = kx[:, 0]
@@ -1463,7 +1495,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
         new_idx = self.index + ' [rescaled to k-space]'
 
         try:
-            self.db.data_viewers[new_idx] = MainWindow3D(self.db, data_set=new_dataset, index=new_idx)
+            self.db.data_viewers[new_idx] = \
+                MainWindow3D(self.db, data_set=new_dataset, index=new_idx)
         except Exception:
             fail_box = QMessageBox()
             fail_box.setIcon(QMessageBox.Information)
@@ -1484,30 +1517,6 @@ class MainWindow3D(QtWidgets.QMainWindow):
         success_box.setStandardButtons(QMessageBox.Ok)
         if success_box.exec() == QMessageBox.Ok:
             return
-
-        # kx_axis, ky_axis = wp.angle2kscape(scanned_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax,
-        #                                    orientation=orientation, a=a, energy=energy, hv=hv, work_func=wf)
-        # nhma = np.sort(kx_axis[:, 0])
-        # nvma = np.sort(ky_axis[0, :])
-        # self.kx_axis = nhma
-        # self.ky_axis = nvma
-        # self.pmesh_kx_axis, self.pmesh_ky_axis = kx_axis, ky_axis
-        # new_hor_range = [nhma[0], nhma[-1]]
-        # new_ver_range = [nvma[0], nvma[-1]]
-        # # print(kx_axis.min(), kx_axis.max(), ky_axis.min(), ky_axis.max())
-        # # print(nhma.size, nvma.size)
-        # # print([nhma[0], nhma[-1]])
-        # # print([nvma[0], nvma[-1]])
-        # self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_hor_range)
-        # self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_ver_range)
-        # self.cut_x.plotItem.getAxis(self.cut_x.main_xaxis).setRange(*new_hor_range)
-        # self.cut_y.plotItem.getAxis(self.cut_y.main_xaxis).setRange(*new_ver_range)
-        # self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_hor_range)
-        # self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_ver_range)
-        # self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-        #     self.ky_axis[self.main_plot.pos[1].get_value()]))
-        # self.util_panel.momentum_vert_value.setText('({:.4f})'.format(
-        #     self.kx_axis[self.main_plot.pos[0].get_value()]))
 
     def reset_kspace_conversion(self):
         self.kx_axis = None
@@ -1693,8 +1702,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
         init_fname = '.'.join(self.title.split('.')[:-1] + ['p'])
 
         while file_selection:
-            fname, fname_return_value = QtWidgets.QInputDialog.getText(self, '', 'File name:',
-                                                                       QLineEdit.Normal, init_fname)
+            fname, fname_return_value = QtWidgets.QInputDialog.getText(
+                self, '', 'File name:', QLineEdit.Normal, init_fname)
             if not fname_return_value:
                 return
 

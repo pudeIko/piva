@@ -170,10 +170,7 @@ class DataloaderPickle(Dataloader):
         # Open the file and get a handle for it
         ds = DataSet()
         with open(filename, 'rb') as f:
-            if filename.endswith('.p'):
-                filedata = pickle.load(f)
-            else:
-                return 'Couldn\'t read data.  Data loader pickled files.'
+            filedata = pickle.load(f)
 
         dict_ds = vars(ds.dataset)
         dict_filedata = vars(filedata)
@@ -1437,7 +1434,7 @@ class DataloaderALSMerlin(Dataloader):
                 res.__setattr__(key, meta_namespace[key])
         return res
 
-    
+
 class DataloaderURANOS(Dataloader):
     """
     Object that allows loading and saving of ARPES data from the URANOS
@@ -2678,8 +2675,8 @@ class PXT_Dialog(QDialog):
 # List containing all reasonably defined dataloaders
 all_dls = [
     DataloaderPickle,
-    DataloaderBloch,
     DataloaderSIS,
+    DataloaderBloch,
     DataloaderADRESS,
     Dataloaderi05,
     DataloaderCASSIOPEE,
