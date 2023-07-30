@@ -40,7 +40,7 @@ class DataBrowser(QMainWindow):
         self.plotting_tools = {}
         self.file_explorer = None
         self.model = None
-        self.jupyter_lab_opened = False
+        self.jl_session_running = False
         self.sb_timeout = 2500
         self.set_file_explorer()
         self.set_menu_bar()

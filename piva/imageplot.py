@@ -957,6 +957,7 @@ class UtilitiesPanel(QWidget):
         self.tabs = QtWidgets.QTabWidget()
         self.tabs_visible = True
         self.dim = dim
+        self.jl_session_running = False
 
         self.close_button = QPushButton('close')
         self.save_button = QPushButton('save')
@@ -967,8 +968,13 @@ class UtilitiesPanel(QWidget):
         self.buttons_layout = QtWidgets.QGridLayout()
         self.buttons_layout.addWidget(self.close_button,    1, 0)
         self.buttons_layout.addWidget(self.save_button,     2, 0)
-        self.buttons_layout.addWidget(self.hide_button,     3, 0)
-        self.buttons_layout.addWidget(self.pit_button,      4, 0)
+        # self.buttons_layout.addWidget(self.hide_button,     3, 0)
+        self.buttons_layout.addWidget(self.pit_button,      3, 0)
+        if self.dim == 2:
+            self.file_mdc_fitter_button = QPushButton('MDC fitter')
+            self.file_edc_fitter_button = QPushButton('EDC fitter')
+            self.buttons_layout.addWidget(self.file_mdc_fitter_button, 4, 0)
+            self.buttons_layout.addWidget(self.file_edc_fitter_button, 5, 0)
         self.buttons.setLayout(self.buttons_layout)
 
         if name is not None:
@@ -984,7 +990,7 @@ class UtilitiesPanel(QWidget):
         momentum_labels_width = 80
         energy_labels_width = 80
         self.tabs_rows_span = 4
-        self.tabs_cols_span = 9
+        self.tabs_cols_span = 8
 
         self.align()
 
@@ -998,8 +1004,8 @@ class UtilitiesPanel(QWidget):
             self.momentum_hor_value.setFixedWidth(momentum_labels_width)
             self.momentum_vert_value.setFixedWidth(momentum_labels_width)
 
-        self.layout.addWidget(self.tabs,    0, 0, self.tabs_rows_span,
-                              self.tabs_cols_span)
+        self.layout.addWidget(self.tabs,
+                              0, 0, self.tabs_rows_span, self.tabs_cols_span)
         self.layout.addWidget(self.buttons, 0, self.tabs_cols_span + 1)
         self.setLayout(self.layout)
 
@@ -1010,10 +1016,13 @@ class UtilitiesPanel(QWidget):
         self.file_sum_datasets_sum_button.clicked.connect(self.sum_datasets)
         self.file_sum_datasets_reset_button.clicked.connect(
             self.reset_summation)
-        self.file_jn_button.clicked.connect(self.open_jupyter_notebook)
+        self.file_jl_fname_button.clicked.connect(self.create_jl_file)
+        self.file_jl_session_button.clicked.connect(self.open_jl_session)
+        self.file_jl_explog_button.clicked.connect(
+            self.create_experimental_logbook_file)
 
-        # connect callbacks
-        self.hide_button.clicked.connect(self.hidde_tabs)
+        # # connect callbacks
+        # self.hide_button.clicked.connect(self.hidde_tabs)
 
         self.setup_cmaps()
         self.setup_gamma()
@@ -1061,7 +1070,7 @@ class UtilitiesPanel(QWidget):
 
         # self.image_pmesh = QCheckBox('pmesh')
 
-        self.image_normalize_lbl = QLabel('Normalization')
+        self.image_normalize_lbl = QLabel('Normalize')
         self.image_normalize_lbl.setFont(bold_font)
         self.image_normalize_to_lbl = QLabel('to:')
         self.image_normalize_to = QComboBox()
@@ -1112,7 +1121,7 @@ class UtilitiesPanel(QWidget):
         self.image_curvature_a.setSingleStep(0.1)
         self.image_curvature_a.setValue(10.)
         self.image_curvature_a.setMaximumWidth(max_w)
-        self.image_curvature_button = QPushButton('Do curvature')
+        self.image_curvature_button = QPushButton('Do it')
 
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
@@ -1120,7 +1129,7 @@ class UtilitiesPanel(QWidget):
         itl.addWidget(self.image_colors_label,          row * sd, 0)
         itl.addWidget(self.image_cmaps_label,           row * sd, 1)
         itl.addWidget(self.image_cmaps,                 row * sd, 2)
-        itl.addWidget(self.image_invert_colors,         row * sd, 3)
+        itl.addWidget(self.image_invert_colors,         row * sd, 3, 1, 2)
         # itl.addWidget(self.image_pmesh,                 row * sd, 4)
 
         row = 1
@@ -1408,45 +1417,44 @@ class UtilitiesPanel(QWidget):
         self.axes_do_kspace_conv = QPushButton('Convert')
         self.axes_reset_conv = QPushButton('Reset')
 
+        # addWidget(widget, row, column, rowSpan, columnSpan)
+        row = 0
+        atl.addWidget(self.axes_energy_main_lbl, row + 0, 0, 1, 2)
+        atl.addWidget(self.axes_energy_scale_lbl, row + 0, 4)
+        atl.addWidget(self.axes_energy_scale, row + 0, 5)
+        atl.addWidget(self.axes_energy_Ef_lbl, row + 1, 0)
+        atl.addWidget(self.axes_energy_Ef, row + 1, 1)
+        atl.addWidget(self.axes_energy_hv_lbl, row + 1, 2)
+        atl.addWidget(self.axes_energy_hv, row + 1, 3)
+        atl.addWidget(self.axes_energy_wf_lbl, row + 1, 4)
+        atl.addWidget(self.axes_energy_wf, row + 1, 5)
+
         if self.dim == 2:
 
-            self.axes_angle_off_lbl = QLabel('angle offset:')
+            self.axes_angle_off_lbl = QLabel('ang offset:')
             self.axes_angle_off = QDoubleSpinBox()
             self.axes_angle_off.setMaximumWidth(box_max_w)
             self.axes_angle_off.setDecimals(4)
-            self.axes_angle_off.setSingleStep(0.0001)
-
-            sd = 1
-            # addWidget(widget, row, column, rowSpan, columnSpan)
-            row = 0
-            atl.addWidget(self.axes_energy_main_lbl,    row * sd, 0 * sd, 1, 2)
-            atl.addWidget(self.axes_energy_scale_lbl,   row * sd, 4 * sd)
-            atl.addWidget(self.axes_energy_scale,       row * sd, 5 * sd)
-            atl.addWidget(self.axes_energy_Ef_lbl,      (row + 1) * sd, 0 * sd)
-            atl.addWidget(self.axes_energy_Ef,          (row + 1) * sd, 1 * sd)
-            atl.addWidget(self.axes_energy_hv_lbl,      (row + 1) * sd, 2 * sd)
-            atl.addWidget(self.axes_energy_hv,          (row + 1) * sd, 3 * sd)
-            atl.addWidget(self.axes_energy_wf_lbl,      (row + 1) * sd, 4 * sd)
-            atl.addWidget(self.axes_energy_wf,          (row + 1) * sd, 5 * sd)
+            self.axes_angle_off.setSingleStep(0.001)
 
             row = 2
-            atl.addWidget(self.axes_momentum_main_lbl,  row * sd, 0 * sd, 1, 2)
-            atl.addWidget(self.axes_gamma_x_lbl,        (row + 1) * sd, 0 * sd)
-            atl.addWidget(self.axes_gamma_x,            (row + 1) * sd, 1 * sd)
-            atl.addWidget(self.axes_angle_off_lbl,      (row + 1) * sd, 2 * sd)
-            atl.addWidget(self.axes_angle_off,          (row + 1) * sd, 3 * sd)
-            atl.addWidget(self.axes_conv_lc_lbl,        (row + 1) * sd, 4 * sd)
-            atl.addWidget(self.axes_conv_lc,            (row + 1) * sd, 5 * sd)
+            atl.addWidget(self.axes_momentum_main_lbl,  row + 0, 0, 1, 2)
+            atl.addWidget(self.axes_gamma_x_lbl,        row + 1, 0)
+            atl.addWidget(self.axes_gamma_x,            row + 1, 1)
+            atl.addWidget(self.axes_angle_off_lbl,      row + 1, 2)
+            atl.addWidget(self.axes_angle_off,          row + 1, 3)
+            atl.addWidget(self.axes_conv_lc_lbl,        row + 1, 4)
+            atl.addWidget(self.axes_conv_lc,            row + 1, 5)
             # atl.addWidget(self.axes_conv_hv_lbl,        (row + 1) * sd, 4 * sd)
             # atl.addWidget(self.axes_conv_hv,            (row + 1) * sd, 5 * sd)
 
             row = 4
             # atl.addWidget(self.axes_conv_wf_lbl,        row * sd, 0 * sd)
             # atl.addWidget(self.axes_conv_wf,            row * sd, 1 * sd)
-            atl.addWidget(self.axes_slit_orient_lbl,    row * sd, 0 * sd)
-            atl.addWidget(self.axes_slit_orient,        row * sd, 1 * sd)
-            atl.addWidget(self.axes_do_kspace_conv,     row * sd, 2 * sd, 1, 2)
-            atl.addWidget(self.axes_reset_conv,         row * sd, 4 * sd, 1, 2)
+            atl.addWidget(self.axes_slit_orient_lbl,    row, 0)
+            atl.addWidget(self.axes_slit_orient,        row, 1)
+            atl.addWidget(self.axes_do_kspace_conv,     row, 2, 1, 2)
+            atl.addWidget(self.axes_reset_conv,         row, 4, 1, 2)
 
             # # dummy item
             # self.axes_massage_lbl = QLabel('')
@@ -1458,39 +1466,26 @@ class UtilitiesPanel(QWidget):
             self.axes_gamma_y = QSpinBox()
             self.axes_gamma_y.setRange(0, 5000)
 
-            sd = 1
-            # addWidget(widget, row, column, rowSpan, columnSpan)
-            row = 0
-            atl.addWidget(self.axes_energy_main_lbl,    row * sd, 0 * sd, 1, 2)
-            atl.addWidget(self.axes_energy_scale_lbl,   row * sd, 4 * sd)
-            atl.addWidget(self.axes_energy_scale,       row * sd, 5 * sd)
-            atl.addWidget(self.axes_energy_Ef_lbl,      (row + 1) * sd, 0 * sd)
-            atl.addWidget(self.axes_energy_Ef,          (row + 1) * sd, 1 * sd)
-            atl.addWidget(self.axes_energy_hv_lbl,      (row + 1) * sd, 2 * sd)
-            atl.addWidget(self.axes_energy_hv,          (row + 1) * sd, 3 * sd)
-            atl.addWidget(self.axes_energy_wf_lbl,      (row + 1) * sd, 4 * sd)
-            atl.addWidget(self.axes_energy_wf,          (row + 1) * sd, 5 * sd)
-
             row = 2
-            atl.addWidget(self.axes_momentum_main_lbl,  row * sd, 0 * sd, 1, 2)
-            atl.addWidget(self.axes_gamma_x_lbl,        (row + 1) * sd, 0 * sd)
-            atl.addWidget(self.axes_gamma_x,            (row + 1) * sd, 1 * sd)
-            atl.addWidget(self.axes_gamma_y_lbl,        (row + 1) * sd, 2 * sd)
-            atl.addWidget(self.axes_gamma_y,            (row + 1) * sd, 3 * sd)
-            atl.addWidget(self.axes_transform_kz,       (row + 1) * sd, 4 * sd, 1, 2)
+            atl.addWidget(self.axes_momentum_main_lbl,  row, 0, 1, 2)
+            atl.addWidget(self.axes_gamma_x_lbl,        row + 1, 0)
+            atl.addWidget(self.axes_gamma_x,            row + 1, 1)
+            atl.addWidget(self.axes_gamma_y_lbl,        row + 1, 2)
+            atl.addWidget(self.axes_gamma_y,            row + 1, 3)
+            atl.addWidget(self.axes_transform_kz,       row + 1, 4, 1, 2)
 
             row = 4
-            atl.addWidget(self.axes_conv_lc_lbl,        row * sd, 0 * sd)
-            atl.addWidget(self.axes_conv_lc,            row * sd, 1 * sd)
-            atl.addWidget(self.axes_conv_lc_op_lbl,     row * sd, 2 * sd)
-            atl.addWidget(self.axes_conv_lc_op,         row * sd, 3 * sd)
-            atl.addWidget(self.axes_slit_orient_lbl,    row * sd, 4 * sd)
-            atl.addWidget(self.axes_slit_orient,        row * sd, 5 * sd)
+            atl.addWidget(self.axes_conv_lc_lbl,        row, 0)
+            atl.addWidget(self.axes_conv_lc,            row, 1)
+            atl.addWidget(self.axes_conv_lc_op_lbl,     row, 2)
+            atl.addWidget(self.axes_conv_lc_op,         row, 3)
+            atl.addWidget(self.axes_slit_orient_lbl,    row, 4)
+            atl.addWidget(self.axes_slit_orient,        row, 5)
 
             row = 5
-            atl.addWidget(self.axes_copy_values,        row * sd, 0 * sd, 1, 2)
-            atl.addWidget(self.axes_do_kspace_conv,     row * sd, 2 * sd, 1, 2)
-            atl.addWidget(self.axes_reset_conv,         row * sd, 4 * sd, 1, 2)
+            atl.addWidget(self.axes_copy_values,        row, 0, 1, 2)
+            atl.addWidget(self.axes_do_kspace_conv,     row, 2, 1, 2)
+            atl.addWidget(self.axes_reset_conv,         row, 4, 1, 2)
 
             # # dummy item
             # self.axes_massage_lbl = QLabel('')
@@ -1525,7 +1520,7 @@ class UtilitiesPanel(QWidget):
         self.orientate_hor_line = QCheckBox('horizontal line')
         self.orientate_hor_line
         self.orientate_ver_line = QCheckBox('vertical line')
-        self.orientate_angle_lbl = QLabel('rotation angle (deg):')
+        self.orientate_angle_lbl = QLabel('rotation angle:')
         self.orientate_angle = QDoubleSpinBox()
         self.orientate_angle.setRange(-180, 180)
         self.orientate_angle.setSingleStep(0.5)
@@ -1552,7 +1547,7 @@ class UtilitiesPanel(QWidget):
         otl.addWidget(self.orientate_ver_line,                1 * sd, (col + 1) * sd)
         otl.addWidget(self.orientate_angle_lbl,               2 * sd, col * sd)
         otl.addWidget(self.orientate_angle,                   2 * sd, (col + 1) * sd)
-        otl.addWidget(self.orientate_info_button,                    3 * sd, (col + 1) * sd)
+        otl.addWidget(self.orientate_info_button,             3 * sd, (col + 1) * sd)
 
         # dummy lbl
         dummy_lbl = QLabel('')
@@ -1575,73 +1570,69 @@ class UtilitiesPanel(QWidget):
         self.file_md_name = QLineEdit()
         self.file_md_value_lbl = QLabel('value:')
         self.file_md_value = QLineEdit()
-        self.file_add_md_button = QPushButton('add/update')
+        self.file_add_md_button = QPushButton('add')
         self.file_remove_md_button = QPushButton('remove')
 
         self.file_show_md_button = QPushButton('show metadata')
 
-        self.file_sum_datasets_lbl = QLabel('Sum data sets')
+        self.file_sum_datasets_lbl = QLabel('Sum scans')
         self.file_sum_datasets_lbl.setFont(bold_font)
         self.file_sum_datasets_fname_lbl = QLabel('file name:')
         self.file_sum_datasets_fname = QLineEdit('Only *.h5 files')
         self.file_sum_datasets_sum_button = QPushButton('sum')
         self.file_sum_datasets_reset_button = QPushButton('reset')
 
-        self.file_jn_main_lbl = QLabel('Jupyter-lab')
-        self.file_jn_main_lbl.setFont(bold_font)
-        self.file_jn_fname_lbl = QLabel('file name:')
-        self.file_jn_fname = QLineEdit(self.mw.title.split('.')[0])
-        self.file_jn_button = QPushButton('open in jl')
-
-        self.file_mdc_fitter_lbl = QLabel('MDC fitter')
-        self.file_mdc_fitter_lbl.setFont(bold_font)
-        self.file_mdc_fitter_button = QPushButton('Open')
-
-        self.file_edc_fitter_lbl = QLabel('EDC fitter')
-        self.file_edc_fitter_lbl.setFont(bold_font)
-        self.file_edc_fitter_button = QPushButton('Open')
+        self.file_jl_main_lbl = QLabel('JupyterLab')
+        self.file_jl_main_lbl.setFont(bold_font)
+        self.file_jl_fname_lbl = QLabel('file name:')
+        self.file_jl_fname = QLineEdit(self.mw.title.split('.')[0] + '.ipynb')
+        self.file_jl_fname_button = QPushButton('touch')
+        self.file_jl_explog_lbl = QLabel('exp.  logbook:')
+        self.file_jl_explog = QComboBox()
+        self.file_jl_explog.addItems(['--beamline--', 'SIS', 'Bloch',
+                                      'I05', 'MERLIN', 'URANOS'])
+        self.file_jl_explog_button = QPushButton('create')
+        self.file_jl_session_button = QPushButton('start JL session')
 
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
         row = 0
-        ftl.addWidget(self.file_add_md_lbl,                  row * sd, 0 * sd,
-                      1, 2)
-        ftl.addWidget(self.file_show_md_button,              row * sd, 8 * sd,
-                      1, 2)
+        ftl.addWidget(self.file_show_md_button,
+                      row * sd, 6 * sd, 1, 2)
 
         row = 1
-        ftl.addWidget(self.file_md_name_lbl,                 row * sd, 0 * sd)
-        ftl.addWidget(self.file_md_name,                     row * sd, 1 * sd,
-                      1, 3)
+        ftl.addWidget(self.file_add_md_lbl,                  row * sd, 0 * sd)
+        ftl.addWidget(self.file_md_name_lbl,                 row * sd, 1 * sd)
+        ftl.addWidget(self.file_md_name,
+                      row * sd, 2 * sd, 1, 2)
         ftl.addWidget(self.file_md_value_lbl,                row * sd, 4 * sd)
-        ftl.addWidget(self.file_md_value,                    row * sd, 5 * sd,
-                      1, 3)
-        ftl.addWidget(self.file_add_md_button,               row * sd, 8 * sd)
-        ftl.addWidget(self.file_remove_md_button,            row * sd, 9 * sd)
+        ftl.addWidget(self.file_md_value,                    row * sd, 5 * sd)
+        ftl.addWidget(self.file_add_md_button,               row * sd, 6 * sd)
+        ftl.addWidget(self.file_remove_md_button,            row * sd, 7 * sd)
 
         row = 2
-        ftl.addWidget(self.file_sum_datasets_lbl,            row * sd, 0 * sd,
-                      1, 2)
-        # ftl.addWidget(self.file_sum_datasets_fname_lbl,     row * sd, 2 * sd)
-        ftl.addWidget(self.file_sum_datasets_fname,          row * sd, 2 * sd,
-                      1, 6)
-        ftl.addWidget(self.file_sum_datasets_sum_button,     row * sd, 8 * sd)
-        ftl.addWidget(self.file_sum_datasets_reset_button,   row * sd, 9 * sd)
+        ftl.addWidget(self.file_sum_datasets_lbl,            row * sd, 0 * sd)
+        ftl.addWidget(self.file_sum_datasets_fname,
+                      row * sd, 1 * sd, 1, 5)
+        ftl.addWidget(self.file_sum_datasets_sum_button,     row * sd, 6 * sd)
+        ftl.addWidget(self.file_sum_datasets_reset_button,   row * sd, 7 * sd)
 
         row = 3
-        ftl.addWidget(self.file_jn_main_lbl,                 row * sd, 0 * sd,
-                      1, 2)
-        # ftl.addWidget(self.file_jn_fname_lbl,               row * sd, 2 * sd)
-        ftl.addWidget(self.file_jn_fname,                    row * sd, 2 * sd,
-                      1, 6)
-        ftl.addWidget(self.file_jn_button,                   row * sd, 8 * sd)
+        ftl.addWidget(self.file_jl_main_lbl,                 row * sd, 0 * sd)
+        ftl.addWidget(self.file_jl_fname_lbl,
+                      row * sd, 1 * sd, 1, 2)
+        ftl.addWidget(self.file_jl_fname,
+                      row * sd, 3 * sd, 1, 2)
+        ftl.addWidget(self.file_jl_fname_button,             row * sd, 5 * sd)
+        ftl.addWidget(self.file_jl_session_button,
+                      row * sd, 6 * sd, 1, 2)
 
-        if self.dim == 2:
-            row = 4
-            ftl.addWidget(self.file_mdc_fitter_lbl,          row * sd, 0, 1, 2)
-            ftl.addWidget(self.file_mdc_fitter_button,       row * sd, 2)
-            ftl.addWidget(self.file_edc_fitter_lbl,          row * sd, 4, 1, 2)
-            ftl.addWidget(self.file_edc_fitter_button,       row * sd, 6)
+        row = 4
+        ftl.addWidget(self.file_jl_explog_lbl,
+                      row * sd, 1 * sd, 1, 2)
+        ftl.addWidget(self.file_jl_explog,
+                      row * sd, 3 * sd, 1, 2)
+        ftl.addWidget(self.file_jl_explog_button,            row * sd, 5 * sd)
 
         # dummy lbl
         # dummy_lbl = QLabel('')
@@ -2013,13 +2004,35 @@ class UtilitiesPanel(QWidget):
         else:
             return
 
-    def open_jupyter_notebook(self):
-        file_path = self.mw.fname[:-len(self.mw.title)] + \
-                    self.file_jn_fname.text() + '.ipynb'
-        template_path = os.path.dirname(os.path.abspath(__file__)) + '/'
-        template_fname = 'template.ipynb'
+    def open_jl_session(self):
 
-        if os.path.isfile(file_path):
+        if self.mw.db.jl_session_running:
+            jl_running_box = QMessageBox()
+            jl_running_box.setIcon(QMessageBox.Information)
+            jl_running_box.setText('JupyterLab session is already running.\n'
+                                   'Want to start another one?')
+            jl_running_box.setStandardButtons(QMessageBox.Ok |
+                                               QMessageBox.Cancel)
+            if jl_running_box.exec() == QMessageBox.Cancel:
+                return
+
+        directory = str(QtWidgets.QFileDialog.getExistingDirectory(
+            self, 'Select Directory', self.mw.fname[:-len(self.mw.title)]))
+
+        # Open jupyter notebook as a subprocess
+        openJupyter = "jupyter lab"
+        subprocess.Popen(openJupyter, shell=True, cwd=directory)
+
+        self.mw.db.jl_session_running = True
+
+    def create_jl_file(self):
+
+        directory = str(QtWidgets.QFileDialog.getExistingDirectory(
+            self, 'Select Directory', self.mw.fname[:-len(self.mw.title)]))
+
+        fname = directory + '/' + self.file_jl_fname.text()
+
+        if os.path.isfile(fname):
             file_exists_box = QMessageBox()
             file_exists_box.setIcon(QMessageBox.Information)
             file_exists_box.setText('File already exists.\nOverwrite?')
@@ -2027,27 +2040,16 @@ class UtilitiesPanel(QWidget):
                                                QMessageBox.Cancel)
             if file_exists_box.exec() == QMessageBox.Cancel:
                 return
+        os.system('touch ' + fname)
 
-        self.edit_file((template_path + template_fname), file_path)
-
-        if not self.mw.db.jupyter_lab_opened:
-            # Open jupyter notebook as a subprocess
-            openJupyter = "jupyter lab"
-            subprocess.Popen(openJupyter, shell=True,
-                             cwd=self.mw.fname[:-len(self.mw.title)])
-            self.mw.db.jupyter_lab_opened = True
-
-    def edit_file(self, template, new_file_name):
-
-        os.system('touch ' + new_file_name)
-
+        root_dir = os.path.dirname(os.path.abspath(__file__))
+        template = root_dir + '/ipynb_templates/template.ipynb'
         templ_file = open(template, 'r')
         templ_lines = templ_file.readlines()
         templ_file.close()
 
-        new_lines = []
-
         # writing to file
+        new_lines = []
         for line in templ_lines:
             if 'path = ' in line:
                 line = '    "path = \'{}\'\\n",'.format(
@@ -2076,9 +2078,38 @@ class UtilitiesPanel(QWidget):
                     line = line + '    "plot_y = data[scan_idx, :, e_idx]"\n'
             new_lines.append(line)
 
-        new_file = open(new_file_name, 'w')
+        new_file = open(fname, 'w')
         new_file.writelines(new_lines)
         new_file.close()
+
+    def create_experimental_logbook_file(self):
+
+        beamline = self.file_jl_explog.currentText()
+        if beamline == '--beamline--':
+            no_bealine_box = QMessageBox()
+            no_bealine_box.setIcon(QMessageBox.Information)
+            no_bealine_box.setText('Select a beamline.')
+            no_bealine_box.setStandardButtons(QMessageBox.Ok)
+            if no_bealine_box.exec() == QMessageBox.Ok:
+                return
+        else:
+            directory = str(QtWidgets.QFileDialog.getExistingDirectory(
+                self, 'Select Directory', self.mw.fname[:-len(self.mw.title)]))
+            fname = '{}/metadata-{}.ipynb'.format(directory, beamline)
+
+        if os.path.isfile(fname):
+            file_exists_box = QMessageBox()
+            file_exists_box.setIcon(QMessageBox.Information)
+            file_exists_box.setText('File already exists.\nOverwrite?')
+            file_exists_box.setStandardButtons(QMessageBox.Ok |
+                                               QMessageBox.Cancel)
+            if file_exists_box.exec() == QMessageBox.Cancel:
+                return
+
+        org_file = '{}/ipynb_templates/metadata-{}.ipynb'.format(
+            os.path.dirname(os.path.abspath(__file__)), beamline)
+
+        os.system('cp ' + org_file + ' ' + directory)
 
     @staticmethod
     def check_conflicts(datasets):

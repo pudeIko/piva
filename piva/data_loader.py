@@ -217,8 +217,7 @@ class DataloaderSIS(Dataloader):
         elif filename.endswith('ibw'):
             filedata = self.load_ibw(filename, metadata=metadata)
         else:
-            return 'Couldn\'t read data.  Data loader supports only *.h5, ' \
-                   '*.zip, *.pxt and *.ibw files.'
+            raise NotImplementedError
 
         dict_ds = vars(ds.dataset)
         dict_filedata = vars(filedata)
@@ -634,8 +633,7 @@ class DataloaderBloch(Dataloader):
         elif filename.endswith('pxt'):
             filedata = self.load_pxt(filename, metadata=metadata)
         else:
-            return 'Couldn\'t read data.  Data loader supports only *.zip ' \
-                   'and *.pxt files.'
+            raise NotImplementedError
 
         dict_ds = vars(ds.dataset)
         dict_filedata = vars(filedata)
@@ -866,8 +864,7 @@ class Dataloaderi05(Dataloader):
         if fname.endswith('nxs'):
             filedata = self.load_nxs(fname, metadata=metadata)
         else:
-            return 'Couldn\'t read data.  Data loader supports only ' \
-                   '*.nxs files.'
+            raise NotImplementedError
 
         dict_ds = vars(ds.dataset)
         dict_filedata = vars(filedata)
@@ -1101,15 +1098,10 @@ class DataloaderALSMerlin(Dataloader):
         ds = DataSet()
         if filename.endswith('h5'):
             filedata = self.load_h5(filename, metadata=metadata)
-        # elif filename.endswith('zip'):
-        #     filedata = self.load_zip(filename, metadata=metadata)
-        # elif filename.endswith('pxt'):
-        #     filedata = self.load_pxt(filename, metadata=metadata)
         elif filename.endswith('ibw'):
             filedata = self.load_ibw(filename, metadata=metadata)
         else:
-            return 'Couldn\'t read data.  Data loader supports only *.h5 ' \
-                   'and *.ibw files.'
+            raise NotImplementedError
 
         dict_ds = vars(ds.dataset)
         dict_filedata = vars(filedata)
@@ -1292,105 +1284,6 @@ class DataloaderALSMerlin(Dataloader):
         # print(res.zscale[0], res.zscale[-1], res.zscale.shape)
         return res
 
-    # def load_zip(self, filename, metadata=False):
-    #     """ Load and store a deflector mode file from SIS-ULTRA. """
-    #     # Prepare metadata key-value pairs for the different metadata files
-    #     # and their expected types
-    #     keys1 = [
-    #              ('width', 'n_energy', int),
-    #              ('height', 'n_x', int),
-    #              ('depth', 'n_y', int),
-    #              ('first_full', 'first_energy', int),
-    #              ('last_full', 'last_energy', int),
-    #              ('widthoffset', 'start_energy', float),
-    #              ('widthdelta', 'step_energy', float),
-    #              ('heightoffset', 'start_x', float),
-    #              ('heightdelta', 'step_x', float),
-    #              ('depthoffset', 'start_y', float),
-    #              ('depthdelta', 'step_y', float)
-    #             ]
-    #     keys2 = [('Excitation Energy', 'hv', float),
-    #              ('Acquisition Mode', 'acq_mode', str),
-    #              ('Pass Energy', 'PE', int),
-    #              ('Lens Mode', 'lens_mode', str),
-    #              ('Step Time', 'DT', int),
-    #              ('Number of Sweeps', 'n_sweeps', int),
-    #              ('X', 'x', float),
-    #              ('Y', 'y', float),
-    #              ('Z', 'z', float),
-    #              ('A', 'phi', float),
-    #              ('P', 'theta', float),
-    #              ('T', 'tilt', float),
-    #              ('Y', 'y', float)]
-    #
-    #     # Load the zipfile
-    #     with zipfile.ZipFile(filename, 'r') as z:
-    #         # Get the created filename from the viewer
-    #         with z.open('viewer.ini') as viewer:
-    #             file_id = self.read_viewer(viewer)
-    #         # Get most metadata from a metadata file
-    #         with z.open('Spectrum_' + file_id + '.ini') as metadata_file:
-    #             M = self.read_metadata(keys1, metadata_file)
-    #         # Get additional metadata from a second metadata file...
-    #         with z.open(file_id + '.ini') as metadata_file2:
-    #             M2 = self.read_metadata(keys2, metadata_file2)
-    #             if not hasattr(M2, 'scan_type'):
-    #                 M2.__setattr__('scan_type', 'cut')
-    #             if not hasattr(M2, 'scan_start'):
-    #                 M2.__setattr__('scan_start', 0)
-    #             if not hasattr(M2, 'scan_stop'):
-    #                 M2.__setattr__('scan_stop', 0)
-    #             if not hasattr(M2, 'scan_step'):
-    #                 M2.__setattr__('scan_step', 0)
-    #             if hasattr(M2, 'scan_step'):
-    #                 n_dim_steps = np.abs(M2.scan_start - M2.scan_stop) / M2.scan_step
-    #                 M2.n_sweeps /= n_dim_steps
-    #             else:
-    #                 pass
-    #         # Extract the binary data from the zipfile
-    #         if metadata:
-    #             data_flat = np.zeros((int(M.n_y) * int(M.n_x) * int(M.n_energy)))
-    #         else:
-    #             with z.open('Spectrum_' + file_id + '.bin') as f:
-    #                 data_flat = np.frombuffer(f.read(), dtype='float32')
-    #
-    #     # Put the data back into its actual shape
-    #     data = np.reshape(data_flat, (int(M.n_y), int(M.n_x), int(M.n_energy)))
-    #     # Cut off unswept region
-    #     data = data[:, :, M.first_energy:M.last_energy+1]
-    #     # Put into shape (energy, other angle, angle along analyzer)
-    #     data = np.moveaxis(data, 2, 0)
-    #     # Create axes
-    #     xscale = start_step_n(M.start_x, M.step_x, M.n_x)
-    #     yscale = start_step_n(M.start_y, M.step_y, M.n_y)
-    #     energies = start_step_n(M.start_energy, M.step_energy, M.n_energy)
-    #     energies = energies[M.first_energy:M.last_energy+1]
-    #
-    #     if yscale.size > 1:
-    #         yscale = start_step_n(M.start_x, M.step_x, M.n_x)
-    #         xscale = start_step_n(M.start_y, M.step_y, M.n_y)
-    #         data = np.swapaxes(data, 1, 2)
-    #     else:
-    #         data = np.swapaxes(data, 0, 1)
-    #         yscale = deepcopy(energies)
-    #
-    #     res = Namespace(
-    #         data=data.T,
-    #         xscale=xscale,
-    #         yscale=yscale,
-    #         zscale=energies,
-    #         ekin=energies,
-    #         hv=M2.hv,
-    #         PE=M2.PE,
-    #         scan_type=M2.scan_type,
-    #         scan_dim=[M2.scan_start, M2.scan_stop, M2.scan_step],
-    #         lens_mode=M2.lens_mode,
-    #         acq_mode=M2.acq_mode,
-    #         DT=M2.DT,
-    #         n_sweeps=int(M2.n_sweeps)
-    #     )
-    #     return res
-
     # kwarg "metadata" necessary to match arguments of all other data loaders
     def load_pxt(self, filename, metadata=False):
         """ Load and store the full h5 file and extract relevant information. """
@@ -1467,8 +1360,7 @@ class DataloaderURANOS(Dataloader):
         elif filename.endswith('pxt'):
             filedata = self.load_pxt(filename, metadata=metadata)
         else:
-            return 'Couldn\'t read data.  Data loader supports only *.zip ' \
-                   'and *.pxt files.'
+            raise NotImplementedError
 
         dict_ds = vars(ds.dataset)
         dict_filedata = vars(filedata)
