@@ -721,7 +721,8 @@ class MainWindow2D(QtWidgets.QMainWindow):
         scan_ax = np.array([0])
         anal_axis = self.data_handler.axes[0]
         d_scan_ax = self.util_panel.axes_angle_off.value()
-        d_anal_ax = self.data_handler.axes[0][self.util_panel.axes_gamma_x.value()]
+        d_anal_ax = self.data_handler.axes[0][
+            self.util_panel.axes_gamma_x.value()]
         orientation = self.util_panel.axes_slit_orient.currentText()
         a = self.util_panel.axes_conv_lc.value()
         energy = self.new_energy_axis
@@ -743,13 +744,19 @@ class MainWindow2D(QtWidgets.QMainWindow):
             if warning_box.exec() == QMessageBox.Ok:
                 return
 
-        nma, erg = wp.angle2kspace(scan_ax, anal_axis, d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax,
-                                   orientation=orientation, a=a, energy=energy, hv=hv, work_func=wf)
+        nma, erg = wp.angle2kspace(scan_ax, anal_axis, d_scan_ax=d_scan_ax,
+                                   d_anal_ax=d_anal_ax,
+                                   orientation=orientation, a=a, energy=energy,
+                                   hv=hv, work_func=wf)
         self.k_axis = nma[-1]
         new_range = [nma[-1][0], nma[-1][-1]]
-        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_range)
-        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
-        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.k_axis[self.main_plot.pos[1].get_value()]))
+        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(
+            *new_range)
+        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(
+            *new_range)
+        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+            self.k_axis[self.main_plot.pos[1].get_value()]))
+        self.util_panel.dp_add_k_space_conversion_entry(self.data_set)
 
     def reset_kspace_conversion(self):
         self.k_axis = None
@@ -758,6 +765,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*org_range)
         self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
             self.data_handler.axes[0][self.main_plot.pos[1].get_value()]))
+        self.data_set.data_provenance['k_space_conv'] = []
 
     def smoooth_data(self):
         self.smooth = not self.smooth

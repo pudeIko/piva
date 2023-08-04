@@ -12,7 +12,7 @@ import piva._2Dviewer as p2d
 import piva.plot_tool as pt
 
 start_time = time.time()
-testing = False
+testing = True
 all_dls = {
     'Pickle': dl.DataloaderPickle,
     'SLS - SIS': dl.DataloaderSIS,

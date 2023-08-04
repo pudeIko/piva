@@ -1493,6 +1493,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
         new_dataset.yscale = new_yscale
         new_dataset.kyscale = new_yscale
         new_idx = self.index + ' [rescaled to k-space]'
+        self.util_panel.dp_add_k_space_conversion_entry(new_dataset)
 
         try:
             self.db.data_viewers[new_idx] = \
@@ -1601,6 +1602,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
         cut_orient = self.util_panel.image_2dv_cut_selector.currentText()
 
         if cut_orient[0] == 'h':
+            direction = 'analyzer'
             cut = self.data_handler.cut_x_data
             dim_value = self.data_set.yscale[
                 self.main_plot.crosshair.hpos.get_value()]
@@ -1613,7 +1615,9 @@ class MainWindow3D(QtWidgets.QMainWindow):
                     self.index, lbl, str(idx), str(n_bin))
             else:
                 thread_idx = '{}: {} [{}]'.format(self.index, lbl, str(idx))
+                n_bin = '-'
         else:
+            direction = 'scanned'
             cut = self.data_handler.cut_y_data.T
             dim_value = self.data_set.xscale[
                 self.main_plot.crosshair.vpos.get_value()]
@@ -1625,6 +1629,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
                     self.index, lbl, str(idx), str(n_bin))
             else:
                 thread_idx = '{}: {} [{}]'.format(self.index, lbl, str(idx))
+                n_bin = '-'
 
         data = np.ones((1, cut.shape[0], cut.shape[1]))
         data[0, :, :] = cut
@@ -1650,6 +1655,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
                 return
 
         try:
+            self.util_panel.dp_add_file_cut_entry(data_set, direction, idx,
+                                                  n_bin)
             self.db.data_viewers[thread_idx] = \
                 p2d.MainWindow2D(self.db, data_set=data_set,
                                  index=thread_idx, slice=True)

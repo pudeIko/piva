@@ -80,6 +80,7 @@ from PyQt5.QtWidgets import QMessageBox, QDialog, QLabel, QComboBox, \
     QTableWidget, QTableWidgetItem, QDialogButtonBox, QGridLayout, QApplication
 from PyQt5 import QtCore, QtGui
 # from PyQt5.QtCore import QStri
+from datetime import datetime
 
 import h5py
 import numpy as np
@@ -100,6 +101,12 @@ def start_step_n(start, step, n):
 class DataSet:
 
     def __init__(self):
+
+        self.dp = {'file': [],
+                   'k_space_conv': [],
+                   'edited_entries': []}#,
+                   # 'comments': []}
+
         self.dataset = Namespace(
             data=None,
             xscale=None,
@@ -129,8 +136,23 @@ class DataSet:
             lens_mode=None,
             anal_slit=None,
             n_sweeps=None,
-            DT=None
+            DT=None,
+            data_provenance=self.dp
         )
+
+    # @staticmethod
+    def add_org_file_entry(self, fname, dl):
+
+        file_entry = {}
+        file_entry['index'] = 0
+        file_entry['date_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        file_entry['path'] = fname
+        file_entry['type'] = 'original'
+        file_entry['index_taken'] = '-'
+        file_entry['binned'] = '-'
+        file_entry['data_loader'] = dl
+
+        self.dp['file'].append(file_entry)
 
 
 class Dataloader:
@@ -164,8 +186,8 @@ class DataloaderPickle(Dataloader):
     """
     name = 'Pickle'
 
-    @staticmethod
     # kwarg "metadata" necessary to match arguments of all other data loaders
+    @ staticmethod
     def load_data(filename, metadata=False):
         # Open the file and get a handle for it
         ds = DataSet()
@@ -178,6 +200,8 @@ class DataloaderPickle(Dataloader):
         for attr in dir(filedata):
             if not (attr[0] == '_'):
                 dict_ds[attr] = dict_filedata[attr]
+
+        ds.add_org_file_entry(filename, 'Pickle')
         return ds.dataset
 
 
@@ -225,6 +249,8 @@ class DataloaderSIS(Dataloader):
         for attr in dir(filedata):
             if not (attr[0] == '_'):
                 dict_ds[attr] = dict_filedata[attr]
+
+        ds.add_org_file_entry(filename, 'SIS')
         return ds.dataset
 
     def load_h5(self, filename, metadata=False):
@@ -641,6 +667,8 @@ class DataloaderBloch(Dataloader):
         for attr in dir(filedata):
             if not (attr[0] == '_'):
                 dict_ds[attr] = dict_filedata[attr]
+
+        ds.add_org_file_entry(filename, 'Bloch')
         return ds.dataset
 
     def load_zip(self, filename, metadata=False):
@@ -873,6 +901,7 @@ class Dataloaderi05(Dataloader):
             if not (attr[0] == '_'):
                 dict_ds[attr] = dict_filedata[attr]
 
+        ds.add_org_file_entry(fname, 'I05')
         return ds.dataset
 
     def load_nxs(self, filename, metadata):
@@ -1110,6 +1139,7 @@ class DataloaderALSMerlin(Dataloader):
             if not (attr[0] == '_'):
                 dict_ds[attr] = dict_filedata[attr]
 
+        ds.add_org_file_entry(filename, 'ALSMerlin')
         return ds.dataset
 
     def load_h5(self, filename, metadata=False):
@@ -1368,6 +1398,8 @@ class DataloaderURANOS(Dataloader):
         for attr in dir(filedata):
             if not (attr[0] == '_'):
                 dict_ds[attr] = dict_filedata[attr]
+
+        ds.add_org_file_entry(filename, 'URANOS')
         return ds.dataset
 
     def load_zip(self, filename, metadata=False):

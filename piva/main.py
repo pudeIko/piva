@@ -15,7 +15,6 @@ from piva.data_browser import DataBrowser
 os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
 # TODO DOCUMANTATION !!!!!!!!!!!
-# TODO glue scans together
 
 
 def db():

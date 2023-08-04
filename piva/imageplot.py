@@ -4,12 +4,15 @@ matplotlib pcolormesh equivalent in pyqtgraph (more or less)
 import os
 import subprocess
 from sys import platform
+from datetime import datetime
 
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QComboBox, \
     QDoubleSpinBox, QSpinBox, QPushButton, QLineEdit, QMainWindow, \
-    QDialogButtonBox, QMessageBox, QScrollArea
+    QDialogButtonBox, QMessageBox, QScrollArea, QTableWidget, QVBoxLayout, \
+    QHBoxLayout
+from PyQt5.QtWidgets import QTableWidgetItem as QTabItem, QSizePolicy
 from PyQt5.QtGui import QColor, QPalette
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
@@ -35,6 +38,8 @@ DEFAULT_CMAP = 'coolwarm'
 
 bold_font = QtGui.QFont()
 bold_font.setBold(True)
+
+# TODO remove 'RESET' button from axes panel 3D
 
 
 class Crosshair:
@@ -1010,6 +1015,8 @@ class UtilitiesPanel(QWidget):
         self.setLayout(self.layout)
 
         # file options
+        self.file_show_dp_button.clicked.connect(
+            self.show_data_provenance_window)
         self.file_show_md_button.clicked.connect(self.show_metadata_window)
         self.file_add_md_button.clicked.connect(self.add_metadata)
         self.file_remove_md_button.clicked.connect(self.remove_metadata)
@@ -1467,25 +1474,25 @@ class UtilitiesPanel(QWidget):
             self.axes_gamma_y.setRange(0, 5000)
 
             row = 2
-            atl.addWidget(self.axes_momentum_main_lbl,  row, 0, 1, 2)
+            atl.addWidget(self.axes_momentum_main_lbl,  row + 0, 0, 1, 2)
+            atl.addWidget(self.axes_slit_orient_lbl,    row + 0, 4)
+            atl.addWidget(self.axes_slit_orient,        row + 0, 5)
             atl.addWidget(self.axes_gamma_x_lbl,        row + 1, 0)
             atl.addWidget(self.axes_gamma_x,            row + 1, 1)
             atl.addWidget(self.axes_gamma_y_lbl,        row + 1, 2)
             atl.addWidget(self.axes_gamma_y,            row + 1, 3)
-            atl.addWidget(self.axes_transform_kz,       row + 1, 4, 1, 2)
+            atl.addWidget(self.axes_copy_values,        row + 1, 4, 1, 2)
 
             row = 4
             atl.addWidget(self.axes_conv_lc_lbl,        row, 0)
             atl.addWidget(self.axes_conv_lc,            row, 1)
             atl.addWidget(self.axes_conv_lc_op_lbl,     row, 2)
             atl.addWidget(self.axes_conv_lc_op,         row, 3)
-            atl.addWidget(self.axes_slit_orient_lbl,    row, 4)
-            atl.addWidget(self.axes_slit_orient,        row, 5)
+            atl.addWidget(self.axes_transform_kz,       row, 4)
+            atl.addWidget(self.axes_do_kspace_conv,     row, 5)
 
-            row = 5
-            atl.addWidget(self.axes_copy_values,        row, 0, 1, 2)
-            atl.addWidget(self.axes_do_kspace_conv,     row, 2, 1, 2)
-            atl.addWidget(self.axes_reset_conv,         row, 4, 1, 2)
+            # row = 5
+            # atl.addWidget(self.axes_reset_conv,         row, 4, 1, 2)
 
             # # dummy item
             # self.axes_massage_lbl = QLabel('')
@@ -1573,12 +1580,13 @@ class UtilitiesPanel(QWidget):
         self.file_add_md_button = QPushButton('add')
         self.file_remove_md_button = QPushButton('remove')
 
+        self.file_show_dp_button = QPushButton('data provenance')
         self.file_show_md_button = QPushButton('show metadata')
 
         self.file_sum_datasets_lbl = QLabel('Sum scans')
         self.file_sum_datasets_lbl.setFont(bold_font)
         self.file_sum_datasets_fname_lbl = QLabel('file name:')
-        self.file_sum_datasets_fname = QLineEdit('Only *.h5 files')
+        self.file_sum_datasets_fname = QLineEdit('File name')
         self.file_sum_datasets_sum_button = QPushButton('sum')
         self.file_sum_datasets_reset_button = QPushButton('reset')
 
@@ -1597,42 +1605,35 @@ class UtilitiesPanel(QWidget):
         sd = 1
         # addWidget(widget, row, column, rowSpan, columnSpan)
         row = 0
-        ftl.addWidget(self.file_show_md_button,
-                      row * sd, 6 * sd, 1, 2)
+        ftl.addWidget(self.file_show_dp_button,              row, 4, 1, 2)
+        ftl.addWidget(self.file_show_md_button,              row, 6, 1, 2)
 
         row = 1
-        ftl.addWidget(self.file_add_md_lbl,                  row * sd, 0 * sd)
-        ftl.addWidget(self.file_md_name_lbl,                 row * sd, 1 * sd)
-        ftl.addWidget(self.file_md_name,
-                      row * sd, 2 * sd, 1, 2)
-        ftl.addWidget(self.file_md_value_lbl,                row * sd, 4 * sd)
-        ftl.addWidget(self.file_md_value,                    row * sd, 5 * sd)
-        ftl.addWidget(self.file_add_md_button,               row * sd, 6 * sd)
-        ftl.addWidget(self.file_remove_md_button,            row * sd, 7 * sd)
+        ftl.addWidget(self.file_add_md_lbl,                  row, 0)
+        ftl.addWidget(self.file_md_name_lbl,                 row, 1)
+        ftl.addWidget(self.file_md_name,                     row, 2, 1, 2)
+        ftl.addWidget(self.file_md_value_lbl,                row, 4)
+        ftl.addWidget(self.file_md_value,                    row, 5)
+        ftl.addWidget(self.file_add_md_button,               row, 6)
+        ftl.addWidget(self.file_remove_md_button,            row, 7)
 
         row = 2
-        ftl.addWidget(self.file_sum_datasets_lbl,            row * sd, 0 * sd)
-        ftl.addWidget(self.file_sum_datasets_fname,
-                      row * sd, 1 * sd, 1, 5)
-        ftl.addWidget(self.file_sum_datasets_sum_button,     row * sd, 6 * sd)
-        ftl.addWidget(self.file_sum_datasets_reset_button,   row * sd, 7 * sd)
+        ftl.addWidget(self.file_sum_datasets_lbl,            row, 0)
+        ftl.addWidget(self.file_sum_datasets_fname,          row, 1, 1, 5)
+        ftl.addWidget(self.file_sum_datasets_sum_button,     row, 6)
+        ftl.addWidget(self.file_sum_datasets_reset_button,   row, 7)
 
         row = 3
-        ftl.addWidget(self.file_jl_main_lbl,                 row * sd, 0 * sd)
-        ftl.addWidget(self.file_jl_fname_lbl,
-                      row * sd, 1 * sd, 1, 2)
-        ftl.addWidget(self.file_jl_fname,
-                      row * sd, 3 * sd, 1, 2)
-        ftl.addWidget(self.file_jl_fname_button,             row * sd, 5 * sd)
-        ftl.addWidget(self.file_jl_session_button,
-                      row * sd, 6 * sd, 1, 2)
+        ftl.addWidget(self.file_jl_main_lbl,                 row, 0)
+        ftl.addWidget(self.file_jl_fname_lbl,                row, 1, 1, 2)
+        ftl.addWidget(self.file_jl_fname,                    row, 3, 1, 2)
+        ftl.addWidget(self.file_jl_fname_button,             row, 5)
+        ftl.addWidget(self.file_jl_session_button,           row, 6, 1, 2)
 
         row = 4
-        ftl.addWidget(self.file_jl_explog_lbl,
-                      row * sd, 1 * sd, 1, 2)
-        ftl.addWidget(self.file_jl_explog,
-                      row * sd, 3 * sd, 1, 2)
-        ftl.addWidget(self.file_jl_explog_button,            row * sd, 5 * sd)
+        ftl.addWidget(self.file_jl_explog_lbl,               row, 1, 1, 2)
+        ftl.addWidget(self.file_jl_explog,                   row, 3, 1, 2)
+        ftl.addWidget(self.file_jl_explog_button,            row, 5)
 
         # dummy lbl
         # dummy_lbl = QLabel('')
@@ -1763,7 +1764,8 @@ class UtilitiesPanel(QWidget):
 
         row = 1
         for key in dataset.keys():
-            if key == 'ekin' or key == 'saved':
+            if (key == 'ekin') or (key == 'saved') or \
+                    (key == 'data_provenance'):
                 continue
             elif key == 'data':
                 s = dataset[key].shape
@@ -1879,22 +1881,29 @@ class UtilitiesPanel(QWidget):
             if empty_name_box.exec() == QMessageBox.Ok:
                 return
 
-        message = 'Sure to add attribute \'{}\' with value <{}> (type: {}) to the file?'.format(
-            name, value, type(value))
+        message = 'Sure to add attribute \'{}\' with value <{}> (type: {}) ' \
+                  'to the file?'.format(name, value, type(value))
         sanity_check_box = QMessageBox()
         sanity_check_box.setIcon(QMessageBox.Question)
         sanity_check_box.setText(message)
-        sanity_check_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        sanity_check_box.setStandardButtons(QMessageBox.Ok |
+                                            QMessageBox.Cancel)
         if sanity_check_box.exec() == QMessageBox.Ok:
             if hasattr(self.mw.data_set, name):
+                old = vars(self.mw.data_set)[name]
                 attr_conflict_box = QMessageBox()
                 attr_conflict_box.setIcon(QMessageBox.Question)
-                attr_conflict_box.setText(f'Data set already has attribute \'{name}\'.  Overwrite?')
-                attr_conflict_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                attr_conflict_box.setText(f'Data set already has attribute '
+                                          f'\'{name}\'.  Overwrite?')
+                attr_conflict_box.setStandardButtons(QMessageBox.Ok |
+                                                     QMessageBox.Cancel)
                 if attr_conflict_box.exec() == QMessageBox.Ok:
                     setattr(self.mw.data_set, name, value)
+                    self.dp_add_edited_metadata_entry('updated', name,
+                                                      old, value)
             else:
                 dl.update_namespace(self.mw.data_set, [name, value])
+                self.dp_add_edited_metadata_entry('added', name, '-', value)
         else:
             return
 
@@ -1910,13 +1919,17 @@ class UtilitiesPanel(QWidget):
             if no_attr_box.exec() == QMessageBox.Ok:
                 return
 
-        message = 'Sure to remove attribute \'{}\' from the data set?'.format(name)
+        message = 'Sure to remove attribute \'{}\' from the data set?'.format(
+            name)
         sanity_check_box = QMessageBox()
         sanity_check_box.setIcon(QMessageBox.Question)
         sanity_check_box.setText(message)
-        sanity_check_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        sanity_check_box.setStandardButtons(QMessageBox.Ok |
+                                            QMessageBox.Cancel)
         if sanity_check_box.exec() == QMessageBox.Ok:
+            value = vars(self.mw.data_set)[name]
             delattr(self.mw.data_set, name)
+            self.dp_add_edited_metadata_entry('removed', name, value, '-')
         else:
             return
 
@@ -1925,13 +1938,15 @@ class UtilitiesPanel(QWidget):
         if self.dim == 3:
             no_map_box = QMessageBox()
             no_map_box.setIcon(QMessageBox.Information)
-            no_map_box.setText('Summing feature works only on cuts.')
+            no_map_box.setText('Can\'t sum 3D datasets.')
             no_map_box.setStandardButtons(QMessageBox.Ok)
             if no_map_box.exec() == QMessageBox.Ok:
                 return
 
-        file_path = self.mw.fname[:-len(self.mw.title)] + self.file_sum_datasets_fname.text()
+        file_path = self.mw.fname[:-len(self.mw.title)] + \
+                    self.file_sum_datasets_fname.text()
         org_dataset = dl.load_data(self.mw.fname)
+        new_dataset, check_result = None, None
 
         try:
             new_dataset = dl.load_data(file_path)
@@ -1946,19 +1961,19 @@ class UtilitiesPanel(QWidget):
         try:
             check_result = self.check_conflicts([org_dataset, new_dataset])
         except AttributeError:
-            not_h5_file_box = QMessageBox()
-            not_h5_file_box.setIcon(QMessageBox.Information)
-            not_h5_file_box.setText('Cut is not an SIStem *h5 file.')
-            not_h5_file_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            if not_h5_file_box.exec() == QMessageBox.Cancel:
+
+            error_box = QMessageBox()
+            error_box.setIcon(QMessageBox.Information)
+            error_box.setText('Aborted, datasets could not be compared.')
+            error_box.setStandardButtons(QMessageBox.Ok)
+            if error_box.exec() == QMessageBox.Ok:
                 return
-            else:
-                pass
 
         if check_result == 0:
             data_mismatch_box = QMessageBox()
             data_mismatch_box.setIcon(QMessageBox.Information)
-            data_mismatch_box.setText('Data sets\' shapes don\'t match.\nConnot proceed.')
+            data_mismatch_box.setText('Aborted.\n'
+                                      'Data sets\' shapes don\'t match.\n')
             data_mismatch_box.setStandardButtons(QMessageBox.Ok)
             if data_mismatch_box.exec() == QMessageBox.Ok:
                 return
@@ -1968,7 +1983,8 @@ class UtilitiesPanel(QWidget):
         check_result_box.setMaximumWidth(1000)
         check_result_box.setIcon(QMessageBox.Information)
         check_result_box.setText(check_result)
-        check_result_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        check_result_box.setStandardButtons(QMessageBox.Ok |
+                                            QMessageBox.Cancel)
         if check_result_box.exec() == QMessageBox.Ok:
             self.mw.org_dataset = org_dataset
             self.mw.data_set.data += new_dataset.data
@@ -1976,6 +1992,7 @@ class UtilitiesPanel(QWidget):
             d = np.swapaxes(self.mw.data_set.data, 1, 2)
             self.mw.data_handler.set_data(d)
             self.mw.update_main_plot()
+            self.dp_add_file_sum_entry(file_path)
         else:
             return
 
@@ -2111,11 +2128,233 @@ class UtilitiesPanel(QWidget):
 
         os.system('cp ' + org_file + ' ' + directory)
 
+    @ staticmethod
+    def dp_add_file_cut_entry(data_set, direction, cut_idx, binned):
+
+        dp = data_set.data_provenance
+
+        entry = {'index': len(dp['file']),
+                 'date_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                 'path': '-',
+                 'type': 'cut along {}'.format(direction),
+                 'index_taken': cut_idx,
+                 'binned': binned,
+                 'data_loader': '-'}
+
+        dp['file'].append(entry)
+
+    def dp_add_file_sum_entry(self, fname):
+
+        dp = self.mw.data_set.data_provenance
+
+        entry = {'index': len(dp['file']),
+                 'date_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                 'path': fname,
+                 'type': 'added dataset',
+                 'index_taken': '-',
+                 'binned': '-',
+                 'data_loader': '-'}
+
+        dp['file'].append(entry)
+
+    def dp_add_k_space_conversion_entry(self, dataset):
+
+        dp = dataset.data_provenance
+        orient = self.axes_slit_orient.currentText()
+        Ef = self.axes_energy_Ef.value()
+        hv = self.axes_energy_hv.value()
+        wf = self.axes_energy_wf.value()
+
+        if np.isclose(self.axes_conv_lc.value(), 3.1416):
+            a = '-'
+        else:
+            a = self.axes_conv_lc.value()
+
+        if self.dim == 2:
+            anal_off = self.axes_gamma_x.value()
+            scan_off = self.axes_angle_off.value()
+            kz = '-'
+            c = '-'
+        else:
+            anal_off = self.axes_gamma_y.value()
+            scan_off = self.axes_gamma_x.value()
+            if self.axes_transform_kz.isChecked():
+                kz = 'yes'
+                if np.isclose(self.axes_conv_lc_op.value(), 3.1416):
+                    c = '-'
+                else:
+                    c = self.axes_conv_lc_op.value()
+            else:
+                kz = '-'
+                c = '-'
+
+        entry = {'index': len(dp['k_space_conv']),
+                 'date_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                 'anal_ax_off': anal_off,
+                 'scan_ax_off': scan_off,
+                 'orient': orient,
+                 'kz': kz,
+                 'Ef': Ef,
+                 'hv': hv,
+                 'wf': wf,
+                 'a': a,
+                 'c': c}
+
+        dp['k_space_conv'].append(entry)
+
+    def dp_add_edited_metadata_entry(self, action, attr_name, old, new):
+        dp = self.mw.data_set.data_provenance
+
+        entry = {'index': len(dp['edited_entries']),
+                 'date_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                 'action': action,
+                 'attribute': attr_name,
+                 'old_value': old,
+                 'new_value': new}
+
+        dp['edited_entries'].append(entry)
+
+    def set_dp_window(self, width):
+
+        self.dp_window = QWidget()
+        dpw = QVBoxLayout()
+        dp = self.mw.data_set.data_provenance
+        file_entries = ['#', 'Date & time', 'path', 'type', 'taken @',
+                        'n_bins', 'Data loader']
+        kspc_entries = ['#', 'Date & time', 'Analyzer axis offset',
+                        'Scanned axis offset', 'Slit orientation', 'kz', 'Ef',
+                        'hv', 'wf', 'a, A', 'c, A']
+        edit_entries = ['#', 'Date & time', 'Action', 'Attribute', 'Old value',
+                        'New Value']
+        # comm_entries = ['#', 'Date & time', 'Comment']
+
+        file_lbl = QLabel('File')
+        kspc_lbl = QLabel('k-space conversion')
+        edit_lbl = QLabel('Editted entries')
+        # comm_lbl = QLabel('Comments')
+        file_lbl.setFont(bold_font)
+        kspc_lbl.setFont(bold_font)
+        edit_lbl.setFont(bold_font)
+        # comm_lbl.setFont(bold_font)
+        file_lbl.setAlignment(QtCore.Qt.AlignCenter)
+        kspc_lbl.setAlignment(QtCore.Qt.AlignCenter)
+        edit_lbl.setAlignment(QtCore.Qt.AlignCenter)
+        # comm_lbl.setAlignment(QtCore.Qt.AlignCenter)
+
+        dpw.addWidget(file_lbl)
+        if len(dp['file']) != 0:
+            file_table = QTableWidget(len(dp['file']), len(file_entries))
+            file_table.setSizePolicy(QSizePolicy.Maximum,
+                                     QSizePolicy.Maximum)
+            file_table.setHorizontalHeaderLabels(file_entries)
+            file_table.setMinimumWidth(width)
+            height = int(file_table.horizontalHeader().height() * 1.2)
+            for idx in range(len(dp['file'])):
+                dpfi = dp['file'][idx]
+                file_table.setItem(idx, 0, QTabItem(str(dpfi['index'])))
+                file_table.setItem(idx, 1, QTabItem(str(dpfi['date_time'])))
+                file_table.setItem(idx, 2, QTabItem(str(dpfi['path'])))
+                file_table.setItem(idx, 3, QTabItem(str(dpfi['type'])))
+                file_table.setItem(idx, 4, QTabItem(str(dpfi['index_taken'])))
+                file_table.setItem(idx, 5, QTabItem(str(dpfi['binned'])))
+                file_table.setItem(idx, 6, QTabItem(str(dpfi['data_loader'])))
+                height += file_table.rowHeight(idx)
+            file_table.resizeColumnsToContents()
+            file_table.setColumnWidth(0, 30)
+            header = file_table.horizontalHeader()
+            file_table.setMaximumHeight(height)
+            file_table.setMaximumWidth(header.width())
+            dpw.addWidget(file_table)
+
+        dpw.addWidget(kspc_lbl)
+        if len(dp['k_space_conv']) != 0:
+            kspc_table = QTableWidget(len(dp['k_space_conv']),
+                                      len(kspc_entries))
+            kspc_table.setHorizontalHeaderLabels(kspc_entries)
+            kspc_table.setMinimumWidth(width)
+            height = int(kspc_table.horizontalHeader().height() * 1.2)
+            for idx in range(len(dp['k_space_conv'])):
+                dpfi = dp['k_space_conv'][idx]
+                kspc_table.setItem(idx, 0, QTabItem(str(dpfi['index'])))
+                kspc_table.setItem(idx, 1, QTabItem(str(dpfi['date_time'])))
+                kspc_table.setItem(idx, 2, QTabItem(str(dpfi['anal_ax_off'])))
+                kspc_table.setItem(idx, 3, QTabItem(str(dpfi['scan_ax_off'])))
+                kspc_table.setItem(idx, 4, QTabItem(str(dpfi['orient'])))
+                kspc_table.setItem(idx, 5, QTabItem(str(dpfi['kz'])))
+                kspc_table.setItem(idx, 6, QTabItem(str(dpfi['Ef'])))
+                kspc_table.setItem(idx, 7, QTabItem(str(dpfi['hv'])))
+                kspc_table.setItem(idx, 8, QTabItem(str(dpfi['wf'])))
+                kspc_table.setItem(idx, 9, QTabItem(str(dpfi['a'])))
+                kspc_table.setItem(idx, 10, QTabItem(str(dpfi['c'])))
+                height += kspc_table.rowHeight(idx)
+            kspc_table.resizeColumnsToContents()
+            kspc_table.setColumnWidth(0, 30)
+            header = kspc_table.horizontalHeader()
+            kspc_table.setMaximumHeight(height)
+            kspc_table.setMaximumWidth(header.width())
+            dpw.addWidget(kspc_table)
+
+        dpw.addWidget(edit_lbl)
+        if len(dp['edited_entries']) != 0:
+            edit_table = QTableWidget(len(dp['edited_entries']),
+                                      len(edit_entries))
+            edit_table.setHorizontalHeaderLabels(edit_entries)
+            edit_table.setMinimumWidth(width)
+            height = int(edit_table.horizontalHeader().height() * 1.2)
+            for idx in range(len(dp['edited_entries'])):
+                dpfi = dp['edited_entries'][idx]
+                edit_table.setItem(idx, 0, QTabItem(str(dpfi['index'])))
+                edit_table.setItem(idx, 1, QTabItem(str(dpfi['date_time'])))
+                edit_table.setItem(idx, 2, QTabItem(str(dpfi['action'])))
+                edit_table.setItem(idx, 3, QTabItem(str(dpfi['attribute'])))
+                edit_table.setItem(idx, 4, QTabItem(str(dpfi['old_value'])))
+                edit_table.setItem(idx, 5, QTabItem(str(dpfi['new_value'])))
+                height += edit_table.rowHeight(idx)
+            edit_table.resizeColumnsToContents()
+            edit_table.setColumnWidth(0, 30)
+            header = edit_table.horizontalHeader()
+            edit_table.setMaximumHeight(height)
+            edit_table.setMaximumWidth(header.width())
+            dpw.addWidget(edit_table)
+
+        # dpw.addWidget(comm_lbl)
+        # if len(dp['comments']) != 0:
+        #     comm_table = QTableWidget(len(dp['comments']), len(comm_entries))
+        #     comm_table.setHorizontalHeaderLabels(comm_entries)
+        #     comm_table.setMinimumWidth(width)
+        #     height = int(comm_table.horizontalHeader().height() * 1.2)
+        #     for idx in range(len(dp['comments'])):
+        #         dpfi = dp['comments'][idx]
+        #         comm_table.setItem(idx, 0, QTabItem(str(dpfi['index'])))
+        #         comm_table.setItem(idx, 1, QTabItem(str(dpfi['date_time'])))
+        #         comm_table.setItem(idx, 2, QTabItem(str(dpfi['comment'])))
+        #         height += comm_table.rowHeight(idx)
+        #     comm_table.resizeColumnsToContents()
+        #     comm_table.setColumnWidth(0, 30)
+        #     header = comm_table.horizontalHeader()
+        #     comm_table.setMaximumHeight(height)
+        #     comm_table.setMaximumWidth(header.width())
+        #     dpw.addWidget(comm_table)
+
+
+        self.dp_window.layout = dpw
+        self.dp_window.setLayout(dpw)
+
+    def show_data_provenance_window(self):
+
+        width = 800
+        self.set_dp_window(width)
+        title = self.mw.title + ' - data provenance'
+        self.dp_box = InfoWindow(self.dp_window, title)
+        self.dp_box.setMinimumWidth(width + 100)
+        self.dp_box.show()
+
     @staticmethod
     def check_conflicts(datasets):
 
-        labels = ['fname', 'data', 'T', 'hv', 'polarization', 'PE', 'FE', 'exit', 'x', 'y', 'z', 'theta', 'phi', 'tilt',
-                  'lens_mode', 'acq_mode', 'e_start', 'e_stop', 'e_step']
+        labels = ['fname', 'data', 'T', 'hv', 'polarization', 'PE', 'FE',
+                  'exit', 'x', 'y', 'z', 'theta', 'phi', 'tilt', 'lens_mode',
+                  'acq_mode', 'e_start', 'e_stop', 'e_step']
         to_check = [[] for _ in range(len(labels))]
 
         to_check[0] = ['original', 'new']
@@ -2186,13 +2425,16 @@ class UtilitiesPanel(QWidget):
             dont_match = np.where(np.array(check_result) == False)
             for idx in dont_match[0]:
                 try:
-                    message += '{} \t\t {:.3f}\t  {:.3f} \n'.format(str(labels[idx]), to_check[idx][0], to_check[idx][1])
+                    message += '{} \t\t {:.3f}\t  {:.3f} \n'.format(
+                        str(labels[idx]), to_check[idx][0], to_check[idx][1])
                 except TypeError:
                     message += '{} \t\t {}\t  {} \n'.format(
-                        str(labels[idx]), str(to_check[idx][0]), str(to_check[idx][1]))
+                        str(labels[idx]), str(to_check[idx][0]),
+                        str(to_check[idx][1]))
                 except ValueError:
                     message += '{} \t\t {}\t  {} \n'.format(
-                        str(labels[idx]), str(to_check[idx][0]), str(to_check[idx][1]))
+                        str(labels[idx]), str(to_check[idx][0]),
+                        str(to_check[idx][1]))
             message += '\nSure to proceed?'
 
         return message
