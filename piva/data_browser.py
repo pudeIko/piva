@@ -16,12 +16,12 @@ testing = True
 all_dls = {
     'Pickle': dl.DataloaderPickle,
     'SLS - SIS': dl.DataloaderSIS,
+    'SLS - ADRESS': dl.DataloaderADRESS,
     'MAX IV - Bloch': dl.DataloaderBloch,
     'ALS - MERLIN (4.0.3)': dl.DataloaderALSMerlin,
     'Diamond - i05': dl.Dataloaderi05,
     'SOLARIS - URANOS': dl.DataloaderURANOS,
     '*SOLEIL - CASSIOPEE': dl.DataloaderCASSIOPEE,
-    '*SLS - ADRESS': dl.DataloaderADRESS,
     '*ALS - MAESTRO (7.0.2)': dl.DataloaderALSMaestro}
 
 
@@ -174,10 +174,12 @@ class DataBrowser(QMainWindow):
         self.dp_anal_e1.setText(self.dp_def_fill)
         self.dp_anal_de.setText(self.dp_def_fill)
         self.dp_anal_pe.setText(self.dp_def_fill)
+        self.dp_anal_dt.setText(self.dp_def_fill)
         self.dp_anal_lm.setText(self.dp_def_fill)
         self.dp_anal_am.setText(self.dp_def_fill)
+        self.dp_anal_anal_slit.setText(self.dp_def_fill)
+        self.dp_anal_defl_ang.setText(self.dp_def_fill)
         self.dp_anal_n_sweeps.setText(self.dp_def_fill)
-        self.dp_anal_dt.setText(self.dp_def_fill)
 
         self.dp_bl_hv.setText(self.dp_def_fill)
         self.dp_bl_polar.setText(self.dp_def_fill)
@@ -191,7 +193,7 @@ class DataBrowser(QMainWindow):
         bold_font = QtGui.QFont()
         bold_font.setBold(True)
         dp_def_fill = '-'
-        max_len_1 = 50
+        max_len_1 = 60
         max_len_2 = int(1.5 * 50)
 
         # pick dataloader
@@ -343,10 +345,12 @@ class DataBrowser(QMainWindow):
             dp_anal_row2_layout = QHBoxLayout()
             dp_anal_row3_layout = QHBoxLayout()
             dp_anal_row4_layout = QHBoxLayout()
+            dp_anal_row5_layout = QHBoxLayout()
             dp_anal_layout.addLayout(dp_anal_row1_layout)
             dp_anal_layout.addLayout(dp_anal_row2_layout)
             dp_anal_layout.addLayout(dp_anal_row3_layout)
             dp_anal_layout.addLayout(dp_anal_row4_layout)
+            dp_anal_layout.addLayout(dp_anal_row5_layout)
             # create labels
             dp_anal_col1_width = 35
             dp_anal_col2_width = 65
@@ -358,42 +362,52 @@ class DataBrowser(QMainWindow):
             dp_anal_de_lbl.setFixedWidth(dp_anal_col1_width)
             dp_anal_pe_lbl = QLabel('PE:')
             dp_anal_pe_lbl.setFixedWidth(dp_anal_col1_width)
+            dp_anal_dt_lbl = QLabel('DT:')
+            dp_anal_dt_lbl.setFixedWidth(dp_anal_col1_width)
             dp_anal_lm_lbl = QLabel('lens mode:')
             dp_anal_lm_lbl.setFixedWidth(dp_anal_col2_width)
             dp_anal_am_lbl = QLabel('acq mode:')
             dp_anal_am_lbl.setFixedWidth(dp_anal_col2_width)
+            dp_anal_anal_slit_lbl = QLabel('ana slit:')
+            dp_anal_anal_slit_lbl.setFixedWidth(dp_anal_col2_width)
+            dp_anal_defl_ang_lbl = QLabel('defl [deg]:')
+            dp_anal_defl_ang_lbl.setFixedWidth(dp_anal_col2_width)
             dp_anal_n_sweeps_lbl = QLabel('sweeps:')
             dp_anal_n_sweeps_lbl.setFixedWidth(dp_anal_col2_width)
-            dp_anal_dt_lbl = QLabel('DT:')
-            dp_anal_dt_lbl.setFixedWidth(dp_anal_col2_width)
             # create textboxes
             self.dp_anal_e = QLineEdit(dp_def_fill)
             self.dp_anal_e0 = QLineEdit(dp_def_fill)
             self.dp_anal_e1 = QLineEdit(dp_def_fill)
             self.dp_anal_de = QLineEdit(dp_def_fill)
             self.dp_anal_pe = QLineEdit(dp_def_fill)
+            self.dp_anal_dt = QLineEdit(dp_def_fill)
             self.dp_anal_lm = QLineEdit(dp_def_fill)
             self.dp_anal_am = QLineEdit(dp_def_fill)
+            self.dp_anal_anal_slit = QLineEdit(dp_def_fill)
+            self.dp_anal_defl_ang = QLineEdit(dp_def_fill)
             self.dp_anal_n_sweeps = QLineEdit(dp_def_fill)
-            self.dp_anal_dt = QLineEdit(dp_def_fill)
             # set max width
             self.dp_anal_e0.setMaximumWidth(max_len_2)
             self.dp_anal_e1.setMaximumWidth(max_len_2)
             self.dp_anal_de.setMaximumWidth(max_len_2)
             self.dp_anal_pe.setMaximumWidth(max_len_2)
+            self.dp_anal_dt.setMaximumWidth(max_len_2)
             self.dp_anal_lm.setMaximumWidth(max_len_2)
             self.dp_anal_am.setMaximumWidth(max_len_2)
-            self.dp_anal_n_sweeps.setMaximumWidth(max_len_1)
-            self.dp_anal_dt.setMaximumWidth(max_len_1)
+            self.dp_anal_anal_slit.setMaximumWidth(max_len_2)
+            self.dp_anal_defl_ang.setMaximumWidth(max_len_2)
+            self.dp_anal_n_sweeps.setMaximumWidth(max_len_2)
             # set read only
             self.dp_anal_e0.setReadOnly(True)
             self.dp_anal_e1.setReadOnly(True)
             self.dp_anal_de.setReadOnly(True)
             self.dp_anal_pe.setReadOnly(True)
+            self.dp_anal_dt.setReadOnly(True)
             self.dp_anal_lm.setReadOnly(True)
             self.dp_anal_am.setReadOnly(True)
             self.dp_anal_n_sweeps.setReadOnly(True)
-            self.dp_anal_dt.setReadOnly(True)
+            self.dp_anal_anal_slit.setReadOnly(True)
+            self.dp_anal_defl_ang.setReadOnly(True)
             # add labels to layouts
             # dp_anal_e_layout.addWidget(dp_anal_e_lbl)
             dp_anal_row1_layout.addWidget(dp_anal_e0_lbl)
@@ -404,18 +418,23 @@ class DataBrowser(QMainWindow):
             dp_anal_row3_layout.addWidget(self.dp_anal_de)
             dp_anal_row4_layout.addWidget(dp_anal_pe_lbl)
             dp_anal_row4_layout.addWidget(self.dp_anal_pe)
+            dp_anal_row5_layout.addWidget(dp_anal_dt_lbl)
+            dp_anal_row5_layout.addWidget(self.dp_anal_dt)
             dp_anal_row1_layout.addWidget(dp_anal_lm_lbl)
             dp_anal_row1_layout.addWidget(self.dp_anal_lm)
             dp_anal_row2_layout.addWidget(dp_anal_am_lbl)
             dp_anal_row2_layout.addWidget(self.dp_anal_am)
-            dp_anal_row3_layout.addWidget(dp_anal_n_sweeps_lbl)
-            dp_anal_row3_layout.addWidget(self.dp_anal_n_sweeps)
-            dp_anal_row4_layout.addWidget(dp_anal_dt_lbl)
-            dp_anal_row4_layout.addWidget(self.dp_anal_dt)
+            dp_anal_row3_layout.addWidget(dp_anal_anal_slit_lbl)
+            dp_anal_row3_layout.addWidget(self.dp_anal_anal_slit)
+            dp_anal_row4_layout.addWidget(dp_anal_defl_ang_lbl)
+            dp_anal_row4_layout.addWidget(self.dp_anal_defl_ang)
+            dp_anal_row5_layout.addWidget(dp_anal_n_sweeps_lbl)
+            dp_anal_row5_layout.addWidget(self.dp_anal_n_sweeps)
             dp_anal_row1_layout.addStretch()
             dp_anal_row2_layout.addStretch()
             dp_anal_row3_layout.addStretch()
             dp_anal_row4_layout.addStretch()
+            dp_anal_row5_layout.addStretch()
 
         # beamline details
         if 1:
@@ -657,14 +676,18 @@ class DataBrowser(QMainWindow):
                     wp.get_step(data.zscale)))
             if not (data.PE is None):
                 self.dp_anal_pe.setText('{}'.format(int(data.PE)))
+            if not (data.DT is None):
+                self.dp_anal_dt.setText('{}'.format(int(data.DT)))
             if not (data.lens_mode is None):
                 self.dp_anal_lm.setText('{}'.format(data.lens_mode))
             if not (data.acq_mode is None):
                 self.dp_anal_am.setText('{}'.format(data.acq_mode))
+            if not (data.anal_slit is None):
+                self.dp_anal_anal_slit.setText('{}'.format(data.anal_slit))
+            if not (data.defl_angle is None):
+                self.dp_anal_defl_ang.setText('{}'.format(data.defl_angle))
             if not (data.n_sweeps is None):
                 self.dp_anal_n_sweeps.setText('{}'.format(int(data.n_sweeps)))
-            if not (data.DT is None):
-                self.dp_anal_dt.setText('{}'.format(int(data.DT)))
 
             # beamline
             if not (data.hv is None):

@@ -1231,24 +1231,24 @@ class UtilitiesPanel(QWidget):
             sd = 1
             # addWidget(widget, row, column, rowSpan, columnSpan)
             col = 0
-            vtl.addWidget(self.bins_label,                0 * sd, col, 1, 3)
-            vtl.addWidget(self.bin_y,                     1 * sd, col * sd)
-            vtl.addWidget(self.bin_y_nbins,               1 * sd, (col+1) * sd)
-            vtl.addWidget(self.bin_z,                     2 * sd, col * sd)
-            vtl.addWidget(self.bin_z_nbins,               2 * sd, (col+1) * sd)
+            vtl.addWidget(self.positions_momentum_label,  0, col, 1, 3)
+            vtl.addWidget(self.energy_vert_label,         1, col)
+            vtl.addWidget(self.energy_vert,               1, col + 1)
+            vtl.addWidget(self.energy_vert_value,         1, col + 2)
+            vtl.addWidget(self.momentum_hor_label,        2, col)
+            vtl.addWidget(self.momentum_hor,              2, col + 1)
+            vtl.addWidget(self.momentum_hor_value,        2, col + 2)
 
-            col = 3
-            vtl.addWidget(self.positions_momentum_label,  0 * sd, col, 1, 3)
-            vtl.addWidget(self.energy_vert_label,         1 * sd, col)
-            vtl.addWidget(self.energy_vert,               1 * sd, (col+1) * sd)
-            vtl.addWidget(self.energy_vert_value,         1 * sd, (col+2) * sd)
-            vtl.addWidget(self.momentum_hor_label,        2 * sd, col)
-            vtl.addWidget(self.momentum_hor,              2 * sd, (col+1) * sd)
-            vtl.addWidget(self.momentum_hor_value,        2 * sd, (col+2) * sd)
+            col = 4
+            vtl.addWidget(self.bins_label,                0, col, 1, 3)
+            vtl.addWidget(self.bin_y,                     1, col)
+            vtl.addWidget(self.bin_y_nbins,               1, col + 1)
+            vtl.addWidget(self.bin_z,                     2, col)
+            vtl.addWidget(self.bin_z_nbins,               2, col + 1)
 
             # dummy lbl
             dummy_lbl = QLabel('')
-            vtl.addWidget(dummy_lbl, 0, 6, 5, 2)
+            vtl.addWidget(dummy_lbl, 0, 3, 5, 1)
 
         elif self.dim == 3:
             # binning option
@@ -1608,7 +1608,7 @@ class UtilitiesPanel(QWidget):
         ftl.addWidget(self.file_show_dp_button,              row, 4, 1, 2)
         ftl.addWidget(self.file_show_md_button,              row, 6, 1, 2)
 
-        row = 1
+        row += 1
         ftl.addWidget(self.file_add_md_lbl,                  row, 0)
         ftl.addWidget(self.file_md_name_lbl,                 row, 1)
         ftl.addWidget(self.file_md_name,                     row, 2, 1, 2)
@@ -1617,27 +1617,30 @@ class UtilitiesPanel(QWidget):
         ftl.addWidget(self.file_add_md_button,               row, 6)
         ftl.addWidget(self.file_remove_md_button,            row, 7)
 
-        row = 2
-        ftl.addWidget(self.file_sum_datasets_lbl,            row, 0)
-        ftl.addWidget(self.file_sum_datasets_fname,          row, 1, 1, 5)
-        ftl.addWidget(self.file_sum_datasets_sum_button,     row, 6)
-        ftl.addWidget(self.file_sum_datasets_reset_button,   row, 7)
+        if self.dim == 2:
+            row += 1
+            ftl.addWidget(self.file_sum_datasets_lbl,            row, 0)
+            ftl.addWidget(self.file_sum_datasets_fname,          row, 1, 1, 5)
+            ftl.addWidget(self.file_sum_datasets_sum_button,     row, 6)
+            ftl.addWidget(self.file_sum_datasets_reset_button,   row, 7)
 
-        row = 3
+        row += 1
         ftl.addWidget(self.file_jl_main_lbl,                 row, 0)
         ftl.addWidget(self.file_jl_fname_lbl,                row, 1, 1, 2)
         ftl.addWidget(self.file_jl_fname,                    row, 3, 1, 2)
         ftl.addWidget(self.file_jl_fname_button,             row, 5)
         ftl.addWidget(self.file_jl_session_button,           row, 6, 1, 2)
 
-        row = 4
+        row += 1
         ftl.addWidget(self.file_jl_explog_lbl,               row, 1, 1, 2)
         ftl.addWidget(self.file_jl_explog,                   row, 3, 1, 2)
         ftl.addWidget(self.file_jl_explog_button,            row, 5)
 
-        # dummy lbl
-        # dummy_lbl = QLabel('')
-        # ftl.addWidget(dummy_lbl, 4, 0, 1, 9)
+        if self.dim == 3:
+            # dummy lbl
+            row += 1
+            dummy_lbl = QLabel('')
+            ftl.addWidget(dummy_lbl,                         row, 0)
 
         self.file_tab.layout = ftl
         self.file_tab.setLayout(ftl)

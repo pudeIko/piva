@@ -135,6 +135,7 @@ class DataSet:
             acq_mode=None,
             lens_mode=None,
             anal_slit=None,
+            defl_angle=None,
             n_sweeps=None,
             DT=None,
             data_provenance=self.dp
@@ -624,6 +625,140 @@ class DataloaderSIS(Dataloader):
                     metadata.__setattr__('scan_stop', float(tokens[1].split()[0]))
                 elif tokens[0] == 'Thetay_StepSize':
                     metadata.__setattr__('scan_step', float(tokens[1].split()[0]))
+        return metadata
+
+
+class DataloaderADRESS(Dataloader):
+    """ ADRESS beamline at SLS, PSI. """
+    name = 'ADRESS'
+
+    def load_data(self, filename, metadata=False):
+        """
+        Extract and return the actual 'data', i.e. the recorded map/cut.
+        Also return labels which provide some indications what the data means.
+        """
+        # Note: x and y are a bit confusing here as the hd5 file has a
+        # different notion of zero'th and first dimension as numpy and then
+        # later pcolormesh introduces yet another layer of confusion. The way
+        # it is written now, though hard to read, turns out to do the right
+        # thing and leads to readable code from after this point.
+
+        ds = DataSet()
+        if filename.endswith('h5'):
+            filedata = self.load_h5(filename, metadata=metadata)
+        else:
+            raise NotImplementedError
+
+        dict_ds = vars(ds.dataset)
+        dict_filedata = vars(filedata)
+
+        for attr in dir(filedata):
+            if not (attr[0] == '_'):
+                dict_ds[attr] = dict_filedata[attr]
+
+        ds.add_org_file_entry(filename, 'ADRESS')
+        return ds.dataset
+
+    def load_h5(self, filename, metadata=False):
+        h5file = h5py.File(filename, 'r')
+        # The actual data is in the field: 'Matrix'
+        matrix = h5file['Matrix']
+
+        # The scales can be extracted from the matrix' attributes
+        scalings = matrix.attrs['IGORWaveScaling']
+        # units = matrix.attrs['IGORWaveUnits']
+        info = matrix.attrs['IGORWaveNote']
+
+        # Convert `units` and `info`, which is a bytestring of ASCII
+        # characters, to lists of strings Put the data into a numpy array and
+        # convert to float
+        data = np.array(matrix, dtype=float)
+        shape = data.shape
+
+        if len(shape) == 3:
+            # Case map or hv scan (or...?)
+            data = np.rollaxis(data.T, 2, 1)
+            shape = data.shape
+            # Shape has changed
+            xstep, xstart = scalings[3]
+            ystep, ystart = scalings[1]
+            zstep, zstart = scalings[2]
+            xscale = start_step_n(xstart, xstep, shape[0])
+            yscale = start_step_n(ystart, ystep, shape[1])
+            zscale = start_step_n(zstart, zstep, shape[2])
+        else:
+            # Case cut
+            # Make data 3-dimensional by adding an empty dimension
+            data = data.reshape(1, shape[0], shape[1])
+            # Shape has changed
+            shape = data.shape
+            ystep, ystart = scalings[1]
+            zstep, zstart = scalings[2]
+            xscale = np.array([1])
+            yscale = start_step_n(ystart, ystep, shape[1])
+            zscale = start_step_n(zstart, zstep, shape[2])
+
+        res = Namespace(
+               data=data,
+               xscale=xscale,
+               yscale=yscale,
+               zscale=zscale
+        )
+
+        # more metadata
+        metadata_list = info.decode('ASCII').split('\n')
+        keys1 = [('hv', 'hv', float),
+                 ('Pol', 'polarization', str),
+                 ('Slit  ', 'exit_slit', float),
+                 ('Mode', 'lens_mode', str),
+                 ('Epass', 'PE', int),
+                 ('X ', 'x', float),
+                 ('Y ', 'y', float),
+                 ('Z ', 'z', float),
+                 ('Theta', 'theta', float),
+                 ('Azimuth', 'phi', float),
+                 ('Tilt', 'tilt', float),
+                 ('ADef', 'defl_angle', float),
+                 ('Temp', 'temp', int),
+                 ('dt', 'DT', int)]
+        self.read_metadata(keys1, metadata_list, res)
+        if xscale.size == 1:
+            res.__setattr__('scan_type', 'cut')
+
+        return res
+
+    @staticmethod
+    def read_metadata(keys, metadata_list, namespace):
+        """ Read the metadata from a SIS-ULTRA deflector mode output file. """
+        # List of interesting keys and associated variable names
+        metadata = namespace
+        for line in metadata_list:
+            # Split at 'equals' sign
+            tokens = line.split('=')
+            for key, name, dtype in keys:
+                if key in tokens[0]:
+                    if 'Tilt' in tokens[0] and ':' in tokens[1]:
+                        metadata.__setattr__('scan_type', 'Tilt scan')
+                        start, step, stop = tokens[1].split(':')
+                        metadata.__setattr__('scan_dim', [start, stop, step])
+                        metadata.__setattr__('tilt', start)
+                    elif 'hv' in tokens[0] and ':' in tokens[1]:
+                        metadata.__setattr__('scan_type', 'hv scan')
+                        start, step, stop = tokens[1].split(':')
+                        metadata.__setattr__('scan_dim', [start, stop, step])
+                        metadata.__setattr__('hv', start)
+                    elif 'ADef' in tokens[0] and ':' in tokens[1]:
+                        metadata.__setattr__('scan_type', 'DA scan')
+                        start, step, stop = tokens[1].split(':')
+                        metadata.__setattr__('scan_dim', [start, stop, step])
+                        metadata.__setattr__('defl_angle', None)
+                    elif 'Slit' in tokens[0] and tokens[0][0] == 'A':
+                        value = tokens[1].split()[0][:-2]
+                        metadata.__setattr__('anal_slit', value)
+                    # Split off whitespace or garbage at the end
+                    else:
+                        value = tokens[1].split()[0]
+                        metadata.__setattr__(name, value)
         return metadata
 
 
@@ -2036,106 +2171,6 @@ class DataloaderALSFits(Dataloader):
         data = np.array(data)
 
         return data
-
-
-class DataloaderADRESS(Dataloader):
-    """ ADRESS beamline at SLS, PSI. """
-    name = 'ADRESS'
-
-    def load_data(self, filename):
-        h5file = h5py.File(filename, 'r')
-        # The actual data is in the field: 'Matrix'
-        matrix = h5file['Matrix']
-
-        # The scales can be extracted from the matrix' attributes
-        scalings = matrix.attrs['IGORWaveScaling']
-        # units = matrix.attrs['IGORWaveUnits']
-        info = matrix.attrs['IGORWaveNote']
-
-        # Convert `units` and `info`, which is a bytestring of ASCII characters, to lists of strings
-        # Put the data into a numpy array and convert to float
-        data = np.array(matrix, dtype=float)
-        shape = data.shape
-
-        # 'IGORWaveUnits' contains a list of the form ['', 'degree', 'eV', units[3]]. The first three elements should
-        # always be the same, but the third one may vary or not even exist. Use this to determine the scan type. Convert
-        # to np.array bring it in the shape the gui expects, which is [energy/hv/1, kparallel/"/kparallel,
-        # kperpendicular/"/energy] and prepare the x,y,z # scales Note: `scalings` is a 3/4 by 2 array where every line
-        # contains a (step, start) pair
-        if len(shape) == 3:
-            # Case map or hv scan (or...?)
-            data = np.rollaxis(data.T, 2, 1)
-            shape = data.shape
-            # Shape has changed
-            xstep, xstart = scalings[3]
-            ystep, ystart = scalings[1]
-            zstep, zstart = scalings[2]
-            xscale = start_step_n(xstart, xstep, shape[0])
-            yscale = start_step_n(ystart, ystep, shape[1])
-            zscale = start_step_n(zstart, zstep, shape[2])
-        else:
-            # Case cut
-            # Make data 3-dimensional by adding an empty dimension
-            data = data.reshape(1, shape[0], shape[1])
-            # Shape has changed
-            shape = data.shape
-            ystep, ystart = scalings[1]
-            zstep, zstart = scalings[2]
-            xscale = np.array([1])
-            yscale = start_step_n(ystart, ystep, shape[1])
-            zscale = start_step_n(zstart, zstep, shape[2])
-
-        res = Namespace(
-               data=data,
-               xscale=xscale,
-               yscale=yscale,
-               zscale=zscale
-        )
-
-        # more metadata
-        metadata_list = info.decode('ASCII').split('\n')
-        keys1 = [('hv', 'hv', float),
-                 ('Pol', 'polarization', str),
-                 ('Epass', 'PE', int),
-                 ('X ', 'x', int),
-                 ('Y-orig', 'y', int),
-                 ('Z-orig', 'z', int),
-                 ('Theta', 'theta', float),
-                 ('Azimuth', 'phi', int),
-                 ('Tilt', 'tilt', float),
-                 ('Temp', 'temp', int),
-                 ('Slit', 'exit_slit', str)]
-        self.read_metadata(keys1, metadata_list, res)
-        if xscale.size == 1:
-            res.__setattr__('scan_type', 'cut')
-
-        return res
-
-    @staticmethod
-    def read_metadata(keys, metadata_list, namespace):
-        """ Read the metadata from a SIS-ULTRA deflector mode output file. """
-        # List of interesting keys and associated variable names
-        metadata = namespace
-        for line in metadata_list:
-            # Split at 'equals' sign
-            tokens = line.split('=')
-            for key, name, dtype in keys:
-                if key in tokens[0]:
-                    if 'Tilt' in tokens[0] and ':' in tokens[1]:
-                        metadata.__setattr__('scan_type', 'Tilt scan')
-                        start, step, stop = tokens[1].split(':')
-                        metadata.__setattr__('scan_dim', [start, stop, step])
-                        metadata.__setattr__('tilt', start)
-                    elif 'hv' in tokens[0] and ':' in tokens[1]:
-                        metadata.__setattr__('scan_type', 'hv scan')
-                        start, step, stop = tokens[1].split(':')
-                        metadata.__setattr__('scan_dim', [start, stop, step])
-                        metadata.__setattr__('hv', start)
-                    # Split off whitespace or garbage at the end
-                    else:
-                        value = tokens[1].split()[0]
-                        metadata.__setattr__(name, value)
-        return metadata
 
 
 class DataloaderCASSIOPEE(Dataloader):
