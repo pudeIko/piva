@@ -435,7 +435,8 @@ class PlotTool(QtWidgets.QMainWindow):
             self.dv_list.append(dvi)
             dvi_lbl = dvi.split('/')[-1]
             self.ds_dv.addItem(dvi_lbl)
-            if isinstance(self.data_browser.data_viewers[dvi], p3d.MainWindow3D):
+            if isinstance(self.data_browser.data_viewers[dvi],
+                          p3d.MainWindow3D):
                 for key in self.data_browser.data_viewers[dvi].data_viewers.keys():
                     key_lbl = key.split('/')[-1]
                     self.dv_list.append(key)

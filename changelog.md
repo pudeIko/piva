@@ -9,8 +9,14 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `DataLoader` classes for MERLIN (ALS) and URANOS (Solaris) beamlines
+- experimental logbook feature for implemented `DataLoaders`
+- data provenance functionality, to track modifications in original data sets
+- extended options for data normalization
 
 ### Changed
+
+- JuPyter functionalities from JuPyter-notebook to JuPyterLab environment
  
 
 ### Deprecated
@@ -22,6 +28,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - minor bugs in `set_metadata_window`
+- bugs in `MDCFitter` and `EDCFitter`
 
 
 ## [1.1.0] = 2022-11-28

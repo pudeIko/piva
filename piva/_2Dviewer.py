@@ -218,8 +218,8 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.org_image_data = self.data_handler.get_data()
 
         self.util_panel.energy_vert.setRange(0, len(self.data_handler.axes[1]))
-        self.util_panel.momentum_hor.setRange(0,
-                                              len(self.data_handler.axes[0]))
+        self.util_panel.momentum_hor.setRange(
+            0, len(self.data_handler.axes[0]))
 
         try:
             self.load_corrections(self.data_set)
@@ -230,6 +230,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.util_panel.set_metadata_window(self.data_set)
         self.set_sliders_initial_positions()
 
+    # initialization methods
     def initUI(self):
         self.setWindowTitle(self.title)
         # Create a "central widget" and its layout
@@ -245,6 +246,18 @@ class MainWindow2D(QtWidgets.QMainWindow):
         # Create plot_y
         self.plot_y.register_traced_variable(self.main_plot.pos[1])
         self.plot_y.pos.sig_value_changed.connect(self.update_plot_x)
+
+        # binning utilities
+        self.util_panel.bin_y.stateChanged.connect(self.update_binning_lines)
+        self.util_panel.bin_y_nbins.valueChanged.connect(
+            self.update_binning_lines)
+        self.util_panel.bin_z.stateChanged.connect(self.update_binning_lines)
+        self.util_panel.bin_z_nbins.valueChanged.connect(
+            self.update_binning_lines)
+        self.util_panel.energy_vert.valueChanged.connect(
+            self.set_vert_energy_slider)
+        self.util_panel.momentum_hor.valueChanged.connect(
+            self.set_hor_momentum_slider)
 
         # Create utilities panel and connect signals
         self.util_panel.image_cmaps.currentIndexChanged.connect(self.set_cmap)
@@ -266,18 +279,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
             self.open_mdc_fitter)
         self.util_panel.file_edc_fitter_button.clicked.connect(
             self.open_edc_fitter)
-
-        # binning utilities
-        self.util_panel.bin_y.stateChanged.connect(self.update_binning_lines)
-        self.util_panel.bin_y_nbins.valueChanged.connect(
-            self.update_binning_lines)
-        self.util_panel.bin_z.stateChanged.connect(self.update_binning_lines)
-        self.util_panel.bin_z_nbins.valueChanged.connect(
-            self.update_binning_lines)
-        self.util_panel.energy_vert.valueChanged.connect(
-            self.set_vert_energy_slider)
-        self.util_panel.momentum_hor.valueChanged.connect(
-            self.set_hor_momentum_slider)
 
         # buttons
         self.util_panel.close_button.clicked.connect(self.close)
@@ -344,9 +345,48 @@ class MainWindow2D(QtWidgets.QMainWindow):
             l.setColumnMinimumWidth(i, 50)
             l.setColumnStretch(i, 1)
 
-    def closeEvent(self, event):
-        """ Ensure that this instance is un-registered from the DataBrowser."""
-        del(self.db.data_viewers[self.index])
+    def set_sliders_initial_positions(self):
+        if self.new_energy_axis is None:
+            e_ax = self.data_handler.axes[1]
+        else:
+            e_ax = self.new_energy_axis
+        if e_ax.min() > 0:
+            mid_energy = int(len(e_ax) / 2)
+        else:
+            mid_energy = wp.indexof(-0.005, e_ax)
+
+        if self.k_axis is None:
+            mom_ax = self.data_handler.axes[0]
+        else:
+            mom_ax = self.k_axis
+        if (mom_ax.min() < 0) and (mom_ax.max() > 0):
+            mid_angle = wp.indexof(0, mom_ax)
+        else:
+            mid_angle = int(len(mom_ax) / 2)
+
+        self.main_plot.pos[0].set_value(mid_energy)
+        self.main_plot.pos[1].set_value(mid_angle)
+
+    def load_corrections(self, data_set):
+
+        if hasattr(data_set, 'saved'):
+            raise AttributeError
+        if not (data_set.Ef is None):
+            self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
+        if not (data_set.hv is None):
+            self.util_panel.axes_energy_hv.setValue(data_set.hv)
+        if not (data_set.wf is None):
+            self.util_panel.axes_energy_scale.setCurrentIndex(0)
+            self.util_panel.axes_energy_wf.setValue(data_set.wf)
+        if not (data_set.kyscale is None):
+            self.k_axis = data_set.kyscale
+            new_range = [self.k_axis[0], self.k_axis[-1]]
+            self.main_plot.plotItem.getAxis(
+                self.main_plot.main_yaxis).setRange(*new_range)
+            self.plot_y.plotItem.getAxis(
+                self.plot_y.main_xaxis).setRange(*new_range)
+            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+                self.k_axis[self.main_plot.pos[1].get_value()]))
 
     @staticmethod
     def swap_axes_aroud(D):
@@ -367,20 +407,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
 
         return D
 
-    def update_main_plot(self, **image_kwargs):
-        """ Change *self.main_plot*`s currently displayed
-        :class:`image_item <data_slicer.imageplot.ImagePlot.image_item>` to
-        the slice of *self.data_handler.data* corresponding to the current
-        value of *self.z*.
-        """
-
-        self.data_handler.update_image_data()
-
-        if image_kwargs != {}:
-            self.image_kwargs = image_kwargs
-        # Add image to main_plot
-        self.set_image(self.image_data, **image_kwargs)
-
+    # volume/sliders methods
     def set_axes(self):
         """ Set the x- and y-scales of the plots. The :class:`ImagePlot
         <data_slicer.imageplot.ImagePlot>` object takes care of keeping the
@@ -432,19 +459,30 @@ class MainWindow2D(QtWidgets.QMainWindow):
             start = i_x - width
             stop = i_x + width
             y = np.sum(data[:, start:stop], axis=1)
-            # y = wp.normalize(y)
         x = np.arange(0, len(self.data_handler.axes[1]))
         self.edc = y
         xp.plot(x, y)
         self.util_panel.momentum_hor.setValue(i_x)
         if self.k_axis is None:
-            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.data_handler.axes[0][i_x]))
+            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+                self.data_handler.axes[0][i_x]))
         else:
-            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(self.k_axis[i_x]))
+            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+                self.k_axis[i_x]))
 
         if binning:
             self.plot_y.left_line.setValue(i_x - width)
             self.plot_y.right_line.setValue(i_x + width)
+
+        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
+                self.util_panel.get_linked_windows():
+            linked_windows = self.util_panel.get_linked_windows()
+            for dvi in self.db.data_viewers.keys():
+                if self.db.data_viewers[dvi].title in linked_windows:
+                    pos_variable = self.db.data_viewers[dvi].main_plot.pos[1]
+                    matching_idx = self.get_matching_momentum_idx(
+                        i_x, self.db.data_viewers[dvi])
+                    pos_variable.set_value(matching_idx)
 
     def update_plot_y(self):
         # Get shorthands for plot
@@ -483,13 +521,47 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.util_panel.energy_vert.setValue(i_y)
 
         if self.new_energy_axis is None:
-            self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.data_handler.axes[1][i_y]))
+            self.util_panel.energy_vert_value.setText('({:.4f})'.format(
+                self.data_handler.axes[1][i_y]))
         else:
-            self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.new_energy_axis[i_y]))
+            self.util_panel.energy_vert_value.setText('({:.4f})'.format(
+                self.new_energy_axis[i_y]))
 
         if binning:
             self.plot_x.left_line.setValue(i_y - width)
             self.plot_x.right_line.setValue(i_y + width)
+
+        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
+                self.util_panel.get_linked_windows():
+            linked_windows = self.util_panel.get_linked_windows()
+            for dvi in self.db.data_viewers.keys():
+                if self.db.data_viewers[dvi].title in linked_windows:
+                    pos_variable = self.db.data_viewers[dvi].main_plot.pos[0]
+                    matching_idx = self.get_matching_energy_idx(
+                        i_y, self.db.data_viewers[dvi])
+                    pos_variable.set_value(matching_idx)
+
+    def get_matching_energy_idx(self, master_idx, dv):
+        if self.new_energy_axis is None:
+            erg = self.data_handler.axes[1][master_idx]
+        else:
+            erg = self.new_energy_axis[master_idx]
+        if dv.new_energy_axis is None:
+            erg_ax = dv.data_handler.axes[1]
+        else:
+            erg_ax = dv.new_energy_axis
+        return wp.indexof(erg, erg_ax)
+
+    def get_matching_momentum_idx(self, master_idx, dv):
+        if self.k_axis is None:
+            k = self.data_handler.axes[0][master_idx]
+        else:
+            k = self.k_axis[master_idx]
+        if dv.k_axis is None:
+            k_ax = dv.data_handler.axes[0]
+        else:
+            k_ax = dv.k_axis
+        return wp.indexof(k, k_ax)
 
     def update_binning_lines(self):
         """ Update binning lines accordingly. """
@@ -540,6 +612,40 @@ class MainWindow2D(QtWidgets.QMainWindow):
                 self.plot_x.pos.set_allowed_values(org_range)
             except AttributeError:
                 pass
+
+    def set_vert_energy_slider(self):
+        energy = self.util_panel.energy_vert.value()
+        self.main_plot.pos[0].set_value(energy)
+        self.update_binning_lines()
+
+    def set_hor_momentum_slider(self):
+        angle = self.util_panel.momentum_hor.value()
+        self.main_plot.pos[1].set_value(angle)
+        self.update_binning_lines()
+
+    def set_sliders_postions(self, positions):
+        self.main_plot.pos[1].set_value(positions[0])
+        self.main_plot.pos[0].set_value(positions[1])
+
+    def get_sliders_positions(self):
+        main_hor = self.main_plot.crosshair.hpos.get_value()
+        main_ver = self.main_plot.crosshair.vpos.get_value()
+        return [main_hor, main_ver]
+
+    # image methods
+    def update_main_plot(self, **image_kwargs):
+        """ Change *self.main_plot*`s currently displayed
+        :class:`image_item <data_slicer.imageplot.ImagePlot.image_item>` to
+        the slice of *self.data_handler.data* corresponding to the current
+        value of *self.z*.
+        """
+
+        self.data_handler.update_image_data()
+
+        if image_kwargs != {}:
+            self.image_kwargs = image_kwargs
+        # Add image to main_plot
+        self.set_image(self.image_data, **image_kwargs)
 
     def set_cmap(self):
         """ Set the colormap to *cmap* where *cmap* is one of the names
@@ -635,79 +741,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.cmap.set_vmax(vmax)
         self.cmap_changed()
 
-    def set_vert_energy_slider(self):
-        energy = self.util_panel.energy_vert.value()
-        self.main_plot.pos[0].set_value(energy)
-        self.update_binning_lines()
-
-    def set_hor_momentum_slider(self):
-        angle = self.util_panel.momentum_hor.value()
-        self.main_plot.pos[1].set_value(angle)
-        self.update_binning_lines()
-
-    def set_sliders_postions(self, positions):
-        self.main_plot.pos[1].set_value(positions[0])
-        self.main_plot.pos[0].set_value(positions[1])
-
-    def get_sliders_positions(self):
-        main_hor = self.main_plot.crosshair.hpos.get_value()
-        main_ver = self.main_plot.crosshair.vpos.get_value()
-        return [main_hor, main_ver]
-
-    def set_sliders_initial_positions(self):
-        if self.new_energy_axis is None:
-            e_ax = self.data_handler.axes[1]
-        else:
-            e_ax = self.new_energy_axis
-        if e_ax.min() > 0:
-            mid_energy = int(len(e_ax) / 2)
-        else:
-            mid_energy = wp.indexof(-0.005, e_ax)
-
-        if self.k_axis is None:
-            mom_ax = self.data_handler.axes[0]
-        else:
-            mom_ax = self.k_axis
-        if (mom_ax.min() < 0) and (mom_ax.max() > 0):
-            mid_angle = wp.indexof(0, mom_ax)
-        else:
-            mid_angle = int(len(mom_ax) / 2)
-
-        self.main_plot.pos[0].set_value(mid_energy)
-        self.main_plot.pos[1].set_value(mid_angle)
-
-    def apply_energy_correction(self):
-        Ef = self.util_panel.axes_energy_Ef.value()
-
-        scale = self.util_panel.axes_energy_scale.currentText()
-        if self.data_handler.axes[1].min() > 0:
-            org_is_kin = True
-        else:
-            org_is_kin = False
-
-        if (not org_is_kin) and (scale == 'kinetic'):
-            hv = -self.util_panel.axes_energy_hv.value()
-            wf = -self.util_panel.axes_energy_wf.value()
-        elif org_is_kin and (scale == 'binding'):
-            hv = self.util_panel.axes_energy_hv.value()
-            wf = self.util_panel.axes_energy_wf.value()
-        else:
-            hv = 0
-            wf = 0
-
-        new_energy_axis = self.data_handler.axes[1] + Ef - hv + wf
-        self.new_energy_axis = new_energy_axis
-        new_range = [new_energy_axis[0], new_energy_axis[-1]]
-        self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(
-            *new_range)
-        self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(
-            *new_range)
-
-        # update energy labels
-        erg_idx = self.main_plot.crosshair.vpos.get_value()
-        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-            self.new_energy_axis[erg_idx]))
-
     def normalize_data(self):
         if self.util_panel.image_normalize.isChecked():
             data = self.data_handler.data.get_value()[0, :, :]
@@ -716,56 +749,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
         else:
             pass
         self.update_main_plot()
-
-    def convert_to_kspace(self):
-        scan_ax = np.array([0])
-        anal_axis = self.data_handler.axes[0]
-        d_scan_ax = self.util_panel.axes_angle_off.value()
-        d_anal_ax = self.data_handler.axes[0][
-            self.util_panel.axes_gamma_x.value()]
-        orientation = self.util_panel.axes_slit_orient.currentText()
-        a = self.util_panel.axes_conv_lc.value()
-        energy = self.new_energy_axis
-        hv = self.util_panel.axes_energy_hv.value()
-        wf = self.util_panel.axes_energy_wf.value()
-
-        if hv == 0 or wf == 0:
-            warning_box = QMessageBox()
-            warning_box.setIcon(QMessageBox.Information)
-            warning_box.setWindowTitle('Wrong conversion values.')
-            if hv == 0 and wf == 0:
-                msg = 'Photon energy and work fonction values not given.'
-            elif hv == 0:
-                msg = 'Photon energy value not given.'
-            elif wf == 0:
-                msg = 'Work fonction value not given.'
-            warning_box.setText(msg)
-            warning_box.setStandardButtons(QMessageBox.Ok)
-            if warning_box.exec() == QMessageBox.Ok:
-                return
-
-        nma, erg = wp.angle2kspace(scan_ax, anal_axis, d_scan_ax=d_scan_ax,
-                                   d_anal_ax=d_anal_ax,
-                                   orientation=orientation, a=a, energy=energy,
-                                   hv=hv, work_func=wf)
-        self.k_axis = nma[-1]
-        new_range = [nma[-1][0], nma[-1][-1]]
-        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(
-            *new_range)
-        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(
-            *new_range)
-        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-            self.k_axis[self.main_plot.pos[1].get_value()]))
-        self.util_panel.dp_add_k_space_conversion_entry(self.data_set)
-
-    def reset_kspace_conversion(self):
-        self.k_axis = None
-        org_range = [self.data_handler.axes[0][0], self.data_handler.axes[0][-1]]
-        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*org_range)
-        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*org_range)
-        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-            self.data_handler.axes[0][self.main_plot.pos[1].get_value()]))
-        self.data_set.data_provenance['k_space_conv'] = []
 
     def smoooth_data(self):
         self.smooth = not self.smooth
@@ -819,6 +802,90 @@ class MainWindow2D(QtWidgets.QMainWindow):
             self.set_image()
             self.util_panel.image_curvature_button.setText('Do curvature')
 
+    # axes methods
+    def apply_energy_correction(self):
+        Ef = self.util_panel.axes_energy_Ef.value()
+
+        scale = self.util_panel.axes_energy_scale.currentText()
+        if self.data_handler.axes[1].min() > 0:
+            org_is_kin = True
+        else:
+            org_is_kin = False
+
+        if (not org_is_kin) and (scale == 'kinetic'):
+            hv = -self.util_panel.axes_energy_hv.value()
+            wf = -self.util_panel.axes_energy_wf.value()
+        elif org_is_kin and (scale == 'binding'):
+            hv = self.util_panel.axes_energy_hv.value()
+            wf = self.util_panel.axes_energy_wf.value()
+        else:
+            hv = 0
+            wf = 0
+
+        new_energy_axis = self.data_handler.axes[1] + Ef - hv + wf
+        self.new_energy_axis = new_energy_axis
+        new_range = [new_energy_axis[0], new_energy_axis[-1]]
+        self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(
+            *new_range)
+        self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(
+            *new_range)
+
+        # update energy labels
+        erg_idx = self.main_plot.crosshair.vpos.get_value()
+        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+            self.new_energy_axis[erg_idx]))
+
+    def convert_to_kspace(self):
+        scan_ax = np.array([0])
+        anal_axis = self.data_handler.axes[0]
+        d_scan_ax = self.util_panel.axes_angle_off.value()
+        d_anal_ax = self.data_handler.axes[0][
+            self.util_panel.axes_gamma_x.value()]
+        orientation = self.util_panel.axes_slit_orient.currentText()
+        a = self.util_panel.axes_conv_lc.value()
+        energy = self.new_energy_axis
+        hv = self.util_panel.axes_energy_hv.value()
+        wf = self.util_panel.axes_energy_wf.value()
+
+        if hv == 0 or wf == 0:
+            warning_box = QMessageBox()
+            warning_box.setIcon(QMessageBox.Information)
+            warning_box.setWindowTitle('Wrong conversion values.')
+            if hv == 0 and wf == 0:
+                msg = 'Photon energy and work fonction values not given.'
+            elif hv == 0:
+                msg = 'Photon energy value not given.'
+            elif wf == 0:
+                msg = 'Work fonction value not given.'
+            warning_box.setText(msg)
+            warning_box.setStandardButtons(QMessageBox.Ok)
+            if warning_box.exec() == QMessageBox.Ok:
+                return
+
+        nma, erg = wp.angle2kspace(scan_ax, anal_axis, d_scan_ax=d_scan_ax,
+                                   d_anal_ax=d_anal_ax,
+                                   orientation=orientation, a=a, energy=energy,
+                                   hv=hv, work_func=wf)
+        self.k_axis = nma[-1]
+        new_range = [nma[-1][0], nma[-1][-1]]
+        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(
+            *new_range)
+        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(
+            *new_range)
+        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+            self.k_axis[self.main_plot.pos[1].get_value()]))
+        self.util_panel.dp_add_k_space_conversion_entry(self.data_set)
+
+    def reset_kspace_conversion(self):
+        self.k_axis = None
+        org_range = [self.data_handler.axes[0][0], self.data_handler.axes[0][-1]]
+        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*org_range)
+        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*org_range)
+        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+            self.data_handler.axes[0][self.main_plot.pos[1].get_value()]))
+        self.data_set.data_provenance['k_space_conv'] = []
+
+    # general functionalities
     def open_mdc_fitter(self):
         thread_lbl = self.index + '_mdc_viewer'
         self.mdc_thread_lbl = thread_lbl
@@ -898,7 +965,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
 
         while file_selection:
             fname, fname_return_value = \
-                    QtWidgets.QInputDialog.getText(self, '', 'File name:', 
+                    QtWidgets.QInputDialog.getText(self, '', 'File name:',
                                                    QtWidgets.QLineEdit.Normal,
                                                    init_fname)
             if not fname_return_value:
@@ -956,27 +1023,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
 
         dl.dump(dataset, (savedir + fname), force=True)
 
-    def load_corrections(self, data_set):
-
-        if hasattr(data_set, 'saved'):
-            raise AttributeError
-        if not (data_set.Ef is None):
-            self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
-        if not (data_set.hv is None):
-            self.util_panel.axes_energy_hv.setValue(data_set.hv)
-        if not (data_set.wf is None):
-            self.util_panel.axes_energy_scale.setCurrentIndex(0)
-            self.util_panel.axes_energy_wf.setValue(data_set.wf)
-        if not (data_set.kyscale is None):
-            self.k_axis = data_set.kyscale
-            new_range = [self.k_axis[0], self.k_axis[-1]]
-            self.main_plot.plotItem.getAxis(
-                self.main_plot.main_yaxis).setRange(*new_range)
-            self.plot_y.plotItem.getAxis(
-                self.plot_y.main_xaxis).setRange(*new_range)
-            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-                self.k_axis[self.main_plot.pos[1].get_value()]))
-
     def open_pit(self):
         """ Open the data in an instance of 
         :class:`data_slicer.pit.MainWindow`, which has the benefit of 
@@ -994,3 +1040,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
         if event.key() == QtCore.Qt.Key_Space:
             print(self.data_viewers)
 
+    def closeEvent(self, event):
+        """ Ensure that this instance is un-registered from the DataBrowser."""
+        self.db.delete_viewer_from_linked_lists(self.title)
+        del(self.db.data_viewers[self.index])

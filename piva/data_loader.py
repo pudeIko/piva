@@ -672,7 +672,10 @@ class DataloaderADRESS(Dataloader):
         # Convert `units` and `info`, which is a bytestring of ASCII
         # characters, to lists of strings Put the data into a numpy array and
         # convert to float
-        data = np.array(matrix, dtype=float)
+        if metadata:
+            data = np.zeros(matrix.shape)
+        else:
+            data = np.array(matrix, dtype=float)
         shape = data.shape
 
         if len(shape) == 3:
@@ -719,7 +722,7 @@ class DataloaderADRESS(Dataloader):
                  ('Azimuth', 'phi', float),
                  ('Tilt', 'tilt', float),
                  ('ADef', 'defl_angle', float),
-                 ('Temp', 'temp', int),
+                 ('Temp', 'temp', float),
                  ('dt', 'DT', int)]
         self.read_metadata(keys1, metadata_list, res)
         if xscale.size == 1:
@@ -729,7 +732,7 @@ class DataloaderADRESS(Dataloader):
 
     @staticmethod
     def read_metadata(keys, metadata_list, namespace):
-        """ Read the metadata from a SIS-ULTRA deflector mode output file. """
+        """ Read the metadata from a ADRESS deflector mode output file. """
         # List of interesting keys and associated variable names
         metadata = namespace
         for line in metadata_list:
@@ -758,7 +761,10 @@ class DataloaderADRESS(Dataloader):
                     # Split off whitespace or garbage at the end
                     else:
                         value = tokens[1].split()[0]
-                        metadata.__setattr__(name, value)
+                        if dtype == float:
+                            metadata.__setattr__(name, float(value))
+                        else:
+                            metadata.__setattr__(name, value)
         return metadata
 
 
@@ -1015,7 +1021,7 @@ class DataloaderBloch(Dataloader):
         return metadata
 
 
-class Dataloaderi05(Dataloader):
+class DataloaderI05(Dataloader):
     """
     Dataloader object for the i05 beamline at the Diamond Light Source.
     """
@@ -1179,7 +1185,7 @@ class Dataloaderi05(Dataloader):
         return res
 
 
-class DataloaderALSMerlin(Dataloader):
+class DataloaderMERLIN(Dataloader):
     """
     Object that allows loading and saving of ARPES data from the MAESTRO
     beamline at ALS, Berkely, in the newer .h5 format
@@ -1292,6 +1298,7 @@ class DataloaderALSMerlin(Dataloader):
             return
         # Extract the actual dataset and some metadata
         h5_data = self.datfile[type + '/Spectrum']
+        # print()
         detector = self.datfile[type + '/Detector'].attrs
         sample = self.datfile[type + '/Sample'].attrs
         source = self.datfile[type + '/Source'].attrs
@@ -1311,8 +1318,9 @@ class DataloaderALSMerlin(Dataloader):
             scan_dim = []
         elif type == '3Ddata':
             data = np.zeros(h5_data.shape)
-            for i in range(data.shape[0]):
-                data[i, :, :] = h5_data[i, :, :]
+            if not metadata:
+                for i in range(data.shape[0]):
+                    data[i, :, :] = h5_data[i, :, :]
             data = np.swapaxes(np.swapaxes(data, 0, 2), 1, 2)
 
             try:
@@ -2637,10 +2645,10 @@ all_dls = [
     DataloaderSIS,
     DataloaderBloch,
     DataloaderADRESS,
-    Dataloaderi05,
+    DataloaderI05,
     DataloaderCASSIOPEE,
     DataloaderALSMaestro,
-    DataloaderALSMerlin,
+    DataloaderMERLIN,
     DataloaderALSFits]
 
 

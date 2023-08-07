@@ -18,8 +18,8 @@ all_dls = {
     'SLS - SIS': dl.DataloaderSIS,
     'SLS - ADRESS': dl.DataloaderADRESS,
     'MAX IV - Bloch': dl.DataloaderBloch,
-    'ALS - MERLIN (4.0.3)': dl.DataloaderALSMerlin,
-    'Diamond - i05': dl.Dataloaderi05,
+    'ALS - MERLIN (4.0.3)': dl.DataloaderMERLIN,
+    'Diamond - i05': dl.DataloaderI05,
     'SOLARIS - URANOS': dl.DataloaderURANOS,
     '*SOLEIL - CASSIOPEE': dl.DataloaderCASSIOPEE,
     '*ALS - MAESTRO (7.0.2)': dl.DataloaderALSMaestro}
@@ -117,11 +117,17 @@ class DataBrowser(QMainWindow):
             loader = all_dls[selected_loader]()
             data_set = loader.load_data(fname)
 
+        # model = link_viewers.model()
+        # link_viewers.addItem("First")
+        # model.item(0).setCheckable(True)
+
         try:
             if data_set.xscale.size == 1:
+                self.add_viewer_to_linked_list(fname, 2)
                 self.data_viewers[fname] = \
                     p2d.MainWindow2D(self, data_set=data_set, index=fname)
             else:
+                self.add_viewer_to_linked_list(fname, 3)
                 self.data_viewers[fname] = \
                     p3d.MainWindow3D(self, data_set=data_set, index=fname)
         except Exception as e:
@@ -223,6 +229,7 @@ class DataBrowser(QMainWindow):
             dp_scan_layout.addLayout(dp_scan_row2_layout)
             # create labels
             dp_scan_type_lbl = QLabel('Scan type: ')
+            dp_scan_type_lbl.setFont(bold_font)
             dp_scan_start_lbl = QLabel('[0]:')
             dp_scan_stop_lbl = QLabel('[-1]:')
             dp_scan_step_lbl = QLabel('step:')
@@ -232,7 +239,7 @@ class DataBrowser(QMainWindow):
             self.dp_scan_stop = QLineEdit(dp_def_fill)
             self.dp_scan_step = QLineEdit(dp_def_fill)
             # set max width
-            self.dp_scan_type.setMaximumWidth(max_len_2)
+            self.dp_scan_type.setMaximumWidth(max_len_2*2)
             self.dp_scan_start.setMaximumWidth(max_len_1)
             self.dp_scan_stop.setMaximumWidth(max_len_1)
             self.dp_scan_step.setMaximumWidth(max_len_1)
@@ -700,3 +707,19 @@ class DataBrowser(QMainWindow):
                 self.dp_bl_fe.setText('{}'.format(float(data.FE)))
         except AttributeError:
             self.reset_detail_panel()
+
+    def add_viewer_to_linked_list(self, fname, dim=2):
+        for dvi in self.data_viewers.keys():
+            if dim == self.data_viewers[dvi].util_panel.dim:
+                win_list = self.data_viewers[dvi].util_panel.link_windows_list
+                win_list.addItem(fname.split('/')[-1])
+                win_list.model().item(win_list.count() - 1).setCheckable(True)
+
+    def delete_viewer_from_linked_lists(self, fname):
+        for dvi in self.data_viewers.keys():
+            list = self.data_viewers[dvi].util_panel.link_windows_list
+            for idx in range(list.count()):
+                if fname == list.itemText(idx):
+                    list.removeItem(idx)
+                    break
+

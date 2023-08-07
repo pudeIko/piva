@@ -210,12 +210,14 @@ class DataHandler3D:
         integrate_z = self.main_window.plot_z.width
         data = self.get_data()
         try:
-            self.main_window.image_data = self.make_slice(data, dim=2, index=z, integrate=integrate_z)
+            self.main_window.image_data = self.make_slice(
+                data, dim=2, index=z, integrate=integrate_z)
         except IndexError:
             pass
         self.main_window.util_panel.energy_main.setValue(z)
         if self.main_window.new_energy_axis is None:
-            self.main_window.util_panel.energy_main_value.setText('({:.4f})'.format(self.axes[erg_ax][z]))
+            self.main_window.util_panel.energy_main_value.setText(
+                '({:.4f})'.format(self.axes[erg_ax][z]))
         else:
             self.main_window.util_panel.energy_main_value.setText(
                 '({:.4f})'.format(self.main_window.new_energy_axis[z]))
@@ -639,7 +641,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
             l.setColumnStretch(i, 1)
 
     def closeEvent(self, event):
-        """ Ensure that this instance is un-registered from the DataBrowser. """
+        """ Ensure that this instance is un-registered from the DataBrowser."""
+        self.db.delete_viewer_from_linked_lists(self.index.split('/')[-1])
         del(self.db.data_viewers[self.index])
 
     def update_main_plot(self, **image_kwargs):
@@ -659,6 +662,17 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.set_sliders_postions(slider_pos)
         self.update_xy_binning_lines()
         self.show_BZ_contour()
+
+        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
+                self.util_panel.get_linked_windows():
+            linked_windows = self.util_panel.get_linked_windows()
+            z = self.data_handler.z.get_value()
+            for dvi in self.db.data_viewers.keys():
+                if self.db.data_viewers[dvi].title in linked_windows:
+                    pos_variable = self.db.data_viewers[dvi].data_handler.z
+                    matching_idx = self.get_matching_energy_idx(
+                        z, self.db.data_viewers[dvi])
+                    pos_variable.set_value(matching_idx)
 
     def set_axes(self):
         """ Set the x- and y-scales of the plots. The :class:`ImagePlot
@@ -703,7 +717,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
             bins = self.util_panel.bin_zx_nbins.value()
             start, stop = i_x - bins, i_x + bins
             with warnings.catch_warnings():
-                y = wp.normalize(np.sum(self.data_handler.cut_x_data[:, start:stop], axis=1))
+                y = wp.normalize(np.sum(
+                    self.data_handler.cut_x_data[:, start:stop], axis=1))
         else:
             y = self.data_handler.cut_x_data[:, i_x]
         x = np.arange(0, len(self.data_handler.axes[scan_ax]))
@@ -711,10 +726,22 @@ class MainWindow3D(QtWidgets.QMainWindow):
         xp.plot(x, y)
         self.util_panel.energy_hor.setValue(i_x)
         if self.new_energy_axis is None:
-            self.util_panel.energy_hor_value.setText('({:.4f})'.format(self.data_handler.axes[erg_ax][i_x]))
+            self.util_panel.energy_hor_value.setText('({:.4f})'.format(
+                self.data_handler.axes[erg_ax][i_x]))
         else:
-            self.util_panel.energy_hor_value.setText('({:.4f})'.format(self.new_energy_axis[i_x]))
+            self.util_panel.energy_hor_value.setText('({:.4f})'.format(
+                self.new_energy_axis[i_x]))
         self.update_zx_zy_binning_line()
+
+        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
+                self.util_panel.get_linked_windows():
+            linked_windows = self.util_panel.get_linked_windows()
+            for dvi in self.db.data_viewers.keys():
+                if self.db.data_viewers[dvi].title in linked_windows:
+                    var = self.db.data_viewers[dvi].cut_x.crosshair.hpos
+                    matching_idx = self.get_matching_energy_idx(
+                        i_x, self.db.data_viewers[dvi])
+                    var.set_value(matching_idx)
 
     def update_plot_y(self):
         # Get shorthands for plot
@@ -735,7 +762,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
             bins = self.util_panel.bin_zy_nbins.value()
             start, stop = i_x - bins, i_x + bins
             with warnings.catch_warnings():
-                y = wp.normalize(np.sum(self.data_handler.cut_y_data[start:stop, :], axis=0))
+                y = wp.normalize(np.sum(
+                    self.data_handler.cut_y_data[start:stop, :], axis=0))
         else:
             y = self.data_handler.cut_y_data[i_x, :]
         x = np.arange(0, len(self.data_handler.axes[slit_ax]))
@@ -743,10 +771,22 @@ class MainWindow3D(QtWidgets.QMainWindow):
         yp.plot(y, x)
         self.util_panel.energy_vert.setValue(i_x)
         if self.new_energy_axis is None:
-            self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.data_handler.axes[erg_ax][i_x]))
+            self.util_panel.energy_vert_value.setText('({:.4f})'.format(
+                self.data_handler.axes[erg_ax][i_x]))
         else:
-            self.util_panel.energy_vert_value.setText('({:.4f})'.format(self.new_energy_axis[i_x]))
+            self.util_panel.energy_vert_value.setText('({:.4f})'.format(
+                self.new_energy_axis[i_x]))
         self.update_zx_zy_binning_line()
+
+        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
+                self.util_panel.get_linked_windows():
+            linked_windows = self.util_panel.get_linked_windows()
+            for dvi in self.db.data_viewers.keys():
+                if self.db.data_viewers[dvi].title in linked_windows:
+                    var = self.db.data_viewers[dvi].cut_y.crosshair.hpos
+                    matching_idx = self.get_matching_energy_idx(
+                        i_x, self.db.data_viewers[dvi])
+                    var.set_value(matching_idx)
 
     def update_cut_x(self):
         """ Take a cut of *self.data_handler.data* along *self.cutline*. This
@@ -779,27 +819,38 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.cut_x.xscale_rescaled = self.data_handler.axes[scan_ax]
         self.cut_x.yscale_rescaled = self.data_handler.axes[erg_ax]
         self.set_cut_x_image(image=cut, lut=self.lut)
-        self.cut_x.crosshair.vpos.set_allowed_values(np.arange(0, len(self.data_handler.axes[scan_ax])),
-                                                     binning=binning)
-        self.cut_x.crosshair.hpos.set_allowed_values(np.arange(0, len(self.data_handler.axes[erg_ax])),
-                                                     binning=binning)
-        self.cut_x.set_bounds(0, len(self.data_handler.axes[scan_ax]), 0, len(self.data_handler.axes[erg_ax]))
+        self.cut_x.crosshair.vpos.set_allowed_values(np.arange(
+            0, len(self.data_handler.axes[scan_ax])), binning=binning)
+        self.cut_x.crosshair.hpos.set_allowed_values(np.arange(
+            0, len(self.data_handler.axes[erg_ax])), binning=binning)
+        self.cut_x.set_bounds(0, len(self.data_handler.axes[scan_ax]),
+                              0, len(self.data_handler.axes[erg_ax]))
 
         self.cut_x.fix_viewrange()
 
         # update values of momentum at utilities panel
         self.util_panel.momentum_hor.setValue(i_x)
         if self.ky_axis is None:
-            self.util_panel.momentum_hor_value.setText('({:.3f})'.format(self.data_handler.axes[slit_ax][i_x]))
+            self.util_panel.momentum_hor_value.setText('({:.3f})'.format(
+                self.data_handler.axes[slit_ax][i_x]))
         else:
-            self.util_panel.momentum_hor_value.setText('({:.3f})'.format(self.ky_axis[i_x]))
-
+            self.util_panel.momentum_hor_value.setText('({:.3f})'.format(
+                self.ky_axis[i_x]))
+        self.update_xy_binning_lines()
 
         # update EDC at crossing point
         if self.sp_EDC is not None:
             self.set_sp_EDC_data()
 
-        self.update_xy_binning_lines()
+        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
+                self.util_panel.get_linked_windows():
+            linked_windows = self.util_panel.get_linked_windows()
+            for dvi in self.db.data_viewers.keys():
+                if self.db.data_viewers[dvi].title in linked_windows:
+                    var = self.db.data_viewers[dvi].main_plot.crosshair.hpos
+                    matching_idx = self.get_matching_cut_x_idx(
+                        i_x, self.db.data_viewers[dvi])
+                    var.set_value(matching_idx)
 
     def update_cut_y(self):
         """ Take a cut of *self.data_handler.data* along *self.cutline*. This
@@ -843,6 +894,49 @@ class MainWindow3D(QtWidgets.QMainWindow):
         # update EDC at crossing point
         if self.sp_EDC is not None:
             self.set_sp_EDC_data()
+
+        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
+                self.util_panel.get_linked_windows():
+            linked_windows = self.util_panel.get_linked_windows()
+            for dvi in self.db.data_viewers.keys():
+                if self.db.data_viewers[dvi].title in linked_windows:
+                    var = self.db.data_viewers[dvi].cut_x.crosshair.vpos
+                    matching_idx = self.get_matching_cut_y_idx(
+                        i_x, self.db.data_viewers[dvi])
+                    var.set_value(matching_idx)
+
+    def get_matching_energy_idx(self, master_idx, dv):
+        if self.new_energy_axis is None:
+            erg = self.data_handler.axes[1][master_idx]
+        else:
+            erg = self.new_energy_axis[master_idx]
+        if dv.new_energy_axis is None:
+            erg_ax = dv.data_handler.axes[1]
+        else:
+            erg_ax = dv.new_energy_axis
+        return wp.indexof(erg, erg_ax)
+
+    def get_matching_cut_x_idx(self, master_idx, dv):
+        if self.ky_axis is None:
+            k = self.data_handler.axes[slit_ax][master_idx]
+        else:
+            k = self.ky_axis[master_idx]
+        if dv.ky_axis is None:
+            k_ax = dv.data_handler.axes[slit_ax]
+        else:
+            k_ax = dv.ky_axis
+        return wp.indexof(k, k_ax)
+
+    def get_matching_cut_y_idx(self, master_idx, dv):
+        if self.kx_axis is None:
+            k = self.data_handler.axes[scan_ax][master_idx]
+        else:
+            k = self.kx_axis[master_idx]
+        if dv.kx_axis is None:
+            k_ax = dv.data_handler.axes[scan_ax]
+        else:
+            k_ax = dv.kx_axis
+        return wp.indexof(k, k_ax)
 
     def set_sp_EDC_data(self):
         try:
