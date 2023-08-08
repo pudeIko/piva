@@ -188,8 +188,8 @@ class DataloaderPickle(Dataloader):
     name = 'Pickle'
 
     # kwarg "metadata" necessary to match arguments of all other data loaders
-    @ staticmethod
-    def load_data(filename, metadata=False):
+
+    def load_data(self, filename, metadata=False):
         # Open the file and get a handle for it
         ds = DataSet()
         with open(filename, 'rb') as f:
@@ -202,7 +202,7 @@ class DataloaderPickle(Dataloader):
             if not (attr[0] == '_'):
                 dict_ds[attr] = dict_filedata[attr]
 
-        ds.add_org_file_entry(filename, 'Pickle')
+        ds.add_org_file_entry(filename, self.name)
         return ds.dataset
 
 
@@ -251,7 +251,7 @@ class DataloaderSIS(Dataloader):
             if not (attr[0] == '_'):
                 dict_ds[attr] = dict_filedata[attr]
 
-        ds.add_org_file_entry(filename, 'SIS')
+        ds.add_org_file_entry(filename, self.name)
         return ds.dataset
 
     def load_h5(self, filename, metadata=False):
@@ -656,7 +656,7 @@ class DataloaderADRESS(Dataloader):
             if not (attr[0] == '_'):
                 dict_ds[attr] = dict_filedata[attr]
 
-        ds.add_org_file_entry(filename, 'ADRESS')
+        ds.add_org_file_entry(filename, self.name)
         return ds.dataset
 
     def load_h5(self, filename, metadata=False):
@@ -809,7 +809,7 @@ class DataloaderBloch(Dataloader):
             if not (attr[0] == '_'):
                 dict_ds[attr] = dict_filedata[attr]
 
-        ds.add_org_file_entry(filename, 'Bloch')
+        ds.add_org_file_entry(filename, self.name)
         return ds.dataset
 
     def load_zip(self, filename, metadata=False):
@@ -1025,7 +1025,7 @@ class DataloaderI05(Dataloader):
     """
     Dataloader object for the i05 beamline at the Diamond Light Source.
     """
-    name = 'i05'
+    name = 'I05'
 
     def load_data(self, fname, metadata=False):
 
@@ -1042,7 +1042,7 @@ class DataloaderI05(Dataloader):
             if not (attr[0] == '_'):
                 dict_ds[attr] = dict_filedata[attr]
 
-        ds.add_org_file_entry(fname, 'I05')
+        ds.add_org_file_entry(fname, self.name)
         return ds.dataset
 
     def load_nxs(self, filename, metadata):
@@ -1542,7 +1542,7 @@ class DataloaderURANOS(Dataloader):
             if not (attr[0] == '_'):
                 dict_ds[attr] = dict_filedata[attr]
 
-        ds.add_org_file_entry(filename, 'URANOS')
+        ds.add_org_file_entry(filename, self.name)
         return ds.dataset
 
     def load_zip(self, filename, metadata=False):
@@ -1774,6 +1774,420 @@ class DataloaderURANOS(Dataloader):
                     metadata.__setattr__('scan_step',
                                          float(tokens[1].split()[0]))
         return metadata
+
+
+class DataloaderCASSIOPEE(Dataloader):
+    """ CASSIOPEE beamline at SOLEIL synchrotron, Paris. """
+    name = 'CASSIOPEE'
+    date = '18.07.2018'
+
+    # Possible scantypes
+    HV = 'hv scan'
+    FSM = 'Theta scan'
+
+    def load_data(self, filename, metadata=False):
+        """
+        Single cuts are stored as two files: One file contians the data and
+        the other the metadata. Maps, hv scans and other *external
+        loop*-scans are stored as a directory containing these two files for
+        each cut/step of the external loop. Thus, this dataloader
+        distinguishes between directories and single files and changes its
+        behaviour accordingly.
+        """
+        ds = DataSet()
+
+        if os.path.isfile(filename):
+            filedata = self.load_from_file(filename)
+        else:
+            if not filename.endswith('/'):
+                filename += '/'
+            filedata = self.load_from_dir(filename)
+
+        dict_ds = vars(ds.dataset)
+        dict_filedata = vars(filedata)
+
+        for attr in dir(filedata):
+            if not (attr[0] == '_'):
+                dict_ds[attr] = dict_filedata[attr]
+
+        ds.add_org_file_entry(filename, self.name)
+        return ds.dataset
+
+    def load_from_dir(self, dirname):
+        """
+        Load 3D data from a directory as it is output by the IGOR macro used
+        at CASSIOPEE. The dir is assumed to contain two files for each cut::
+
+            BASENAME_INDEX_i.txt     -> beamline related metadata
+            BASENAME_INDEX_ROI1_.txt -> data and analyzer related metadata
+
+        To be more precise, the assumptions made on the filenames in the
+        directory are:
+
+            * the INDEX is surrounded by underscores (`_`) and appears after
+              the first underscore.
+            * the string ``ROI`` appears in the data filename.
+        """
+        # Get the all filenames in the dir
+        all_filenames = os.listdir(dirname)
+        # Remove all non-data files
+        filenames = []
+        for name in all_filenames:
+            if '_1_i' in name:
+                metadata_file = open(dirname + name)
+            if 'ROI' in name:
+                filenames.append(name)
+
+        # Get metadata from first file in list
+        skip, energy, angles = self.get_metadata(dirname + filenames[0])
+        keys = [('hv (eV) ', 'hv', float),
+                ('x (mm) ', 'x', float),
+                ('y (mm) ', 'y', float),
+                ('z (mm) ', 'z', float),
+                ('theta (deg) ', 'theta', float),
+                ('phi (deg) ', 'phi', float),
+                ('tilt (deg) ', 'tilt', float),
+                ('InputB ', 'temp', float),
+                ('P(mbar) ', 'pressure', float),
+                ('Polarisation [0', 'polarization', str)]
+        md = self.read_metadata(keys, metadata_file)
+
+        # Get the data from each cut separately. This happens in the order
+        # they appear in os.listdir() which is usually not what we want -> a
+        # reordering is necessary later.
+        unordered = {}
+        i_min = np.inf
+        i_max = -np.inf
+        for name in filenames:
+            # Keep track of the min and max indices in the directory
+            i = int(name.split('_')[-3])
+            if i < i_min:
+                i_min = i
+            if i > i_max:
+                i_max = i
+
+            # Get the data of cut i
+            this_cut = np.loadtxt(dirname+name, skiprows=skip+1)[:, 1:]
+            unordered.update({i: this_cut})
+
+        # Properly rearrange the cuts
+        data = []
+        for i in range(i_min, i_max+1):
+            data.append(np.array(unordered[i]).T)
+        data = np.array(data)
+
+        # Get the z-axis from the metadata files
+        scan_type, outer_loop, hv, thetas = self.get_outer_loop(dirname,
+                                                                filenames)
+        thetas = sorted(thetas)
+        if scan_type == self.HV:
+            xscale = outer_loop
+            scan_start = hv[0]
+            scan_stop = hv[-1]
+            scan_step = np.abs(hv[0] - hv[1])
+        elif scan_type == self.FSM:
+            xscale = outer_loop
+            scan_start = thetas[0]
+            scan_stop = thetas[-1]
+            scan_step = np.abs(thetas[0] - thetas[1])
+        else:
+            xscale = np.arange(data.shape[0])
+            scan_start = 0
+            scan_stop = 0
+            scan_step = 0
+        yscale = angles
+        zscale = energy
+
+        res = Namespace(
+            data=data,
+            xscale=xscale,
+            yscale=yscale,
+            zscale=zscale,
+            ekin=zscale,
+            hv=float(md.hv),
+            x=float(md.x),
+            y=float(md.y),
+            z=float(md.z),
+            theta=float(md.theta),
+            phi=float(md.phi),
+            tilt=float(md.tilt),
+            temp=float(md.temp),
+            pressure=float(md.pressure),
+            polarization=md.polarization,
+            # PE=M2.PE,
+            # exit_slit=exit_slit,
+            # FE=FE,
+            scan_type=scan_type,
+            scan_dim=[scan_start, scan_stop, scan_step]
+            # lens_mode=M2.lens_mode,
+            # acq_mode=M2.acq_mode
+        )
+        return res
+
+    def load_from_file(self, filename):
+        """
+        Load just a single cut. However, at CASSIOPEE they output .ibw files
+        if the cut does not belong to a scan...
+        """
+        if filename.endswith('.ibw'):
+            return self.load_from_ibw(filename)
+        elif filename.endswith('pxt'):
+            return self.load_pxt(filename)
+        else:
+            return self.load_from_txt(filename)
+
+    def load_from_ibw(self, filename):
+        """
+        Load scan data from an IGOR binary wave file. Luckily someone has
+        already written an interface for this (the python `igor` package).
+        """
+        wave = binarywave.load(filename)['wave']
+        data = np.array([wave['wData']])
+
+        # The `header` contains some metadata
+        header = wave['wave_header']
+        nDim = header['nDim']
+        steps = header['sfA']
+        starts = header['sfB']
+
+        # Construct the x and y scales from start, stop and n
+        yscale = start_step_n(starts[0], steps[0], nDim[0])
+        xscale = start_step_n(starts[1], steps[1], nDim[1])
+
+        # Convert `note`, which is a bytestring of ASCII characters that
+        # contains some metadata, to a list of strings
+        note = wave['note']
+        note = note.decode('ASCII').split('\r')
+
+        # Now the extraction fun begins. Most lines are of the form
+        # `Some-kind-of-name=some-value`
+        metadata = dict()
+        for line in note:
+            # Split at '='. If it fails, we are not in a line that contains
+            # useful information
+            try:
+                name, val = line.split('=')
+            except ValueError:
+                continue
+            # Put the pair in a dictionary for later access
+            metadata.update({name: val})
+
+        # NOTE Unreliable hv
+        hv = metadata['Excitation Energy']
+        res = Namespace(
+                data=data,
+                xscale=xscale,
+                yscale=yscale,
+                zscale=None,
+                angles=xscale,
+                theta=0,
+                phi=0,
+                E_b=0,
+                hv=hv)
+        return res
+
+    def load_from_txt(self, filename):
+        i, energy, angles = self.get_metadata(filename)
+        # self.print_m('Loading from txt')
+        data0 = np.loadtxt(filename, skiprows=i+1).T
+        # The first column in the datafile contains the angles
+        data = np.array([data0[1:, :]])
+
+        res = Namespace(
+            data=data,
+            xscale=np.array([0]),
+            yscale=angles,
+            zscale=energy)
+        return res
+
+    def get_metadata(self, filename):
+        """
+        Extract some of the metadata stored in a CASSIOPEE output text file.
+        Also try to detect the line number below which the data starts (for
+        np.loadtxt's skiprows.)
+
+        **Returns**
+
+        ======  ================================================================
+        i       int; last line number still containing metadata.
+        energy  1D np.array; energy (y-axis) values.
+        angles  1D np.array; angle (x-axis) values.
+        hv      float; photon energy for this cut.
+        ======  ================================================================
+        """
+        metadata = Namespace()
+        with open(filename, 'r') as f:
+            for i, line in enumerate(f.readlines()):
+                if line.startswith('Dimension 1 scale='):
+                    energy = line.split('=')[-1].split()
+                    energy = np.array(energy, dtype=float)
+                elif line.startswith('Dimension 2 scale='):
+                    angles = line.split('=')[-1].split()
+                    angles = np.array(angles, dtype=float)
+                elif line.startswith('Excitation Energy'):
+                    # NOTE this hv does not reflect the actually used hv
+                    # hv = float(line.split('=')[-1])
+                    pass
+                elif line.startswith('inputA') or line.startswith('[Data'):
+                    # this seems to be the last line before the data
+                    break
+        return i, energy, angles
+
+    def read_metadata(self, keys, metadata_file):
+        """ Read the metadata from a SIS-ULTRA deflector mode output file. """
+        # List of interesting keys and associated variable names
+        metadata = Namespace()
+        for line in metadata_file.readlines():
+            # Split at 'equals' sign
+            tokens = line.split(':')
+            for key, name, dtype in keys:
+                if tokens[0] == key:
+                    if hasattr(metadata, name):
+                        pass
+                    else:
+                        # Split off whitespace or garbage at the end
+                        value = tokens[-1][1:-1]
+                        # And cast to right type
+                        if key == 'Polarisation [0':
+                            if value == '0':
+                                metadata.__setattr__(name, 'LV')
+                            elif value == '1':
+                                metadata.__setattr__(name, 'LH')
+                            elif value == '2':
+                                metadata.__setattr__(name, 'AV')
+                            elif value == '3':
+                                metadata.__setattr__(name, 'AH')
+                            elif value == '4':
+                                metadata.__setattr__(name, 'CR')
+                            else:
+                                pass
+                        else:
+                            metadata.__setattr__(name, value)
+        metadata_file.close()
+        return metadata
+
+    def get_outer_loop(self, dirname, filenames):
+        """
+        Try to determine the scantype and the corresponding z-axis scale from
+        the additional metadata textfiles. These follow the assumptions made
+        in :meth:`self.load_from_dir
+        <arpys.dataloaders.Dataloader_CASSIOPEE.load_from_dir>`.
+        Additionally, the MONOCHROMATOR section must come before the
+        UNDULATOR section as in both sections we have a key `hv` but only the
+        former makes sense.
+        Return a string for the scantype, the extracted z-scale and the value
+        for hv for non-hv-scans (scantype, zscale, hvs[0]) or (None,
+        None, hvs[0]) in case of failure.
+        """
+        # Step 1) Extract metadata from metadata file
+        # Prepare containers
+        indices, xs, ys, zs, thetas, phis, tilts, hvs = ([], [], [], [], [],
+                                                         [], [], [])
+        containers = [indices, xs, ys, zs, thetas, phis, tilts, hvs]
+        for name in filenames:
+            # Get the index of the file
+            index = int(name.split('_')[-3])
+
+            # Build the metadata-filename by substituting the ROI part with i
+            metafile = re.sub(r'_ROI.?_', '_i', name)
+
+            # The values are separated from the names by a `:`
+            splitchar = ':'
+
+            # Read in the file
+            with open(dirname + metafile, 'r') as f:
+                for line in f.readlines():
+                    if line.startswith('x (mm)'):
+                        x = float(line.split(splitchar)[-1])
+                    elif line.startswith('y (mm)'):
+                        y = float(line.split(splitchar)[-1])
+                    elif line.startswith('z (mm)'):
+                        z = float(line.split(splitchar)[-1])
+                    elif line.startswith('theta (deg)'):
+                        theta = float(line.split(splitchar)[-1])
+                    elif line.startswith('phi (deg)'):
+                        phi = float(line.split(splitchar)[-1])
+                    elif line.startswith('tilt (deg)'):
+                        tilt = float(line.split(splitchar)[-1])
+                    elif line.startswith('hv (eV)'):
+                        hv = float(line.split(splitchar)[-1])
+                    elif line.startswith('UNDULATOR'):
+                        break
+            # NOTE The order of this list has to match the order of the
+            # containers
+            values = [index, x, y, z, theta, phi, tilt, hv]
+            for i, container in enumerate(containers):
+                container.append(values[i])
+
+        # Step 2) Check which parameters vary to determine scantype
+        if np.abs(hvs[1] - hvs[0]) > 0.4:
+            scantype = self.HV
+            zscale = hvs
+        elif thetas[1] != thetas[0]:
+            scantype = self.FSM
+            zscale = thetas
+        else:
+            scantype = None
+            zscale = None
+
+        # Step 3) Put zscale in order and return
+        if zscale is not None:
+            zscale = np.array(zscale)[np.argsort(indices)]
+
+        return scantype, zscale, hvs, thetas
+
+    @staticmethod
+    def load_pxt(filename):
+        """ Load and store the full h5 file and extract relevant information. """
+        pxt = igorpy.load(filename)[0]
+        data = pxt.data.T
+        shape = data.shape
+        notes = str(pxt.notes)
+        for entry in notes[2:-1].split('\\r'):
+            tokens = entry.split('=')
+            if tokens[0] == 'Lens Mode':
+                lens_mode = tokens[1]
+            elif tokens[0] == 'Excitation Energy':
+                hv = float(tokens[1])
+            elif tokens[0] == 'Acquisition Mode':
+                acq_mode = tokens[1]
+            elif tokens[0] == 'Pass Energy':
+                PE = tokens[1]
+            elif tokens[0] == 'Lens Mode':
+                lens_mode = tokens[1]
+            elif tokens[0] == 'Lens Mode':
+                lens_mode = tokens[1]
+
+        if len(shape) == 2:
+            x = 1
+            y = shape[0]
+            N_E = shape[1]
+            # Make data 3D
+            data = data.reshape((1, y, N_E))
+            # Extract the limits
+            xlims = [1, 1]
+            ylims = [pxt.axis[1][-1], pxt.axis[1][0]]
+            elims = [pxt.axis[0][-1], pxt.axis[0][0]]
+            xscale = start_step_n(*xlims, x)
+            yscale = start_step_n(*ylims, y)
+            energies = start_step_n(*elims, N_E)
+        else:
+            'Sorry, only cuts reading of .pxt files is working.'
+            return
+
+        res = Namespace(
+            data=data,
+            xscale=xscale,
+            yscale=yscale,
+            zscale=energies,
+            hv=hv,
+            ekin=energies,
+            PE=PE,
+            scan_type='cut',
+            lens_mode=lens_mode,
+            acq_mode=acq_mode
+        )
+        return res
 
 
 ######################################
@@ -2179,412 +2593,6 @@ class DataloaderALSFits(Dataloader):
         data = np.array(data)
 
         return data
-
-
-class DataloaderCASSIOPEE(Dataloader):
-    """ CASSIOPEE beamline at SOLEIL synchrotron, Paris. """
-    name = 'CASSIOPEE'
-    date = '18.07.2018'
-
-    # Possible scantypes
-    HV = 'hv scan'
-    FSM = 'Theta scan'
-
-    def load_data(self, filename):
-        """
-        Single cuts are stored as two files: One file contians the data and
-        the other the metadata. Maps, hv scans and other *external
-        loop*-scans are stored as a directory containing these two files for
-        each cut/step of the external loop. Thus, this dataloader
-        distinguishes between directories and single files and changes its
-        behaviour accordingly.
-        """
-        if os.path.isfile(filename):
-            return self.load_from_file(filename)
-        else:
-            if not filename.endswith('/'):
-                filename += '/'
-            return self.load_from_dir(filename)
-
-    def load_from_dir(self, dirname):
-        """
-        Load 3D data from a directory as it is output by the IGOR macro used
-        at CASSIOPEE. The dir is assumed to contain two files for each cut::
-
-            BASENAME_INDEX_i.txt     -> beamline related metadata
-            BASENAME_INDEX_ROI1_.txt -> data and analyzer related metadata
-
-        To be more precise, the assumptions made on the filenames in the
-        directory are:
-
-            * the INDEX is surrounded by underscores (`_`) and appears after
-              the first underscore.
-            * the string ``ROI`` appears in the data filename.
-        """
-        # Get the all filenames in the dir
-        all_filenames = os.listdir(dirname)
-        # Remove all non-data files
-        filenames = []
-        for name in all_filenames:
-            if '_1_i' in name:
-                metadata_file = open(dirname + name)
-            if 'ROI' in name:
-                filenames.append(name)
-
-        # Get metadata from first file in list
-        skip, energy, angles = self.get_metadata(dirname + filenames[0])
-        keys = [('hv (eV) ', 'hv', float),
-                ('x (mm) ', 'x', float),
-                ('y (mm) ', 'y', float),
-                ('z (mm) ', 'z', float),
-                ('theta (deg) ', 'theta', float),
-                ('phi (deg) ', 'phi', float),
-                ('tilt (deg) ', 'tilt', float),
-                ('InputB ', 'temp', float),
-                ('P(mbar) ', 'pressure', float),
-                ('Polarisation [0', 'polarization', str)]
-        md = self.read_metadata(keys, metadata_file)
-
-        # Get the data from each cut separately. This happens in the order
-        # they appear in os.listdir() which is usually not what we want -> a
-        # reordering is necessary later.
-        unordered = {}
-        i_min = np.inf
-        i_max = -np.inf
-        for name in filenames:
-            # Keep track of the min and max indices in the directory
-            i = int(name.split('_')[1])
-            if i < i_min:
-                i_min = i
-            if i > i_max:
-                i_max = i
-
-            # Get the data of cut i
-            this_cut = np.loadtxt(dirname+name, skiprows=skip+1)[:, 1:]
-            unordered.update({i: this_cut})
-
-        # Properly rearrange the cuts
-        data = []
-        for i in range(i_min, i_max+1):
-            data.append(np.array(unordered[i]).T)
-        data = np.array(data)
-
-        # Get the z-axis from the metadata files
-        scan_type, outer_loop, hv, thetas = self.get_outer_loop(dirname, filenames)
-        thetas = sorted(thetas)
-        if scan_type == self.HV:
-            xscale = outer_loop
-            scan_start = hv[0]
-            scan_stop = hv[-1]
-            scan_step = np.abs(hv[0] - hv[1])
-        elif scan_type == self.FSM:
-            xscale = outer_loop
-            scan_start = thetas[0]
-            scan_stop = thetas[-1]
-            scan_step = np.abs(thetas[0] - thetas[1])
-        else:
-            xscale = np.arange(data.shape[0])
-            scan_start = 0
-            scan_stop = 0
-            scan_step = 0
-        yscale = angles
-        zscale = energy
-
-        res = Namespace(
-            data=data,
-            xscale=xscale,
-            yscale=yscale,
-            zscale=zscale,
-            ekin=zscale,
-            hv=float(md.hv),
-            x=float(md.x),
-            y=float(md.y),
-            z=float(md.z),
-            theta=float(md.theta),
-            phi=float(md.phi),
-            tilt=float(md.tilt),
-            temp=float(md.temp),
-            pressure=float(md.pressure),
-            polarization=md.polarization,
-            # PE=M2.PE,
-            # exit_slit=exit_slit,
-            # FE=FE,
-            scan_type=scan_type,
-            scan_dim=[scan_start, scan_stop, scan_step]
-            # lens_mode=M2.lens_mode,
-            # acq_mode=M2.acq_mode
-        )
-        return res
-
-    def load_from_file(self, filename):
-        """
-        Load just a single cut. However, at CASSIOPEE they output .ibw files
-        if the cut does not belong to a scan...
-        """
-        if filename.endswith('.ibw'):
-            return self.load_from_ibw(filename)
-        elif filename.endswith('pxt'):
-            return self.load_pxt(filename)
-        else:
-            return self.load_from_txt(filename)
-
-    def load_from_ibw(self, filename):
-        """
-        Load scan data from an IGOR binary wave file. Luckily someone has
-        already written an interface for this (the python `igor` package).
-        """
-        wave = binarywave.load(filename)['wave']
-        data = np.array([wave['wData']])
-
-        # The `header` contains some metadata
-        header = wave['wave_header']
-        nDim = header['nDim']
-        steps = header['sfA']
-        starts = header['sfB']
-
-        # Construct the x and y scales from start, stop and n
-        yscale = start_step_n(starts[0], steps[0], nDim[0])
-        xscale = start_step_n(starts[1], steps[1], nDim[1])
-
-        # Convert `note`, which is a bytestring of ASCII characters that
-        # contains some metadata, to a list of strings
-        note = wave['note']
-        note = note.decode('ASCII').split('\r')
-
-        # Now the extraction fun begins. Most lines are of the form
-        # `Some-kind-of-name=some-value`
-        metadata = dict()
-        for line in note:
-            # Split at '='. If it fails, we are not in a line that contains
-            # useful information
-            try:
-                name, val = line.split('=')
-            except ValueError:
-                continue
-            # Put the pair in a dictionary for later access
-            metadata.update({name: val})
-
-        # NOTE Unreliable hv
-        hv = metadata['Excitation Energy']
-        res = Namespace(
-                data=data,
-                xscale=xscale,
-                yscale=yscale,
-                zscale=None,
-                angles=xscale,
-                theta=0,
-                phi=0,
-                E_b=0,
-                hv=hv)
-        return res
-
-    def load_from_txt(self, filename):
-        i, energy, angles = self.get_metadata(filename)
-        # self.print_m('Loading from txt')
-        data0 = np.loadtxt(filename, skiprows=i+1)
-        # The first column in the datafile contains the angles
-        # angles_from_data = data0[:, 0]
-        data = np.array([data0[:, 1:]])
-
-        res = Namespace(
-            data=data,
-            xscale=angles,
-            yscale=energy,
-            zscale=None,
-            angles=angles,
-            theta=1,
-            phi=1,
-            E_b=0,
-            hv=1)
-        return res
-
-    def get_metadata(self, filename):
-        """
-        Extract some of the metadata stored in a CASSIOPEE output text file.
-        Also try to detect the line number below which the data starts (for
-        np.loadtxt's skiprows.)
-
-        **Returns**
-
-        ======  ================================================================
-        i       int; last line number still containing metadata.
-        energy  1D np.array; energy (y-axis) values.
-        angles  1D np.array; angle (x-axis) values.
-        hv      float; photon energy for this cut.
-        ======  ================================================================
-        """
-        metadata = Namespace()
-        with open(filename, 'r') as f:
-            for i, line in enumerate(f.readlines()):
-                if line.startswith('Dimension 1 scale='):
-                    energy = line.split('=')[-1].split()
-                    energy = np.array(energy, dtype=float)
-                elif line.startswith('Dimension 2 scale='):
-                    angles = line.split('=')[-1].split()
-                    angles = np.array(angles, dtype=float)
-                elif line.startswith('Excitation Energy'):
-                    # NOTE this hv does not reflect the actually used hv
-                    # hv = float(line.split('=')[-1])
-                    pass
-                elif line.startswith('inputA') or line.startswith('[Data'):
-                    # this seems to be the last line before the data
-                    break
-        return i, energy, angles
-
-    def read_metadata(self, keys, metadata_file):
-        """ Read the metadata from a SIS-ULTRA deflector mode output file. """
-        # List of interesting keys and associated variable names
-        metadata = Namespace()
-        for line in metadata_file.readlines():
-            # Split at 'equals' sign
-            tokens = line.split(':')
-            for key, name, dtype in keys:
-                if tokens[0] == key:
-                    if hasattr(metadata, name):
-                        pass
-                    else:
-                        # Split off whitespace or garbage at the end
-                        value = tokens[-1][1:-1]
-                        # And cast to right type
-                        if key == 'Polarisation [0':
-                            if value == '0':
-                                metadata.__setattr__(name, 'LV')
-                            elif value == '1':
-                                metadata.__setattr__(name, 'LH')
-                            elif value == '2':
-                                metadata.__setattr__(name, 'AV')
-                            elif value == '3':
-                                metadata.__setattr__(name, 'AH')
-                            elif value == '4':
-                                metadata.__setattr__(name, 'CR')
-                            else:
-                                pass
-                        else:
-                            metadata.__setattr__(name, value)
-        return metadata
-
-    def get_outer_loop(self, dirname, filenames):
-        """
-        Try to determine the scantype and the corresponding z-axis scale from
-        the additional metadata textfiles. These follow the assumptions made
-        in :meth:`self.load_from_dir
-        <arpys.dataloaders.Dataloader_CASSIOPEE.load_from_dir>`.
-        Additionally, the MONOCHROMATOR section must come before the
-        UNDULATOR section as in both sections we have a key `hv` but only the
-        former makes sense.
-        Return a string for the scantype, the extracted z-scale and the value
-        for hv for non-hv-scans (scantype, zscale, hvs[0]) or (None,
-        None, hvs[0]) in case of failure.
-        """
-        # Step 1) Extract metadata from metadata file
-        # Prepare containers
-        indices, xs, ys, zs, thetas, phis, tilts, hvs = ([], [], [], [], [],
-                                                         [], [], [])
-        containers = [indices, xs, ys, zs, thetas, phis, tilts, hvs]
-        for name in filenames:
-            # Get the index of the file
-            index = int(name.split('_')[1])
-
-            # Build the metadata-filename by substituting the ROI part with i
-            metafile = re.sub(r'_ROI.?_', '_i', name)
-
-            # The values are separated from the names by a `:`
-            splitchar = ':'
-
-            # Read in the file
-            with open(dirname + metafile, 'r') as f:
-                for line in f.readlines():
-                    if line.startswith('x (mm)'):
-                        x = float(line.split(splitchar)[-1])
-                    elif line.startswith('y (mm)'):
-                        y = float(line.split(splitchar)[-1])
-                    elif line.startswith('z (mm)'):
-                        z = float(line.split(splitchar)[-1])
-                    elif line.startswith('theta (deg)'):
-                        theta = float(line.split(splitchar)[-1])
-                    elif line.startswith('phi (deg)'):
-                        phi = float(line.split(splitchar)[-1])
-                    elif line.startswith('tilt (deg)'):
-                        tilt = float(line.split(splitchar)[-1])
-                    elif line.startswith('hv (eV)'):
-                        hv = float(line.split(splitchar)[-1])
-                    elif line.startswith('UNDULATOR'):
-                        break
-            # NOTE The order of this list has to match the order of the
-            # containers
-            values = [index, x, y, z, theta, phi, tilt, hv]
-            for i, container in enumerate(containers):
-                container.append(values[i])
-
-        # Step 2) Check which parameters vary to determine scantype
-        if ((hvs[1] - hvs[0]) > 0.4):
-            scantype = self.HV
-            zscale = hvs
-        elif thetas[1] != thetas[0]:
-            scantype = self.FSM
-            zscale = thetas
-        else:
-            scantype = None
-            zscale = None
-
-        # Step 3) Put zscale in order and return
-        if zscale is not None:
-            zscale = np.array(zscale)[np.argsort(indices)]
-
-        return scantype, zscale, hvs, thetas
-
-    @staticmethod
-    def load_pxt(filename):
-        """ Load and store the full h5 file and extract relevant information. """
-        pxt = igorpy.load(filename)[0]
-        data = pxt.data.T
-        shape = data.shape
-        notes = str(pxt.notes)
-        for entry in notes[2:-1].split('\\r'):
-            tokens = entry.split('=')
-            if tokens[0] == 'Lens Mode':
-                lens_mode = tokens[1]
-            elif tokens[0] == 'Excitation Energy':
-                hv = float(tokens[1])
-            elif tokens[0] == 'Acquisition Mode':
-                acq_mode = tokens[1]
-            elif tokens[0] == 'Pass Energy':
-                PE = tokens[1]
-            elif tokens[0] == 'Lens Mode':
-                lens_mode = tokens[1]
-            elif tokens[0] == 'Lens Mode':
-                lens_mode = tokens[1]
-
-        if len(shape) == 2:
-            x = 1
-            y = shape[0]
-            N_E = shape[1]
-            # Make data 3D
-            data = data.reshape((1, y, N_E))
-            # Extract the limits
-            xlims = [1, 1]
-            ylims = [pxt.axis[1][-1], pxt.axis[1][0]]
-            elims = [pxt.axis[0][-1], pxt.axis[0][0]]
-            xscale = start_step_n(*xlims, x)
-            yscale = start_step_n(*ylims, y)
-            energies = start_step_n(*elims, N_E)
-        else:
-            'Sorry, only cuts reading of .pxt files is working.'
-            return
-
-        res = Namespace(
-            data=data,
-            xscale=xscale,
-            yscale=yscale,
-            zscale=energies,
-            hv=hv,
-            ekin=energies,
-            PE=PE,
-            scan_type='cut',
-            lens_mode=lens_mode,
-            acq_mode=acq_mode
-        )
-        return res
 
 
 # +-------+ #

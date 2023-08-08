@@ -21,7 +21,7 @@ all_dls = {
     'ALS - MERLIN (4.0.3)': dl.DataloaderMERLIN,
     'Diamond - i05': dl.DataloaderI05,
     'SOLARIS - URANOS': dl.DataloaderURANOS,
-    '*SOLEIL - CASSIOPEE': dl.DataloaderCASSIOPEE,
+    'SOLEIL - CASSIOPEE': dl.DataloaderCASSIOPEE,
     '*ALS - MAESTRO (7.0.2)': dl.DataloaderALSMaestro}
 
 
@@ -116,10 +116,6 @@ class DataBrowser(QMainWindow):
         else:
             loader = all_dls[selected_loader]()
             data_set = loader.load_data(fname)
-
-        # model = link_viewers.model()
-        # link_viewers.addItem("First")
-        # model.item(0).setCheckable(True)
 
         try:
             if data_set.xscale.size == 1:

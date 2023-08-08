@@ -13,6 +13,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - experimental logbook feature for implemented `DataLoaders`
 - data provenance functionality, to track modifications in original data sets
 - extended options for data normalization
+- linking viewers functionality, allowing for simultaneous inspection of 
+similar datasets
+- 
 
 ### Changed
 
