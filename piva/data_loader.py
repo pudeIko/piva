@@ -68,7 +68,6 @@ everything in this module) and previously pickled files.
 """
 import ast
 import os
-import sys
 import pickle
 import re
 import zipfile
@@ -104,8 +103,7 @@ class DataSet:
 
         self.dp = {'file': [],
                    'k_space_conv': [],
-                   'edited_entries': []}#,
-                   # 'comments': []}
+                   'edited_entries': []}
 
         self.dataset = Namespace(
             data=None,
@@ -192,8 +190,11 @@ class DataloaderPickle(Dataloader):
     def load_data(self, filename, metadata=False):
         # Open the file and get a handle for it
         ds = DataSet()
-        with open(filename, 'rb') as f:
-            filedata = pickle.load(f)
+        if filename.endswith('.p'):
+            with open(filename, 'rb') as f:
+                filedata = pickle.load(f)
+        else:
+            raise NotImplementedError
 
         dict_ds = vars(ds.dataset)
         dict_filedata = vars(filedata)
@@ -2741,29 +2742,16 @@ def dump(data, filename, force=False):
     print(message)
 
 
-def load_pickle(filename):
-    """ Shorthand for loading python objects stored in pickle files.
-
-    **Parameters**
-
-    ========  =================================================================
-    filename  str; name of file to load.
-    ========  =================================================================
-    """
-    with open(filename, 'rb') as f:
-        return pickle.load(f)
-
-
 def update_namespace(data, *attributes):
     """ Add arbitrary attributes to a :class:`Namespace <argparse.Namespace>`.
 
     **Parameters**
 
     ==========  ===============================================================
-    D           argparse.Namespace; the namespace holding the data and 
-                metadata. The format is the same as what is returned by a 
+    D           argparse.Namespace; the namespace holding the data and
+                metadata. The format is the same as what is returned by a
                 dataloader.
-    attributes  tuples or len(2) lists; (name, value) pairs of the attributes 
+    attributes  tuples or len(2) lists; (name, value) pairs of the attributes
                 to add. Where `name` is a str and value any python object.
     ==========  ===============================================================
     """
@@ -2772,50 +2760,68 @@ def update_namespace(data, *attributes):
 
 
 def add_attributes(filename, *attributes):
-    """ Add arbitrary attributes to an argparse.Namespace that is stored as a 
-    python pickle file. Simply opens the file, updates the namespace with 
-    :func:`update_namespace <arpys.dataloaders.update_namespace>` and writes 
+    """ Add arbitrary attributes to an argparse.Namespace that is stored as a
+    python pickle file. Simply opens the file, updates the namespace with
+    :func:`update_namespace <arpys.dataloaders.update_namespace>` and writes
     back to file.
-  
+
     **Parameters**
 
     ==========  ===============================================================
     filename    str; name of the file to update.
-    attributes  tuples or len(2) lists; (name, value) pairs of the attributes 
+    attributes  tuples or len(2) lists; (name, value) pairs of the attributes
                 to add. Where `name` is a str and value any python object.
     ==========  ===============================================================
     """
     dataloader = DataloaderPickle()
     data = dataloader.load_data(filename)
-    
+
     update_namespace(data, *attributes)
-    
+
     dump(data, filename, force=True)
 
 
-def reshape_pickled(fname):
+# def load_pickle(filename):
+#     """ Shorthand for loading python objects stored in pickle files.
+#
+#     **Parameters**
+#
+#     ========  =================================================================
+#     filename  str; name of file to load.
+#     ========  =================================================================
+#     """
+#     with open(filename, 'rb') as f:
+#         return pickle.load(f)
 
-    scan = load_pickle(fname)
-    print(fname)
-    print(f'org data shape: {scan.data.shape}')
-    print(f'org xscale shape:{scan.xscale.size}')
-    print(f'org yscale shape:{scan.yscale.size}')
-    print(f'org zscale shape:{scan.zscale.size}')
-    if np.any((scan.data.shape[0] == 1, scan.data.shape[1] == 1,
-               scan.data.shape[2] == 1)):
-        tmp = deepcopy(scan)
-        scan.xscale = tmp.zscale
-        scan.yscale = tmp.xscale
-        scan.zscale = tmp.yscale
-        scan.data = np.ones((1, tmp.xscale.size, tmp.yscale.size))
-        scan.data[0, :, :] = np.rollaxis(tmp.data[0, :, :], 1)
-        print(f'new data shape: {scan.data.shape}')
-        print(f'new xscale shape:{scan.xscale.size}')
-        print(f'new yscale shape:{scan.yscale.size}')
-        print(f'new zscale shape:{scan.zscale.size}')
-        dump(scan, (fname + '_rs'))
-    else:
-        tmp = deepcopy(scan)
-        scan.data = tmp.data.T
-        dump(scan, (fname + '_rs'))
 
+# def reshape_pickled(fname):
+#
+#     scan = load_pickle(fname)
+#     print(fname)
+#     print(f'org data shape: {scan.data.shape}')
+#     print(f'org xscale shape:{scan.xscale.size}')
+#     print(f'org yscale shape:{scan.yscale.size}')
+#     print(f'org zscale shape:{scan.zscale.size}')
+#     if np.any((scan.data.shape[0] == 1, scan.data.shape[1] == 1,
+#                scan.data.shape[2] == 1)):
+#         tmp = deepcopy(scan)
+#         scan.xscale = tmp.zscale
+#         scan.yscale = tmp.xscale
+#         scan.zscale = tmp.yscale
+#         scan.data = np.ones((1, tmp.xscale.size, tmp.yscale.size))
+#         scan.data[0, :, :] = np.rollaxis(tmp.data[0, :, :], 1)
+#         print(f'new data shape: {scan.data.shape}')
+#         print(f'new xscale shape:{scan.xscale.size}')
+#         print(f'new yscale shape:{scan.yscale.size}')
+#         print(f'new zscale shape:{scan.zscale.size}')
+#         dump(scan, (fname + '_rs'))
+#     else:
+#         tmp = deepcopy(scan)
+#         scan.data = tmp.data.T
+#         dump(scan, (fname + '_rs'))
+
+# export MY_APP_PLUGINS_DIR=/path/to/plugins
+# Windows (Command Prompt):
+# batch
+# Copy code
+# set MY_APP_PLUGINS_DIR=C:\path\to\plugins

@@ -6,8 +6,8 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
-import piva._2Dviewer as p2d
-import piva._3Dviewer as p3d
+# import piva._2Dviewer as p2d
+# import piva._3Dviewer as p3d
 import piva.data_loader as dl
 from piva.data_browser import DataBrowser
 

@@ -1,4 +1,4 @@
 include README.md
 include LICENSE
-include piva/template.ipynb
+include piva/*
 include requirements.txt

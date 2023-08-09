@@ -1,4 +1,5 @@
-import setuptools
+from setuptools import setup, find_packages, Command
+import sys
 
 with open('requirements.txt', 'r') as fh:
     requirements = fh.read()
@@ -6,7 +7,7 @@ with open('requirements.txt', 'r') as fh:
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setuptools.setup(
+setup(
     name='piva',
     version='1.1.0',
     author='Wojtek Pudelko',
@@ -15,7 +16,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/pudeIko/piva.git',
-    packages=setuptools.find_packages(),
+    packages=find_packages(),
     python_requires=">=3.8",
     install_requires=requirements,
     classifiers=[
@@ -26,10 +27,7 @@ setuptools.setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'piva2d = piva.main:open2D',
-            'piva3d = piva.main:open3D',
             'h5_to_pickle = piva.main:pickle_h5',
-            'reshape_pickled = piva.main:reshape_pickled',
             'db = piva.main:db'
         ],
     }

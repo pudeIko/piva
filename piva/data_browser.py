@@ -1,5 +1,8 @@
 import os
 import time
+import sys
+import importlib.util
+import inspect
 
 from PyQt5.QtWidgets import QAction, QHBoxLayout, QLabel, QVBoxLayout, \
     QLineEdit, QMessageBox, QMainWindow
@@ -47,6 +50,11 @@ class DataBrowser(QMainWindow):
         self.set_status_bar()
         self.set_details_panel()
         self.align()
+
+        # loading custom plugins
+        self.load_custom_plugins()
+
+        # set window
         self.setWindowTitle('piva data browser - ' + self.working_dir)
         self.show()
         time_init = time.time()
@@ -719,3 +727,30 @@ class DataBrowser(QMainWindow):
                     list.removeItem(idx)
                     break
 
+    def load_custom_plugins(self):
+        plugins_directory = os.environ.get('PIVA_PLUGINS_DIR')
+        if plugins_directory:
+            print('Loading custom plugins:')
+            for filename in os.listdir(plugins_directory):
+                if filename.endswith('custom_data_loaders.py'):
+                    print('\tData loaders: ', end='')
+                    plugin_name = os.path.splitext(filename)[0]
+                    plugin_path = os.path.join(plugins_directory, filename)
+                    spec = importlib.util.spec_from_file_location(plugin_name,
+                                                                  plugin_path)
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    print(dir(module))
+                    dl_picker = self.dp_dl_picker
+                    dl_picker.insertSeparator(dl_picker.count())
+                    class_objects = inspect.getmembers(module, inspect.isclass)
+
+                    # Find all custom DLs and add them to the data_browser
+                    for dl_name, dl in class_objects:
+                        if 'CustomDataloader' in dl_name:
+                            dl_label = 'Custom: {}'.format(dl.name)
+                            dl_picker.addItem(dl_label)
+                            all_dls[dl_label] = dl
+                            print(dl.name, dl_label)
+                    print('')
+                    print(all_dls)
