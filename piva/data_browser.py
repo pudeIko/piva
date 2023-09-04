@@ -14,7 +14,7 @@ import piva._3Dviewer as p3d
 import piva._2Dviewer as p2d
 import piva.plot_tool as pt
 
-start_time = time.time()
+START_TIME = time.time()
 testing = True
 all_dls = {
     'Pickle': dl.DataloaderPickle,
@@ -34,7 +34,7 @@ class DataBrowser(QMainWindow):
 
         super(DataBrowser, self).__init__()
         time_packages = time.time()
-        print("loading packages: {:.3f} s".format(time_packages - start_time))
+        print("loading packages: {:.3f} s".format(time_packages - START_TIME))
 
         self.working_dir = self.add_slash(os.getcwd())
         self.thread = {}
@@ -740,7 +740,7 @@ class DataBrowser(QMainWindow):
                                                                   plugin_path)
                     module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(module)
-                    print(dir(module))
+                    # print(dir(module))
                     dl_picker = self.dp_dl_picker
                     dl_picker.insertSeparator(dl_picker.count())
                     class_objects = inspect.getmembers(module, inspect.isclass)
@@ -751,6 +751,4 @@ class DataBrowser(QMainWindow):
                             dl_label = 'Custom: {}'.format(dl.name)
                             dl_picker.addItem(dl_label)
                             all_dls[dl_label] = dl
-                            print(dl.name, dl_label)
-                    print('')
-                    print(all_dls)
+                            print('\t', dl.name, dl_label)

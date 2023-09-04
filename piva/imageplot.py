@@ -2605,8 +2605,7 @@ class InfoWindow(QMainWindow):
         self.info_window_layout = QtWidgets.QGridLayout()
         self.central_widget.setLayout(self.info_window_layout)
 
-        QBtn = QDialogButtonBox.Ok
-        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok)
         self.buttonBox.clicked.connect(self.close)
 
         self.info_window_layout.addWidget(info_widget)

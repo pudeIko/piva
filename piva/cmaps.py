@@ -9,12 +9,14 @@ import pkg_resources
 import warnings
 
 import numpy as np
-from matplotlib import cm
+# from matplotlib import cm
+from matplotlib import colormaps as cm
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.pyplot import colormaps
 from pyqtgraph import ColorMap
 
 # from data_slicer.utilities import CONFIG_DIR
+
 
 class ds_cmap(ColorMap):
     """ Simple subclass of :class:`pyqtgraph.ColorMap`. Adds vmax, 
@@ -76,12 +78,13 @@ class ds_cmap(ColorMap):
         self.vmax = vmax
         self.apply_transformations()
 
+
 def convert_matplotlib_to_pyqtgraph(matplotlib_cmap, alpha=0.5):
     """ Take a matplotlib colormap and convert it to a pyqtgraph ColorMap.
 
     **Parameters**
 
-    ===============  ===========================================================
+    ===============  ==========================================================
     matplotlib_cmap  either a str representing the name of a matplotlib 
                      colormap or a 
                      :class:`<matplotlib.colors.LinearSegmentedColormap>` or 
@@ -90,17 +93,18 @@ def convert_matplotlib_to_pyqtgraph(matplotlib_cmap, alpha=0.5):
                      colors in the matplotlib cmap; the alpha (transparency) 
                      value to be assigned to the whole cmap. matplotlib cmaps 
                      default to 1.
-    ===============  ===========================================================
+    ===============  ==========================================================
 
     **Returns**
 
-    ===============  ===========================================================
+    ===============  ==========================================================
     pyqtgraph_cmap   :class:`pyqtgraph.ColorMap`
     ===============  ===========================================================
     """
     # Get the colormap object if a colormap name is given 
     if isinstance(matplotlib_cmap, str):
-        matplotlib_cmap = cm.get_cmap(matplotlib_cmap)
+        # matplotlib_cmap = cm.get_cmap(matplotlib_cmap)
+        matplotlib_cmap = cm[matplotlib_cmap]
     # Number of entries in the matplotlib colormap
     N = matplotlib_cmap.N
     # Create the mapping values in the interval [0, 1]
@@ -122,16 +126,16 @@ def convert_ds_to_matplotlib(data_slicer_cmap, cmap_name='converted_cmap'):
 
     **Parameters**
 
-    ================  ==========================================================
+    ================  =========================================================
     data_slicer_cmap  :class:`ds_cmap <data_slicer.cmaps.ds_cmap>`
     cmap_name         str; optional name for the created cmap.
-    ================  ==========================================================
+    ================  =========================================================
 
     **Returns**
 
-    ===============  ===========================================================
+    ===============  ==========================================================
     matplotlib_cmap  :class:`<matplotlib.colors.LinearSegmentedColormap>`
-    ===============  ===========================================================
+    ===============  ==========================================================
     """
     # Reset the transformations - matplotlib can take care of them itself
     data_slicer_cmap.set_gamma(1)
@@ -162,18 +166,22 @@ def load_custom_cmap(filename):
 
 
 # +-------------------+ #
-# | Prepare colormaps | # ======================================================
+# | Prepare colormaps | # =====================================================
 # +-------------------+ #
 
 # Convert all matplotlib colormaps to pyqtgraph ones and make them available 
 # in the dict cmaps
-my_cmaps = ['Blues', 'BrBG', 'BuGn', 'CMRmap', 'GnBu', 'Greens', 'Oranges', 'PuRd', 'Purples', 'RdBu',
-            'RdPu', 'Reds', 'Spectral', 'YlOrRd', 'afmhot', 'binary', 'bone', 'bwr', 'cividis', 'coolwarm', 'copper',
-            'cubehelix', 'gist_earth', 'gist_heat', 'gnuplot', 'gnuplot2', 'hot', 'inferno', 'jet', 'magma', 'pink',
-            'plasma', 'terrain', 'turbo', 'twilight', 'viridis', 'kocean', 'neutrons']  # , 'twilight_shifted',
+my_cmaps = ['Blues', 'BrBG', 'BuGn', 'CMRmap', 'GnBu', 'Greens', 'Oranges',
+            'PuRd', 'Purples', 'RdBu', 'RdPu', 'Reds', 'Spectral', 'YlOrRd',
+            'afmhot', 'binary', 'bone', 'bwr', 'cividis', 'coolwarm', 'copper',
+            'cubehelix', 'gist_earth', 'gist_heat', 'gnuplot', 'gnuplot2',
+            'hot', 'inferno', 'jet', 'magma', 'pink', 'plasma', 'terrain',
+            'turbo', 'twilight', 'viridis']#, 'kocean', 'neutrons'] # , 'twilight_shifted',
+
 cmaps = dict()
 for name in colormaps():
-    cmap = cm.get_cmap(name)
+    # cmap = cm.get_cmap(name)
+    cmap = cm[name]
     cmaps.update({name: convert_matplotlib_to_pyqtgraph(cmap)})
 
 # Add additional colormaps from package
