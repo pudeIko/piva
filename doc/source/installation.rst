@@ -23,24 +23,24 @@ Detailed instructions for Anaconda users follow:
    environment. In the example we will be using python version 3.10.8, but
    most other versions should work as well. ::
 
-      $ conda create --name testenv python==3.10.8
+      $ conda create --name piva-env python==3.10.8
       [some output]
-      $ conda activate testenv
-      (testenv) $
+      $ conda activate piva-env
+      (piva-env) $
 
 3) Inside your virtual environment, run the following commands to download and 
    install piva with all its dependencies (the first one is just to 
    upgrade pip to the latest version)::
    
-      (testenv) $ pip install --upgrade pip
-      (testenv) $ pip install data_slicer
+      (piva-env) $ pip install --upgrade pip
+      (piva-env) $ pip install piva
    
    This will create a lot of console output. If everything succeeded, you should 
    see something like ``Successfully installed piva`` towards the end.
 
 4) Test the installation by starting up a data_browser::
 
-      (testenv) $ db
+      (piva-env) $ db
    
 This should bring up a :ref:`databrowser window <sec-db>`.
 

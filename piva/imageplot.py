@@ -2542,31 +2542,47 @@ class UtilitiesPanel(QWidget):
             elif lbl == 'T':
                 err = 1
                 par = np.array(to_check[idx])
-                to_compare = np.ones(par.size) * par[0]
-                check_result.append(np.allclose(par, to_compare, atol=err))
+                try:
+                    to_compare = np.ones(par.size) * par[0]
+                    check_result.append(np.allclose(par, to_compare, atol=err))
+                except TypeError:
+                    pass
             # photon energy
             elif lbl == 'hv':
                 err = 0.1
                 par = np.array(to_check[idx])
-                to_compare = np.ones(par.size) * par[0]
-                check_result.append(np.allclose(par, to_compare, atol=err))
+                try:
+                    to_compare = np.ones(par.size) * par[0]
+                    check_result.append(np.allclose(par, to_compare, atol=err))
+                except TypeError:
+                    pass
             # e_min of analyzer
             elif lbl == 'e_start':
                 err = to_check[-1][0]
                 par = np.array(to_check[idx])
-                to_compare = np.ones(par.size) * par[0]
-                check_result.append(np.allclose(par, to_compare, atol=err))
+                try:
+                    to_compare = np.ones(par.size) * par[0]
+                    check_result.append(np.allclose(par, to_compare, atol=err))
+                except TypeError:
+                    pass
             # e_max of analyzer
             elif lbl == 'e_stop':
                 err = to_check[-1][0]
                 par = np.array(to_check[idx])
-                to_compare = np.ones(par.size) * par[0]
-                check_result.append(np.allclose(par, to_compare, atol=err))
+                try:
+                    to_compare = np.ones(par.size) * par[0]
+                    check_result.append(np.allclose(par, to_compare, atol=err))
+                except TypeError:
+                    pass
             elif lbl == 'e_step':
                 err = to_check[-1][0]
                 par = np.array(to_check[idx])
-                to_compare = np.ones(par.size) * par[0]
-                check_result.append(np.allclose(par, to_compare, atol=err * 0.1))
+                try:
+                    to_compare = np.ones(par.size) * par[0]
+                    check_result.append(np.allclose(par, to_compare,
+                                                    atol=err * 0.1))
+                except TypeError:
+                    pass
             else:
                 check_result.append(to_check[idx][0] == to_check[idx][1])
 
@@ -2605,8 +2621,7 @@ class InfoWindow(QMainWindow):
         self.info_window_layout = QtWidgets.QGridLayout()
         self.central_widget.setLayout(self.info_window_layout)
 
-        QBtn = QDialogButtonBox.Ok
-        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok)
         self.buttonBox.clicked.connect(self.close)
 
         self.info_window_layout.addWidget(info_widget)

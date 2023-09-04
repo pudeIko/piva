@@ -1034,11 +1034,11 @@ class MainWindow2D(QtWidgets.QMainWindow):
         mw.data_handler.set_data(data, axes=self.data_handler.axes)
         mw.set_cmap(self.cmap_name)
 
-    def keyPressEvent(self, event):
-        """ Use <Space> key to print debug info. """
-        print(event.key())
-        if event.key() == QtCore.Qt.Key_Space:
-            print(self.data_viewers)
+    # def keyPressEvent(self, event):
+    #     """ Use <Space> key to print debug info. """
+    #     print(event.key())
+    #     if event.key() == QtCore.Qt.Key_Space:
+    #         print(self.data_viewers)
 
     def closeEvent(self, event):
         """ Ensure that this instance is un-registered from the DataBrowser."""

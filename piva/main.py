@@ -34,5 +34,5 @@ def pickle_h5():
     dl.dump(data, fname[:-3])
 
 
-if __name__ == "__main__" :
+if __name__ == "__main__":
     db()
