@@ -1,5 +1,4 @@
-from setuptools import setup, find_packages, Command
-import sys
+from setuptools import setup, find_packages
 
 with open('requirements.txt', 'r') as fh:
     requirements = fh.read()
@@ -17,7 +16,7 @@ setup(
     long_description_content_type='text/markdown',
     url='https://github.com/pudeIko/piva.git',
     packages=find_packages(),
-    python_requires=">=3.8",
+    python_requires=">=3.10",
     install_requires=requirements,
     classifiers=[
         'Programming Language :: Python :: 3',
@@ -27,7 +26,6 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'h5_to_pickle = piva.main:pickle_h5',
             'db = piva.main:db'
         ],
     }

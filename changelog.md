@@ -15,7 +15,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - extended options for data normalization
 - linking viewers functionality, allowing for simultaneous inspection of 
 similar datasets
-- 
+- automated tests
 
 ### Changed
 
@@ -26,7 +26,7 @@ similar datasets
 
 
 ### Removed
-
+- `DataLoader` classes for MAESTRO (ALS)
 
 ### Fixed
 

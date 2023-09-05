@@ -2,20 +2,12 @@
 Convert some of the nicer matplotlib and kustom colormaps to pyqtgraph 
 colormaps.
 """
-import copy
-import os
-import pathlib
-import pkg_resources
-import warnings
 
 import numpy as np
-# from matplotlib import cm
 from matplotlib import colormaps as cm
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.pyplot import colormaps
 from pyqtgraph import ColorMap
-
-# from data_slicer.utilities import CONFIG_DIR
 
 
 class ds_cmap(ColorMap):
@@ -99,11 +91,10 @@ def convert_matplotlib_to_pyqtgraph(matplotlib_cmap, alpha=0.5):
 
     ===============  ==========================================================
     pyqtgraph_cmap   :class:`pyqtgraph.ColorMap`
-    ===============  ===========================================================
+    ===============  ==========================================================
     """
     # Get the colormap object if a colormap name is given 
     if isinstance(matplotlib_cmap, str):
-        # matplotlib_cmap = cm.get_cmap(matplotlib_cmap)
         matplotlib_cmap = cm[matplotlib_cmap]
     # Number of entries in the matplotlib colormap
     N = matplotlib_cmap.N
@@ -176,56 +167,9 @@ my_cmaps = ['Blues', 'BrBG', 'BuGn', 'CMRmap', 'GnBu', 'Greens', 'Oranges',
             'afmhot', 'binary', 'bone', 'bwr', 'cividis', 'coolwarm', 'copper',
             'cubehelix', 'gist_earth', 'gist_heat', 'gnuplot', 'gnuplot2',
             'hot', 'inferno', 'jet', 'magma', 'pink', 'plasma', 'terrain',
-            'turbo', 'twilight', 'viridis']#, 'kocean', 'neutrons'] # , 'twilight_shifted',
+            'turbo', 'twilight', 'viridis']
 
 cmaps = dict()
 for name in colormaps():
-    # cmap = cm.get_cmap(name)
     cmap = cm[name]
     cmaps.update({name: convert_matplotlib_to_pyqtgraph(cmap)})
-
-# Add additional colormaps from package
-# dir_path = os.path.dirname(os.path.realpath(__file__))
-# data_path = dir_path + '/custom_cmaps/'
-# try:
-#     datafiles = os.listdir(data_path)
-# except FileNotFoundError:
-#    warnings.warn('Package colormaps were not found.')
-#    datafiles = []
-#
-#for cmap in datafiles:
-#    name, suffix = cmap.split('.')
-#    # Only load files with the .cmap suffix
-#    if suffix != 'cmap':
-#        continue
-#    cmap_object = load_custom_cmap(data_path + cmap)
-#    cmaps.update({name: cmap_object})
-#    # Also add the inverse cmap
-#    inverse = copy.copy(cmap_object)
-#    inverse.color = cmap_object.color[::-1]
-#    cmaps.update({name + '_r': inverse})
-
-# # Add user supplied colormaps
-# config_path = pathlib.Path.home() / CONFIG_DIR / 'cmaps/'
-# try:
-#     files = os.listdir(config_path)
-# except FileNotFoundError:
-#     files = []
-#
-# for cmap in files:
-#     name, suffix = cmap.split('.')
-#     # Only load files with the .cmap suffix
-#     if suffix != 'cmap':
-#         continue
-#     cmap_object = load_custom_cmap(config_path / cmap)
-#     cmaps.update({name: cmap_object})
-#     # Also add the inverse cmap
-#     inverse = copy.copy(cmap_object)
-#     inverse.color = cmap_object.color[::-1]
-#     cmaps.update({name + '_r': inverse})
-
-# +---------+ #
-# | Testing | # ================================================================
-# +---------+ #
-if __name__ == '__main__':
-    print(cmaps.keys())

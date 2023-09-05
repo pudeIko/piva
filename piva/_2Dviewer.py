@@ -6,8 +6,8 @@ import time
 from copy import deepcopy
 
 import numpy as np
-from pyqtgraph.Qt import QtCore, QtWidgets
-from PyQt5.QtWidgets import QMessageBox, QLineEdit
+from pyqtgraph.Qt import QtWidgets
+from PyQt5.QtWidgets import QMessageBox
 
 import piva.working_procedures as wp
 import piva.data_loader as dl
@@ -42,19 +42,6 @@ class DataHandler2D:
         self.axes = np.array([[0, 1], [0, 1], [0, 1]])
         # Indices of *data* that are displayed in the main plot
         self.displayed_axes = (0, 1)
-        # Index along the z axis at which to produce a slice
-        # self.z = TracedVariable(0, name='z')
-        # # Number of slices to integrate along z
-        # integrate_z = TracedVariable(value=0, name='integrate_z')
-        # How often we have rolled the axes from the original setup
-        # self._roll_state = 0
-
-        # moved to get rid of warnings
-        # self.zmin = 0
-        # self.zmax = None
-        # self.integrated = None
-        # self.cut_y_data = None
-        # self.cut_x_data = None
 
     def get_data(self):
         """ Convenience `getter` method. Allows writing ``self.get_data()``
@@ -108,9 +95,6 @@ class DataHandler2D:
     def on_data_change(self):
         """ Update self.main_window.image_data and replot. """
         self.update_image_data()
-        # self.main_window.redraw_plots()
-        # Also need to recalculate the intensity plot
-        # self.on_z_dim_change()
 
     def on_z_dim_change(self):
         """ Called when either completely new data is loaded or the dimension
@@ -121,7 +105,6 @@ class DataHandler2D:
 
         # Calculate the integrated intensity and plot it
         self.calculate_integrated_intensity()
-        # ip.plot(self.integrated)
 
     def calculate_integrated_intensity(self):
         self.integrated = self.get_data().sum(0).sum(0)
@@ -132,8 +115,6 @@ class DataHandler2D:
         Skip this if the z value happens to be out of range, which can happen
         if the image data changes and the z scale hasn't been updated yet.
         """
-        # z = self.z.get_value()
-        # integrate_z = self.main_window.plot_z.width
         data = self.get_data()
         try:
             self.main_window.image_data = data
@@ -192,7 +173,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.util_panel = ip.UtilitiesPanel(self, name='utilities_panel',
                                             dim=2)
         self.util_panel.positions_momentum_label.setText('Sliders')
-        # self.util_panel.momentum_vert_label.setText('E:')
 
         self.setStyleSheet(app_style)
         self.set_cmap()
@@ -201,7 +181,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.setWindowTitle(self.title)
         self.initUI()
 
-        time_dl_b = time.time()
         # Set the loaded data in PIT
         if data_set is None:
             print('Data set not defined.')
@@ -210,10 +189,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
 
         D = self.swap_axes_aroud(raw_data)
 
-        # print(f'data shape = {D.data.shape}')
-        # print(f'x shape = {D.xscale.shape}')
-        # print(f'y shape = {D.yscale.shape}')
-        # print(f'z shape = {D.zscale.shape}')
         self.data_handler.prepare_data(D.data, [D.xscale, D.yscale, D.zscale])
         self.org_image_data = self.data_handler.get_data()
 
@@ -324,9 +299,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
         sd = 1
         # Get a short handle
         l = self.layout
-        # addWIdget(row, column, rowSpan, columnSpan)
         # utilities bar
-        # l.addWidget(self.b0, 0, 0, 1 * sd, 5 * sd)
         l.addWidget(self.util_panel, 0, 0, 2 * sd, 6 * sd)
         # EDC
         l.addWidget(self.plot_x, 2 * sd, 0, 3 * sd, 4 * sd)
@@ -399,11 +372,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
         D.zscale = tmp.xscale
         D.data = np.ones((1, tmp.zscale.size, tmp.yscale.size))
         D.data[0, :, :] = np.rollaxis(tmp.data[0, :, :], 1)
-        # print('viewer format')
-        # print(f'data shape: {D.data.shape}')
-        # print(f'x shape: {D.xscale.shape}')
-        # print(f'y shape: {D.yscale.shape}')
-        # print(f'z shape: {D.zscale.shape}')
 
         return D
 
@@ -514,7 +482,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
             start = i_y - width
             stop = i_y + width
             y = np.sum(data[start:stop, :], axis=0)
-            # y = wp.normalize(y)
         x = np.arange(0, len(self.data_handler.axes[0]))
         self.mdc = y
         yp.plot(y, x)
@@ -594,7 +561,8 @@ class MainWindow2D(QtWidgets.QMainWindow):
             try:
                 half_width = self.util_panel.bin_z_nbins.value()
                 pos = self.main_plot.pos[0].get_value()
-                self.main_plot.add_binning_lines(pos, half_width, orientation='vertical')
+                self.main_plot.add_binning_lines(pos, half_width,
+                                                 orientation='vertical')
                 self.plot_x.add_binning_lines(pos, half_width)
                 ymin = 0 + half_width
                 ymax = len(self.data_handler.axes[1]) - half_width
@@ -649,9 +617,10 @@ class MainWindow2D(QtWidgets.QMainWindow):
 
     def set_cmap(self):
         """ Set the colormap to *cmap* where *cmap* is one of the names
-        registered in :mod:`<data_slicer.cmaps>` which includes all matplotlib and
-        kustom cmaps.
-        WP: small changes made to use only my list of cmaps (see cmaps.py) and to shorten the list
+        registered in :mod:`<data_slicer.cmaps>` which includes all matplotlib
+        and custom cmaps.
+        WP: small changes made to use only my list of cmaps (see cmaps.py)
+        and to shorten the list
         by using 'invert_colors' checkBox
         """
         try:
@@ -686,13 +655,13 @@ class MainWindow2D(QtWidgets.QMainWindow):
         """ Redraw plotted data to reflect changes in data or its colors. """
         try:
             # Redraw main plot
-            self.set_image(image, displayed_axes=self.data_handler.displayed_axes)
+            self.set_image(image,
+                           displayed_axes=self.data_handler.displayed_axes)
             # Redraw cut plot
-            # self.update_cut()
         except AttributeError as e:
-            # In some cases (namely initialization) the mainwindow is not defined yet
+            # In some cases (namely initialization)
+            # the mainwindow is not defined yet
             pass
-            # print('AttributeError: {}'.format(e))
 
     def set_image(self, image=None, *args, **kwargs):
         """ Wraps the underlying ImagePlot3d's set_image method.
@@ -909,7 +878,8 @@ class MainWindow2D(QtWidgets.QMainWindow):
             k_ax = self.data_set.yscale
         axes = [k_ax, erg_ax]
         try:
-            self.data_viewers[thread_lbl] = MDCFitter(self, self.data_set, axes, title, index=thread_lbl)
+            self.data_viewers[thread_lbl] = \
+                MDCFitter(self, self.data_set, axes, title, index=thread_lbl)
         except Exception:
             error_box = QMessageBox()
             error_box.setIcon(QMessageBox.Information)
@@ -945,16 +915,8 @@ class MainWindow2D(QtWidgets.QMainWindow):
                 EDCFitter(self, self.data_set, axes, title, index=thread_idx)
         except Exception as e:
             raise e
-            # error_box = QMessageBox()
-            # error_box.setIcon(QMessageBox.Information)
-            # error_box.setText('Couldn\'t load data,  something went wrong.')
-            # error_box.setStandardButtons(QMessageBox.Ok)
-            # raise e
-            # if error_box.exec() == QMessageBox.Ok:
-            #     return
 
     def save_to_pickle(self):
-        # TODO change 'k_axis' to 'k' for all cuts: add 'change attrs name'
         # energy axis
         dataset = self.data_set
         savedir = self.fname[:-len(self.title)]
@@ -1010,8 +972,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
                     dataset.hv = up.axes_energy_hv.value()
                 if up.axes_energy_wf.value() != 0:
                     dataset.wf = up.axes_energy_wf.value()
-                # if up.axes_angle_off.value() != 0:
-                #     attrs['angle_off'] = up.axes_angle_off.value()
                 if not (self.k_axis is None):
                     dataset.kyscale = self.k_axis
             elif box_return_value == QMessageBox.No:
@@ -1033,12 +993,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
         data = np.moveaxis(self.data_set.data, 0, -1)
         mw.data_handler.set_data(data, axes=self.data_handler.axes)
         mw.set_cmap(self.cmap_name)
-
-    # def keyPressEvent(self, event):
-    #     """ Use <Space> key to print debug info. """
-    #     print(event.key())
-    #     if event.key() == QtCore.Qt.Key_Space:
-    #         print(self.data_viewers)
 
     def closeEvent(self, event):
         """ Ensure that this instance is un-registered from the DataBrowser."""

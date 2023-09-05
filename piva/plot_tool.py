@@ -4,7 +4,7 @@ from copy import deepcopy
 
 import numpy as np
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtGui, QtWidgets, QtCore
+from pyqtgraph.Qt import QtWidgets, QtCore
 from PyQt5.QtGui import QFont, QColor
 from PyQt5.QtWidgets import QColorDialog, QFileDialog, QWidget, \
     QDoubleSpinBox, QLineEdit, QPushButton, QLabel, QComboBox, QSpinBox, \
@@ -57,7 +57,8 @@ class PlotTool(QtWidgets.QMainWindow):
 
     def initUI(self):
 
-        self.main_added.currentIndexChanged.connect(self.current_selection_changed)
+        self.main_added.currentIndexChanged.connect(
+            self.current_selection_changed)
         self.main_save_button.clicked.connect(self.save)
         self.main_load_button.clicked.connect(self.load)
         self.main_close_button.clicked.connect(self.close)
@@ -68,25 +69,41 @@ class PlotTool(QtWidgets.QMainWindow):
         self.ds_remove_button.clicked.connect(self.remove_dataset)
 
         self.ec_color.clicked.connect(self.set_color)
-        self.ec_width.valueChanged.connect(lambda: self.set_pen(loading=False))
-        self.ec_style.currentIndexChanged.connect(lambda: self.set_pen(loading=False))
-        self.ec_offset_x.valueChanged.connect(lambda: self.update_dataset(loading=False))
-        self.ec_offset_y.valueChanged.connect(lambda: self.update_dataset(loading=False))
-        self.ec_normalize.stateChanged.connect(lambda: self.update_dataset(loading=False))
-        self.ec_scale.valueChanged.connect(lambda: self.update_dataset(loading=False))
+        self.ec_width.valueChanged.connect(
+            lambda: self.set_pen(loading=False))
+        self.ec_style.currentIndexChanged.connect(
+            lambda: self.set_pen(loading=False))
+        self.ec_offset_x.valueChanged.connect(
+            lambda: self.update_dataset(loading=False))
+        self.ec_offset_y.valueChanged.connect(
+            lambda: self.update_dataset(loading=False))
+        self.ec_normalize.stateChanged.connect(
+            lambda: self.update_dataset(loading=False))
+        self.ec_scale.valueChanged.connect(
+            lambda: self.update_dataset(loading=False))
         self.ec_reset.clicked.connect(self.reset_scaling)
 
-        self.ep_bgr_color.clicked.connect(lambda: self.set_bgr_color(loading=False))
-        self.ep_axes_color.clicked.connect(lambda: self.set_axes_color(loading=False))
-        self.ep_ticks_size.valueChanged.connect(lambda: self.set_plot_layout(loading=False))
-        self.ep_xlabel.textChanged.connect(lambda: self.set_plot_layout(loading=False))
-        self.ep_ylabel.textChanged.connect(lambda: self.set_plot_layout(loading=False))
-        self.ep_labels_font_size.valueChanged.connect(lambda: self.set_plot_layout(loading=False))
+        self.ep_bgr_color.clicked.connect(
+            lambda: self.set_bgr_color(loading=False))
+        self.ep_axes_color.clicked.connect(
+            lambda: self.set_axes_color(loading=False))
+        self.ep_ticks_size.valueChanged.connect(
+            lambda: self.set_plot_layout(loading=False))
+        self.ep_xlabel.textChanged.connect(
+            lambda: self.set_plot_layout(loading=False))
+        self.ep_ylabel.textChanged.connect(
+            lambda: self.set_plot_layout(loading=False))
+        self.ep_labels_font_size.valueChanged.connect(
+            lambda: self.set_plot_layout(loading=False))
 
-        self.marker_1['button'].clicked.connect(lambda: self.drop_marker(marker=self.marker_1))
-        self.marker_2['button'].clicked.connect(lambda: self.drop_marker(marker=self.marker_2))
-        self.marker_1['x'].valueChanged.connect(lambda: self.update_marker(marker=self.marker_1))
-        self.marker_2['x'].valueChanged.connect(lambda: self.update_marker(marker=self.marker_2))
+        self.marker_1['button'].clicked.connect(
+            lambda: self.drop_marker(marker=self.marker_1))
+        self.marker_2['button'].clicked.connect(
+            lambda: self.drop_marker(marker=self.marker_2))
+        self.marker_1['x'].valueChanged.connect(
+            lambda: self.update_marker(marker=self.marker_1))
+        self.marker_2['x'].valueChanged.connect(
+            lambda: self.update_marker(marker=self.marker_2))
 
         self.ann_add_update.clicked.connect(self.add_update_annotation)
         self.ann_remove.clicked.connect(self.remove_annotation)
@@ -95,7 +112,9 @@ class PlotTool(QtWidgets.QMainWindow):
 
     def init_panel_design(self):
         self.plot_panel_design['bgr_color'] = QColor()
-        self.plot_panel_design['bgr_color'].setRgb(MDC_PANEL_BGR[0], MDC_PANEL_BGR[1], MDC_PANEL_BGR[2])
+        self.plot_panel_design['bgr_color'].setRgb(MDC_PANEL_BGR[0],
+                                                   MDC_PANEL_BGR[1],
+                                                   MDC_PANEL_BGR[2])
         self.plot_panel_design['axes_color'] = QColor()
         self.plot_panel_design['axes_color'].setRgb(150, 150, 150)
         self.plot_panel_design['ticks_fsize'] = QFont()
@@ -109,7 +128,8 @@ class PlotTool(QtWidgets.QMainWindow):
         self.marker_1['dropped'] = False
         self.marker_1['idx'] = 1
         self.marker_1['x'] = QDoubleSpinBox()
-        self.set_qspinbox(self.marker_1['x'], [-1e6, 1e6], value=0, decimals=6, step=0.01)
+        self.set_qspinbox(self.marker_1['x'], [-1e6, 1e6], value=0,
+                          decimals=6, step=0.01)
         self.marker_1['y'] = QLineEdit()
         self.marker_1['y'].setReadOnly(True)
         self.marker_1['y'].setText('-')
@@ -121,7 +141,8 @@ class PlotTool(QtWidgets.QMainWindow):
         self.marker_2['dropped'] = False
         self.marker_2['idx'] = 2
         self.marker_2['x'] = QDoubleSpinBox()
-        self.set_qspinbox(self.marker_2['x'], [-1e6, 1e6], value=0, decimals=6, step=0.01)
+        self.set_qspinbox(self.marker_2['x'], [-1e6, 1e6], value=0,
+                          decimals=6, step=0.01)
         self.marker_2['y'] = QLineEdit()
         self.marker_2['y'].setReadOnly(True)
         self.marker_2['y'].setText('-')
@@ -144,7 +165,6 @@ class PlotTool(QtWidgets.QMainWindow):
         self.set_annotate_tab()
 
     def set_main_utils(self):
-        # self.main_utils = QWidget()
         mul = QtWidgets.QVBoxLayout()
 
         self.main_added_lbl = QLabel('Curves:')
@@ -204,9 +224,6 @@ class PlotTool(QtWidgets.QMainWindow):
         dtl.addWidget(self.ds_custom_y_lbl,         row, 2)
         dtl.addWidget(self.ds_custom_y,             row, 3)
 
-        # dummy_lbl = QLabel('')
-        # dtl.addWidget(dummy_lbl, 2, 0, 1, 6)
-
         self.datasets_tab.layout = dtl
         self.datasets_tab.setLayout(dtl)
         self.tabs.addTab(self.datasets_tab, 'Add/Remove data')
@@ -231,15 +248,18 @@ class PlotTool(QtWidgets.QMainWindow):
 
         self.ec_offset_x_lbl = QLabel('x offset:')
         self.ec_offset_x = QDoubleSpinBox()
-        self.set_qspinbox(self.ec_offset_x, box_range=[-1e6, 1e6], value=0, decimals=5, step=1e-3)
+        self.set_qspinbox(self.ec_offset_x, box_range=[-1e6, 1e6], value=0,
+                          decimals=5, step=1e-3)
         self.ec_offset_y_lbl = QLabel('y offset:')
         self.ec_offset_y = QDoubleSpinBox()
-        self.set_qspinbox(self.ec_offset_y, box_range=[-1e6, 1e6], value=0, decimals=4, step=0.1)
+        self.set_qspinbox(self.ec_offset_y, box_range=[-1e6, 1e6], value=0,
+                          decimals=4, step=0.1)
 
         self.ec_normalize = QCheckBox('normalize')
         self.ec_scale_lbl = QLabel('scale:')
         self.ec_scale = QDoubleSpinBox()
-        self.set_qspinbox(self.ec_scale, box_range=[0, 1e6], value=1,  decimals=1, step=1)
+        self.set_qspinbox(self.ec_scale, box_range=[0, 1e6], value=1,
+                          decimals=1, step=1)
         self.ec_reset = QPushButton('reset')
 
         row = 0
@@ -262,9 +282,6 @@ class PlotTool(QtWidgets.QMainWindow):
         etl.addWidget(self.ec_normalize,              row, 2)
         etl.addWidget(self.ec_reset,                  row, 3)
 
-        # dummy_lbl = QLabel('')
-        # etl.addWidget(dummy_lbl, 2, 0, 1, 6)
-
         self.edit_curves_tab.layout = etl
         self.edit_curves_tab.setLayout(etl)
         self.tabs.addTab(self.edit_curves_tab, 'Edit curves')
@@ -276,11 +293,12 @@ class PlotTool(QtWidgets.QMainWindow):
 
         self.ep_bgr_color_lbl = QLabel("bgr color:")
         self.ep_bgr_color = QPushButton('')
-        self.ep_bgr_color.setStyleSheet(f'background-color: rgb{MDC_PANEL_BGR}')
+        self.ep_bgr_color.setStyleSheet(
+            f'background-color: rgb{MDC_PANEL_BGR}')
         self.ep_bgr_color.setFixedSize(25, 15)
         self.ep_axes_color_lbl = QLabel("axes color:")
         self.ep_axes_color = QPushButton('')
-        self.ep_axes_color.setStyleSheet(f'background-color: rgb(150, 150, 150)')
+        self.ep_axes_color.setStyleSheet(f'background-color: rgb(150,150,150)')
         self.ep_axes_color.setFixedSize(25, 15)
         self.ep_ticks_size_lbl = QLabel('ticks font size:')
         self.ep_ticks_size = QSpinBox()
@@ -288,7 +306,8 @@ class PlotTool(QtWidgets.QMainWindow):
 
         self.ep_labels_font_size_lbl = QLabel('labels font size:')
         self.ep_labels_font_size = QSpinBox()
-        self.set_qspinbox(self.ep_labels_font_size, box_range=[1, 100], value=14)
+        self.set_qspinbox(self.ep_labels_font_size,
+                          box_range=[1, 100], value=14)
 
         self.ep_xlabel_lbl = QLabel('x label:')
         self.ep_xlabel = QLineEdit()
@@ -386,10 +405,12 @@ class PlotTool(QtWidgets.QMainWindow):
 
         self.ann_x_lbl = QLabel('x:')
         self.ann_x = QDoubleSpinBox()
-        self.set_qspinbox(self.ann_x, box_range=[-1e6, 1e6], value=-0.5, step=0.01)
+        self.set_qspinbox(self.ann_x, box_range=[-1e6, 1e6],
+                          value=-0.5, step=0.01)
         self.ann_y_lbl = QLabel('y:')
         self.ann_y = QDoubleSpinBox()
-        self.set_qspinbox(self.ann_y, box_range=[-1e6, 1e6], value=-0.5, step=0.01)
+        self.set_qspinbox(self.ann_y, box_range=[-1e6, 1e6],
+                          value=-0.5, step=0.01)
         self.ann_add_update = QPushButton('add/update')
         self.ann_remove = QPushButton('delete')
 
@@ -485,7 +506,8 @@ class PlotTool(QtWidgets.QMainWindow):
             no_entries_box = QMessageBox()
             no_entries_box.setIcon(QMessageBox.Information)
             no_entries_box.setWindowTitle('Doh.')
-            no_entries_box.setText('Something went wrong.  Open new data set and update.')
+            no_entries_box.setText('Something went wrong.  '
+                                   'Open new data set and update.')
             no_entries_box.setStandardButtons(QMessageBox.Ok)
             if no_entries_box.exec() == QMessageBox.Ok:
                 return
@@ -508,7 +530,8 @@ class PlotTool(QtWidgets.QMainWindow):
                 no_dv_box = QMessageBox()
                 no_dv_box.setIcon(QMessageBox.Information)
                 no_dv_box.setWindowTitle('Doh.')
-                no_dv_box.setText('It seems the data set has been closed.  Make sure to update.')
+                no_dv_box.setText('It seems the data set has been closed.  '
+                                  'Make sure to update.')
                 no_dv_box.setStandardButtons(QMessageBox.Ok)
                 if no_dv_box.exec() == QMessageBox.Ok:
                     return
@@ -530,10 +553,15 @@ class PlotTool(QtWidgets.QMainWindow):
             data_item_colision_box = QMessageBox()
             data_item_colision_box.setIcon(QMessageBox.Question)
             data_item_colision_box.setWindowTitle('Ooh.')
-            data_item_colision_box.setText('Curve with this name already has been added.  Want to add another one?')
+            data_item_colision_box.setText('Curve with this name already has '
+                                           'been added.  Want to add '
+                                           'another one?')
             data_item_colision_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             if data_item_colision_box.exec() == QMessageBox.Yes:
-                lbl, lbl_return_val = QtWidgets.QInputDialog.getText(self, '', 'Then add specific label:', QLineEdit.Normal, '1')
+                lbl, lbl_return_val = \
+                    QtWidgets.QInputDialog.getText(self, '',
+                                                   'Then add specific label:',
+                                                   QLineEdit.Normal, '1')
                 data_item_lbl = data_item_lbl + ' (' + lbl + ')'
                 if not lbl_return_val:
                     return
@@ -541,7 +569,8 @@ class PlotTool(QtWidgets.QMainWindow):
                 return
 
         self.data_items[data_item_lbl] = {}
-        self.data_items[data_item_lbl]['data_item'] = CustomDataItem(x, y, pen=pg.mkPen('k', width=2))
+        self.data_items[data_item_lbl]['data_item'] = \
+            CustomDataItem(x, y, pen=pg.mkPen('k', width=2))
         self.data_items[data_item_lbl]['org_data'] = [deepcopy(x), deepcopy(y)]
         self.data_items[data_item_lbl]['color'] = 'k'
         self.data_items[data_item_lbl]['width'] = 2
@@ -638,7 +667,8 @@ class PlotTool(QtWidgets.QMainWindow):
         data_item_lbl = self.main_added.currentText()
         if loading:
             w = self.data_items[data_item_lbl]['width']
-            self.ec_style.setCurrentText(self.data_items[data_item_lbl]['line_style'])
+            self.ec_style.setCurrentText(
+                self.data_items[data_item_lbl]['line_style'])
             style, style_lbl = self.get_line_style()
             cd = self.data_items[data_item_lbl]['color']
         else:
@@ -646,8 +676,8 @@ class PlotTool(QtWidgets.QMainWindow):
             style, style_lbl = self.get_line_style()
             cd = self.data_items[data_item_lbl]['color']
 
-        self.data_items[data_item_lbl]['data_item'].setPen(color=cd, width=w, style=style)
-        # self.data_items[data_item_lbl]['color'] = cd
+        self.data_items[data_item_lbl]['data_item'].setPen(color=cd, width=w,
+                                                           style=style)
         self.data_items[data_item_lbl]['width'] = w
         self.data_items[data_item_lbl]['line_style'] = style_lbl
 
@@ -697,7 +727,8 @@ class PlotTool(QtWidgets.QMainWindow):
     def reset_scaling(self):
         data_item_lbl = self.main_added.currentText()
         org = self.data_items[data_item_lbl]['org_data']
-        self.data_items[data_item_lbl]['data_item'].setData(deepcopy(org[0]), deepcopy(org[1]))
+        self.data_items[data_item_lbl]['data_item'].setData(deepcopy(org[0]),
+                                                            deepcopy(org[1]))
         self.change_without_emitting_signal(self.ec_offset_x, 0)
         self.change_without_emitting_signal(self.ec_offset_y, 0)
         self.change_without_emitting_signal(self.ec_scale, 1)
@@ -709,7 +740,8 @@ class PlotTool(QtWidgets.QMainWindow):
 
     def set_bgr_color(self, loading=False):
         if loading:
-            cd_str = 'rgb' + str(self.plot_panel_design['bgr_color'].getRgb()[:3])
+            cd_str = 'rgb' + \
+                     str(self.plot_panel_design['bgr_color'].getRgb()[:3])
         else:
             cd = QColorDialog.getColor()
             cd_str = 'rgb' + str(cd.getRgb()[:3])
@@ -720,7 +752,8 @@ class PlotTool(QtWidgets.QMainWindow):
 
     def set_axes_color(self, loading=False):
         if loading:
-            cd_str = 'rgb' + str(self.plot_panel_design['axes_color'].getRgb()[:3])
+            cd_str = 'rgb' + \
+                     str(self.plot_panel_design['axes_color'].getRgb()[:3])
         else:
             cd = QColorDialog.getColor()
             cd_str = 'rgb' + str(cd.getRgb()[:3])
@@ -739,8 +772,10 @@ class PlotTool(QtWidgets.QMainWindow):
         if loading:
             self.ep_ticks_size.blockSignals(True)
             self.ep_labels_font_size.blockSignals(True)
-            self.ep_ticks_size.setValue(self.plot_panel_design['ticks_fsize'].pointSize())
-            self.ep_labels_font_size.setValue(self.plot_panel_design['labels_fsize'])
+            self.ep_ticks_size.setValue(
+                self.plot_panel_design['ticks_fsize'].pointSize())
+            self.ep_labels_font_size.setValue(
+                self.plot_panel_design['labels_fsize'])
             self.ep_ticks_size.blockSignals(False)
             self.ep_labels_font_size.blockSignals(False)
         tfs = self.ep_ticks_size.value()
@@ -750,7 +785,8 @@ class PlotTool(QtWidgets.QMainWindow):
         lbl_fsize = str(self.ep_labels_font_size.value()) + 'pt'
         lbl_clr = 'rgb' + str(ax_clr.getRgb()[:3])
         label_style = {'color': lbl_clr, 'font-size': lbl_fsize}
-        self.plot_panel_design['labels_fsize'] = self.ep_labels_font_size.value()
+        self.plot_panel_design['labels_fsize'] = \
+            self.ep_labels_font_size.value()
 
         self.plot_panel.setBackground(bgr_clr)
 
@@ -841,7 +877,8 @@ class PlotTool(QtWidgets.QMainWindow):
 
     def set_markers_differences(self):
         if self.marker_1['dropped'] and self.marker_2['dropped']:
-            dx = np.abs(self.marker_1['x'].value() - self.marker_2['x'].value())
+            dx = np.abs(self.marker_1['x'].value() -
+                        self.marker_2['x'].value())
             y_m1 = float(self.marker_1['y'].text())
             y_m2 = float(self.marker_2['y'].text())
             dy = np.abs(y_m1 - y_m2)
@@ -916,7 +953,8 @@ class PlotTool(QtWidgets.QMainWindow):
             clr = 'k'
             self.annotations[name]['color'] = clr
 
-        self.annotations[name]['text_item'] = pg.TextItem(text=text, anchor=(0, 1), color=clr)
+        self.annotations[name]['text_item'] = \
+            pg.TextItem(text=text, anchor=(0, 1), color=clr)
         self.annotations[name]['text_item'].setFont(text_font)
         self.annotations[name]['text_item'].setPos(x, y)
         self.plot_panel.addItem(self.annotations[name]['text_item'])
@@ -970,7 +1008,8 @@ class PlotTool(QtWidgets.QMainWindow):
             widget.blockSignals(False)
 
     @staticmethod
-    def set_qspinbox(box, box_range=[-1., 1.], value=1., decimals=3, step=0.1, max_w=80):
+    def set_qspinbox(box, box_range=[-1., 1.], value=1., decimals=3,
+                     step=0.1, max_w=80):
         box.setRange(box_range[0], box_range[1])
         box.setValue(value)
         box.setMaximumWidth(max_w)
@@ -983,7 +1022,8 @@ class PlotTool(QtWidgets.QMainWindow):
         save_selector_box.setIcon(QMessageBox.Question)
         save_selector_box.setWindowTitle('Save')
         save_selector_box.setText('Save an image or session?')
-        save_selector_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.No | QMessageBox.Yes)
+        save_selector_box.setStandardButtons(QMessageBox.Cancel |
+                                             QMessageBox.No | QMessageBox.Yes)
         no_button = save_selector_box.button(QMessageBox.No)
         no_button.setText('Session')
         yes_button = save_selector_box.button(QMessageBox.Yes)
@@ -1016,9 +1056,11 @@ class PlotTool(QtWidgets.QMainWindow):
             data_items_to_save[key] = {}
             for keyy in self.data_items[key].keys():
                 if keyy == 'data_item':
-                    data_items_to_save[key][keyy] = self.data_items[key][keyy].getData()
+                    data_items_to_save[key][keyy] = \
+                        self.data_items[key][keyy].getData()
                 else:
-                    data_items_to_save[key][keyy] = self.data_items[key][keyy]
+                    data_items_to_save[key][keyy] = \
+                        self.data_items[key][keyy]
         return data_items_to_save
 
     def set_data_items_from_save(self, saved):
@@ -1038,7 +1080,8 @@ class PlotTool(QtWidgets.QMainWindow):
         plot_design_to_save = {}
         for key in self.plot_panel_design.keys():
             if key == 'ticks_fsize':
-                plot_design_to_save[key] = self.plot_panel_design[key].pointSize()
+                plot_design_to_save[key] = \
+                    self.plot_panel_design[key].pointSize()
             else:
                 plot_design_to_save[key] = self.plot_panel_design[key]
         return plot_design_to_save
@@ -1060,7 +1103,8 @@ class PlotTool(QtWidgets.QMainWindow):
                 if keyy == 'text_item':
                     pass
                 else:
-                    annotations_to_save[key][keyy] = self.annotations[key][keyy]
+                    annotations_to_save[key][keyy] = \
+                        self.annotations[key][keyy]
         return annotations_to_save
 
     def set_annotations_from_save(self, saved):
@@ -1074,14 +1118,17 @@ class PlotTool(QtWidgets.QMainWindow):
                 else:
                     self.annotations[key][keyy] = saved[key][keyy]
                 clr = saved[key]['color']
-                self.annotations[key]['text_item'] = pg.TextItem(text=saved[key]['text'], anchor=(1, 0), color=clr)
+                self.annotations[key]['text_item'] = \
+                    pg.TextItem(text=saved[key]['text'],
+                                anchor=(1, 0), color=clr)
         return self.annotations
 
     def load(self):
         warning_box = QMessageBox()
         warning_box.setIcon(QMessageBox.Information)
         warning_box.setWindowTitle('Load')
-        warning_box.setText('Current progress will be lost.  Sure to continue?')
+        warning_box.setText('Current progress will be lost.  '
+                            'Sure to continue?')
         warning_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
         choice = warning_box.exec_()
         if choice == QMessageBox.Ok:
@@ -1123,12 +1170,13 @@ class PlotTool(QtWidgets.QMainWindow):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         full_path, types = QFileDialog.getSaveFileName(
-            self, 'Save Image', filter='Images (*.png *.jpg *.jpeg *.bmp)', options=options)
+            self, 'Save Image', filter='Images (*.png *.jpg *.jpeg *.bmp)',
+            options=options)
         to_save = pg.exporters.ImageExporter(self.plot_panel.plotItem)
 
         to_save.export(full_path)
 
-    def closeEvent(self, event) :
+    def closeEvent(self, event):
         """ closeEvent is triggered on `Alt-F4` or mouse-click closing a 
         window. 
         """
@@ -1141,4 +1189,3 @@ class CustomDataItem(pg.PlotDataItem):
         super(CustomDataItem, self).__init__(*args, **kwargs)
 
         self.created = datetime.datetime.now()
-

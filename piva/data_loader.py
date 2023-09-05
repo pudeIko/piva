@@ -74,11 +74,9 @@ import zipfile
 from copy import deepcopy
 from argparse import Namespace
 from errno import ENOENT
-from warnings import catch_warnings, simplefilter  # , warn
-from PyQt5.QtWidgets import QMessageBox, QDialog, QLabel, QComboBox, \
-    QTableWidget, QTableWidgetItem, QDialogButtonBox, QGridLayout, QApplication
-from PyQt5 import QtCore, QtGui
-# from PyQt5.QtCore import QStri
+from warnings import catch_warnings, simplefilter
+from PyQt5.QtWidgets import QDialog, QLabel, QComboBox, QDialogButtonBox, \
+    QGridLayout
 from datetime import datetime
 
 import h5py
@@ -139,7 +137,6 @@ class DataSet:
             data_provenance=self.dp
         )
 
-    # @staticmethod
     def add_org_file_entry(self, fname, dl):
 
         file_entry = {}
@@ -586,7 +583,6 @@ class DataloaderSIS(Dataloader):
             # Split at 'equals' sign
             tokens = line.decode('utf-8').split('=')
             for key, name, dtype in keys:
-                # print(tokens[0])
                 if tokens[0] == key:
                     # Split off whitespace or garbage at the end
                     value = tokens[1].split()[0]
@@ -667,7 +663,6 @@ class DataloaderADRESS(Dataloader):
 
         # The scales can be extracted from the matrix' attributes
         scalings = matrix.attrs['IGORWaveScaling']
-        # units = matrix.attrs['IGORWaveUnits']
         info = matrix.attrs['IGORWaveNote']
 
         # Convert `units` and `info`, which is a bytestring of ASCII
@@ -848,11 +843,9 @@ class DataloaderBloch(Dataloader):
             # Get the created filename from the viewer
             with z.open('viewer.ini') as viewer:
                 file_id = self.read_viewer(viewer)
-            # print('eloelo')
             # Get most metadata from a metadata file
             with z.open('Spectrum_' + file_id + '.ini') as metadata_file:
                 M = self.read_metadata(keys1, metadata_file)
-            # print('eloeloelo')
             # Get additional metadata from a second metadata file...
             with z.open(file_id + '.ini') as metadata_file2:
                 M2 = self.read_metadata(keys2, metadata_file2)
@@ -875,7 +868,6 @@ class DataloaderBloch(Dataloader):
                 else:
                     pass
             # Extract the binary data from the zipfile
-            # print('eloelo eloelo')
             if metadata:
                 data_flat = np.zeros((int(M.n_y) * int(M.n_x) * int(M.n_energy)))
             else:
@@ -930,7 +922,6 @@ class DataloaderBloch(Dataloader):
             # Split at 'equals' sign
             tokens = line.decode('utf-8').split('=')
             for key, name, dtype in keys:
-                # print(tokens[0])
                 if tokens[0] == key:
                     # Split off whitespace or garbage at the end
                     value = tokens[1].split()[0]
@@ -1187,72 +1178,7 @@ class DataloaderI05(Dataloader):
 
 
 class DataloaderMERLIN(Dataloader):
-    """
-    Object that allows loading and saving of ARPES data from the MAESTRO
-    beamline at ALS, Berkely, in the newer .h5 format
-    Organization of the ALS h5 file (June, 2018)::
 
-        /-0D_Data
-        | |
-        | +-Cryostat_A
-        | +-Cryostat_B
-        | +-Cryostat_C
-        | +-Cryostat_D
-        | +-I0_NEXAFS
-        | +-IG_NEXAFS
-        | +-X                       <--- only present for xy scans (probably)
-        | +-Y                       <--- "
-        | +-Sorensen Program        <--- only present for dosing scans
-        | +-time
-        |
-        +-1D_Data
-        | |
-        | +-Swept_SpectraN          <--- Not always present
-        |
-        +-2D_Data
-        | |
-        | +-Swept_SpectraN          <--- Usual location of data. There can be
-        |                                several 'Swept_SpectraN', each with an
-        |                                increasing value of N. The relevant data
-        |                                seems to be in the highest numbered
-        |                                Swept_Spectra.
-        |
-        +-Comments
-        | |
-        | +-PreScan
-        |
-        +-Headers
-          |
-          +-Beamline
-          | |
-          | +-[...]
-          | +-EPU_POL               <--- Polarization (Integer encoded)
-          | +-BL_E                  <--- Beamline energy (hv)
-          | +-[...]
-          |
-          +-Computer
-          +-DAQ_Swept
-          | |
-          | +-[...]
-          | +-SSPE_0                <--- Pass energy (eV)
-          | +-[...]
-          | |
-          +-FileFormat
-          +-Low_Level_Scan
-          +-Main
-          +-Motors_Logical
-          +-Motors_Logical_Offset
-          +-Motors_Physical
-          +-Motors_Sample           <--- Contains sample coordinates (xyz & angles)
-          | |
-          | +-[...]
-          | +-SMOTOR3               <--- Theta
-          | +-SMOTOR5               <--- Phi
-          | +-[...]
-          |
-          +-Motors_Sample_Offset
-          +-Notebook
-    """
     name = 'Merlin'
 
     def load_data(self, filename, metadata=False):
@@ -1299,7 +1225,6 @@ class DataloaderMERLIN(Dataloader):
             return
         # Extract the actual dataset and some metadata
         h5_data = self.datfile[type + '/Spectrum']
-        # print()
         detector = self.datfile[type + '/Detector'].attrs
         sample = self.datfile[type + '/Sample'].attrs
         source = self.datfile[type + '/Source'].attrs
@@ -1307,7 +1232,6 @@ class DataloaderMERLIN(Dataloader):
         if type == '2Ddata':
             data = np.zeros((1, h5_data.shape[0], h5_data.shape[1]))
             data[0, :, :] = h5_data
-            # data = np.swapaxes(data, 1, 2)
             xscale = np.array([1])
             yscale = start_step_n(float(h5_data.attrs['AxisScaling'][1, 1]),
                                   float(h5_data.attrs['AxisScaling'][1, 0]),
@@ -1348,11 +1272,6 @@ class DataloaderMERLIN(Dataloader):
         else:
             return
 
-        # print('data = {}'.format(data.shape))
-        # print('xscale = {}'.format(xscale.size))
-        # print('yscale = {}'.format(yscale.size))
-        # print('zscale = {}'.format(zscale.size))
-
         # Extract some metadata
         x_pos = float(sample['Sample X'])
         y_pos = float(sample['Sample Y'])
@@ -1379,7 +1298,6 @@ class DataloaderMERLIN(Dataloader):
             xscale=xscale,
             yscale=yscale,
             zscale=zscale,
-            # ekin=ekin,
             x=x_pos,
             y=y_pos,
             z=z_pos,
@@ -1418,8 +1336,6 @@ class DataloaderMERLIN(Dataloader):
         starts = header['sfB']
 
         # Construct the x and y scales from start, stop and n
-        # x = 1
-        # xlims = [1, 1]
         xscale = start_step_n(starts[2], steps[2], nDim[2])
         yscale = start_step_n(starts[1], steps[1], nDim[1])
         zscale = start_step_n(starts[0], steps[0], nDim[0])
@@ -1429,33 +1345,12 @@ class DataloaderMERLIN(Dataloader):
         data = np.flip(data, axis=1)
         yscale = np.sort(yscale)
 
-        # Convert `note`, which is a bytestring of ASCII characters that
-        # contains some metadata, to a list of strings
-        # note = wave['note']
-        # meta = note.decode('ASCII').split('\r')
-        # keys1 = [('Excitation Energy', 'hv', float),
-        #          ('Acquisition Mode', 'acq_mode', str),
-        #          ('Pass Energy', 'PE', int),
-        #          ('Lens Mode', 'lens_mode', str),
-        #          ('Step Time', 'DT', int),
-        #          ('Number of Sweeps', 'n_sweeps', int),
-        #          ('ThetaY', 'tilt', float)]
-        # meta_namespace = vars(self.read_pxt_ibw_metadata(keys1, meta))
-
         res = Namespace(
                 data=data,
                 xscale=xscale,
                 yscale=yscale,
                 zscale=zscale)
 
-        # for key in meta_namespace.keys():
-        #     if not (key[0] == '_'):
-        #         res.__setattr__(key, meta_namespace[key])
-
-        # print(res.data.shape)
-        # print(res.xscale[0], res.xscale[-1], res.xscale.shape)
-        # print(res.yscale[0], res.yscale[-1], res.yscale.shape)
-        # print(res.zscale[0], res.zscale[-1], res.zscale.shape)
         return res
 
     # kwarg "metadata" necessary to match arguments of all other data loaders
@@ -1580,11 +1475,9 @@ class DataloaderURANOS(Dataloader):
             # Get the created filename from the viewer
             with z.open('viewer.ini') as viewer:
                 file_id = self.read_viewer(viewer)
-            # print('eloelo')
             # Get most metadata from a metadata file
             with z.open('Spectrum_' + file_id + '.ini') as metadata_file:
                 M = self.read_metadata(keys1, metadata_file)
-            # print('eloeloelo')
             # Get additional metadata from a second metadata file...
             with z.open(file_id + '.ini') as metadata_file2:
                 M2 = self.read_metadata(keys2, metadata_file2)
@@ -1607,7 +1500,6 @@ class DataloaderURANOS(Dataloader):
                 else:
                     pass
             # Extract the binary data from the zipfile
-            # print('eloelo eloelo')
             if metadata:
                 data_flat = np.zeros((int(M.n_y) * int(M.n_x) * int(M.n_energy)))
             else:
@@ -1662,7 +1554,6 @@ class DataloaderURANOS(Dataloader):
             # Split at 'equals' sign
             tokens = line.decode('utf-8').split('=')
             for key, name, dtype in keys:
-                # print(tokens[0])
                 if tokens[0] == key:
                     # Split off whitespace or garbage at the end
                     value = tokens[1].split()[0]
@@ -1915,13 +1806,8 @@ class DataloaderCASSIOPEE(Dataloader):
             temp=float(md.temp),
             pressure=float(md.pressure),
             polarization=md.polarization,
-            # PE=M2.PE,
-            # exit_slit=exit_slit,
-            # FE=FE,
             scan_type=scan_type,
             scan_dim=[scan_start, scan_stop, scan_step]
-            # lens_mode=M2.lens_mode,
-            # acq_mode=M2.acq_mode
         )
         return res
 
@@ -1989,7 +1875,6 @@ class DataloaderCASSIOPEE(Dataloader):
 
     def load_from_txt(self, filename):
         i, energy, angles = self.get_metadata(filename)
-        # self.print_m('Loading from txt')
         data0 = np.loadtxt(filename, skiprows=i+1).T
         # The first column in the datafile contains the angles
         data = np.array([data0[1:, :]])
@@ -2026,8 +1911,6 @@ class DataloaderCASSIOPEE(Dataloader):
                     angles = line.split('=')[-1].split()
                     angles = np.array(angles, dtype=float)
                 elif line.startswith('Excitation Energy'):
-                    # NOTE this hv does not reflect the actually used hv
-                    # hv = float(line.split('=')[-1])
                     pass
                 elif line.startswith('inputA') or line.startswith('[Data'):
                     # this seems to be the last line before the data
@@ -2191,411 +2074,6 @@ class DataloaderCASSIOPEE(Dataloader):
         return res
 
 
-######################################
-######### Not updated yet ############
-######################################
-
-
-class DataloaderALSMaestro(Dataloader):
-    """
-    Object that allows loading and saving of ARPES data from the MAESTRO
-    beamline at ALS, Berkely, in the newer .h5 format
-    Organization of the ALS h5 file (June, 2018)::
-
-        /-0D_Data
-        | |
-        | +-Cryostat_A
-        | +-Cryostat_B
-        | +-Cryostat_C
-        | +-Cryostat_D
-        | +-I0_NEXAFS
-        | +-IG_NEXAFS
-        | +-X                       <--- only present for xy scans (probably)
-        | +-Y                       <--- "
-        | +-Sorensen Program        <--- only present for dosing scans
-        | +-time
-        |
-        +-1D_Data
-        | |
-        | +-Swept_SpectraN          <--- Not always present
-        |
-        +-2D_Data
-        | |
-        | +-Swept_SpectraN          <--- Usual location of data. There can be
-        |                                several 'Swept_SpectraN', each with an
-        |                                increasing value of N. The relevant data
-        |                                seems to be in the highest numbered
-        |                                Swept_Spectra.
-        |
-        +-Comments
-        | |
-        | +-PreScan
-        |
-        +-Headers
-          |
-          +-Beamline
-          | |
-          | +-[...]
-          | +-EPU_POL               <--- Polarization (Integer encoded)
-          | +-BL_E                  <--- Beamline energy (hv)
-          | +-[...]
-          |
-          +-Computer
-          +-DAQ_Swept
-          | |
-          | +-[...]
-          | +-SSPE_0                <--- Pass energy (eV)
-          | +-[...]
-          | |
-          +-FileFormat
-          +-Low_Level_Scan
-          +-Main
-          +-Motors_Logical
-          +-Motors_Logical_Offset
-          +-Motors_Physical
-          +-Motors_Sample           <--- Contains sample coordinates (xyz & angles)
-          | |
-          | +-[...]
-          | +-SMOTOR3               <--- Theta
-          | +-SMOTOR5               <--- Phi
-          | +-[...]
-          |
-          +-Motors_Sample_Offset
-          +-Notebook
-    """
-    name = 'ALS'
-
-    def get(self, group, field_name):
-        """
-        Return the value of property *field_name* from h5File group *group*.
-        *field_name* must be a bytestring (e.g. ``b'some_string'``)!
-        This also returns a bytes object, remember to cast it correctly.
-        Returns *None* if *field_name* was not found in *group*.
-        """
-        for entry in group[()]:
-            if entry[1].strip() == field_name:
-                return entry[2]
-
-    def load_data(self, filename):
-        h5file = h5py.File(filename, 'r')
-        # The relevant data seems to be the highest numbered "Swept_SpectraN"
-        # entry in "2D_Data". Find the highest N:
-        Ns = [int(spectrum[-1]) for spectrum in list(h5file['2D_Data'])]
-        i = np.argmax(Ns)
-        path = '2D_Data/Swept_Spectra{}'.format(Ns[i])
-
-        # Convert the data to a numpy array
-        self.print_m('Converting data to numpy array (this may take a '
-                     'while)...')
-        data = np.array(h5file[path])
-
-        # Get hv
-        hv = self.get(h5file['Headers/Beamline/'], b'BL_E')
-        hv = float(hv)
-
-        # Build x-, y- and zscales
-        # TO DO Detect cuts (i.e. factual 2D Datasets)
-        nz, ny, nx = data.shape
-        # xscale is the outer loop (if present)
-        x_group = h5file['Headers/Low_Level_Scan']
-        x_start = self.get(x_group, b'ST_0_0')
-        x_end = self.get(x_group, b'EN_0_0')
-        if x_start is not None:
-            xscale = np.linspace(float(x_start), float(x_end), nx)
-        else:
-            xscale = np.arange(nx)
-        # y- and zscale are the axis of one spectrum (i.e. pixels and energies)
-        attributes = h5file[path].attrs
-        y_start, z_start = attributes['scaleOffset']
-        y_step, z_step = attributes['scaleDelta']
-        yscale = start_step_n(y_start, y_step, ny)
-        zscale = start_step_n(z_start, z_step, nz)
-#        zscale, yscale, xscale = [np.arange(s) for s in shape]
-
-        # TO DO pixel to angle conversion
-        yscale *= 0.193/2
-
-        # Get theta and phi
-        theta = float(self.get(h5file['Headers/Motors_Sample'], b'SMOTOR3'))
-        phi = float(self.get(h5file['Headers/Motors_Sample'], b'SMOTOR5'))
-
-        res = Namespace(data=data,
-                        xscale=xscale,
-                        yscale=yscale,
-                        zscale=zscale,
-                        angles=yscale,
-                        theta=theta,
-                        phi=phi,
-                        E_b=0,
-                        hv=hv)
-        return res
-
-
-class DataloaderALSFits(Dataloader):
-    """
-    Object that allows loading and saving of ARPES data from the MAESTRO
-    beamline at ALS, Berkely, which is in .fits format.
-    """
-    name = 'ALS .fits'
-    # A factor required to reach a reasonable result for the k space
-    # coordinates
-    k_stretch = 1.05
-
-    # Scanmode aliases
-    CUT = 'null'
-    MAP = 'Slit Defl'
-    HV = 'mono_eV'
-    DOPING = 'Sorensen Program'
-
-    def __init__(self, work_func=4):
-        # Assign a value for the work function
-        self.work_func = work_func
-
-        self.bintable = None
-
-    def load_data(self, filename):
-        # Open the file
-        hdulist = pyfits.open(filename)
-
-        # Access the BinTableHDU
-        self.bintable = hdulist[1]
-
-        # Try to fix FITS standard violations
-        self.bintable.verify('fix')
-
-        # Get the header to extract metadata from
-        header = hdulist[0].header
-
-        # Find out what scan mode we're dealing with
-        scanmode = header['NM_0_0']
-        self.print_m('Scanmode: ', scanmode)
-
-        # Find out whether we are in fixed or swept (dithered) mode which has
-        # an influence on how the data is stored in the fits file.
-        swept = True if ('SSSW0' in header) else False
-
-        # Case normal cut
-        if scanmode == self.CUT:
-            data = self.load_cut()
-        # Case FSM
-        elif scanmode == self.MAP:
-            data = self.load_map(swept)
-        # Case hv scan
-        elif scanmode == self.HV:
-            data = self.load_hv_scan()
-        # Case doping scan
-        elif scanmode == self.DOPING:
-            # data = self.load_doping_scan()
-            data = self.load_hv_scan()
-        else:
-            raise(IndexError('Couldn\'t determine scan type'))
-
-        nz, ny, nx = data.shape
-
-        # Determine whether the file uses the SS or SF prefix for metadata
-        if 'SSX0_0' in header:
-            pre = 'SS'
-        elif 'SFX0_0' in header:
-            pre = 'SF'
-        else:
-            raise(IndexError('Neither SSX0_0 nor SFX0_0 appear in header.'))
-
-        # Starting pixel (energy scale)
-        e0 = header[pre+'X0_0']
-        # Ending pixel (energy scale)
-        e1 = header[pre+'X1_0']
-        # Pixels per eV
-        ppeV = header[pre+'PEV_0']
-        # Zero pixel (=Fermi level?)
-        fermi_level = header[pre+'KE0_0']
-
-        # Create the energy (y) scale
-        energy_binning = 2
-        energies_in_px = np.arange(e0, e1, energy_binning)
-        energies = (energies_in_px - fermi_level)/ppeV
-
-        # Starting and ending pixels (angle or ky scale)
-        # DEPRECATED
-        # y0 = header[pre+'Y0_0']
-        # y1 = header[pre+'Y1_0']
-
-        # Use this arbitrary seeming conversion factor (found in Denys'
-        # script) to get from pixels to angles
-        # deg_per_px = 0.193 / 2
-        deg_per_px = 0.193 * self.k_stretch
-        # angle_binning = 3
-        angle_binning = 2
-
-        # angles_in_px = np.arange(y0, y1, angle_binning)
-        # n_y = int((y1-y0)/angle_binning)
-        # angles_in_px = np.arange(0, n_y, 1)
-        angles_in_px = np.arange(0, ny, 1)
-        # NOTE
-        # Actually, I would think that we have to multiply by
-        # `angle_binning` to get the right result. That leads to
-        # unreasonable results, however, and division just gives a
-        # perfect looking output. Maybe the factor 0.193/2 from ALS has
-        # changed with the introduction of binning?
-        # angles = angles_in_px * deg_per_px / angle_binning
-        angles = angles_in_px * deg_per_px / angle_binning
-
-        # Case cut
-        if scanmode == self.CUT:
-            # NOTE x and y scale may need to be swapped
-            yscale = energies
-            xscale = angles
-            zscale = None
-        # Case map
-        elif scanmode == self.MAP:
-            x0 = header['ST_0_0']
-            x1 = header['EN_0_0']
-            # n_x = header['N_0_0']
-            # xscale = np.linspace(x0, x1, n_x) * self.k_stretch
-            xscale = np.linspace(x0, x1, nx)  # * self.k_stretch
-            yscale = angles
-            zscale = energies
-        # Case hv scan
-        elif scanmode == self.HV:
-            z0 = header['ST_0_0']
-            z1 = header['EN_0_0']
-            # nz = header['N_0_0']
-            angles_in_px = np.arange(0, nx, 1)
-            angles = angles_in_px * deg_per_px / angle_binning
-            xscale = angles
-            yscale = energies
-            zscale = np.linspace(z0, z1, nz)
-        # Case doping
-        elif scanmode == self.DOPING:
-            z0 = header['ST_0_0']
-            z1 = header['EN_0_0']
-            # Not sure how the sqrt2 comes in
-            angles_in_px = np.arange(0, nx, 1) * np.sqrt(2)
-            angles = angles_in_px * deg_per_px / angle_binning
-            xscale = angles
-            # For some reason the energy determination from file fails here...
-            yscale = np.arange(ny, dtype=float)
-            zscale = np.linspace(z0, z1, nz)
-
-        # For the binding energy, just take a min value as its variations
-        # are small compared to the photon energy
-        E_b = energies.min()
-
-        # Extract some additional metadata (mostly for angles->k conversion)
-        # TO DO Special cases for different scan types
-        # Get relevant metadata from header
-        theta = header['LMOTOR3']
-        # beta in LMOTOR4
-        phi = header['LMOTOR5']
-
-        # The photon energy may vary in the case that this is a hv_scan
-        hv = header['MONO_E']
-
-        # In recent ALS data the above determined x, y and z scales did not
-        # match the actual shape of the data...
-#        self.print_m(*data.shape)
-#        self.print_m(nx, ny, nz)
-        scales = [zscale, yscale, xscale]
-        for i, scale in enumerate(scales):
-            try:
-                length = len(scale)
-            except Exception:
-                self.print_m('length problem')
-                continue
-#            self.print_m(length)
-            n = data.shape[i]
-            if length != n:
-                self.print_m(('Shape mismatch in dim {}: {} != {}. Setting ' +
-                              'scale to arange.').format(i, length, n))
-                scales[i] = np.arange(n)
-        zscale, yscale, xscale = scales
-
-        # NOTE angles==xscale and E_b can be extracted from yscale, thus it
-        # is not really necessary to pass them on here.
-        res = Namespace(
-               data=data,
-               xscale=xscale,
-               yscale=yscale,
-               zscale=zscale,
-               angles=angles,
-               theta=theta,
-               phi=phi,
-               E_b=E_b,
-               hv=hv
-        )
-        return res
-
-    def load_cut(self):
-        """ Read data from a 'cut', which is just one slice of energy vs k. """
-        # Access the actual data which is in the last element of the last
-        # element of the bin table...
-        fields = self.bintable.data[-1]
-        data = fields[-1]
-
-        # Reshape towards GUI expectations
-        x, y = data.shape
-        data = data.reshape(1, x, y)
-
-        return data
-
-    def load_map(self, swept):
-        """
-        Read data from a 'map', i.e. several energy vs k slices and bring
-        them in the right shape for the gui, which is
-        (energy, k_parallel, k_perpendicular)
-        """
-        bt_data = self.bintable.data
-        n_slices = len(bt_data)
-
-        first_slice = bt_data[0][-1]
-        # The shape of the returned array must be (energy, kx, ky)
-        # (n_slices corresponds to ky)
-        if swept:
-            n_energy, n_kx = first_slice.shape
-            data = np.zeros([n_energy, n_kx, n_slices])
-            for i in range(n_slices):
-                this_slice = bt_data[i][-1]
-                data[:, :, i] = this_slice
-        else:
-            n_kx, n_energy = first_slice.shape
-            data = np.zeros([n_energy, n_kx, n_slices])
-            for i in range(n_slices):
-                this_slice = bt_data[i][-1]
-                # Reshape the slice to (energy, kx)
-                this_slice = this_slice.transpose()
-                data[:, :, i] = this_slice
-
-        # Convert to numpy array
-        data = np.array(data)
-
-        return data
-
-    def load_hv_scan(self):
-        """
-        Read data from a hv scan, i.e. a series of energy vs k cuts
-        (shape (n_kx, n_energy), each belonging to a different photon energy
-        hv. The returned shape in this case must be
-        (photon_energies, energy, k)
-        The same is used for doping scans, where the output shape is
-        (doping, energy, k)
-        """
-        bt_data = self.bintable.data
-        n_hv = len(bt_data)
-        # = header['N_0_0']
-
-        first_cut = bt_data[0][-1]
-        n_kx, n_energy = first_cut.shape  # should all be accessible from header
-
-        data = np.zeros([n_hv, n_kx, n_energy])
-        for i in range(n_hv):
-            this_slice = bt_data[i][-1]
-            data[i, :, :] = this_slice
-
-        # Convert to numpy array
-        data = np.array(data)
-
-        return data
-
-
 # +-------+ #
 # | Tools | # =================================================================
 # +-------+ #
@@ -2612,27 +2090,6 @@ class PXT_Dialog(QDialog):
         opts = [str(x + 1) for x in np.arange(n_cuts)]
         combo.addItems(opts)
 
-        # self.tableWidget = QTableWidget(2, 3)
-        # self.tableWidget.setHorizontalHeaderLabels(
-        #     QString("Nuke Script;File Modification Time;User").split(";"))
-
-        # header = self.tableWidget.horizontalHeader()
-        # header.ResizeMode(0, QHeaderView.ResizeToContents)
-        # header.ResizeMode(1, QHeaderView.Stretch)
-        # header.ResizeMode(2, QHeaderView.Stretch)
-        # header.ResizeMode()
-
-        # stringlist = {
-        #     u"1": u"a",
-        #     u"2": u"b",
-        # }
-
-        # for row, (key, value) in enumerate(stringlist.iteritems()):
-        #     nameitem = QTableWidgetItem(str(key))
-        #     codeitem = QTableWidgetItem(str(value))
-        #     self.tableWidget.setItem(row, 0, nameitem)
-        #     self.tableWidget.setItem(row, 1, codeitem)
-
         box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
                                centerButtons=True)
         box.accepted.connect(self.accept)
@@ -2643,7 +2100,6 @@ class PXT_Dialog(QDialog):
         lay = QGridLayout(self)
         lay.addWidget(label, 0, 0, 1, 2)
         lay.addWidget(self.selection_box, 1, 0, 1, 2)
-        # lay.addWidget(self.tableWidget, 1, 0, 1, 2)
         lay.addWidget(self.buttons_box, 2, 0, 1, 2)
         self.resize(240, 140)
 
@@ -2656,9 +2112,7 @@ all_dls = [
     DataloaderADRESS,
     DataloaderI05,
     DataloaderCASSIOPEE,
-    DataloaderALSMaestro,
-    DataloaderMERLIN,
-    DataloaderALSFits]
+    DataloaderMERLIN]
 
 
 # Function to try all dataloaders in all_dls
@@ -2779,49 +2233,3 @@ def add_attributes(filename, *attributes):
     update_namespace(data, *attributes)
 
     dump(data, filename, force=True)
-
-
-# def load_pickle(filename):
-#     """ Shorthand for loading python objects stored in pickle files.
-#
-#     **Parameters**
-#
-#     ========  =================================================================
-#     filename  str; name of file to load.
-#     ========  =================================================================
-#     """
-#     with open(filename, 'rb') as f:
-#         return pickle.load(f)
-
-
-# def reshape_pickled(fname):
-#
-#     scan = load_pickle(fname)
-#     print(fname)
-#     print(f'org data shape: {scan.data.shape}')
-#     print(f'org xscale shape:{scan.xscale.size}')
-#     print(f'org yscale shape:{scan.yscale.size}')
-#     print(f'org zscale shape:{scan.zscale.size}')
-#     if np.any((scan.data.shape[0] == 1, scan.data.shape[1] == 1,
-#                scan.data.shape[2] == 1)):
-#         tmp = deepcopy(scan)
-#         scan.xscale = tmp.zscale
-#         scan.yscale = tmp.xscale
-#         scan.zscale = tmp.yscale
-#         scan.data = np.ones((1, tmp.xscale.size, tmp.yscale.size))
-#         scan.data[0, :, :] = np.rollaxis(tmp.data[0, :, :], 1)
-#         print(f'new data shape: {scan.data.shape}')
-#         print(f'new xscale shape:{scan.xscale.size}')
-#         print(f'new yscale shape:{scan.yscale.size}')
-#         print(f'new zscale shape:{scan.zscale.size}')
-#         dump(scan, (fname + '_rs'))
-#     else:
-#         tmp = deepcopy(scan)
-#         scan.data = tmp.data.T
-#         dump(scan, (fname + '_rs'))
-
-# export MY_APP_PLUGINS_DIR=/path/to/plugins
-# Windows (Command Prompt):
-# batch
-# Copy code
-# set MY_APP_PLUGINS_DIR=C:\path\to\plugins

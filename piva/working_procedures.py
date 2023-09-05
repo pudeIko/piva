@@ -1,26 +1,21 @@
-import math
-from itertools import groupby
-
-# from scipy import optimize as opt
-import matplotlib as mpl
 import numpy as np
 from numba import njit, prange
-# from numba_progress import ProgressBar
 import pandas as pd
 import scipy.signal as sig
 from matplotlib import pyplot as plt
-from matplotlib import colors, patches, interactive
+from matplotlib import colors, patches
 from numpy.linalg import norm   # for shriley bckgrd
 from scipy.special import voigt_profile
 from scipy import ndimage
-from scipy.optimize import curve_fit, minimize, fsolve
+from scipy.optimize import curve_fit, minimize
 from scipy.signal import convolve2d
-from scipy.optimize import OptimizeWarning
-from scipy.fft import fft, ifft, fft2, ifft2, fftshift, ifftshift
-# from mp_api.client import MPRester
+from scipy.fft import fft, ifft, ifftshift
 
 import piva.data_loader as dl
 import piva.my_constants as const
+
+from itertools import groupby
+
 
 # +-------------------------------------+ #
 # | Data fitting functions and routines | # ===================================
@@ -28,56 +23,12 @@ import piva.my_constants as const
 
 
 def gaussian(x, a=1, mu=0, sigma=1):
-    """
-    Implement a Gaussian bell curve f(x) given by the expression::
 
-                                         2
-                          1    / (x-mu) \
-        f(x) = a * exp( - - * ( -------  ) )
-                          2    \ sigma  /
-
-    **Parameters**
-
-    =====  ====================================================================
-    x      array; variable at which to evaluate f(x)
-    a      float; amplitude (maximum value of curve)
-    mu     float; mean of curve (location of maximum)
-    sigma  float; standard deviation (`width` of the curve)
-    =====  ====================================================================
-
-    **Returns**
-
-    ===  ======================================================================
-    res  array containing the value of the Gaussian at every point of input x
-    ===  ======================================================================
-    """
     return a * np.exp(-0.5 * (x - mu) ** 2 / sigma ** 2)
 
 
 def two_gaussians(x, a0=1, mu0=0, sigma0=1, a1=1, mu1=0, sigma1=1):
-    """
-    Implement a Gaussian bell curve f(x) given by the expression::
 
-                                         2
-                          1    / (x-mu) \
-        f(x) = a * exp( - - * ( -------  ) )
-                          2    \ sigma  /
-
-    **Parameters**
-
-    =====  ====================================================================
-    x      array; variable at which to evaluate f(x)
-    a      float; amplitude (maximum value of curve)
-    mu     float; mean of curve (location of maximum)
-    sigma  float; standard deviation (`width` of the curve)
-    =====  ====================================================================
-
-    **Returns**
-
-    ===  ======================================================================
-    res  array containing the value of the Gaussian at every point of input x
-    ===  ======================================================================
-    """
     return gaussian(x, a0, mu0, sigma0) + gaussian(x, a1, mu1, sigma1)
 
 
@@ -130,13 +81,6 @@ def three_lorentzians(x, a0, mu0, gamma0, a1, mu1, gamma1, a2, mu2, gamma2,
     return ndimage.gaussian_filter(y, resol)
 
 
-def four_lorentzians(x, a, mu, gamma):
-    return lorentzian(x, a[0], mu[0], gamma[0]) + \
-           lorentzian(x, a[1], mu[1], gamma[1]) + \
-           lorentzian(x, a[2], mu[2], gamma[2]) + \
-           lorentzian(x, a[3], mu[3], gamma[3])
-
-
 def voigt(x, a, mu, gamma, sigma):
     """
         Return the Voigt line shape at x with Lorentzian component FWHM gamma
@@ -144,8 +88,6 @@ def voigt(x, a, mu, gamma, sigma):
 
     """
 
-    # return a * np.real(wofz((x - mu + 1j * gamma) / sigma / np.sqrt(2))) / sigma / np.sqrt(2 * np.pi)
-    # args = x - mu
     return a * voigt_profile(x - mu, sigma, gamma)
 
 
@@ -178,7 +120,6 @@ def fit_n_dublets(data, x, a0, mu, gamma, delta, constr=None, fit_delta=False,
     errs = []
     pi = []
     for i in range(len(mu)):
-        # pi.append([a0[i], mu[i], gamma[i], a1[i]])
         pi.append(a0[i])
         pi.append(mu[i])
         pi.append(gamma[i])
@@ -339,333 +280,13 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
         return yr + B
 
 
-def fit_bgr(bgr_poly_order, xdata, ydata, fit_range, peak_range):
-    """ Function for fitting a curve with polynomial background of given order.
-
-        **Parameters**
-        ============================================================================
-        bgr_poly_order      int; order of polynomial to fit background
-        xdata               1D array;
-        ydata               1D array;
-        fit_range           2D vector; range for fitting background, in units of
-                            'xdata'/'ydata' array indexes
-        peak_range          2D vector; range for fitting peak, in units of
-                            'xdata'/'ydata' array indexes
-        ============================================================================
-
-        **Returns**
-        ============================================================================
-        [fit_x, bgr_fit, bgr_peak, coefs_bgr]
-
-        fit_x           1D array; range of 'xdata' determined by 'fit_range'
-        bgr_fit         1D array; profile of fitted background within 'fit_range'
-        bgr_peak        1D array; profile of fitted background within 'peak_range'
-        coefs_bgr       1D array; coefficients in fitted polynomial
-        ============================================================================
-        """
-
-    peak_x = xdata[peak_range[0]:peak_range[1]]
-    fit_x = xdata[fit_range[0]:fit_range[1]]
-    bgr_x = np.concatenate((xdata[fit_range[0]:peak_range[0]], xdata[peak_range[1]:fit_range[1]]), axis=0)
-    bgr_y = np.concatenate((ydata[fit_range[0]:peak_range[0]], ydata[peak_range[1]:fit_range[1]]), axis=0)
-    coefs_bgr = np.polyfit(bgr_x, bgr_y, bgr_poly_order)
-    bgr_fit = np.poly1d(coefs_bgr)(fit_x)
-    bgr_peak = np.poly1d(coefs_bgr)(peak_x)
-    return [fit_x, bgr_fit, bgr_peak, coefs_bgr]
-
-
-def fit_multiple_with_bgr(fun, bgr_poly_order, data, k_axis, erg_axis,
-                          data_range, k_limits, peak_limits, step=None,
-                          n=5, smoothing=None,  plotting=False, y_offset=5,
-                          x_offset=0, p0=None):
-    """
-        Function for fitting stack of MDCs within a given cut, with polynomial
-        background of given order. For description check also 'fit_multiple' and
-        'lorentzian_with_poly_bgr'
-    :param fun:                 callable; function to fit peak
-    :param bgr_poly_order:      int; order of background polynomial
-    :param data:                np.array; 2D data array
-    :param k_axis:              np.array; 1D angle/momentum axis
-    :param erg_axis:            np.array; 1D energy axis
-    :param data_range:          np.array; 2-element array of data range to fit, in units of array indices
-    :param k_limits:            list; [x_coords, y_coords] of two points to fit linear limit of peaks along energy
-    :param peak_limits:         list; [x_coords, y_coords] of two points to fit linear limit of peaks along energy
-    :param step:                int; defines step in energy between fitted MDCs, default=None
-    :param n:                   int; defines number of MDCs to fit between 'data_range'; default=5
-    :param smoothing:           boolean; smoothing
-    :param plotting:            boolean; plot MDCs with fitted curves; default=False
-    :param y_offset:            float; Only for plotting. space in energy between plotted MDCs; default=5
-    :param x_offset:            float; Only for plotting. Offset in momentum between plotted MDCs; default=0
-    :param p0:                  list; initial parameters for fit
-    :return:
-    """
-    # stuff for storing results
-    pars = []
-    pcovs = []
-    errs = []
-    cuts = []
-    fitted_profiles = []
-    bgrs = []
-    # taking inputs into more pleasent format
-    data_range = [min(data_range), max(data_range)]
-
-    # get fit range as a region between two linear bounds
-    k_llim = get_linear(k_limits[0])
-    k_ulim = get_linear(k_limits[1])
-    peak_llim = get_linear(peak_limits[0])
-    peak_ulim = get_linear(peak_limits[1])
-
-    # cuts_to_fit = dl.start_step_n()
-    if step is None:
-        step = int(math.floor((data_range[1] - data_range[0]) / n))
-    cuts_to_fit = np.arange(data_range[0], data_range[1], step)  # idxs of fitted MDCs in 'data'
-    # print(cuts_to_fit)
-
-    # do multiple fitting
-    for idx in cuts_to_fit:
-        ki = int(k_llim(idx))
-        kf = int(k_ulim(idx))
-        pi = int(peak_llim(idx))
-        pf = int(peak_ulim(idx))
-        cut = data[idx, ki:kf]
-        if smoothing is not None:
-            cut = smooth(cut, smoothing[0], smoothing[1])
-        bgr_x = np.concatenate((k_axis[ki:pi], k_axis[pf:kf]), axis=0)
-        bgr_y = np.concatenate((data[idx, ki:pi], data[idx, pf:kf]), axis=0)
-        coefs_bgr = np.polyfit(bgr_x, bgr_y, bgr_poly_order)
-        bgr = np.poly1d(coefs_bgr)(k_axis[ki:kf])
-        if len(pars) == 0:
-            if p0 is None:
-                popt, pcov = curve_fit(fun, k_axis[ki:kf], cut - bgr)
-            else:
-                popt, pcov = curve_fit(fun, k_axis[ki:kf], cut - bgr, p0=p0)
-        else:
-            popt, pcov = curve_fit(fun, k_axis[ki:kf], cut - bgr, p0=pars[-1])
-
-        # calculate errors and append fit results
-        pars.append(popt)
-        pcovs.append(pcov)
-        errs.append(np.sqrt(np.diag(pcov)))
-        # if plotting, save cuts
-        if plotting:
-            if smoothing is not None:
-                cuts.append(smooth(data[idx, :], smoothing[0], smoothing[1]))
-            else:
-                cuts.append(data[idx, :])
-            if len(pars[0]) == 3:
-                fitted_profiles.append(fun(k_axis[ki:kf], popt[0], popt[1], popt[2]))
-            elif len(pars[0]) == 4:
-                fitted_profiles.append(fun(k_axis[ki:kf], popt[0], popt[1], popt[2], popt[3]))
-            bgrs.append(bgr)
-
-    if plotting:
-        plt.figure("stack of mdcs", figsize=[15, 10])
-        for i in range(len(cuts_to_fit)):
-            idx = cuts_to_fit[i]
-            ki = int(k_llim(idx))
-            kf = int(k_ulim(idx))
-            lbl = 'E = {:.3f} meV ({})'.format(erg_axis[cuts_to_fit[i]] * 1000, cuts_to_fit[i])
-            plt.plot(k_axis + i * x_offset, cuts[i] + i * y_offset, label=lbl)
-            plt.plot(k_axis[ki:kf] + i * x_offset, (fitted_profiles[i] + bgrs[i]) + i * y_offset)
-            plt.plot(k_axis[ki:kf] + i * x_offset, bgrs[i] + i * y_offset)
-            plt.legend()
-
-    # create panda dataframe with results
-    energies = []
-    indices = []
-    k_0s = []
-    dk_0s = []
-    gammas = []
-    dgammas = []
-    if len(pars[0]) == 3:
-        for i in range(len(cuts_to_fit)):
-            indices.append(cuts_to_fit[i])
-            energies.append(erg_axis[cuts_to_fit[i]] * 1000)
-            k_0s.append(pars[i][1])
-            dk_0s.append(errs[i][1])
-            gammas.append(pars[i][2])
-            dgammas.append(errs[i][2])
-        d = {'energy index': indices,
-             'energy, meV': energies,
-             'k_0, deg/A^-1': k_0s,
-             'dk_0, deg/A^-1': dk_0s,
-             'Gamma, deg/A^-1': gammas,
-             'dGamma, deg/A^-1': dgammas
-             }
-    elif len(pars[0]) == 4:
-        sigmas = []
-        dsigmas = []
-        for i in range(len(cuts_to_fit)):
-            indices.append(cuts_to_fit[i])
-            energies.append(erg_axis[cuts_to_fit[i]] * 1000)
-            k_0s.append(pars[i][1])
-            dk_0s.append(errs[i][1])
-            gammas.append(pars[i][2])
-            dgammas.append(errs[i][2])
-            sigmas.append(pars[i][3])
-            dsigmas.append(errs[i][3])
-        d = {'energy index': indices,
-             'energy, meV': energies,
-             'k_0, deg/A^-1': k_0s,
-             'dk_0, deg/A^-1': dk_0s,
-             'Gamma, deg/A^-1': gammas,
-             'dGamma, deg/A^-1': dgammas,
-             'Sigma, deg/A^-1': sigmas,
-             'dSigma, deg/A^-1': dsigmas
-             }
-    df = pd.DataFrame(data=d)
-
-    return [cuts_to_fit, pars, errs, pcovs, df]
-
-
-def fit_multiple(fun, data, xdata, data_range, upper_limits, lower_limits,
-                 step=100, n=5, plotting=False, y_offset=500, x_offset=0):
-    """ Function for fitting stack of MDCs within a given cut. With additional option for plotting.
-
-        **Parameters**
-        ============================================================================
-        fun             function used for plotting. At this point works only for
-                        3-parameter functions
-        data            2D array; cut from which MDCs will be taken
-        xdata           1D array; angle/momentum scale
-        data_range      2D vector; range of 'data' (energy) to be fitted;
-                        in units of array idx
-        xdata_range     2D vector; range of 'xdata' (momentum) to be fitted;
-                        in units of array idx
-        step            int; defines step in energy between fitted MDCs, default=None
-        n               int; defines number of MDCs to fit between 'data_range',
-                        default=5
-        plotting        boolean; plot MDCs with fitted curves; default=False
-        y_offset        float; Only for plotting. space in energy between plotted MDCs;
-                        default=5
-        x_offset        float; Only for plotting. Offset in momentum between
-                        plotted MDCs; default=0
-        ============================================================================
-
-        **Returns**
-        ============================================================================
-        [cuts_to_fit, pars, errs, pcovs]    2D array (4xn), n being
-                                                number of fitted MDCs, where:
-        cuts_to_fit     1D array (len=n); fitted MDC (along whole angle range)
-        pars            1D array (len=n); parameters of fitted curves
-        errs            1D array (len=n): errors of pars
-        pcovs           1D array (len=n): estimated covariance of pars
-
-        ============================================================================
-        """
-    # stuff for storing results
-    pars = []
-    pcovs = []
-    errs = []
-    if plotting:
-        cuts = []
-        fitted_profiles = []
-    # taking inputs into more pleasent fromat
-    data_range = [min(data_range), max(data_range)]
-    # xi = xdata_range[0]
-    # xf = xdata_range[1]
-
-    # get fit range as a region between two linear bounds
-    llim = get_linear(lower_limits)
-    ulim = get_linear((upper_limits))
-
-    if step is None:
-        step = (data_range[1] - data_range[0]) // n
-    cuts_to_fit = np.arange(data_range[0], data_range[1], step)
-    # print(cuts_to_fit)
-    # print(len(pars))
-
-    # do multiple fitting
-    for idx in cuts_to_fit:
-        xi = int(llim(idx))
-        xf = int(ulim(idx))
-        cut = data[idx, xi:xf]
-        if len(pars) == 0:
-            popt, pcov = curve_fit(fun, xdata[xi:xf], cut)
-        else:
-            popt, pcov = curve_fit(fun, xdata[xi:xf], cut, p0=pars[-1])
-
-        # calculate errors and append fit results
-        pars.append(popt)
-        pcovs.append(pcov)
-        errs.append(np.sqrt(np.diag(pcov)))
-        # if plotting, save cuts
-        if plotting:
-            cuts.append(data[idx, :])
-            fitted_profiles.append(fun(xdata[xi:xf], popt[0], popt[1], popt[2]))
-
-    if plotting:
-        plt.figure("stack of mdcs", figsize=[10, 7])
-        for i in range(len(cuts_to_fit)):
-            idx = cuts_to_fit[i]
-            xi = int(llim(idx))
-            xf = int(ulim(idx))
-            lbl = f"mdc at {cuts_to_fit[i]}"
-            plt.plot(xdata + i * x_offset, cuts[i] + i * y_offset, label=lbl)
-            plt.plot(xdata[xi:xf] + i * x_offset, fitted_profiles[i] + i * y_offset)
-            plt.legend()
-
-    return [cuts_to_fit, pars, errs, pcovs]
-
-
-def lorentzian_with_poly_bgr(peak_fun, bgr_poly_order, xdata, ydata, fit_range,
-                             peak_range):
-    """ Function for fitting a curve with polynomial background of given order.
-
-        **Parameters**
-        ============================================================================
-        peak_fun            function for peak fitting. NOTE: right now only
-                            3-parameter functions
-        bgr_poly_order      int; order of polynomial to fit background
-        xdata               1D array;
-        ydata               1D array;
-        fit_range           2D vector; range for fitting background, in units of
-                            'xdata'/'ydata' array indexes
-        peak_range          2D vector; range for fitting peak, in units of
-                            'xdata'/'ydata' array indexes
-        ============================================================================
-
-        **Returns**
-        ============================================================================
-        [fit+bgr, np.poly1d(coefs_bgr)(fit_x), popt_peak, pcov_peak, coefs_bgr]
-
-        fit+bgr                         1D array; profile of fitted peak with added background
-        np.poly1d(coefs_bgr)(fit_x)     1D array; profile of fitted background
-        popt_peak                       1D array; parameters of fitted curve
-        err_peak                        1D array; errors of popt_peak
-        pcov_peak                       1D array; estimated covariance of popt_peak
-        coefs_bgr                       1D array; coefficients in fitted polynomial
-        ============================================================================
-        """
-
-    peak_x = xdata[peak_range[0]:peak_range[1]]
-    peak_y = ydata[peak_range[0]:peak_range[1]]
-    fit_x = xdata[fit_range[0]:fit_range[1]]
-    bgr_x = np.concatenate((xdata[fit_range[0]:peak_range[0]], xdata[peak_range[1]:fit_range[1]]), axis=0)
-    bgr_y = np.concatenate((ydata[fit_range[0]:peak_range[0]], ydata[peak_range[1]:fit_range[1]]), axis=0)
-    coefs_bgr = np.polyfit(bgr_x, bgr_y, bgr_poly_order)
-    bgr = np.poly1d(coefs_bgr)(peak_x)
-    popt_peak, pcov_peak = curve_fit(peak_fun, peak_x, peak_y - bgr)
-    err_peak = np.sqrt(np.diag(pcov_peak))
-    fit = peak_fun(fit_x, popt_peak[0], popt_peak[1], popt_peak[2])
-    bgr = np.poly1d(coefs_bgr)(fit_x)
-    return [fit + bgr, bgr, popt_peak, err_peak, pcov_peak, coefs_bgr]
-
-
 def get_linear(points):
     x = points[0]
     y = points[1]
 
     pars = np.polyfit(x, y, 1)
-
     fun = lambda arg: pars[0] * arg + pars[1]
-
     return fun
-
-
-def exp(x, a, k):
-    return a * np.exp(k * x)
-
 
 
 def print_fit_results(p, cov, labels=None):
@@ -708,7 +329,7 @@ def subtract_bg_shirley(data, dim=0, profile=False, normindex=0):
 
     **Parameters**
 
-    =======  ===================================================================
+    =======  ==================================================================
     data     np.array; input data with shape (m x n) or (1 x m x n) containing
              an E(k) cut
     dim      int; either 0 or 1. Determines whether the input is aranged as
@@ -716,16 +337,16 @@ def subtract_bg_shirley(data, dim=0, profile=False, normindex=0):
              dim=1)
     profile  boolean; if True, a list of the background values for each MDC
              is returned additionally.
-    =======  ===================================================================
+    =======  ==================================================================
 
     **Returns**
 
-    =======  ===================================================================
+    =======  ==================================================================
     data     np.array; has the same dimensions as the input array.
     profile  1D-array; only returned as a tuple with data (`data, profile`)
              if argument `profile` was set to True. Contains the
              background profile, i.e. the background value for each MDC.
-    =======  ===================================================================
+    =======  ==================================================================
     """
     # Prevent original data from being overwritten by retaining a copy
     data = data.copy()
@@ -765,107 +386,10 @@ def subtract_bg_shirley(data, dim=0, profile=False, normindex=0):
         return data
 
 
-def fit_TB_model(TB_fun, t, erg, kx, ky, coords_transf=None, model='li2018'):
-
-    if coords_transf is not None:
-        kx, ky = coords_transf(kx, ky)
-    kdata = np.vstack((kx, ky))
-
-    # wrapper around model
-    def fit_fun(k, *t):
-        return TB_fun(k, *t, model=model)
-
-    popt, pcov = curve_fit(fit_fun, kdata, erg, p0=t)
-    return popt
-
-
-def TB_FS(TB_fun, k0, *t, model='li2018'):
-
-    # kdata = np.vstack((kx, ky))
-
-    def fun(kx, ky, *t):
-        return TB_fun(kx, ky, *t, model=model)
-
-    res = fsolve(fun, k0, args=t)
-
-    return res
-
-
 def shift_k_coordinates(kx, ky, qx=0, qy=0):
     kxx = kx + np.ones_like(kx) * qx
     kyy = ky + np.ones_like(ky) * qy
     return kxx, kyy
-
-
-def fit_mdc(k_ax, mdc, fit_range, p0, bgr_fit):
-
-    range0 = indexof(fit_range[0], k_ax)
-    range1 = indexof(fit_range[1], k_ax)
-    k_fit = k_ax[range0:range1]
-    try:
-        mdc_fit = mdc[range0:range1] - bgr_fit
-    except AttributeError:
-        mdc_fit = mdc[range0:range1]
-        bgr_fit = np.zeros_like(mdc_fit)
-    except TypeError:
-        mdc_fit = mdc[range0:range1]
-        bgr_fit = np.zeros_like(mdc_fit)
-    except ValueError:
-        return
-
-    a, mu, gamma, alpha, resol = p0
-    if alpha == 1:
-        fit_alpha = False
-    else:
-        fit_alpha = True
-    if resol == 0:
-        fit_resol = False
-    else:
-        fit_resol = True
-    fit_fun, p0 = set_fit_fun(p0, fit_alpha, fit_resol)
-
-    try:
-        p, cov = curve_fit(fit_fun, k_fit, mdc_fit, p0=p0)
-    except RuntimeWarning:
-        return None
-    except OptimizeWarning:
-        return None
-
-    # prepare_fitting_results(fit_alpha, fit_beta)
-    res_func = lambda x: fit_fun(x, *p)
-    fit = res_func(k_fit) + bgr_fit
-    return fit, p
-
-
-def fit_mdc_bgr(k_ax, mdc, fit_range, bgr_range, poly_order):
-    bgr0, bgr1 = fit_range[0], bgr_range[0]
-    bgr2, bgr3 = bgr_range[1], fit_range[1]
-    bgr0, bgr1 = indexof(bgr0, k_ax), indexof(bgr1, k_ax)
-    bgr2, bgr3 = indexof(bgr2, k_ax), indexof(bgr3, k_ax)
-
-    bgr_k = np.hstack((k_ax[bgr0:bgr1], k_ax[bgr2:bgr3]))
-    bgr_mdc = np.hstack((mdc[bgr0:bgr1], mdc[bgr2:bgr3]))
-    coefs_bgr = np.polyfit(bgr_k, bgr_mdc, poly_order)
-
-    fit_k = k_ax[bgr0:bgr3]
-    return np.poly1d(coefs_bgr)(fit_k), fit_k
-
-
-def set_fit_fun(p00, fit_alpha, fit_resol):
-    p0 = [p00[0], p00[1], p00[2]]
-    if fit_alpha and fit_resol:
-        fit_fun = lambda x, a0, mu, gamma, alpha, resol: asym_lorentzian(x, a0, mu, gamma, alpha=alpha, resol=resol)
-        p0.append(p00[3])
-        p0.append(p00[4])
-    elif fit_alpha and not fit_resol:
-        fit_fun = lambda x, a0, mu, gamma, alpha: asym_lorentzian(x, a0, mu, gamma, alpha=alpha)
-        p0.append(p00[3])
-    elif not fit_alpha and fit_resol:
-        fit_fun = lambda x, a0, mu, gamma, resol: asym_lorentzian(x, a0, mu, gamma, resol=resol)
-        p0.append(p00[4])
-    else:
-        fit_fun = lambda x, a0, mu, gamma: asym_lorentzian(x, a0, mu, gamma)
-    return fit_fun, p0
 
 
 def kk_im2re(gamma, vF=1):
@@ -914,22 +438,6 @@ def McMillan_Tc(omega_D=1, lam=1, mu=1):
 
 
 def step_function_core(x, step_x=0, flip=False):
-    """ Implement a perfect step function f(x) with step at `step_x`::
-
-                / 0   if x < step_x
-                |
-        f(x) = {  0.5 if x = step_x
-                |
-                \ 1   if x > step_x
-
-    **Parameters**
-
-    ======  ====================================================================
-    x       array; x domain of function
-    step_x  float; position of the step
-    flip    boolean; Flip the > and < signs in the definition
-    ======  ====================================================================
-    """
     sign = -1 if flip else 1
     if sign * x < sign * step_x:
         result = 0
@@ -953,21 +461,12 @@ def step_ufunc(x, step_x=0, flip=False):
     """ np.ufunc wrapper for :func:`step_core
     <arpys.postprocessing.step_core>`. Confer corresponding documentation.
     """
-    res = \
-        np.frompyfunc(lambda x: step_core(x, step_x, flip), 1, 1)(x)
+    res = np.frompyfunc(lambda x: step_core(x, step_x, flip), 1, 1)(x)
     return res.astype(float)
 
 
 def step_core(x, step_x=0, flip=False):
-    """ Implement a step function f(x) with step at `step_x`::
 
-                / 0 if x < step_x
-        f(x) = {
-                \ 1 if x >= step_x
-
-    :See also:
-        :func:`step_function_core <arpys.postprocessing.step_function_core>`.
-    """
     sign = -1 if flip else 1
     if sign * x < sign * step_x:
         result = 0
@@ -1048,8 +547,6 @@ def fit_fermi_dirac(energies, edc, e_0, T=5, sigma0=10, a0=0, b0=-0.1, a1=0,
               Fermi-Dirac distribution at energy E.
     ========  =================================================================
     """
-    # Normalize the EDC to interval [0, 1]
-    # edc = normalize(edc)
 
     # Initial guess and bounds for parameters
     p0 = [e_0, sigma0, a0, b0, a1, b1]
@@ -1085,120 +582,6 @@ def fermi_dirac(E, mu=0, T=4.2):
     kT = const.k_B * T / const.eV
     res = 1 / (np.exp((E - mu) / kT) + 1)
     return res
-
-
-def fit_binned(data, energies, angles, nbinned=10, T=5, units=1000,
-               excluded=[], plot=False, fname=None):
-    """
-    Bin EDCs from 'binned' channels, fit FD to each bin and fit constant to obtained resolution
-    :param data:            np.array; intensities
-    :param energies:        np.array; energy values
-    :param angles:          np.array; angles along the detector
-    :param nbinned:         int; number of EDCs to put in single bin
-    :param T:               float; temperature for FD distribution (units: K)
-    :param units:           float; change the units of energy (resolution and its error); defaul: from eV to meV
-    :param excluded:        list; indices of bins to be excluded from fitting
-    :param plot:            bool; ploting option
-    :return:
-            resolutions:        list; fitted resolutions from each bin
-            ang:                list; angles along the detector indicating centers of each bin
-            fitted_resol:       float; constant (resolution) fitted to all binns (units: meV)
-            fitted_err:         float; error of 'fitted_resol' (units: meV)
-            resolutions_err:    list; errors of 'resolutions'
-            params              np.array; all fitted FD parameters from all bins
-    """
-    if len(data.shape) == 3:
-        data = data[0, :, :].T
-    # else:
-    #     data = data.T
-    edcs = []
-    ang = []
-    params = []
-    resolutions = []
-    resolutions_err = []
-    Efs = []
-
-    # bin EDCs
-    idx = 0
-    stop = 0
-    while (stop + nbinned) <= data.shape[1]:
-        start = idx * nbinned
-        stop = start + nbinned
-        mid = int(start + 0.5 * (stop - start))
-        edcs.append(normalize(np.sum(data[:, start:stop], axis=1)))
-        ang.append(angles[mid])
-        idx += 1
-
-    # to take into account last, not "full" bin
-    # start = idx * nbinned
-    # mid = int(start + 0.5 * (len(data) - start))
-    # edcs.append(normalize(np.sum(data[start:-1, :], axis=0)))
-    # ang.append(angles[mid])
-    # edcs = np.array(edcs)
-    # ang = np.array(ang)
-
-    # fit FD to each bin
-    angs_to_remove = []
-    for idx, edc in enumerate(edcs):
-        Ef = energies[detect_step(edc)]
-        if np.isnan(edc).any():
-            print('There is nan in bin {}'.format(idx))
-        elif idx in excluded:
-            angs_to_remove.append(ang[idx])
-        else:
-            p, rf, cov, resol, resol_err = fit_fermi_dirac(energies, edc, Ef, T=T)
-            params.append([p, rf, cov, resol, resol_err])
-            resolutions.append(resol * units)
-            resolutions_err.append(resol_err * units)
-            Efs.append(p[0])
-    ang = [ele for ele in ang if ele not in angs_to_remove]
-    # print(len(ang))
-
-    # fit final resolution to results from each bin
-    p, cov = fit_constant(ang, resolutions)
-    const_resol = p[0]
-    const_err = np.sqrt(cov[0][0])
-
-    # fit constant Ef to results from each bin
-    p, cov = fit_constant(ang, Efs)
-    const_Ef = p[0]
-    const_Ef_err = np.sqrt(cov[0][0])
-
-    # check
-
-    # plot
-    if plot:
-        plt.figure(figsize=[10, 7])
-        plt.plot(ang, resolutions)
-        plt.plot([ang[0], ang[-1]], [const_resol, const_resol], c='k')
-        txt_res = 'resolution = {:.4} meV'.format(const_resol)
-        txt_err = 'error = {:.2} meV'.format(const_err)
-        if fname is not None:
-            plt.text(0, const_resol - 0.1 * const_resol, fname, fontsize=15)
-        plt.text(0, const_resol - 0.2 * const_resol, txt_res, fontsize=15)
-        plt.text(0, const_resol - 0.3 * const_resol, txt_err, fontsize=15)
-        plt.xlabel('deg')
-        plt.ylabel('Resolution, meV')
-        plt.ylim([2, np.max(resolutions) + 0.5])
-
-    return [resolutions, ang, const_resol, const_err, resolutions_err, const_Ef, const_Ef_err, params, np.array(ang), \
-            edcs]
-
-
-def fit_constant(x, y):
-    """
-    wrapper for fitting linear with slope a=0
-    :param x:
-    :param y:
-    :return:
-    """
-
-    def fit_fun(x, b):
-        return 0 * x + b
-
-    p, cov = curve_fit(fit_fun, x, y)
-
-    return p, cov
 
 
 def PGM_calibration(hv, error_offset, dtheta, dbeta, cff=2.25, k=1,
@@ -1274,7 +657,6 @@ def deconvolve_resolution(data, energy, resolution, Ef=0):
     de = get_step(energy)
     res_mask = sig.gaussian(data.size, sigma / de)
     deconv = np.abs(ifftshift(ifft(fft(data) / fft(res_mask))))
-    # deconv, _ = sig.deconvolve(data, res_mask)
     # move first element at the end. stupid, but works
     tmp = deconv[0]
     deconv[:-1] = deconv[1:]
@@ -1286,16 +668,17 @@ def find_mid_old(xdata, ydata, xrange=None):
     """ Find middle point of EDC between given energy range
 
         **Parameters**
-        ============================================================================
+        =======================================================================
         xdata               1D array; energy scale
         ydata               1D array; intensities
-        xrange              2D vector; range between which to look for, in energy units
-        ============================================================================
+        xrange              2D vector; range between which to look for,
+                            in energy units
+        =======================================================================
 
         **Returns**
-        ============================================================================
+        =======================================================================
         [x_mid, y_mid]      2D vector; point's coordinates
-        ============================================================================
+        =======================================================================
         """
     if xrange is None:
         x0, x1 = indexof(-0.1, xdata), indexof(0.1, xdata)
@@ -1330,9 +713,6 @@ def symmetrize_edc(data, energies):
 
 def symmetrize_edc_around_Ef(data, energies):
     Ef_idx = indexof(0, energies)
-    # sym_edc = np.zeros((2 * Ef_idx))
-    # sym_energies = np.zeros_like(sym_edc)
-    # dE = np.abs(energies[0] - energies[1])
     sym_edc = np.hstack((data[:Ef_idx], np.flip(data[:Ef_idx])))
     sym_energies = np.hstack((energies[:Ef_idx], np.flip(-energies[:Ef_idx])))
 
@@ -1452,7 +832,6 @@ def smooth(x, n_box=5, recursion_level=1):
     y = np.array(n_append * left + list(x) + n_append * right)
 
     # Let numpy do the work
-    # smoothened = np.convolve(x, box, mode='same')
     smoothened = np.convolve(y, box, mode='valid')
 
     # Do it again (enter next recursion level) or return the result
@@ -1496,7 +875,6 @@ def smooth_2d(x, n_box=5, recursion_level=1):
     y[n_append:-n_append, n_append:-n_append] = x
 
     # Let numpy do the work
-    # smoothened = np.convolve(x, box, mode='same')
     smoothened = convolve2d(y, box, mode='valid')
 
     # Do it again (enter next recursion level) or return the result
@@ -1568,7 +946,8 @@ def average_over_range(data, center, n):
     Average 3D data set over 2n slices (predominantly FS) around center
     :param data:        np.array; 3D data set
     :param center:      int; index of the central slice
-    :param n:           int; number of slices taken for average (in one direction!)
+    :param n:           int; number of slices taken for average
+                        (in one direction!)
     :return:            np.array; averaged and normalized data
     """
     start = center - n
@@ -1598,14 +977,6 @@ def rotate(matrix, alpha, deg=True):
         return
 
 
-def trapezoid_integral(y, dx=1, c0=0):
-    y = np.array(y)
-    integ = c0
-    for idx in range(y.size - 1):
-        integ += (0.5 * (y[idx] + y[idx + 1]) * dx)
-    return integ
-
-
 def sum_edcs_around_k(data, kx, ky, ik=0):
     dkx = np.abs(data.xscale[0] - data.xscale[1])
     min_kx = indexof(kx - ik * dkx, data.xscale)
@@ -1613,8 +984,8 @@ def sum_edcs_around_k(data, kx, ky, ik=0):
     min_ky = indexof(ky - ik * dkx, data.yscale)
     max_ky = indexof(ky + ik * dkx, data.yscale)
 
-    edc = np.sum(np.sum(data.data[min_kx:max_kx, min_ky:max_ky, :], axis=0), axis=0)
-
+    edc = np.sum(np.sum(data.data[min_kx:max_kx, min_ky:max_ky, :], axis=0),
+                 axis=0)
     return edc
 
 
@@ -1728,7 +1099,8 @@ def gradient_fill(x, y, fill_color=None, ax=None, origin='upper',
         xmin, xmax, ymin, ymax = x.min(), x.max(), y.min(), y.max()
     else:
         xmin, xmax, ymin, ymax = x.min(), x.max(), ymin, y.max()
-    im = ax.imshow(z, aspect='auto', extent=[xmin, xmax, ymin, ymax], origin=origin, zorder=zorder)
+    im = ax.imshow(z, aspect='auto', extent=[xmin, xmax, ymin, ymax],
+                   origin=origin, zorder=zorder)
 
     if lower_curve is None and upper_curve is None:
         xy = np.column_stack([x, y])
@@ -1736,12 +1108,15 @@ def gradient_fill(x, y, fill_color=None, ax=None, origin='upper',
     elif lower_curve is not None and upper_curve is None:
         xy = np.column_stack([x, y])
         xy_lower = np.column_stack([np.flip(x), np.flip(lower_curve)])
-        xy = np.vstack([[xmin, ymin], xy, [xmax, ymin], xy_lower, [xmin, ymin]])
+        xy = np.vstack([[xmin, ymin], xy, [xmax, ymin],
+                        xy_lower, [xmin, ymin]])
     else:
         xy = np.column_stack([x, upper_curve])
         xy_lower = np.column_stack([np.flip(x), np.flip(lower_curve)])
-        xy = np.vstack([[xmin, ymin], xy, [xmax, ymin], xy_lower, [xmin, ymin]])
-    clip_path = patches.Polygon(xy, facecolor='none', edgecolor='none', closed=True)
+        xy = np.vstack([[xmin, ymin], xy, [xmax, ymin],
+                        xy_lower, [xmin, ymin]])
+    clip_path = patches.Polygon(xy, facecolor='none', edgecolor='none',
+                                closed=True)
     ax.add_patch(clip_path)
     im.set_clip_path(clip_path)
 
@@ -1759,8 +1134,10 @@ def scan_whole_FS_for_gaps(data1, data2, erg1, erg2, e_range=None,
     gaps = []
 
     # sanity check
-    if not (data1.shape[1] == data2.shape[1] and data1.shape[2] == data2.shape[2]):
-        print('Compared data sets have different dimensions: {} and {}'.format(data1.shape, data2.shape))
+    if not (data1.shape[1] == data2.shape[1] and
+            data1.shape[2] == data2.shape[2]):
+        print('Compared data sets have different dimensions: {} and {}'.format(
+            data1.shape, data2.shape))
         return
 
     if e_range is None:
@@ -1791,27 +1168,6 @@ def scan_whole_FS_for_gaps(data1, data2, erg1, erg2, e_range=None,
     print('{} points were found.'.format(len(points_x)))
 
     return [np.array(points_x), np.array(points_y), gaps]
-
-
-def get_cuts_from_mp_banstructure(band_structure, cuts=None):
-    print(band_structure.__dir__())
-    print(type(band_structure))
-    print(band_structure.labels_dict)
-    # print(bs_sc.kpoints)
-    # print(bs_sc.eigenvals)
-    # print(bs_sc.structure)
-    print(list(band_structure.projections.values())[0].shape)
-    # print(list(bs_sc))
-    print(list(band_structure.bands.values())[0].shape)
-    print(band_structure.nb_bands)
-    print(len(band_structure.distance))
-    print(band_structure.branches)
-    bands = list(band_structure.bands.values())[0]
-    k = np.array(band_structure.distance)
-    # print(bs_sc.get_band_gap())
-    # print(bs_sc.is_metget_direct_band_gapal)
-    # print(bs_sc.get_sym_eq_kpoints())
-    # print(bs_sc.get_kpoint_degeneracy())
 
 
 def get_conc_from_xps(I, elem, line, imfp=1):
@@ -1856,227 +1212,6 @@ def get_kz_coordinates(ky, kz, KY, KZ):
                 d = new_d
                 y, z = yi, zi
     return y, z
-
-
-# +-----------------------+ #
-# | Plotting functions    | # =================================================
-# +-----------------------+ #
-
-
-def set_mpl_rcparams(fontsize=9, color='b1b6d5', print_params=False):
-    mpl.rcParams['font.size'] = fontsize
-    mpl.rcParams['xtick.labelsize'] = fontsize
-    mpl.rcParams['ytick.labelsize'] = fontsize
-    # mpl.rcParams[]
-    # mpl.rcParams['ytick.color'] = color
-    # mpl.rcParams['xtick.color'] = color
-    # mpl.rcParams['axes.titlecolor'] = color
-    # mpl.rcParams['axes.labelcolor'] = color
-    mpl.rcParams['figure.autolayout'] = True
-    # mpl.rcParams["figure.facecolor"] = '333a47'
-    mpl.rcParams['pcolor.shading'] = 'auto'
-    if print_params:
-        print(mpl.rcParams.keys())
-
-
-def plot_n_bandmaps(data, momentum, energies, names, e_cutoff=None, gamma=1,
-                    fsize=12):
-
-    n = len(data)
-    if n < 4:
-        nrow = 1
-        ncol = n
-    elif 4 <= n < 9:
-        nrow = 2
-        ncol = n // 2 + n % 2
-    elif n == 9:
-        nrow = 3
-        ncol = 3
-    elif 9 <= n < 13:
-        nrow = 3
-        ncol = 4
-    elif 13 <= n < 16:
-        nrow = 3
-        ncol = 5
-    elif 16 <= n < 19:
-        nrow = 3
-        ncol = 6
-    else:
-        ans = input('Function works up to 18 files so far, and your input has {}. '
-                    'Plot first 18 or abort? (p/a)'.format(n))
-        if ans == 'p':
-            data = data[:13]
-            momentum = momentum[:13]
-            energies = energies[:13]
-            names = names[:13]
-            nrow = 3
-            ncol = 6
-        else:
-            return
-
-    # if qt:
-    #     % matplotlib qt
-    #     # mpl.rcParams['ytick.color'] = 'black'
-        # mpl.rcParams['xtick.color'] = 'black'
-
-    fig, axs = plt.subplots(nrow, ncol, figsize=[16, 15])
-    idx = 0
-    # names = ['Horizontal', 'Vertical']
-    for row in range(nrow):
-        for col in range(ncol):
-            if idx < n:
-                if e_cutoff is not None:
-                    e_idx = indexof(e_cutoff, energies[idx])
-                else:
-                    e_idx = 0
-                if nrow == 1:
-                    k, e = np.meshgrid(momentum[idx], energies[idx][e_idx:])
-                    axs[col].pcolormesh(k, e, data[idx][e_idx:, :].T, norm=colors.PowerNorm(gamma=gamma))
-                    # axs[col].set_title('{}: {}'.format(idx, names[idx]), fontsize=fsize)
-                    axs[col].set_title('{}'.format(names[idx]), fontsize=fsize)
-                    axs[col].set_ylabel('$E_b, eV$', fontsize=fsize)
-                    axs[col].set_xlabel('$k_x, \AA^{-1}$', fontsize=fsize)
-                    # axs[col].set_xlabel('deg', fontsize=fsize)
-                else:
-                    k, e = np.meshgrid(momentum[idx], energies[idx][e_idx:])
-                    axs[row, col].pcolormesh(k, e, data[idx][e_idx:, :].T, norm=colors.PowerNorm(gamma=gamma))
-                    # axs[row, col].set_title('{}: {}'.format(idx, names[idx]), fontsize=fsize)
-                    axs[row, col].set_title('{}'.format(names[idx]), fontsize=fsize)
-                    axs[row, col].set_ylabel('$E_b, eV$', fontsize=fsize)
-                    # axs[row, col].set_xlabel('$k_x, \AA^{-1}$',fontsize=fsize)
-                    axs[row, col].set_xlabel('deg', fontsize=fsize)
-                    # axs[row, col].text(-1, 0.05, 'T=11 K', fontsize=18, color='w')
-                idx += 1
-
-
-def plot_n_const_E_maps(data, kx, ky, energies, names, E=0, bin=3,
-                        e_cutoff=None, gamma=1, fsize=12, points=None):
-
-    n = len(data)
-    if n < 4:
-        nrow = 1
-        ncol = n
-    elif 4 <= n < 9:
-        nrow = 2
-        ncol = n // 2 + n % 2
-    elif n == 9:
-        nrow = 3
-        ncol = 3
-    elif 9 <= n < 13:
-        nrow = 3
-        ncol = 4
-    elif 13 <= n < 16:
-        nrow = 3
-        ncol = 5
-    elif 16 <= n < 19:
-        nrow = 3
-        ncol = 6
-    else:
-        ans = input('Function works up to 18 files so far, and your input has {}. '
-                    'Plot first 18 or abort? (p/a)'.format(n))
-        if ans == 'p':
-            data = data[:13]
-            kx = kx[:13]
-            ky = ky[:13]
-            names = names[:13]
-            nrow = 3
-            ncol = 6
-        else:
-            return
-
-    fig, axs = plt.subplots(nrow, ncol, figsize=[10, 7])
-    idx = 0
-
-    if points is not None:
-        tmpx = np.array([kx[0][xx] for xx in points[1]])
-        tmpy = np.array([ky[0][yy] for yy in points[0]])
-        x, y = [], []
-        for xx, yy in zip(tmpx, tmpy):
-            if np.sqrt(xx ** 2 + yy ** 2) < 10:
-                x.append(xx)
-                y.append(yy)
-    # names = ['T = 30 K', 'T = 40 K', 'T = 50 K']
-    for row in range(nrow):
-        for col in range(ncol):
-            if idx < n:
-                E_idx = indexof(E, energies[idx])
-                map = np.sum(data[idx][(E_idx - bin):(E_idx + bin), :, :], axis=0)
-                print(map.shape)
-                kxx, kyy = np.meshgrid(kx[idx], ky[idx])
-                if nrow == 1:
-                    axs[col].pcolormesh(kxx, kyy, map, norm=colors.PowerNorm(gamma=gamma))
-                    # axs[col].set_title('{}: {}'.format(idx, names[idx]), fontsize=fsize)
-                    axs[col].set_title('{}'.format(names[idx]), fontsize=fsize)
-                    if col == 0:
-                        axs[col].set_ylabel('$k_y, \AA^{-1}$', fontsize=fsize)
-                    axs[col].set_xlabel('$k_x, \AA^{-1}$', fontsize=fsize)
-                    axs[col].set_aspect('equal')
-                    if points is not None:
-                        x = np.array([kx[xx] for xx in points[0]])
-                        y = np.array([ky[yy] for yy in points[1]])
-                        axs[col].scatter(x, y, c='red', s=5)
-                else:
-                    axs[row, col].pcolormesh(kxx, kyy, map, norm=colors.PowerNorm(gamma=gamma))
-                    # axs[row, col].set_title('{}: {}'.format(idx, names[idx]), fontsize=fsize)
-                    axs[row, col].set_title('{}'.format(names[idx]), fontsize=fsize)
-                    axs[row, col].set_ylabel('$k_y, \AA^{-1}$', fontsize=fsize)
-                    axs[row, col].set_xlabel('$k_x, \AA^{-1}$',fontsize=fsize)
-                    axs[row, col].set_aspect('equal')
-                    # axs[row, col].text(-1, 0.05, 'T=11 K', fontsize=18, color='w')
-                    if not (points is None) and idx != 1:
-                        axs[row, col].scatter(x, y, c='white')
-                idx += 1
-
-
-def plot_kz_in_kspace(data, ang, hvs, work_func=4.5, E0=0, trans_kz=False,
-                      gamma=1, plot=False, **kwargs):
-    print('*** deprecated ***')
-    data, ang, hvs = np.array(data), np.array(ang), np.array(hvs)
-    kx_init = []
-    # for hv in hvs:
-    #     kx_init.append(a2k_single_axis(ang, hv, **kwargs))
-    kx_init = np.array(kx_init)
-
-    if trans_kz:
-        k0 = np.sqrt(2 * const.m_e * const.eV) * 1e-10 / const.hbar
-        V0 = E0 + work_func
-        kxx = kx_init
-        kzz = np.zeros_like(kxx)
-        print(kxx.shape)
-        for kz_i in range(kzz.shape[0]):
-            Ek = hvs[kz_i] + work_func
-            for kz_j in range(kzz.shape[1]):
-                theta = np.deg2rad(ang[kz_j])
-                k_ij = k0 * np.sqrt(Ek * (np.cos(theta) ** 2) + V0)
-                kzz[kz_i][kz_j] = k_ij
-        kz_map = data.T
-    else:
-        kx_max, kx_min = kx_init.max(), kx_init.min()
-        dkx_min = min(np.abs(kx_init[0][0] - kx_init[0][1]), np.abs(kx_init[-1][0] - kx_init[-1][1]))
-        kx = np.arange(kx_min, kx_max, dkx_min)
-
-        kz_map = np.zeros((kx.size, hvs.size))
-        print(kz_map.shape, data.shape, kx.shape)
-
-        for kzi in range(hvs.size):
-            for idx, kxi in enumerate(kx):
-                kxi_max, kxi_min = kx_init[kzi].max(), kx_init[kzi].min()
-                if kxi_min < kxi < kxi_max:
-                    data_idx = indexof(kxi, kx_init[kzi])
-                    kz_map[idx, kzi] = data[data_idx, kzi]
-        kxx, kzz = np.meshgrid(kx, hvs)
-        kz_map = kz_map.T
-
-    if plot:
-        fig, ax = plt.subplots(1, 1, figsize=[10, 7])
-        ax.pcolormesh(kxx, kzz, kz_map, norm=colors.PowerNorm(gamma=gamma), **kwargs)
-        ax.set_xlabel('$k_x, \AA^{-1}$', **kwargs)
-        if trans_kz:
-            ax.set_ylabel('$k_z, \AA^{-1}$', **kwargs)
-            ax.set_title('$k_z$ dependence along $\Gamma$-M, @E$_F$', **kwargs)
-        else:
-            ax.set_ylabel('$hv, eV$', **kwargs)
-            ax.set_title('photon energy dependence along $\Gamma$-M, @E$_F$', **kwargs)
 
 
 # +---------------------+ #
@@ -2199,8 +1334,6 @@ def curvature_1d(data, dx, a0=0.0005, nb=None, rl=None, xaxis=None):
         data = smooth(data, n_box=nb, recursion_level=rl)
     df = np.gradient(data, dx)
     d2f = np.gradient(df, dx)
-    # df = df
-    # d2f = d2f
 
     df_max = np.max(np.abs(df) ** 2)
     C_x = d2f / (np.sqrt(a0 + ((df / df_max) ** 2)) ** 3)
@@ -2237,122 +1370,6 @@ def curvature_2d(data, dx, dy, a0=100, nb=None, rl=None, eaxis=None):
         C_xy[ef:, :] = 0
 
     return np.abs(C_xy)
-
-
-def exclude_points(cut, points, r, xscale, yscale, intensity_cutoff=0):
-    kx = []
-    ky = []
-    tmp = np.zeros_like(cut)
-    for p in points:
-        for i in range(cut.shape[0]):
-            for j in range(cut.shape[1]):
-                if (np.sqrt((xscale[j] - xscale[p[0]])**2 + (yscale[i] - yscale[p[1]])**2) < r) and (cut[i][j] > intensity_cutoff):
-                    kx.append(xscale[j])
-                    ky.append(yscale[i])
-                    tmp[i][j] = cut[i][j]
-
-    return np.array(kx), np.array(ky), tmp
-
-
-def get_points(data, xscale, yscale, r, intensity_cutoff):
-    """
-    This function assumes center in (0, 0)
-    :param data:
-    :param xscale:
-    :param yscale:
-    :param r:
-    :param intensity_cutoff:
-    :return:
-    """
-    X = []
-    Y = []
-    for i in range(data.shape[0]):
-        for j in range(data.shape[1]):
-            if (np.sqrt(xscale[j]**2 + yscale[i]**2) < r) and (data[i][j] > intensity_cutoff):
-                X.append(xscale[j])
-                Y.append(yscale[i])
-    X = np.array(X)
-    Y = np.array(Y)
-    return X, Y
-
-
-def fit_ellipse(data, xscale, yscale, r, intensity_cutoff, printing=True):
-    """
-    Fit ellipse to the 2D data set.
-    The routine is based on: https://github.com/ndvanforeest/fit_ellipse.git
-    :param data:                np.array; 2D data set. For better performance make sure that each EDC is normalized;
-                                otherwise 'intensity_cutoff' won't make any difference.
-    :param xscale:              np.array; 1D array of x coordinates of whatever units
-    :param yscale:              np.array; 1D array of x coordinates of whatever units
-    :param r:                   float; cutoff radius of of data. Centre is assumed to be in zero in units specified in
-                                'xscale' and 'yscale'. Data above 'r' will be excluded
-    :param intensity_cutoff:    float; treat intensities below 'intensity_cutoff' as noise and exclude them from fit
-    :param printing:            bool; printing option
-    :return:
-            xx:                 np.array; 1D array of ellipse's x coordinates
-            yy:                 np.array; 1D array of ellipse's y coordinates
-    """
-    # prepare points for fit. Be careful, your destiny depends highly
-    # on your choices here
-    x, y = get_points(data, xscale, yscale, r, intensity_cutoff)
-
-    def __fit_ellipse(x, y):
-        x, y = x[:, np.newaxis], y[:, np.newaxis]
-        D = np.hstack((x * x, x * y, y * y, x, y, np.ones_like(x)))
-        S, C = np.dot(D.T, D), np.zeros([6, 6])
-        C[0, 2], C[2, 0], C[1, 1] = 2, 2, -1
-        U, s, V = np.linalg.svd(np.dot(np.linalg.inv(S), C))
-        a = U[:, 0]
-        return a
-
-    def ellipse_center(a):
-        b, c, d, f, g, a = a[1] / 2, a[2], a[3] / 2, a[4] / 2, a[5], a[0]
-        num = b * b - a * c
-        x0 = (c * d - b * f) / num
-        y0 = (a * f - b * d) / num
-        return np.array([x0, y0])
-
-    def ellipse_axis_length(a):
-        b, c, d, f, g, a = a[1] / 2, a[2], a[3] / 2, a[4] / 2, a[5], a[0]
-        up = 2 * (a * f * f + c * d * d + g * b * b - 2 * b * d * f - a * c * g)
-        down1 = (b * b - a * c) * (
-                (c - a) * np.sqrt(1 + 4 * b * b / ((a - c) * (a - c))) - (c + a)
-        )
-        down2 = (b * b - a * c) * (
-                (a - c) * np.sqrt(1 + 4 * b * b / ((a - c) * (a - c))) - (c + a)
-        )
-        res1 = np.sqrt(up / down1)
-        res2 = np.sqrt(up / down2)
-        return np.array([res1, res2])
-
-    def ellipse_angle_of_rotation(a):
-        b, c, d, f, g, a = a[1] / 2, a[2], a[3] / 2, a[4] / 2, a[5], a[0]
-        return math.atan2(2 * b, (a - c)) / 2
-
-    a = __fit_ellipse(x, y)
-    centre = ellipse_center(a)
-    phi = ellipse_angle_of_rotation(a)
-    M, m = ellipse_axis_length(a)
-    # assert that the major axix M > minor axis m
-    if m > M:
-        M, m = m, M
-    # ensure the angle is betwen 0 and 2*pi
-    phi -= 2 * np.pi * int(phi / (2 * np.pi))
-    # print some useful info
-    if printing:
-        # print('The ellipse is given by {:.3}x^2 + {:.3}xy + {:.3}y^2 + {:.3}x + '
-        #       '{:.3}y + {:.3} = 0'.format(a[0], a[1], a[2], a[3], a[4], a[5]))
-        print('major axis = {:.5} 1/A'.format(M))
-        print('minor axis = {:.5} 1/A'.format(m))
-        # print('centre = ({:.3}) ({:.3})'.format(centre[0], centre[1]))
-        print('Ellipse area = {:.5} A^-2'.format(np.pi * M * m))
-
-    # get data for plotting
-    R = np.arange(0, 2 * np.pi, 0.001)
-    xx = centre[0] + M * np.cos(R) * np.cos(phi) - m * np.sin(R) * np.sin(phi)
-    yy = centre[1] + M * np.cos(R) * np.sin(phi) + m * np.sin(R) * np.cos(phi)
-
-    return xx, yy
 
 
 def order_points(x0, y0):
@@ -2521,7 +1538,7 @@ def hv2kz(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi,
 
 
 @njit(parallel=True)
-def rescale_data(data, org_scale, new_scale):#, progress_proxy):
+def rescale_data(data, org_scale, new_scale):
     new_data = np.zeros((data.shape[0], new_scale.size, data.shape[2]))
     for zi in prange(data.shape[2]):
         for xi in range(data.shape[0]):
@@ -2532,7 +1549,6 @@ def rescale_data(data, org_scale, new_scale):#, progress_proxy):
                     new_data[xi, yi_idx, zi] = data[xi, y_org_idx, zi]
                 else:
                     continue
-        # progress_proxy.update(100)
     return new_data
 
 
@@ -2544,5 +1560,3 @@ def rescale_data(data, org_scale, new_scale):#, progress_proxy):
 def all_equal(iterable):
     g = groupby(iterable)
     return next(g, True) and not next(g, False)
-
-

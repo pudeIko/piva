@@ -1,13 +1,12 @@
 import os
-
 import numpy as np
-from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, \
-    QLineEdit, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox,\
+    QDoubleSpinBox, QSpinBox, QPushButton, QLineEdit, QMainWindow, QMessageBox
 from PyQt5.QtGui import QFont
 from PyQt5 import QtCore
-from pyqtgraph.Qt import QtGui, QtWidgets
-from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen, PColorMeshItem, mkBrush, FillBetweenItem, \
-    PlotDataItem, ScatterPlotItem
+from pyqtgraph.Qt import QtWidgets
+from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen, mkBrush, \
+    FillBetweenItem, PlotDataItem, ScatterPlotItem
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
 from scipy.optimize import curve_fit
 from scipy.optimize import OptimizeWarning
@@ -187,20 +186,17 @@ class MDCFitter(QMainWindow):
 
         self.fitting_range_lbl = QLabel('fit range:')
         self.fitting_range_lbl.setFont(bold_font)
-        # self.fitting_range_start = QSlider(QtCore.Qt.Orientation.Horizontal)
         self.fitting_range_start = QDoubleSpinBox()
         self.fitting_range_start.setRange(self.k_ax.min(), self.k_ax.max())
         self.fitting_range_start.setSingleStep(wp.get_step(self.k_ax))
         self.fitting_range_start.setDecimals(6)
-        # self.fitting_range_start.setValue(self.k_ax.min())
-        self.fitting_range_start.setValue(-0.84)
+        self.fitting_range_start.setValue(self.k_ax.min())
 
         self.fitting_range_stop = QDoubleSpinBox()
         self.fitting_range_stop.setRange(self.k_ax.min(), self.k_ax.max())
         self.fitting_range_stop.setSingleStep(wp.get_step(self.k_ax))
         self.fitting_range_stop.setDecimals(6)
-        # self.fitting_range_stop.setValue(self.k_ax.max())
-        self.fitting_range_stop.setValue(-0.3)
+        self.fitting_range_stop.setValue(self.k_ax.max())
 
         self.fitting_bgr_range_lbl = QLabel('bgr range:')
         self.fitting_bgr_range_lbl.setFont(bold_font)
@@ -208,16 +204,14 @@ class MDCFitter(QMainWindow):
         self.fitting_bgr_range_first.setRange(self.k_ax.min(), self.k_ax.max())
         self.fitting_bgr_range_first.setSingleStep(wp.get_step(self.k_ax))
         self.fitting_bgr_range_first.setDecimals(6)
-        # self.fitting_bgr_range_first.setValue(self.k_ax.min())
-        self.fitting_bgr_range_first.setValue(-0.66)
+        self.fitting_bgr_range_first.setValue(self.k_ax.min())
 
         self.fitting_bgr_range_second = QDoubleSpinBox()
         self.fitting_bgr_range_second.setRange(self.k_ax.min(),
                                                self.k_ax.max())
         self.fitting_bgr_range_second.setSingleStep(wp.get_step(self.k_ax))
         self.fitting_bgr_range_second.setDecimals(6)
-        # self.fitting_bgr_range_second.setValue(self.k_ax.max())
-        self.fitting_bgr_range_second.setValue(-0.4)
+        self.fitting_bgr_range_second.setValue(self.k_ax.max())
 
         self.fitting_bgr_poly_lbl = QLabel('bgr poly:')
         self.fitting_bgr_poly_lbl.setFont(bold_font)
@@ -267,9 +261,6 @@ class MDCFitter(QMainWindow):
         ftl.addWidget(self.fitting_result_edit,         row, 7)
         ftl.addWidget(self.fitting_result_update,       row, 8)
         ftl.addWidget(self.fitting_result_save,         row, 9)
-        #
-        # dummy_lbl = QLabel('')
-        # ftl.addWidget(dummy_lbl, 2, 0, 1, 8)
 
         self.fitting_tab.layout = ftl
         self.fitting_tab.setLayout(ftl)
@@ -458,8 +449,8 @@ class MDCFitter(QMainWindow):
         self.image_e_pos_value_lbl.setText('({:.4f})'.format(
             self.erg_ax[int(self.mdc_pos.get_value())]))
         self.image_e_pos.setValue(int(self.mdc_pos.get_value()))
-        # if it's an energy plot, and binning option is active,
-        # update also binning boundaries
+        # if it's an energy plot, and binning option is active, update also
+        # binning boundaries
         if self.image_bin.isChecked():
             pos = self.mdc_line.value()
             n = self.image_bin_n.value()
@@ -854,5 +845,3 @@ class MDCFitter(QMainWindow):
 
     def closeEvent(self, event) :
         del(self.data_viewer.data_viewers[self.thread_index])
-
-

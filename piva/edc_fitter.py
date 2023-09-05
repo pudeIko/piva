@@ -1,18 +1,13 @@
-
-import os
 import warnings
 
 import numpy as np
-from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox, QDoubleSpinBox, QSpinBox, QPushButton, \
-    QLineEdit, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox,\
+    QDoubleSpinBox, QSpinBox, QPushButton, QMainWindow, QMessageBox
 from PyQt5.QtGui import QFont
 from PyQt5 import QtCore
-from pyqtgraph.Qt import QtGui, QtWidgets
-from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen, PColorMeshItem, mkBrush, FillBetweenItem, \
-    PlotDataItem, ScatterPlotItem
+from pyqtgraph.Qt import QtWidgets
+from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen, PlotDataItem
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
-from scipy.optimize import curve_fit
-from scipy.optimize import OptimizeWarning
 
 from piva.imageplot import TracedVariable
 import piva.working_procedures as wp
@@ -356,8 +351,8 @@ class EDCFitter(QMainWindow):
         self.image_k_pos_value_lbl.setText('({:.4f})'.format(
             self.k_ax[int(self.edc_pos.get_value())]))
         self.image_k_pos.setValue(int(self.edc_pos.get_value()))
-        # if it's an energy plot, and binning option is active,
-        # update also binning boundaries
+        # if it's an energy plot, and binning option is active, update also
+        # binning boundaries
         if self.image_bin.isChecked():
             pos = self.edc_line.value()
             n = self.image_bin_n.value()
@@ -392,9 +387,6 @@ class EDCFitter(QMainWindow):
     def update_edc_slider(self):
         k = self.image_k_pos.value()
         self.edc_pos.set_value(k)
-        # self.mdc_line_cut.setValue(k)
-        # self.mdc_line_edc.setValue(self.erg_ax[e])
-        # self.set_binning_lines()
         self.image_k_pos_value_lbl.setText('({:.4f})'.format(self.k_ax[k]))
 
     def update_allowed_values(self, min, max):
@@ -403,7 +395,6 @@ class EDCFitter(QMainWindow):
         sets the allowed values to the available pixels.
         """
         self.edc_pos.set_allowed_values(np.arange(min, max + 1, 1))
-        # self.image_e_pos.setRange(min, max)
 
     def set_binning_lines(self):
         if self.image_bin.isChecked():
@@ -474,8 +465,8 @@ class EDCFitter(QMainWindow):
                 if kin_erg_box.exec() == QMessageBox.Ok:
                     self.symmetrize_box.setChecked(False)
             else:
-                self.edc, self.edc_erg_ax = wp.symmetrize_edc(self.edc,
-                                                              self.edc_erg_ax)
+                self.edc, self.edc_erg_ax = \
+                    wp.symmetrize_edc(self.edc, self.edc_erg_ax)
 
         edc_plot.plot(self.edc_erg_ax, self.edc, pen=mkPen('k', width=2))
 

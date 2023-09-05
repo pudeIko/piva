@@ -1,6 +1,5 @@
 import os
 import time
-import sys
 import importlib.util
 import inspect
 
@@ -24,8 +23,7 @@ all_dls = {
     'ALS - MERLIN (4.0.3)': dl.DataloaderMERLIN,
     'Diamond - i05': dl.DataloaderI05,
     'SOLARIS - URANOS': dl.DataloaderURANOS,
-    'SOLEIL - CASSIOPEE': dl.DataloaderCASSIOPEE,
-    '*ALS - MAESTRO (7.0.2)': dl.DataloaderALSMaestro}
+    'SOLEIL - CASSIOPEE': dl.DataloaderCASSIOPEE}
 
 
 class DataBrowser(QMainWindow):
@@ -92,7 +90,6 @@ class DataBrowser(QMainWindow):
 
     def launch_piva(self):
         fname = self.get_selected_path()
-        idx = os.path.basename(fname)
 
         if fname in self.data_viewers:
             already_opened_box = QMessageBox()
@@ -159,7 +156,6 @@ class DataBrowser(QMainWindow):
 
     def remove_dir_string(self, dir_str, files):
         res = []
-        # dir_len = len(dir_str)
         for file in files:
             res.append(file.replace(dir_str, ''))
         return self.del_hidden(res)
@@ -419,7 +415,6 @@ class DataBrowser(QMainWindow):
             self.dp_anal_anal_slit.setReadOnly(True)
             self.dp_anal_defl_ang.setReadOnly(True)
             # add labels to layouts
-            # dp_anal_e_layout.addWidget(dp_anal_e_lbl)
             dp_anal_row1_layout.addWidget(dp_anal_e0_lbl)
             dp_anal_row1_layout.addWidget(self.dp_anal_e0)
             dp_anal_row2_layout.addWidget(dp_anal_e1_lbl)
@@ -519,8 +514,6 @@ class DataBrowser(QMainWindow):
     def set_menu_bar(self):
 
         menu_bar = QtWidgets.QMenuBar()
-        # status_bar = QStatusBar()
-        # self.layout.addWidget(status_bar, 0, 1)
         file_menu = menu_bar.addMenu('&File')
         open_dir = QAction('Open directory', self)
         open_dir.setShortcut('Ctrl+O')
@@ -545,10 +538,8 @@ class DataBrowser(QMainWindow):
         multiple_plot.setShortcut('Ctrl+M')
         multiple_plot.setStatusTip('Multiple Plotting Tool')
         multiple_plot.triggered.connect(self.open_multiple_plotting_tool)
-        # plot_menu.addAction(multiple_plot)
 
         file_menu.addSeparator()
-        # run = menu_bar.addMenu('kl')
 
         self.menu_bar = menu_bar
 
@@ -739,7 +730,6 @@ class DataBrowser(QMainWindow):
                                                                   plugin_path)
                     module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(module)
-                    # print(dir(module))
                     dl_picker = self.dp_dl_picker
                     dl_picker.insertSeparator(dl_picker.count())
                     class_objects = inspect.getmembers(module, inspect.isclass)

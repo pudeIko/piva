@@ -36,7 +36,6 @@ class DataHandler3D:
     def __init__(self, main_window):
         self.main_window = main_window
         self.binning = False
-        # self.erg_ax = erg_ax
 
         # Initialize instance variables
         # np.array that contains the 3D data
@@ -46,10 +45,6 @@ class DataHandler3D:
         self.displayed_axes = (0, 1)
         # Index along the z axis at which to produce a slice
         self.z = ip.TracedVariable(0, name='z')
-        # # Number of slices to integrate along z
-        # integrate_z = TracedVariable(value=0, name='integrate_z')
-        # How often we have rolled the axes from the original setup
-        self._roll_state = 0
 
         # moved to get rid of warnings
         self.zmin = 0
@@ -81,12 +76,12 @@ class DataHandler3D:
 
         **Parameters**
 
-        ====  ==================================================================
+        ====  =================================================================
         data  3d array; the data to display
         axes  len(3) list or array of 1d-arrays or None; the units along the
               x, y and z axes respectively. If any of those is *None*, pixels
               are used.
-        ====  ==================================================================
+        ====  =================================================================
         """
 
         self.data = ip.TracedVariable(data, name='data')
@@ -99,7 +94,6 @@ class DataHandler3D:
         # Connect signal handling so changes in data are immediately reflected
         self.z.sig_value_changed.connect(
             lambda: self.main_window.update_main_plot(emit=False))
-        # self.data.sig_value_changed.connect(self.on_data_change)
 
         self.main_window.update_main_plot()
         self.main_window.set_axes()
@@ -221,7 +215,6 @@ class DataHandler3D:
         else:
             self.main_window.util_panel.energy_main_value.setText(
                 '({:.4f})'.format(self.main_window.new_energy_axis[z]))
-        # self.main_window.update_z_binning_lines()
 
     @staticmethod
     def make_slice(data, dim, index, integrate=0, silent=True):
@@ -245,32 +238,35 @@ class DataHandler3D:
 
         **Parameters**
 
-        =========  =================================================================
+        =========  ============================================================
         data       array-like; N dimensional dataset.
         dim        int, 0 <= d < N; dimension along which to slice.
         index      int, 0 <= index < data.size[d]; The index at which to create
                    the slice.
-        integrate  int, ``0 <= integrate < |index|``; the number of slices above
-                   and below slice *index* over which to integrate. A warning is
-                   issued if the integration range would exceed the data (can be
-                   turned off with *silent*).
+        integrate  int, ``0 <= integrate < |index|``; the number of slices
+                    above and below slice *index* over which to integrate.
+                    A warning is
+                    issued if the integration range would exceed the data
+                    (can be turned off with *silent*).
         silent     bool; toggle warning messages.
-        =========  =================================================================
+        =========  ============================================================
 
         **Returns**
 
-        ===  =======================================================================
+        ===  ==================================================================
         res  np.array; slice at *index* alond *dim* with dimensions shape[:d] +
              shape[d+1:].
-        ===  =======================================================================
+        ===  ==================================================================
         """
-        # Find the dimensionality and the number of slices along the specified dimension.
+        # Find the dimensionality and the number of slices
+        # along the specified dimension.
         shape = data.shape
         ndim = len(shape)
         try:
             n_slices = shape[dim]
         except IndexError:
-            message = '*dim* ({}) needs to be smaller than the dimension of *data* ({})'.format(dim, ndim)
+            message = '*dim* ({}) needs to be smaller than the ' \
+                      'dimension of *data* ({})'.format(dim, ndim)
             raise IndexError(message)
 
         # Set the integration indices and adjust them if they go out of scope
@@ -278,11 +274,13 @@ class DataHandler3D:
         stop = index + integrate + 1
         if start < 0:
             if not silent:
-                warnings.warn('i - integrate ({}) < 0, setting start=0'.format(start))
+                warnings.warn(
+                    'i - integrate ({}) < 0, setting start=0'.format(start))
             start = 0
         if stop > n_slices:
             if not silent:
-                warning = 'i + integrate ({}) > n_slices ({}), setting stop=n_slices'.format(stop, n_slices)
+                warning = 'i + integrate ({}) > n_slices ({}), ' \
+                          'setting stop=n_slices'.format(stop, n_slices)
                 warnings.warn(warning)
             stop = n_slices
 
@@ -312,7 +310,7 @@ class DataHandler3D:
 
         **Parameters**
 
-        ===============  =======================================================
+        ===============  ======================================================
         plot             str; either "main" or "cut", specifies from which
                          plot to extract the lines.
         dim              int; either 0 or 1, specifies in which direction to
@@ -328,11 +326,11 @@ class DataHandler3D:
         n_ticks          int; number of ticks to print.
         getlines_kwargs  other kwargs are passed to :func:`get_lines
                          <data_slicer.utilities.get_lines>`
-        ===============  =======================================================
+        ===============  ======================================================
 
         **Returns**
 
-        ===========  ===========================================================
+        ===========  ==========================================================
         lines2ds     list of Line2D objects; the drawn lines.
         xticks       list of float; locations of the 0 intensity value of
                      each line.
@@ -341,7 +339,7 @@ class DataHandler3D:
                      just a copy of *xticks*.
         xticklabels  list of str; *xtickvalues* formatted according to
                      *label_fmt*.
-        ===========  ===========================================================
+        ===========  ==========================================================
 
         .. seealso::
             :func:`get_lines <data_slicer.utilities.get_lines>`
@@ -365,12 +363,6 @@ class DataHandler3D:
 
 class MainWindow3D(QtWidgets.QMainWindow):
 
-    # TODO bugs
-    # TODO plot_z bins not moving when changing slider's position in spinbox
-    # TODO cut_x/plot_x width doesn't always match main_plot's
-
-    # TODO utilities
-    # TODO logbook!
 
     def __init__(self, data_browser, data_set=None, index=None, slice=False):
         super(MainWindow3D, self).__init__()
@@ -466,7 +458,6 @@ class MainWindow3D(QtWidgets.QMainWindow):
             pass
 
         self.set_sliders_initial_positions()
-        self.set_pmesh_axes()
 
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -633,11 +624,9 @@ class MainWindow3D(QtWidgets.QMainWindow):
         # Need to manually set all row- and columnspans as well as min-sizes
         for i in range(nrows):
             l.setRowMinimumHeight(i, 50)
-            # l.setRowMaximumHeight(i, 51)
             l.setRowStretch(i, 1)
         for i in range(ncols):
             l.setColumnMinimumWidth(i, 50)
-            # l.setColumnMaximumWidth(i, 51)
             l.setColumnStretch(i, 1)
 
     def closeEvent(self, event):
@@ -684,14 +673,16 @@ class MainWindow3D(QtWidgets.QMainWindow):
         zaxis = self.data_handler.axes[erg_ax]
         # self.main_plot.set_xscale(xaxis)
         self.main_plot.set_xscale(range(0, len(xaxis)))
-        self.main_plot.set_ticks(xaxis[0], xaxis[-1], self.main_plot.main_xaxis)
+        self.main_plot.set_ticks(xaxis[0], xaxis[-1],
+                                 self.main_plot.main_xaxis)
         self.cut_x.set_ticks(xaxis[0], xaxis[-1], self.cut_x.main_xaxis)
         self.cut_y.set_ticks(yaxis[0], yaxis[-1], self.cut_y.main_xaxis)
         self.plot_x.set_ticks(xaxis[0], xaxis[-1], self.plot_x.main_xaxis)
         self.plot_x.set_secondary_axis(0, len(xaxis))
         # self.main_plot.set_yscale(yaxis)
         self.main_plot.set_yscale(range(0, len(yaxis)))
-        self.main_plot.set_ticks(yaxis[0], yaxis[-1], self.main_plot.main_yaxis)
+        self.main_plot.set_ticks(yaxis[0], yaxis[-1],
+                                 self.main_plot.main_yaxis)
         self.cut_x.set_ticks(zaxis[0], zaxis[-1], self.cut_x.main_yaxis)
         self.cut_y.set_ticks(zaxis[0], zaxis[-1], self.cut_y.main_yaxis)
         self.plot_y.set_ticks(yaxis[0], yaxis[-1], self.plot_y.main_xaxis)
@@ -793,7 +784,6 @@ class MainWindow3D(QtWidgets.QMainWindow):
         is used to update only the cut plot without affecting the main plot.
         """
         data = self.data_handler.get_data()
-        # axes = self.data_handler.displayed_axes
         # Transpose, if necessary
         pos = self.main_plot.crosshair.hpos
         if pos.allowed_values is not None:
@@ -857,7 +847,6 @@ class MainWindow3D(QtWidgets.QMainWindow):
         is used to update only the cut plot without affecting the main plot.
         """
         data = self.data_handler.get_data()
-        # axes = self.data_handler.displayed_axes
         # Transpose, if necessary
         pos = self.cut_x.crosshair.vpos
         if pos.allowed_values is not None:
@@ -879,16 +868,19 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.cut_y.yscale_rescaled = self.data_handler.axes[erg_ax]
         self.set_cut_y_image(image=cut, lut=self.lut)
         # bounds swapped to match transposed dimensions
-        self.cut_y.set_bounds(0, len(self.data_handler.axes[erg_ax]), 0, len(self.data_handler.axes[slit_ax]))
+        self.cut_y.set_bounds(0, len(self.data_handler.axes[erg_ax]), 0,
+                              len(self.data_handler.axes[slit_ax]))
 
         self.cut_y.fix_viewrange()
 
         # update values of momentum at utilities panel
         self.util_panel.momentum_vert.setValue(i_x)
         if self.kx_axis is None:
-            self.util_panel.momentum_vert_value.setText('({:.3f})'.format(self.data_handler.axes[scan_ax][i_x]))
+            self.util_panel.momentum_vert_value.setText(
+                '({:.3f})'.format(self.data_handler.axes[scan_ax][i_x]))
         else:
-            self.util_panel.momentum_vert_value.setText('({:.3f})'.format(self.kx_axis[i_x]))
+            self.util_panel.momentum_vert_value.setText(
+                '({:.3f})'.format(self.kx_axis[i_x]))
         self.update_xy_binning_lines()
 
         # update EDC at crossing point
@@ -947,15 +939,18 @@ class MainWindow3D(QtWidgets.QMainWindow):
             if bin_x and bin_y:
                 nbx = self.util_panel.bin_x_nbins.value()
                 nby = self.util_panel.bin_y_nbins.value()
-                data = self.data_handler.get_data()[(xpos - nbx):(xpos + nbx), (ypos - nby):(ypos + nby), :]
+                data = self.data_handler.get_data()[(xpos - nbx):(xpos + nbx),
+                       (ypos - nby):(ypos + nby), :]
                 data = np.sum(np.sum(data, axis=1), axis=0)
             elif bin_x:
                 nbx = self.util_panel.bin_x_nbins.value()
-                data = self.data_handler.get_data()[(xpos - nbx):(xpos + nbx), ypos, :]
+                data = self.data_handler.get_data()[(xpos - nbx):(xpos + nbx),
+                       ypos, :]
                 data = np.sum(data, axis=0)
             elif bin_y:
                 nby = self.util_panel.bin_y_nbins.value()
-                data = self.data_handler.get_data()[xpos, (ypos - nby):(ypos + nby), :]
+                data = self.data_handler.get_data()[xpos,
+                       (ypos - nby):(ypos + nby), :]
                 data = np.sum(data, axis=0)
             else:
                 data = self.data_handler.get_data()[xpos, ypos, :]
@@ -969,7 +964,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
         """ Redraw plotted data to reflect changes in data or its colors. """
         try:
             # Redraw main plot
-            self.set_image(image, displayed_axes=self.data_handler.displayed_axes)
+            self.set_image(image,
+                           displayed_axes=self.data_handler.displayed_axes)
             # Redraw cut plot
             self.update_cut()
         except AttributeError:
@@ -983,15 +979,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
         # Reset the transformation
         self._transform_factors = []
-        # pmesh = self.util_panel.image_pmesh.isChecked()
-        # try:
-        #     pmesh_x, pmesh_y = self.pmesh_kx_axis, self.pmesh_ky_axis
-        # except AttributeError:
-        #     pmesh_x, pmesh_y = None, None
         if image is None:
             image = self.image_data
-        # self.main_plot.set_image(image, pmesh=pmesh, pmesh_x=pmesh_x, pmesh_y=pmesh_y,
-        #                          *args, lut=self.lut, **kwargs)
         self.main_plot.set_image(image, *args, lut=self.lut, **kwargs)
         self.set_orientating_lines()
 
@@ -1022,10 +1011,10 @@ class MainWindow3D(QtWidgets.QMainWindow):
     # color methods
     def set_cmap(self):
         """ Set the colormap to *cmap* where *cmap* is one of the names
-        registered in :mod:`<data_slicer.cmaps>` which includes all matplotlib and
-        kustom cmaps.
-        WP: small changes made to use only my list of cmaps (see cmaps.py) and to shorten the list
-        by using 'invert_colors' checkBox
+        registered in :mod:`<data_slicer.cmaps>` which includes all matplotlib
+        and custom cmaps.
+        WP: small changes made to use only my list of cmaps (see cmaps.py) and
+        to shorten the list by using 'invert_colors' checkBox
         """
         try:
             cmap = self.util_panel.image_cmaps.currentText()
@@ -1106,8 +1095,10 @@ class MainWindow3D(QtWidgets.QMainWindow):
             try:
                 half_width = self.util_panel.bin_x_nbins.value()
                 pos = self.main_plot.pos[0].get_value()
-                self.main_plot.add_binning_lines(pos, half_width, orientation='vertical')
-                self.cut_x.add_binning_lines(pos, half_width, orientation='vertical')
+                self.main_plot.add_binning_lines(pos, half_width,
+                                                 orientation='vertical')
+                self.cut_x.add_binning_lines(pos, half_width,
+                                             orientation='vertical')
                 self.plot_x.add_binning_lines(pos, half_width)
                 xmin = half_width
                 xmax = len(self.data_handler.axes[0]) - half_width
@@ -1186,7 +1177,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
             try:
                 half_width = self.util_panel.bin_zy_nbins.value()
                 pos = self.cut_y.pos[1].get_value()
-                self.cut_y.add_binning_lines(pos, half_width, orientation='vertical')
+                self.cut_y.add_binning_lines(pos, half_width,
+                                             orientation='vertical')
                 zmin = half_width
                 zmax = len(self.data_handler.axes[erg_ax]) - half_width
                 new_range = np.arange(zmin, zmax)
@@ -1206,8 +1198,10 @@ class MainWindow3D(QtWidgets.QMainWindow):
             try:
                 pos = self.main_plot.pos[0].get_value()
                 half_width = self.util_panel.bin_x_nbins.value()
-                self.main_plot.add_binning_lines(pos, half_width, orientation='vertical')
-                self.cut_x.add_binning_lines(pos, half_width, orientation='vertical')
+                self.main_plot.add_binning_lines(pos, half_width,
+                                                 orientation='vertical')
+                self.cut_x.add_binning_lines(pos, half_width,
+                                             orientation='vertical')
                 self.plot_x.add_binning_lines(pos, half_width)
             except AttributeError:
                 pass
@@ -1241,7 +1235,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
             try:
                 pos = self.cut_y.pos[1].get_value()
                 half_width = self.util_panel.bin_zy_nbins.value()
-                self.cut_y.add_binning_lines(pos, half_width, orientation='vertical')
+                self.cut_y.add_binning_lines(pos, half_width,
+                                             orientation='vertical')
             except AttributeError:
                 pass
         else:
@@ -1323,29 +1318,6 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.cut_y.crosshair.hpos.set_value(mid_energy)
         self.main_plot.pos[0].set_value(mid_hor_angle)
         self.main_plot.pos[1].set_value(mid_vert_angle)
-
-    def set_pmesh_axes(self):
-        if self.kx_axis is None:
-            mh_ax = self.data_handler.axes[scan_ax]
-        else:
-            mh_ax = self.kx_axis
-
-        if self.ky_axis is None:
-            mv_ax = self.data_handler.axes[slit_ax]
-        else:
-            mv_ax = self.ky_axis
-
-        tmp_mh_ax = np.arange(mh_ax.size + 1)
-        # tmp_mh_ax[:-1] = mh_ax
-        # tmp_mh_ax[-1] = mh_ax[-1] + wp.get_step(mh_ax)
-
-        tmp_mv_ax = np.arange(mv_ax.size + 1)
-        # tmp_mv_ax[:-1] = mv_ax
-        # tmp_mv_ax[-1] = mv_ax[-1] + wp.get_step(mv_ax)
-
-        self.pmesh_kx_axis, self.pmesh_ky_axis = np.meshgrid(tmp_mh_ax, tmp_mv_ax)
-        self.pmesh_kx_axis, self.pmesh_ky_axis = self.pmesh_kx_axis.T, self.pmesh_ky_axis.T
-        # print(mh_ax.shape, mv_ax.shape, self.pmesh_kx_axis.shape, self.pmesh_ky_axis.shape)
 
     def get_sliders_positions(self):
         main_hor = self.main_plot.crosshair.hpos.get_value()
@@ -1430,19 +1402,25 @@ class MainWindow3D(QtWidgets.QMainWindow):
         y_init = self.util_panel.orientate_init_y.value()
         res = wp.find_gamma(fs, x_init, y_init)
         if res.success:
-            self.util_panel.orientate_find_gamma_message.setText('Success,  values found!')
+            self.util_panel.orientate_find_gamma_message.setText(
+                'Success,  values found!')
             self.util_panel.orientate_init_x.setValue(int(res.x[0]))
             self.util_panel.orientate_init_y.setValue(int(res.x[1]))
         else:
-            self.util_panel.orientate_find_gamma_message.setText('Couldn\'t find center of rotation.')
+            self.util_panel.orientate_find_gamma_message.setText(
+                'Couldn\'t find center of rotation.')
 
     def copy_values_volume_to_orientate(self):
-        self.util_panel.orientate_init_x.setValue(self.util_panel.momentum_vert.value())
-        self.util_panel.orientate_init_y.setValue(self.util_panel.momentum_hor.value())
+        self.util_panel.orientate_init_x.setValue(
+            self.util_panel.momentum_vert.value())
+        self.util_panel.orientate_init_y.setValue(
+            self.util_panel.momentum_hor.value())
 
     def copy_values_orientate_to_axes(self):
-        self.util_panel.axes_gamma_x.setValue(self.util_panel.orientate_init_x.value())
-        self.util_panel.axes_gamma_y.setValue(self.util_panel.orientate_init_y.value())
+        self.util_panel.axes_gamma_x.setValue(
+            self.util_panel.orientate_init_x.value())
+        self.util_panel.axes_gamma_y.setValue(
+            self.util_panel.orientate_init_y.value())
 
     def set_orientating_lines(self):
 
@@ -1454,7 +1432,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
         except AttributeError:
             pass
         if self.util_panel.orientate_hor_line.isChecked():
-            angle = self.transform_angle(self.util_panel.orientate_angle.value())
+            angle = self.transform_angle(
+                self.util_panel.orientate_angle.value())
             if (-180 < angle < 90) and (angle != -90):
                 beta = np.deg2rad(angle)
                 if angle == 0:
@@ -1464,7 +1443,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
                 angle = -angle
             elif (angle == 90) or (angle == -90):
                 self.orient_hor_line = InfiniteLine(x0, movable=False)
-                self.orient_hor_line.setPen(color=ORIENTLINES_LINECOLOR, width=3)
+                self.orient_hor_line.setPen(color=ORIENTLINES_LINECOLOR,
+                                            width=3)
                 self.main_plot.addItem(self.orient_hor_line)
                 return
             elif 90 < angle < 180:
@@ -1484,14 +1464,18 @@ class MainWindow3D(QtWidgets.QMainWindow):
         except AttributeError:
             pass
         if self.util_panel.orientate_ver_line.isChecked():
-            angle = self.transform_angle(self.util_panel.orientate_angle.value(), orientation='vertical')
+            angle = \
+                self.transform_angle(self.util_panel.orientate_angle.value(),
+                                     orientation='vertical')
             if (-180 < angle < 90) and (angle != -90) and (angle != 90):
                 beta = 0.5 * np.pi - np.deg2rad(angle)
                 x_pos = x0 - (y0 / np.tan(beta))
                 angle = 90 - angle
             elif (angle == 90) or (angle == -90):
-                self.orient_ver_line = InfiniteLine(y0, movable=False, angle=0)
-                self.orient_ver_line.setPen(color=ORIENTLINES_LINECOLOR, width=3)
+                self.orient_ver_line = InfiniteLine(y0,
+                                                    movable=False, angle=0)
+                self.orient_ver_line.setPen(color=ORIENTLINES_LINECOLOR,
+                                            width=3)
                 self.main_plot.addItem(self.orient_ver_line)
                 return
             elif 90 < angle < 180:
@@ -1507,7 +1491,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
             self.main_plot.addItem(self.orient_ver_line)
 
     def transform_angle(self, angle, orientation='horizontal'):
-        coeff = wp.get_step(self.data_handler.axes[scan_ax]) / wp.get_step(self.data_handler.axes[slit_ax])
+        coeff = wp.get_step(self.data_handler.axes[scan_ax]) / \
+                wp.get_step(self.data_handler.axes[slit_ax])
         if orientation == 'horizontal':
             return np.rad2deg(np.arctan(np.tan(np.deg2rad(angle)) * coeff))
         else:
@@ -1616,18 +1601,28 @@ class MainWindow3D(QtWidgets.QMainWindow):
     def reset_kspace_conversion(self):
         self.kx_axis = None
         self.ky_axis = None
-        org_hor_range = [self.data_handler.axes[0][0], self.data_handler.axes[0][-1]]
-        org_ver_range = [self.data_handler.axes[1][0], self.data_handler.axes[1][-1]]
-        self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*org_hor_range)
-        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*org_ver_range)
-        self.cut_x.plotItem.getAxis(self.cut_x.main_xaxis).setRange(*org_hor_range)
-        self.cut_y.plotItem.getAxis(self.cut_y.main_xaxis).setRange(*org_ver_range)
-        self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*org_hor_range)
-        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*org_ver_range)
+        org_hor_range = [self.data_handler.axes[0][0],
+                         self.data_handler.axes[0][-1]]
+        org_ver_range = [self.data_handler.axes[1][0],
+                         self.data_handler.axes[1][-1]]
+        self.main_plot.plotItem.getAxis(
+            self.main_plot.main_xaxis).setRange(*org_hor_range)
+        self.main_plot.plotItem.getAxis(
+            self.main_plot.main_yaxis).setRange(*org_ver_range)
+        self.cut_x.plotItem.getAxis(
+            self.cut_x.main_xaxis).setRange(*org_hor_range)
+        self.cut_y.plotItem.getAxis(
+            self.cut_y.main_xaxis).setRange(*org_ver_range)
+        self.plot_x.plotItem.getAxis(
+            self.plot_x.main_xaxis).setRange(*org_hor_range)
+        self.plot_y.plotItem.getAxis(
+            self.plot_y.main_xaxis).setRange(*org_ver_range)
         self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-            self.data_handler.axes[slit_ax][self.main_plot.pos[1].get_value()]))
+            self.data_handler.axes[slit_ax][
+                self.main_plot.pos[1].get_value()]))
         self.util_panel.momentum_vert_value.setText('({:.4f})'.format(
-            self.data_handler.axes[scan_ax][self.main_plot.pos[0].get_value()]))
+            self.data_handler.axes[scan_ax][
+                self.main_plot.pos[0].get_value()]))
 
     def show_BZ_contour(self):
         if not self.util_panel.image_show_BZ.isChecked():
@@ -1660,7 +1655,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
         elif symmetry == 6:
             G = np.pi / a
             b = 2 * G / np.sqrt(3)
-            raw_pts = np.array([[-b / 2, -G], [b / 2, -G], [b, 0], [b / 2, G], [-b / 2, G], [-b, 0]])
+            raw_pts = np.array([[-b / 2, -G], [b / 2, -G], [b, 0],
+                                [b / 2, G], [-b / 2, G], [-b, 0]])
 
         rotation_angle = self.util_panel.image_rotate_BZ.value()
         raw_pts = self.transform_points(raw_pts, rotation_angle)
@@ -1679,7 +1675,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
     def show_orientation_info(self):
 
         title = 'piva -> beamline coordinates translator'
-        self.info_box = ip.InfoWindow(self.util_panel.orient_info_window, title)
+        self.info_box = \
+            ip.InfoWindow(self.util_panel.orient_info_window, title)
         self.info_box.show()
 
     def open_pit(self):
@@ -1688,7 +1685,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
         providing a free-slicing ROI.
         """
         mw = pit.MainWindow()
-        mw.data_handler.set_data(self.data_set.data, axes=self.data_handler.axes)
+        mw.data_handler.set_data(self.data_set.data,
+                                 axes=self.data_handler.axes)
         mw.set_cmap(self.cmap_name)
 
     def open_2dviewer(self):
@@ -1813,8 +1811,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
                 fname_colision_box = QMessageBox()
                 fname_colision_box.setIcon(QMessageBox.Question)
                 fname_colision_box.setWindowTitle('File name already used.')
-                fname_colision_box.setText('File {} already exists.\nDo you want to overwrite it?'.format(fname))
-                fname_colision_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                fname_colision_box.setText(
+                    'File {} already exists.\n'
+                    'Do you want to overwrite it?'.format(fname))
+                fname_colision_box.setStandardButtons(QMessageBox.Ok |
+                                                      QMessageBox.Cancel)
                 if fname_colision_box.exec() == QMessageBox.Ok:
                     file_selection = False
                 else:
@@ -1822,8 +1823,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
             else:
                 file_selection = False
 
-        conditions = [up.axes_energy_Ef.value() != 0, up.axes_energy_hv.value() != 0, up.axes_energy_wf.value() != 0,
-                      up.axes_gamma_y.value() != 0, up.axes_gamma_x.value() != 0]
+        conditions = [up.axes_energy_Ef.value() != 0,
+                      up.axes_energy_hv.value() != 0,
+                      up.axes_energy_wf.value() != 0,
+                      up.axes_gamma_y.value() != 0,
+                      up.axes_gamma_x.value() != 0]
 
         if np.any(conditions):
             save_cor_box = QMessageBox()
@@ -1867,46 +1871,3 @@ class MainWindow3D(QtWidgets.QMainWindow):
             self.kx_axis = data_set.kxscale
         if hasattr(data_set, 'kyscale'):
             self.ky_axis = data_set.kyscale
-
-    # def load_saved_corrections_old(self, data_set):
-    #     if hasattr(data_set, 'saved'):
-    #         saved = data_set.saved
-    #         if 'Ef' in saved.keys():
-    #             self.util_panel.axes_energy_Ef.setValue(saved['Ef'])
-    #         if 'hv' in saved.keys():
-    #             self.util_panel.axes_energy_hv.setValue(saved['hv'])
-    #         if 'wf' in saved.keys():
-    #             self.util_panel.axes_energy_wf.setValue(saved['wf'])
-    #         if 'gamma_x' in saved.keys():
-    #             self.util_panel.axes_gamma_x.setValue(saved['gamma_x'])
-    #             self.util_panel.orientate_init_x.setValue(saved['gamma_x'])
-    #             self.util_panel.orientate_find_gamma_message.setText('Values loaded from file.')
-    #         if 'gamma_y' in saved.keys():
-    #             self.util_panel.axes_gamma_y.setValue(saved['gamma_y'])
-    #             self.util_panel.orientate_init_y.setValue(saved['gamma_y'])
-    #             self.util_panel.orientate_find_gamma_message.setText('Values loaded from file.')
-    #         if 'kx' in saved.keys() and 'ky' in saved.keys():
-    #             self.kx_axis = saved['kx']
-    #             self.ky_axis = saved['ky']
-    #             new_hor_range = [saved['kx'][0], saved['kx'][-1]]
-    #             new_ver_range = [saved['ky'][0], saved['ky'][-1]]
-    #             self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_hor_range)
-    #             self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_ver_range)
-    #             self.cut_x.plotItem.getAxis(self.cut_x.main_xaxis).setRange(*new_hor_range)
-    #             self.cut_y.plotItem.getAxis(self.cut_y.main_xaxis).setRange(*new_ver_range)
-    #             self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_hor_range)
-    #             self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_ver_range)
-    #             self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-    #                 self.ky_axis[self.main_plot.pos[1].get_value()]))
-    #             self.util_panel.momentum_vert_value.setText('({:.4f})'.format(
-    #                 self.kx_axis[self.main_plot.pos[0].get_value()]))
-    #     else:
-    #         pass
-    #
-    #     if not (data_set.Ef is None):
-    #         self.util_panel.axes_energy_Ef.setValue(float(data_set.Ef))
-    #     if not (data_set.hv is None):
-    #         self.util_panel.axes_energy_hv.setValue(float(data_set.hv))
-    #     if not (data_set.wf is None):
-    #         self.util_panel.axes_energy_wf.setValue(float(data_set.wf))
-

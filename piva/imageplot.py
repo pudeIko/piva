@@ -10,10 +10,8 @@ import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QComboBox, \
     QDoubleSpinBox, QSpinBox, QPushButton, QLineEdit, QMainWindow, \
-    QDialogButtonBox, QMessageBox, QScrollArea, QTableWidget, QVBoxLayout, \
-    QHBoxLayout
+    QDialogButtonBox, QMessageBox, QScrollArea, QTableWidget, QVBoxLayout
 from PyQt5.QtWidgets import QTableWidgetItem as QTabItem, QSizePolicy
-from PyQt5.QtGui import QColor, QPalette
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
 
@@ -102,10 +100,10 @@ class Crosshair:
         """
         **Parameters**
 
-        ===  ===================================================================
+        ===  ==================================================================
         pos  2-tuple; x and y coordinates of the desired location of the
              crosshair in data coordinates.
-        ===  ===================================================================
+        ===  ==================================================================
         """
         self.hpos.set_value(pos[1])
         self.vpos.set_value(pos[0])
@@ -127,7 +125,8 @@ class Crosshair:
         should be reflected in the TracedVariables self.hpos and self.vpos.
         """
         self.hpos.set_value(self.hline.value())
-        # if it's an energy plot, and binning option is active, update also binning boundaries
+        # if it's an energy plot, and binning option is active,
+        # update also binning boundaries
         if self.image_plot.binning:
             pos = self.hline.value()
             self.image_plot.left_line.setValue(pos - self.image_plot.width)
@@ -148,22 +147,6 @@ class Crosshair:
             self.vline.setBounds([ymin, ymax])
             self.hline.setBounds([xmin, xmax])
 
-    # def set_for_main_plot(self, pos):
-    #     """
-    #     Set crosshair for a main plot
-    #     :param pos:         list; positions of horizontal and vertical crosshairs
-    #     """
-    #     # Store the positions in TracedVariables
-    #     self.hpos = TracedVariable(pos[1], name='hpos')
-    #     self.vpos = TracedVariable(pos[0], name='vpos')
-    #
-    #     # Register some callbacks
-    #     self.hpos.sig_value_changed.connect(self.update_position_h)
-    #     self.vpos.sig_value_changed.connect(self.update_position_v)
-    #
-    #     self.hline.sigDragged.connect(self.on_dragged_h)
-    #     self.vline.sigDragged.connect(self.on_dragged_v)
-
 
 class ImagePlot(pg.PlotWidget):
     """
@@ -176,34 +159,33 @@ class ImagePlot(pg.PlotWidget):
 
     **Signals**
 
-    =================  =========================================================
+    =================  ========================================================
     sig_image_changed  emitted whenever the image is updated
     sig_axes_changed   emitted when the axes are updated
     sig_clicked        emitted when user clicks inside the imageplot
-    =================  =========================================================
+    =================  ========================================================
     """
     sig_image_changed = QtCore.Signal()
     sig_axes_changed = QtCore.Signal()
     sig_clicked = QtCore.Signal(object)
 
-    def __init__(self, image=None, parent=None, background=BGR_COLOR, name=None, mainplot=True,
-                 orientation='horizontal', **kwargs):
+    def __init__(self, image=None, parent=None, background=BGR_COLOR,
+                 name=None, mainplot=True, orientation='horizontal', **kwargs):
         """ Allows setting of the image upon initialization. 
         
         **Parameters**
 
-        ==========  ============================================================
+        ==========  ===========================================================
         image       np.ndarray or pyqtgraph.ImageItem instance; the image to be
                     displayed.
         parent      QtWidget instance; parent widget of this widget.
         background  str; confer PyQt documentation
         name        str; allows giving a name for debug purposes
-        ==========  ============================================================
+        ==========  ===========================================================
         """
         # Initialize instance variables
         # np.array, raw image data
         self.image_data = None
-        # pg.ImageItem of *image_data*
         self.image_item = None
         self.image_kwargs = {}
         self.xlim = None
@@ -218,7 +200,6 @@ class ImagePlot(pg.PlotWidget):
         self.crosshair_cursor_visible = False
         self.binning = False
         self.orientation = orientation
-        self.pmeshitem = False
         self.transposed = TracedVariable(False, name='transposed')
 
         super().__init__(parent=parent, background=background, **kwargs)
@@ -231,7 +212,8 @@ class ImagePlot(pg.PlotWidget):
             self.set_image(image)
 
         # Initiliaze a crosshair and add it to this widget
-        self.crosshair = Crosshair(self, mainplot=mainplot, orientation=orientation)
+        self.crosshair = Crosshair(self, mainplot=mainplot,
+                                   orientation=orientation)
         self.crosshair.add_to(self)
 
         self.pos = (self.crosshair.vpos, self.crosshair.hpos)
@@ -244,7 +226,8 @@ class ImagePlot(pg.PlotWidget):
 
         # Connect a slot (callback) to dragging and clicking events
         self.sig_axes_changed.connect(
-            lambda: self.set_bounds(*[x for lst in self.get_limits() for x in lst]))
+            lambda: self.set_bounds(*[x for lst in
+                                      self.get_limits() for x in lst]))
 
         self.sig_image_changed.connect(self.update_allowed_values)
 
@@ -319,7 +302,7 @@ class ImagePlot(pg.PlotWidget):
             self.removeItem(self.image_item)
         self.image_item = None
 
-    def set_image(self, image, pmesh=False, pmesh_x=None, pmesh_y=None, emit=True, *args, **kwargs):
+    def set_image(self, image, emit=True, *args, **kwargs):
         """ Expects either np.arrays or pg.ImageItems as input and sets them 
         correctly to this PlotWidget's Image with `addItem`. Also makes sure 
         there is only one Image by deleting the previous image.
@@ -328,27 +311,18 @@ class ImagePlot(pg.PlotWidget):
 
         **Parameters**
 
-        ========  ==============================================================
+        ========  =============================================================
         image     np.ndarray or pyqtgraph.ImageItem instance; the image to be
                   displayed.
         emit      bool; whether or not to emit :signal:`sig_image_changed`
         (kw)args  positional and keyword arguments that are passed on to 
                   :class:`pyqtgraph.ImageItem`
-        ========  ==============================================================
+        ========  =============================================================
         """
         # Convert array to ImageItem
         if isinstance(image, np.ndarray):
             if 0 not in image.shape:
-                if pmesh:
-                    try:
-                        print(pmesh_x.shape, pmesh_y.shape, image.shape)
-                        image_item = pg.PColorMeshItem(pmesh_x, pmesh_y, image)
-                        # image_item = PColorMeshItem(image, **kwargs)
-                    except AttributeError:
-                        print('unable to use pcolormesh object')
-                        image_item = ImageItem(image, *args, **kwargs)
-                else:
-                    image_item = ImageItem(image, *args, **kwargs)
+                image_item = ImageItem(image, *args, **kwargs)
             else:
                 return
         else:
@@ -398,11 +372,15 @@ class ImagePlot(pg.PlotWidget):
         """
         # Sanity check
         if self.orientation == 'horizontal':
-            if not force and self.image_item is not None and (len(xscale) != self.image_data.shape[0]):
-                raise TypeError('Shape of xscale does not match data dimensions.')
+            if not force and self.image_item is not None and \
+                    (len(xscale) != self.image_data.shape[0]):
+                raise TypeError(
+                    'Shape of xscale does not match data dimensions.')
         else:
-            if not force and self.image_item is not None and (len(xscale) != self.image_data.shape[1]):
-                raise TypeError('Shape of xscale does not match data dimensions.')
+            if not force and self.image_item is not None and \
+                    (len(xscale) != self.image_data.shape[1]):
+                raise TypeError(
+                    'Shape of xscale does not match data dimensions.')
 
         self.xscale = xscale
         # 'Autoscale' the image to the xscale
@@ -417,11 +395,15 @@ class ImagePlot(pg.PlotWidget):
         """
         # Sanity check
         if self.orientation == 'horizontal':
-            if not force and self.image_item is not None and (len(yscale) != self.image_data.shape[1]):
-                raise TypeError('Shape of yscale does not match data dimensions.')
+            if not force and self.image_item is not None and \
+                    (len(yscale) != self.image_data.shape[1]):
+                raise TypeError(
+                    'Shape of yscale does not match data dimensions.')
         else:
-            if not force and self.image_item is not None and (len(yscale) != self.image_data.shape[0]):
-                raise TypeError('Shape of yscale does not match data dimensions.')
+            if not force and self.image_item is not None and \
+                    (len(yscale) != self.image_data.shape[0]):
+                raise TypeError(
+                    'Shape of yscale does not match data dimensions.')
 
         self.yscale = yscale
         # 'Autoscale' the image to the xscale
@@ -465,7 +447,6 @@ class ImagePlot(pg.PlotWidget):
         new_axis = pg.AxisItem(orientation=axis)
         new_axis.setRange(min_val, max_val)
         # Attach it internally to the plotItem and its layout (The arguments
-        # `*(1, 1)` or `*(2, 2)` refers to the axis' position in the GridLayout)
         plotItem.axes[axis]['item'] = new_axis
         if axis == 'bottom':
             plotItem.layout.addItem(new_axis, *self.main_xaxis_grid)
@@ -481,7 +462,8 @@ class ImagePlot(pg.PlotWidget):
         """ Transform the image such that it matches the desired x and y 
         scales.
         """
-        # Get image dimensions and requested origin (x0,y0) and top right corner (x1, y1)
+        # Get image dimensions and requested origin (x0,y0) and
+        # top right corner (x1, y1)
         nx, ny = self.image_data.shape
         [[x0, x1], [y0, y1]] = self.get_limits()
         # Calculate the scaling factors
@@ -517,7 +499,6 @@ class ImagePlot(pg.PlotWidget):
         new_axis = pg.AxisItem(orientation=self.secondary_axis)
         new_axis.setRange(min_val, max_val)
         # Attach it internally to the plotItem and its layout (The arguments
-        # `*(1, 1)` or `*(2, 2)` refers to the axis' position in the GridLayout)
         plotItem.axes[self.secondary_axis]['item'] = new_axis
         plotItem.layout.addItem(new_axis, *self.secondary_axis_grid)
 
@@ -526,7 +507,8 @@ class ImagePlot(pg.PlotWidget):
         Get limits of the image data.
         :return:    list; [[x_min, x_max], [y_min, y_max]]
         """
-        # Default to current viewrange but try to get more accurate values if possible
+        # Default to current viewrange but try to get
+        # more accurate values if possible
         if self.image_item is not None:
             x, y = self.image_data.shape
         else:
@@ -549,7 +531,8 @@ class ImagePlot(pg.PlotWidget):
     def fix_viewrange(self):
         """ Prevent zooming out by fixing the limits of the ViewBox. """
         [[x_min, x_max], [y_min, y_max]] = self.get_limits()
-        self.setLimits(xMin=x_min, xMax=x_max, yMin=y_min, yMax=y_max, maxXRange=x_max-x_min, maxYRange=y_max-y_min)
+        self.setLimits(xMin=x_min, xMax=x_max, yMin=y_min, yMax=y_max,
+                       maxXRange=x_max-x_min, maxYRange=y_max-y_min)
 
     def _update_transform_factors(self):
         """ Create a copy of the parameters that are necessary to reproduce 
@@ -571,8 +554,8 @@ class ImagePlot(pg.PlotWidget):
         Add unmovable lines to an ImagePlot around a specified crosshair.
         The lines indicate integration area fro a respective cut
         :param pos:             int; position of the crosshair
-        :param width:           int; number of left and right steps from the crosshair
-                                    position
+        :param width:           int; number of left and right steps
+                                from the crosshair position
         :param orientation:     str; orientation of the crosshair
         """
         # delete binning lines if exist
@@ -585,8 +568,10 @@ class ImagePlot(pg.PlotWidget):
             # add new binning lines
             self.binning_hor = True
             self.hor_width = width
-            self.left_hor_line = pg.InfiniteLine(pos - width, movable=False, angle=0)
-            self.right_hor_line = pg.InfiniteLine(pos + width, movable=False, angle=0)
+            self.left_hor_line = pg.InfiniteLine(pos - width,
+                                                 movable=False, angle=0)
+            self.right_hor_line = pg.InfiniteLine(pos + width,
+                                                  movable=False, angle=0)
             self.left_hor_line.setPen(color=BINLINES_LINECOLOR, width=1)
             self.right_hor_line.setPen(color=BINLINES_LINECOLOR, width=1)
             self.addItem(self.left_hor_line)
@@ -600,8 +585,10 @@ class ImagePlot(pg.PlotWidget):
             # add new binning lines
             self.binning_ver = True
             self.ver_width = width
-            self.left_ver_line = pg.InfiniteLine(pos - width, movable=False, angle=90)
-            self.right_ver_line = pg.InfiniteLine(pos + width, movable=False, angle=90)
+            self.left_ver_line = pg.InfiniteLine(pos - width,
+                                                 movable=False, angle=90)
+            self.right_ver_line = pg.InfiniteLine(pos + width,
+                                                  movable=False, angle=90)
             self.left_ver_line.setPen(color=BINLINES_LINECOLOR, width=1)
             self.right_ver_line.setPen(color=BINLINES_LINECOLOR, width=1)
             self.addItem(self.left_ver_line)
@@ -631,7 +618,8 @@ class ImagePlot(pg.PlotWidget):
         """
         self.crosshair.vpos = traced_variable
         self.crosshair.vpos.sig_value_changed.connect(self.set_position)
-        self.crosshair.vpos.sig_allowed_values_changed.connect(self.on_allowed_values_change)
+        self.crosshair.vpos.sig_allowed_values_changed.connect(
+            self.on_allowed_values_change)
 
     def set_position(self):
         """ Callback for the :signal:`sig_value_changed
@@ -658,8 +646,8 @@ class ImagePlot(pg.PlotWidget):
         if self.crosshair.vpos.allowed_values is None:
             return
 
-        lower = self.crosshair.vpos.min_allowed# - self.width
-        upper = self.crosshair.vpos.max_allowed# + self.width
+        lower = self.crosshair.vpos.min_allowed
+        upper = self.crosshair.vpos.max_allowed
         self.set_momentum_slider_bounds(lower, upper)
 
     def set_momentum_slider_bounds(self, xmin, xmax):
@@ -680,18 +668,19 @@ class CursorPlot(pg.PlotWidget):
     hover_color = HOVER_COLOR
 
     def __init__(self, parent=None, background=BGR_COLOR, name=None,
-                 orientation='horizontal', slider_width=1, z_plot=False, **kwargs):
+                 orientation='horizontal', slider_width=1, z_plot=False,
+                 **kwargs):
         """ Initialize the slider and set up the visual tweaks to make a
         PlotWidget look more like a scalebar.
 
         **Parameters**
 
-        ===========  ============================================================
+        ===========  ==========================================================
         parent       QtWidget instance; parent widget of this widget
         background   str; confer PyQt documentation
         name         str; allows giving a name for debug purposes
         orientation  str, `horizontal` or `vertical`; orientation of the cursor
-        ===========  ============================================================
+        ===========  ==========================================================
         """
         super().__init__(parent=parent, background=background, **kwargs)
 
@@ -716,8 +705,6 @@ class CursorPlot(pg.PlotWidget):
         # Whether to allow changing the slider width with arrow keys
         self.change_width_enabled = False
 
-        if orientation not in ['horizontal', 'vertical']:
-            raise ValueError('Only `horizontal` and `vertical` orientations are allowed.')
         self.orientation = orientation
         self.orientate()
         self.binning = False
@@ -741,8 +728,10 @@ class CursorPlot(pg.PlotWidget):
         self.register_traced_variable(pos)
 
         # Set up the slider
-        self.slider_width = TracedVariable(slider_width, name='{}.slider_width'.format(self.name))
-        self.slider = pg.InfiniteLine(initial_pos, movable=True, angle=self.angle)
+        self.slider_width = TracedVariable(
+            slider_width, name='{}.slider_width'.format(self.name))
+        self.slider = pg.InfiniteLine(
+            initial_pos, movable=True, angle=self.angle)
         self.set_slider_pen(color=(255, 255, 0, 255), width=slider_width)
 
         # Add a marker. Args are (style, position (from 0-1), size #NOTE
@@ -764,10 +753,10 @@ class CursorPlot(pg.PlotWidget):
 
         **Returns**
 
-        =  =====================================================================
+        =  ====================================================================
         x  array containing the x values.
         y  array containing the y values.
-        =  =====================================================================
+        =  ====================================================================
         """
         pdi = self.listDataItems()[0]
         return pdi.getData()
@@ -800,7 +789,8 @@ class CursorPlot(pg.PlotWidget):
         """
         self.pos = traced_variable
         self.pos.sig_value_changed.connect(self.set_position)
-        self.pos.sig_allowed_values_changed.connect(self.on_allowed_values_change)
+        self.pos.sig_allowed_values_changed.connect(
+            self.on_allowed_values_change)
 
     def on_position_change(self):
         """ Callback for the :signal:`sigDragged
@@ -812,7 +802,8 @@ class CursorPlot(pg.PlotWidget):
         # duplicate processing of the position change.
         self.pos.set_value(current_pos)
 
-        # if it's an energy plot, and binning option is active, update also binning boundaries
+        # if it's an energy plot, and binning option is active,
+        # update also binning boundaries
         if self.binning and self.z_plot:
             z_pos = self.slider.value()
             self.left_line.setValue(z_pos - self.width)
@@ -844,8 +835,9 @@ class CursorPlot(pg.PlotWidget):
         self.slider.setValue(new_pos)
 
     def add_binning_lines(self, pos, width):
-        """ Callback for the :signal:`stateChanged and valueChanged. Called whenever the
-        binning checkBox is set to True or number of bins changes.
+        """ Callback for the :signal:`stateChanged and valueChanged.
+        Called whenever the binning checkBox is set to True or number
+        of bins changes.
         """
         # delete binning lines if exist
         try:
@@ -856,8 +848,10 @@ class CursorPlot(pg.PlotWidget):
         # add new binning lines
         self.binning = True
         self.width = width
-        self.left_line = pg.InfiniteLine(pos-width, movable=False, angle=self.angle)
-        self.right_line = pg.InfiniteLine(pos+width, movable=False, angle=self.angle)
+        self.left_line = pg.InfiniteLine(pos-width, movable=False,
+                                         angle=self.angle)
+        self.right_line = pg.InfiniteLine(pos+width, movable=False,
+                                          angle=self.angle)
         self.left_line.setPen(color=BINLINES_LINECOLOR, width=1)
         self.right_line.setPen(color=BINLINES_LINECOLOR, width=1)
         self.addItem(self.left_line)
@@ -897,7 +891,6 @@ class CursorPlot(pg.PlotWidget):
         new_axis = pg.AxisItem(orientation=self.secondary_axis)
         new_axis.setRange(min_val, max_val)
         # Attach it internally to the plotItem and its layout (The arguments
-        # `*(1, 1)` or `*(2, 2)` refers to the axis' position in the GridLayout)
         plotItem.axes[self.secondary_axis]['item'] = new_axis
         plotItem.layout.addItem(new_axis, *self.secondary_axis_grid)
 
@@ -910,7 +903,6 @@ class CursorPlot(pg.PlotWidget):
         new_axis = pg.AxisItem(orientation=axis)
         new_axis.setRange(min_val, max_val)
         # Attach it internally to the plotItem and its layout (The arguments
-        # `*(1, 1)` or `*(2, 2)` refers to the axis' position in the GridLayout)
         plotItem.axes[axis]['item'] = new_axis
         plotItem.layout.addItem(new_axis, *self.main_xaxis_grid)
 
@@ -943,8 +935,6 @@ class CursorPlot(pg.PlotWidget):
 class UtilitiesPanel(QWidget):
     """ Utilities panel on the top. Mostly just creating and aligning the
     stuff, signals and callbacks are handled in 'MainWindow' """
-    # TODO multiple plotting tool
-    # TODO colorscale
 
     def __init__(self, main_window, name=None, dim=3):
 
@@ -966,7 +956,6 @@ class UtilitiesPanel(QWidget):
         self.buttons_layout = QtWidgets.QGridLayout()
         self.buttons_layout.addWidget(self.close_button,    1, 0)
         self.buttons_layout.addWidget(self.save_button,     2, 0)
-        # self.buttons_layout.addWidget(self.hide_button,     3, 0)
         self.buttons_layout.addWidget(self.pit_button,      3, 0)
         if self.dim == 2:
             self.file_mdc_fitter_button = QPushButton('MDC fitter')
@@ -1008,7 +997,6 @@ class UtilitiesPanel(QWidget):
         self.setLayout(self.layout)
 
         # linking options
-        # self.link_windows.stateChanged.connect(self.link_selected_windows)
         self.link_windows.clicked.connect(self.link_selected_windows)
 
         # file options
@@ -1024,9 +1012,6 @@ class UtilitiesPanel(QWidget):
         self.file_jl_session_button.clicked.connect(self.open_jl_session)
         self.file_jl_explog_button.clicked.connect(
             self.create_experimental_logbook_file)
-
-        # # connect callbacks
-        # self.hide_button.clicked.connect(self.hidde_tabs)
 
         self.setup_cmaps()
         self.setup_gamma()
@@ -1057,8 +1042,6 @@ class UtilitiesPanel(QWidget):
         max_w = 80
         # create elements
         self.image_tab = QWidget()
-        # self.image_tab.setStyleSheet("color: rgb(64, 64, 64)")
-        # self.image_tab.setStyleSheet("QButton{background-color: rgb (64, 64, 64);}")
         itl = QtWidgets.QGridLayout()
         self.image_colors_label = QLabel('Colors')
         self.image_colors_label.setFont(bold_font)
@@ -1071,8 +1054,6 @@ class UtilitiesPanel(QWidget):
         self.image_colorscale_label = QLabel('color scale:')
         self.image_colorscale = QDoubleSpinBox()
         self.image_colorscale.setRange(0., 10.)
-
-        # self.image_pmesh = QCheckBox('pmesh')
 
         self.image_normalize_lbl = QLabel('Normalize')
         self.image_normalize_lbl.setFont(bold_font)
@@ -1133,7 +1114,6 @@ class UtilitiesPanel(QWidget):
         itl.addWidget(self.image_cmaps_label,           row, 1)
         itl.addWidget(self.image_cmaps,                 row, 2)
         itl.addWidget(self.image_invert_colors,         row, 3, 1, 2)
-        # itl.addWidget(self.image_pmesh,                 row, 4)
 
         row = 1
         itl.addWidget(self.image_gamma_label,           row, 1)
@@ -1227,9 +1207,6 @@ class UtilitiesPanel(QWidget):
             self.bin_z = QCheckBox('bin MDCs')
             self.bin_z_nbins = QSpinBox()
 
-            # self.link_windows_dir.addItems(['--select slider--', 'all',
-            #                                    'energy', 'momentum'])
-
             # cross' hairs positions
             self.positions_momentum_label = QLabel('Momentum sliders')
             self.positions_momentum_label.setFont(bold_font)
@@ -1240,7 +1217,6 @@ class UtilitiesPanel(QWidget):
             self.momentum_hor = QSpinBox()
             self.momentum_hor_value = QLabel('deg')
 
-            # addWidget(widget, row, column, rowSpan, columnSpan)
             col = 0
             vtl.addWidget(self.positions_momentum_label,    0, col, 1, 3)
             vtl.addWidget(self.energy_vert_label,           1, col)
@@ -1316,7 +1292,6 @@ class UtilitiesPanel(QWidget):
             self.momentum_vert.setMaximumWidth(coords_box_w)
             self.momentum_vert_value = QLabel('deg')
 
-            # addWidget(widget, row, column, rowSpan, columnSpan)
             col = 0
             vtl.addWidget(self.positions_energies_label,        0, col, 1, 3)
             vtl.addWidget(self.energy_main_label,               1, col)
@@ -1369,16 +1344,13 @@ class UtilitiesPanel(QWidget):
         self.axes_energy_main_lbl.setFont(bold_font)
         self.axes_energy_main_lbl.setMaximumHeight(lbl_max_h)
         self.axes_energy_Ef_lbl = QLabel('Ef (eV):')
-        # self.axes_energy_Ef_lbl.setMaximumWidth(max_lbl_w)
         self.axes_energy_Ef = QDoubleSpinBox()
         self.axes_energy_Ef.setMaximumWidth(box_max_w)
         self.axes_energy_Ef.setRange(-5000., 5000)
         self.axes_energy_Ef.setDecimals(6)
-        # self.axes_energy_Ef.setMinimumWidth(100)
         self.axes_energy_Ef.setSingleStep(0.001)
 
         self.axes_energy_hv_lbl = QLabel('h\u03BD (eV):')
-        # self.axes_energy_hv_lbl.setMaximumWidth(max_w)
         self.axes_energy_hv = QDoubleSpinBox()
         self.axes_energy_hv.setMaximumWidth(box_max_w)
         self.axes_energy_hv.setRange(-2000., 2000)
@@ -1386,7 +1358,6 @@ class UtilitiesPanel(QWidget):
         self.axes_energy_hv.setSingleStep(0.001)
 
         self.axes_energy_wf_lbl = QLabel('wf (eV):')
-        # self.axes_energy_wf_lbl.setMaximumWidth(max_w)
         self.axes_energy_wf = QDoubleSpinBox()
         self.axes_energy_wf.setMaximumWidth(box_max_w)
         self.axes_energy_wf.setRange(0, 5)
@@ -1406,20 +1377,6 @@ class UtilitiesPanel(QWidget):
         self.axes_gamma_x.setRange(0, 5000)
 
         self.axes_transform_kz = QCheckBox('kz')
-
-        # self.axes_conv_hv_lbl = QLabel('h\u03BD (eV):')
-        # self.axes_conv_hv = QDoubleSpinBox()
-        # self.axes_conv_hv.setMaximumWidth(box_max_w)
-        # self.axes_conv_hv.setRange(-2000., 2000.)
-        # self.axes_conv_hv.setDecimals(3)
-        # self.axes_conv_hv.setSingleStep(0.001)
-        #
-        # self.axes_conv_wf_lbl = QLabel('wf (eV):')
-        # self.axes_conv_wf = QDoubleSpinBox()
-        # self.axes_conv_wf.setMaximumWidth(box_max_w)
-        # self.axes_conv_wf.setRange(0, 5)
-        # self.axes_conv_wf.setDecimals(3)
-        # self.axes_conv_wf.setSingleStep(0.001)
 
         self.axes_conv_lc_lbl = QLabel('a (\u212B):')
         self.axes_conv_lc = QDoubleSpinBox()
@@ -1444,7 +1401,6 @@ class UtilitiesPanel(QWidget):
         self.axes_do_kspace_conv = QPushButton('Convert')
         self.axes_reset_conv = QPushButton('Reset')
 
-        # addWidget(widget, row, column, rowSpan, columnSpan)
         row = 0
         atl.addWidget(self.axes_energy_main_lbl, row + 0, 0, 1, 2)
         atl.addWidget(self.axes_energy_scale_lbl, row + 0, 4)
@@ -1457,7 +1413,6 @@ class UtilitiesPanel(QWidget):
         atl.addWidget(self.axes_energy_wf, row + 1, 5)
 
         if self.dim == 2:
-
             self.axes_angle_off_lbl = QLabel('ang offset:')
             self.axes_angle_off = QDoubleSpinBox()
             self.axes_angle_off.setMaximumWidth(box_max_w)
@@ -1472,20 +1427,12 @@ class UtilitiesPanel(QWidget):
             atl.addWidget(self.axes_angle_off,          row + 1, 3)
             atl.addWidget(self.axes_conv_lc_lbl,        row + 1, 4)
             atl.addWidget(self.axes_conv_lc,            row + 1, 5)
-            # atl.addWidget(self.axes_conv_hv_lbl,        (row + 1), 4)
-            # atl.addWidget(self.axes_conv_hv,            (row + 1), 5)
 
             row = 4
-            # atl.addWidget(self.axes_conv_wf_lbl,        row, 0)
-            # atl.addWidget(self.axes_conv_wf,            row, 1)
             atl.addWidget(self.axes_slit_orient_lbl,    row, 0)
             atl.addWidget(self.axes_slit_orient,        row, 1)
             atl.addWidget(self.axes_do_kspace_conv,     row, 2, 1, 2)
             atl.addWidget(self.axes_reset_conv,         row, 4, 1, 2)
-
-            # # dummy item
-            # self.axes_massage_lbl = QLabel('')
-            # atl.addWidget(self.axes_massage_lbl, 6, 0, 1, 9)
 
         elif self.dim == 3:
 
@@ -1511,13 +1458,6 @@ class UtilitiesPanel(QWidget):
             atl.addWidget(self.axes_transform_kz,       row, 4)
             atl.addWidget(self.axes_do_kspace_conv,     row, 5)
 
-            # row = 5
-            # atl.addWidget(self.axes_reset_conv,         row, 4, 1, 2)
-
-            # # dummy item
-            # self.axes_massage_lbl = QLabel('')
-            # atl.addWidget(self.axes_massage_lbl, 5, 0, 1, 9)
-
         self.axes_tab.layout = atl
         self.axes_tab.setLayout(atl)
         self.tabs.addTab(self.axes_tab, 'Axes')
@@ -1527,7 +1467,8 @@ class UtilitiesPanel(QWidget):
         self.orientate_tab = QWidget()
         otl = QtWidgets.QGridLayout()
 
-        self.orientate_init_cooradinates_lbl = QLabel('Give initial coordinates')
+        self.orientate_init_cooradinates_lbl = QLabel(
+            'Give initial coordinates')
         self.orientate_init_cooradinates_lbl.setFont(bold_font)
         self.orientate_init_x_lbl = QLabel('scanned axis:')
         self.orientate_init_x = QSpinBox()
@@ -1539,7 +1480,8 @@ class UtilitiesPanel(QWidget):
         self.orientate_find_gamma = QPushButton('Find \t \u0393')
         self.orientate_copy_coords = QPushButton('Copy from \'Volume\'')
 
-        self.orientate_find_gamma_message = QLineEdit('NOTE: algorithm will process the main plot image.')
+        self.orientate_find_gamma_message = QLineEdit(
+            'NOTE: algorithm will process the main plot image.')
         self.orientate_find_gamma_message.setReadOnly(True)
 
         self.orientate_lines_lbl = QLabel('Show rotatable lines')
@@ -1556,24 +1498,24 @@ class UtilitiesPanel(QWidget):
 
         # addWidget(widget, row, column, rowSpan, columnSpan)
         row = 0
-        otl.addWidget(self.orientate_init_cooradinates_lbl,   row, 0, 1, 2)
-        otl.addWidget(self.orientate_init_x_lbl,              (row + 1), 0)
-        otl.addWidget(self.orientate_init_x,                  (row + 1), 1)
-        otl.addWidget(self.orientate_init_y_lbl,              (row + 1), 2)
-        otl.addWidget(self.orientate_init_y,                  (row + 1), 3)
+        otl.addWidget(self.orientate_init_cooradinates_lbl, row, 0, 1, 2)
+        otl.addWidget(self.orientate_init_x_lbl,            (row + 1), 0)
+        otl.addWidget(self.orientate_init_x,                (row + 1), 1)
+        otl.addWidget(self.orientate_init_y_lbl,            (row + 1), 2)
+        otl.addWidget(self.orientate_init_y,                (row + 1), 3)
 
         row = 2
-        otl.addWidget(self.orientate_find_gamma,              row, 0, 1, 2)
-        otl.addWidget(self.orientate_copy_coords,             row, 2, 1, 2)
-        otl.addWidget(self.orientate_find_gamma_message,      (row + 1), 0, 1, 4)
+        otl.addWidget(self.orientate_find_gamma,            row, 0, 1, 2)
+        otl.addWidget(self.orientate_copy_coords,           row, 2, 1, 2)
+        otl.addWidget(self.orientate_find_gamma_message,    (row + 1), 0, 1, 4)
 
         col = 4
-        otl.addWidget(self.orientate_lines_lbl,               0, col, 1, 2)
-        otl.addWidget(self.orientate_hor_line,                1, col)
-        otl.addWidget(self.orientate_ver_line,                1, (col + 1))
-        otl.addWidget(self.orientate_angle_lbl,               2, col)
-        otl.addWidget(self.orientate_angle,                   2, (col + 1))
-        otl.addWidget(self.orientate_info_button,             3, (col + 1))
+        otl.addWidget(self.orientate_lines_lbl,             0, col, 1, 2)
+        otl.addWidget(self.orientate_hor_line,              1, col)
+        otl.addWidget(self.orientate_ver_line,              1, (col + 1))
+        otl.addWidget(self.orientate_angle_lbl,             2, col)
+        otl.addWidget(self.orientate_angle,                 2, (col + 1))
+        otl.addWidget(self.orientate_info_button,           3, (col + 1))
 
         # dummy lbl
         dummy_lbl = QLabel('')
@@ -1621,7 +1563,6 @@ class UtilitiesPanel(QWidget):
         self.file_jl_explog_button = QPushButton('create')
         self.file_jl_session_button = QPushButton('start JL session')
 
-        # addWidget(widget, row, column, rowSpan, columnSpan)
         row = 0
         ftl.addWidget(self.file_show_dp_button,              row, 4, 1, 2)
         ftl.addWidget(self.file_show_md_button,              row, 6, 1, 2)
@@ -1787,7 +1728,8 @@ class UtilitiesPanel(QWidget):
 
     def set_tabs_color(self):
         """
-        Running piva on Windows machine requires to set QWidgets' colors by hand
+        Running piva on Windows machine requires to set
+        QWidgets' colors by hand
         """
         to_change = ['QPushButton', 'QLineEdit', 'QSpinBox', 'QDoubleSpinBox',
                      'QComboBox']
@@ -1797,7 +1739,8 @@ class UtilitiesPanel(QWidget):
             for wi in tab_i.children():
                 wi_name = wi.metaObject().className()
                 if wi_name in to_change:
-                    wi.setStyleSheet("QWidget {background-color: rgb(255, 255, 255);}")
+                    wi.setStyleSheet(
+                        "QWidget {background-color: rgb(255, 255, 255);}")
 
     def setup_cmaps(self):
 
@@ -1910,66 +1853,79 @@ class UtilitiesPanel(QWidget):
                 continue
             elif key == 'data':
                 s = dataset[key].shape
-                value = '(' + str(s[0]) + ',  ' + str(s[1]) + ',  ' + str(s[2]) + ')'
+                value = '(' + str(s[0]) + ',  ' + str(s[1]) + ',  ' + \
+                        str(s[2]) + ')'
                 entries[str(row)] = {}
                 entries[str(row)]['name'] = QLabel(key)
                 entries[str(row)]['value'] = QLabel(str(value))
                 entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
             elif key == 'xscale':
-                value = '({:.2f}  :  {:.2f})'.format(dataset[key][0], dataset[key][-1])
+                value = '({:.2f}  :  {:.2f})'.format(dataset[key][0],
+                                                     dataset[key][-1])
                 entries[str(row)] = {}
                 entries[str(row)]['name'] = QLabel(key)
                 entries[str(row)]['value'] = QLabel(str(value))
                 entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
             elif key == 'yscale':
-                value = '({:.4f}  :  {:.4f})'.format(dataset[key][0], dataset[key][-1])
+                value = '({:.4f}  :  {:.4f})'.format(dataset[key][0],
+                                                     dataset[key][-1])
                 entries[str(row)] = {}
                 entries[str(row)]['name'] = QLabel(key)
                 entries[str(row)]['value'] = QLabel(str(value))
                 entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
             elif key == 'zscale':
-                value = '({:.4f}  :  {:.4f})'.format(dataset[key][0], dataset[key][-1])
+                value = '({:.4f}  :  {:.4f})'.format(dataset[key][0],
+                                                     dataset[key][-1])
                 entries[str(row)] = {}
                 entries[str(row)]['name'] = QLabel(key)
                 entries[str(row)]['value'] = QLabel(str(value))
                 entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
             elif key == 'kxscale':
                 if not (dataset[key] is None):
-                    value = '({:.3f}  :  {:.3f})'.format(dataset[key][0], dataset[key][-1])
+                    value = '({:.3f}  :  {:.3f})'.format(dataset[key][0],
+                                                         dataset[key][-1])
                     entries[str(row)] = {}
                     entries[str(row)]['name'] = QLabel(key)
                     entries[str(row)]['value'] = QLabel(str(value))
-                    entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+                    entries[str(row)]['value'].setAlignment(
+                        QtCore.Qt.AlignCenter)
                 else:
                     entries[str(row)] = {}
                     entries[str(row)]['name'] = QLabel(key)
                     entries[str(row)]['value'] = QLabel(str(dataset[key]))
-                    entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+                    entries[str(row)]['value'].setAlignment(
+                        QtCore.Qt.AlignCenter)
             elif key == 'kyscale':
                 if not (dataset[key] is None):
-                    value = '({:.3f}  :  {:.3f})'.format(dataset[key][0], dataset[key][-1])
+                    value = '({:.3f}  :  {:.3f})'.format(dataset[key][0],
+                                                         dataset[key][-1])
                     entries[str(row)] = {}
                     entries[str(row)]['name'] = QLabel(key)
                     entries[str(row)]['value'] = QLabel(str(value))
-                    entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+                    entries[str(row)]['value'].setAlignment(
+                        QtCore.Qt.AlignCenter)
                 else:
                     entries[str(row)] = {}
                     entries[str(row)]['name'] = QLabel(key)
                     entries[str(row)]['value'] = QLabel(str(dataset[key]))
-                    entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+                    entries[str(row)]['value'].setAlignment(
+                        QtCore.Qt.AlignCenter)
             elif key == 'pressure':
                 if dataset[key] is None:
                     continue
                 else:
                     entries[str(row)] = {}
                     entries[str(row)]['name'] = QLabel(key)
-                    entries[str(row)]['value'] = QLabel('{:.4e}'.format((dataset[key])))
-                    entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+                    entries[str(row)]['value'] = QLabel(
+                        '{:.4e}'.format((dataset[key])))
+                    entries[str(row)]['value'].setAlignment(
+                        QtCore.Qt.AlignCenter)
             else:
                 entries[str(row)] = {}
                 entries[str(row)]['name'] = QLabel(key)
                 if isinstance(dataset[key], float):
-                    entries[str(row)]['value'] = QLabel('{:.4f}'.format((dataset[key])))
+                    entries[str(row)]['value'] = QLabel(
+                        '{:.4f}'.format((dataset[key])))
                 else:
                     entries[str(row)]['value'] = QLabel(str(dataset[key]))
                 entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
@@ -1985,10 +1941,12 @@ class UtilitiesPanel(QWidget):
                 entries[str(row)] = {}
                 entries[str(row)]['name'] = QLabel(key)
                 if key == 'kx' or key == 'ky' or key == 'k':
-                    value = '({:.2f}  :  {:.2f})'.format(dataset['saved'][key][0], dataset['saved'][key][-1])
+                    value = '({:.2f}  :  {:.2f})'.format(
+                        dataset['saved'][key][0], dataset['saved'][key][-1])
                     entries[str(row)]['value'] = QLabel(str(value))
                 else:
-                    entries[str(row)]['value'] = QLabel(str(dataset['saved'][key]))
+                    entries[str(row)]['value'] = QLabel(
+                        str(dataset['saved'][key]))
                 entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
 
                 mdw.addWidget(entries[str(row)]['name'],    row, 0)
@@ -2152,7 +2110,8 @@ class UtilitiesPanel(QWidget):
         reset_summation_box.setMaximumWidth(1000)
         reset_summation_box.setIcon(QMessageBox.Question)
         reset_summation_box.setText('Want to reset summation?')
-        reset_summation_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        reset_summation_box.setStandardButtons(QMessageBox.Ok |
+                                               QMessageBox.Cancel)
         if reset_summation_box.exec() == QMessageBox.Ok:
             self.mw.data_set.data = self.mw.org_dataset.data
             self.mw.data_set.n_sweeps = self.mw.org_dataset.n_sweeps
@@ -2381,20 +2340,16 @@ class UtilitiesPanel(QWidget):
                         'hv', 'wf', 'a, A', 'c, A']
         edit_entries = ['#', 'Date & time', 'Action', 'Attribute', 'Old value',
                         'New Value']
-        # comm_entries = ['#', 'Date & time', 'Comment']
 
         file_lbl = QLabel('File')
         kspc_lbl = QLabel('k-space conversion')
         edit_lbl = QLabel('Editted entries')
-        # comm_lbl = QLabel('Comments')
         file_lbl.setFont(bold_font)
         kspc_lbl.setFont(bold_font)
         edit_lbl.setFont(bold_font)
-        # comm_lbl.setFont(bold_font)
         file_lbl.setAlignment(QtCore.Qt.AlignCenter)
         kspc_lbl.setAlignment(QtCore.Qt.AlignCenter)
         edit_lbl.setAlignment(QtCore.Qt.AlignCenter)
-        # comm_lbl.setAlignment(QtCore.Qt.AlignCenter)
 
         dpw.addWidget(file_lbl)
         if len(dp['file']) != 0:
@@ -2471,26 +2426,6 @@ class UtilitiesPanel(QWidget):
             edit_table.setMaximumHeight(height)
             edit_table.setMaximumWidth(header.width())
             dpw.addWidget(edit_table)
-
-        # dpw.addWidget(comm_lbl)
-        # if len(dp['comments']) != 0:
-        #     comm_table = QTableWidget(len(dp['comments']), len(comm_entries))
-        #     comm_table.setHorizontalHeaderLabels(comm_entries)
-        #     comm_table.setMinimumWidth(width)
-        #     height = int(comm_table.horizontalHeader().height() * 1.2)
-        #     for idx in range(len(dp['comments'])):
-        #         dpfi = dp['comments'][idx]
-        #         comm_table.setItem(idx, 0, QTabItem(str(dpfi['index'])))
-        #         comm_table.setItem(idx, 1, QTabItem(str(dpfi['date_time'])))
-        #         comm_table.setItem(idx, 2, QTabItem(str(dpfi['comment'])))
-        #         height += comm_table.rowHeight(idx)
-        #     comm_table.resizeColumnsToContents()
-        #     comm_table.setColumnWidth(0, 30)
-        #     header = comm_table.horizontalHeader()
-        #     comm_table.setMaximumHeight(height)
-        #     comm_table.setMaximumWidth(header.width())
-        #     dpw.addWidget(comm_table)
-
 
         self.dp_window.layout = dpw
         self.dp_window.setLayout(dpw)
@@ -2769,4 +2704,3 @@ class TracedVariable(QtCore.QObject):
         else:
             ind = np.abs(self.allowed_values - value).argmin()
             return self.allowed_values[ind]
-
