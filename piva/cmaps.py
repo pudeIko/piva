@@ -1,20 +1,20 @@
-"""
-Convert some of the nicer matplotlib and kustom colormaps to pyqtgraph 
-colormaps.
-"""
-
+import matplotlib.colors
 import numpy as np
 from matplotlib import colormaps as cm
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.pyplot import colormaps
 from pyqtgraph import ColorMap
+from typing import Any, Union
 
 
-class ds_cmap(ColorMap):
-    """ Simple subclass of :class:`pyqtgraph.ColorMap`. Adds vmax, 
-    powerlaw normalization and a convenience function to change alpha.
+class PIVAColorMap(ColorMap):
     """
-    def __init__(self, pos, color, gamma=1, **kwargs):
+    Simple subclass of :class:`pyqtgraph.ColorMap<pyqtgraph.ColorMap>`.
+    Adds ``vmax`` and powerlaw normalization ``gamma``.
+    """
+
+    def __init__(self, pos: Any, color: Any,
+                 gamma: float = 1., **kwargs: dict) -> None:
         super().__init__(pos, color, **kwargs)
 
         # Initialize instance variables
@@ -27,11 +27,15 @@ class ds_cmap(ColorMap):
         # Apply the powerlaw-norm
         self.set_gamma(gamma)
 
-    def apply_transformations(self):
-        """ Recalculate the positions where the colormapping is defined by 
-        applying (in sequence) alpha, then a linear map to the range 
-        [0, vmax] and finally the powerlaw scaling: ``pos' = pos**gamma``.
+    def apply_transformations(self) -> None:
         """
+        Recalculate the positions where the colormapping is defined by
+        applying (in sequence) alpha, then a linear map to the range 
+        [0, ``vmax``] and finally the powerlaw scaling: ::
+
+            pos = pos^gamma
+        """
+        
         # Reset the cache in pyqtgraph.Colormap
         self.stopsCache = dict()
 
@@ -48,51 +52,51 @@ class ds_cmap(ColorMap):
         # Apply a powerlaw norm to the positions
         self.pos = self.pos**(1 / self.gamma)
 
-    def set_gamma(self, gamma=1):
-        """ Set the exponent for the power-law norm that maps the colors to 
-        values. I.e. the values where the colours are defined are mapped like 
-        ``y=x**gamma``.
+    def set_gamma(self, gamma: float = 1.) -> None:
         """
+        Set the exponent for the power-law norm (``gamma``) that maps the
+        colors to values. The values where the colours are defined are mapped
+        like: ::
+
+            y = x^gamma
+        """
+        
         self.gamma = gamma
         self.apply_transformations()
 
-    def set_alpha(self, alpha):
-        """ Set the value of alpha for the whole colormap to *alpha* where 
-        *alpha* can be a float or an array of length ``len(self.color)``.
+    def set_alpha(self, alpha: float) -> None:
+        """ 
+        Set the value of alpha for the whole colormap to ``alpha`` where
+        ``alpha`` can be a float or an array of length ``len(self.color)``.
         """
+        
         self.alpha = alpha
         self.apply_transformations()
 
-    def set_vmax(self, vmax=1):
-        """ Set the relative (to the maximum of the data) maximum of the 
+    def set_vmax(self, vmax: float = 1) -> None:
+        """
+        Set the relative (to the maximum of the data) maximum of the 
         colorscale. 
         """
+        
         self.vmax = vmax
         self.apply_transformations()
 
 
-def convert_matplotlib_to_pyqtgraph(matplotlib_cmap, alpha=0.5):
-    """ Take a matplotlib colormap and convert it to a pyqtgraph ColorMap.
-
-    **Parameters**
-
-    ===============  ==========================================================
-    matplotlib_cmap  either a str representing the name of a matplotlib 
-                     colormap or a 
-                     :class:`<matplotlib.colors.LinearSegmentedColormap>` or 
-                     :class:`<matplotlib.colors.ListedColormap>` instance.
-    alpha            float or array of same length as there are defined 
-                     colors in the matplotlib cmap; the alpha (transparency) 
-                     value to be assigned to the whole cmap. matplotlib cmaps 
-                     default to 1.
-    ===============  ==========================================================
-
-    **Returns**
-
-    ===============  ==========================================================
-    pyqtgraph_cmap   :class:`pyqtgraph.ColorMap`
-    ===============  ==========================================================
+def convert_matplotlib_to_pyqtgraph(
+        matplotlib_cmap: Union[str, matplotlib.colors.LinearSegmentedColormap,
+                               matplotlib.colors.ListedColormap],
+        alpha: float = 0.5) -> ColorMap:
     """
+    Converts ``ColorMap`` object from :mod:`matplotlib` format to
+    :mod:`pyqtgraph<pyqtgraph>` format.
+
+    :param matplotlib_cmap: represents the name of a :mod:`matplotlib` colormap
+    :param alpha: transparency value to be assigned to the whole cmap.
+                  Default = 1.
+    :return: corresponding colormap object in :mod:`pyqtgrqph`
+    """
+
     # Get the colormap object if a colormap name is given 
     if isinstance(matplotlib_cmap, str):
         matplotlib_cmap = cm[matplotlib_cmap]
@@ -108,60 +112,37 @@ def convert_matplotlib_to_pyqtgraph(matplotlib_cmap, alpha=0.5):
     # Convert to range 0-255
     rgba *= 255
 
-    return ds_cmap(values, rgba)
+    return PIVAColorMap(values, rgba)
 
 
-def convert_ds_to_matplotlib(data_slicer_cmap, cmap_name='converted_cmap'):
-    """ Create a matplotlib colormap from a :class:`ds_cmap
-    <data_slicer.cmaps.ds_cmap>` instance.
-
-    **Parameters**
-
-    ================  =========================================================
-    data_slicer_cmap  :class:`ds_cmap <data_slicer.cmaps.ds_cmap>`
-    cmap_name         str; optional name for the created cmap.
-    ================  =========================================================
-
-    **Returns**
-
-    ===============  ==========================================================
-    matplotlib_cmap  :class:`<matplotlib.colors.LinearSegmentedColormap>`
-    ===============  ==========================================================
+def convert_piva_to_matplotlib(piva_cmap: PIVAColorMap,
+                               cmap_name: str = 'converted_cmap') -> \
+        matplotlib.colors.LinearSegmentedColormap:
     """
+    Create a :mod:`matplotlib` colormap from a
+    :class:`PIVAColorMap<piva.cmaps.PIVAColorMap>` instance.
+
+    :param piva_cmap: colormap in a :mod:`piva` format
+    :param cmap_name: optional name for the created cmap
+    :return: colormap in a :mod:`matplotlib` format
+    """
+
     # Reset the transformations - matplotlib can take care of them itself
-    data_slicer_cmap.set_gamma(1)
-    data_slicer_cmap.set_vmax(1)
+    piva_cmap.set_gamma(1)
+    piva_cmap.set_vmax(1)
     # Convert the colors from the range [0-255] to [0-1]
-    colors = data_slicer_cmap.color / 255
+    colors = piva_cmap.color / 255
     N = len(colors)
     # Create the matplotlib colormap
     matplotlib_cmap = LinearSegmentedColormap.from_list(cmap_name, colors, N)
     return matplotlib_cmap
 
 
-def load_custom_cmap(filename):
-    """ Create a :class:`ds_cmap <data_slicer.cmaps.ds_cmap>` instance from 
-    data stored in a file with three columns, red, green and blue - either in 
-    integer form from 0-255 or as floats from 0.0 to 1.0 (ignores fourth 
-    alpha column).
-    """
-    data = np.loadtxt(filename)[:, :3]
-    data /= data.max() 
-    # Convert to range [0-255] for pyqtgraph 0.0.11
-    data *= 255
-    N = len(data)
-    # Append a column of 1's
-    cmap = np.hstack([data, np.ones(N).reshape((N, 1))])
-    pos = np.linspace(0, 1, N)
-    return ds_cmap(pos, cmap)
-
-
 # +-------------------+ #
 # | Prepare colormaps | # =====================================================
 # +-------------------+ #
 
-# Convert all matplotlib colormaps to pyqtgraph ones and make them available 
-# in the dict cmaps
+# list of selected matplotlib colormaps
 my_cmaps = ['Blues', 'BrBG', 'BuGn', 'CMRmap', 'GnBu', 'Greens', 'Oranges',
             'PuRd', 'Purples', 'RdBu', 'RdPu', 'Reds', 'Spectral', 'YlOrRd',
             'afmhot', 'binary', 'bone', 'bwr', 'cividis', 'coolwarm', 'copper',
@@ -169,6 +150,9 @@ my_cmaps = ['Blues', 'BrBG', 'BuGn', 'CMRmap', 'GnBu', 'Greens', 'Oranges',
             'hot', 'inferno', 'jet', 'magma', 'pink', 'plasma', 'terrain',
             'turbo', 'twilight', 'viridis']
 
+
+# Convert all matplotlib colormaps to pyqtgraph ones and make them available
+# in the dict cmaps
 cmaps = dict()
 for name in colormaps():
     cmap = cm[name]

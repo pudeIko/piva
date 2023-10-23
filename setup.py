@@ -16,7 +16,7 @@ setup(
     long_description_content_type='text/markdown',
     url='https://github.com/pudeIko/piva.git',
     packages=find_packages(),
-    python_requires=">=3.10",
+    python_requires=">=3.9",
     install_requires=requirements,
     classifiers=[
         'Programming Language :: Python :: 3',

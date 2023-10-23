@@ -1,0 +1,5 @@
+
+/* Don't put a scrollbar in tables */
+.wy-table-responsive table td {
+    white-space: normal;
+}
