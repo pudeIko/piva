@@ -1,3 +1,4 @@
+from __future__ import annotations
 import argparse
 import datetime
 from copy import deepcopy
@@ -10,18 +11,32 @@ from PyQt5.QtWidgets import QColorDialog, QFileDialog, QWidget, \
     QDoubleSpinBox, QLineEdit, QPushButton, QLabel, QComboBox, QSpinBox, \
     QCheckBox, QMessageBox
 
+import piva.data_browser as db
 import piva.working_procedures as wp
-import piva.data_loader as dl
+import piva.data_loaders as dl
 import piva._2Dviewer as p2d
 import piva._3Dviewer as p3d
-from piva.imageplot import bold_font
+from piva.image_panels import bold_font
+from typing import Union, Any
 
 MDC_PANEL_BGR = (236, 236, 236)
 
 
 class PlotTool(QtWidgets.QMainWindow):
+    """
+    Object creating main window and handling all functionalities.
+    """
 
-    def __init__(self, data_browser, title=None):
+    def __init__(self, data_browser: db.DataBrowser, title: str) -> None:
+        """
+        Create all components of the main window and display it.
+
+        :param data_browser: :class:`~data_browser.DataBrowser` object
+                             keeping reference to all opened **DataViewers**,
+                             **Fitters** and **PlotTools**.
+        :param title: title of the :class:`PlotTool` window, in general just
+                      indexed based on order in which they were opened.
+        """
         super(PlotTool, self).__init__()
 
         self.central_widget = QWidget()
@@ -55,7 +70,11 @@ class PlotTool(QtWidgets.QMainWindow):
         self.setWindowTitle(self.title)
         self.show()
 
-    def initUI(self):
+    def initUI(self) -> None:
+        """
+        Connect all signals to corresponding widgets (buttons, drop-down menus,
+        etc.)
+        """
 
         self.main_added.currentIndexChanged.connect(
             self.current_selection_changed)
@@ -110,7 +129,12 @@ class PlotTool(QtWidgets.QMainWindow):
         self.ann_color.clicked.connect(self.set_annotation_color)
         self.ann_added.currentIndexChanged.connect(self.ann_selection_changed)
 
-    def init_panel_design(self):
+    def init_panel_design(self) -> None:
+        """
+        Set default values of the **plot panel**; these can be personalized
+        later.
+        """
+
         self.plot_panel_design['bgr_color'] = QColor()
         self.plot_panel_design['bgr_color'].setRgb(MDC_PANEL_BGR[0],
                                                    MDC_PANEL_BGR[1],
@@ -121,7 +145,13 @@ class PlotTool(QtWidgets.QMainWindow):
         self.plot_panel_design['ticks_fsize'].setPointSize(14)
         self.plot_panel_design['labels_fsize'] = 14
 
-    def init_markers(self):
+    def init_markers(self) -> None:
+        """
+        Initialize markers - :py:obj:`dict` objects containing parameters of
+        the markers that can be appended on the curves (See XXX for more
+        details).
+        """
+
         max_w = 80
 
         self.marker_1['marker'] = pg.ScatterPlotItem()
@@ -150,21 +180,34 @@ class PlotTool(QtWidgets.QMainWindow):
         self.marker_2['button'] = QPushButton('drop')
         self.marker_2['dumped_at'] = None
 
-    def align(self):
+    def align(self) -> None:
+        """
+        Align panels in the :class:`PlotTool` main window.
+        """
+
         ptl = self.plotting_tool_layout
 
         ptl.addWidget(self.main_utils,  0, 0, 4, 1)
         ptl.addWidget(self.tabs,        0, 1, 4, 7)
         ptl.addWidget(self.plot_panel,  4, 0, 8, 8)
 
-    def set_tabs(self):
+    def set_tabs(self) -> None:
+        """
+        Wrapper for setting up tabs with formatting options.
+        """
+
         self.set_datasets_tab()
         self.set_edit_curves_tab()
         self.set_edit_plot_tab()
         self.set_markers_tab()
         self.set_annotate_tab()
 
-    def set_main_utils(self):
+    def set_main_utils(self) -> None:
+        """
+        Create widgets and align them in the **main utilities panel**,
+        showed on the top-right.
+        """
+
         mul = QtWidgets.QVBoxLayout()
 
         self.main_added_lbl = QLabel('Curves:')
@@ -183,7 +226,11 @@ class PlotTool(QtWidgets.QMainWindow):
         self.main_utils.layout = mul
         self.main_utils.setLayout(mul)
 
-    def set_datasets_tab(self):
+    def set_datasets_tab(self) -> None:
+        """
+        Create and align widgets used for importing/removing datasets.
+        """
+
         # create elements
         self.datasets_tab = QWidget()
         dtl = QtWidgets.QGridLayout()
@@ -228,7 +275,12 @@ class PlotTool(QtWidgets.QMainWindow):
         self.datasets_tab.setLayout(dtl)
         self.tabs.addTab(self.datasets_tab, 'Add/Remove data')
 
-    def set_edit_curves_tab(self):
+    def set_edit_curves_tab(self) -> None:
+        """
+        Create and align widgets used for formatting and editing appearance
+        of the curves.
+        """
+
         # create elements
         self.edit_curves_tab = QWidget()
         etl = QtWidgets.QGridLayout()
@@ -286,7 +338,12 @@ class PlotTool(QtWidgets.QMainWindow):
         self.edit_curves_tab.setLayout(etl)
         self.tabs.addTab(self.edit_curves_tab, 'Edit curves')
 
-    def set_edit_plot_tab(self):
+    def set_edit_plot_tab(self) -> None:
+        """
+        Create and align widgets used for editing appearance of the plot
+        itself (background, axes labels, etc.).
+        """
+
         # create elements
         self.edit_plot_tab = QWidget()
         eptl = QtWidgets.QGridLayout()
@@ -336,7 +393,12 @@ class PlotTool(QtWidgets.QMainWindow):
         self.edit_plot_tab.setLayout(eptl)
         self.tabs.addTab(self.edit_plot_tab, 'Edit plot')
 
-    def set_markers_tab(self):
+    def set_markers_tab(self) -> None:
+        """
+        Create and align widgets used for appending markers and moving them
+        around.
+        """
+
         # create elements
         self.markers_tab = QWidget()
         mtl = QtWidgets.QGridLayout()
@@ -383,7 +445,11 @@ class PlotTool(QtWidgets.QMainWindow):
         self.markers_tab.setLayout(mtl)
         self.tabs.addTab(self.markers_tab, 'Markers')
 
-    def set_annotate_tab(self):
+    def set_annotate_tab(self) -> None:
+        """
+        Create and align widgets used for adding and formatting annotations.
+        """
+
         # create elements
         self.ann_tab = QWidget()
         atl = QtWidgets.QGridLayout()
@@ -440,7 +506,12 @@ class PlotTool(QtWidgets.QMainWindow):
         self.ann_tab.setLayout(atl)
         self.tabs.addTab(self.ann_tab, 'Annotate')
 
-    def set_ds_dv_list(self):
+    def set_ds_dv_list(self) -> None:
+        """
+        Create list of opened **DataViewers** and initialize drop-down
+        menu *dataset* in **Add/Remove data tab** to make them accessible.
+        """
+
         # clear old lists
         self.dv_list = []
         try:
@@ -457,13 +528,19 @@ class PlotTool(QtWidgets.QMainWindow):
             dvi_lbl = dvi.split('/')[-1]
             self.ds_dv.addItem(dvi_lbl)
             if isinstance(self.data_browser.data_viewers[dvi],
-                          p3d.MainWindow3D):
-                for key in self.data_browser.data_viewers[dvi].data_viewers.keys():
+                          p3d.DataViewer3D):
+                for key in \
+                        self.data_browser.data_viewers[dvi].data_viewers.keys():
                     key_lbl = key.split('/')[-1]
                     self.dv_list.append(key)
                     self.ds_dv.addItem(key_lbl)
 
-    def set_ds_dv_plot_list(self):
+    def set_ds_dv_plot_list(self) -> None:
+        """
+        Create list of curves possible to import from selected
+        **DataViewer** and initialize drop-down menu *curve:* in
+        **Add/Remove data tab** to make them accessible.
+        """
 
         self.ds_dv_plot.clear()
         try:
@@ -474,7 +551,7 @@ class PlotTool(QtWidgets.QMainWindow):
 
         dv = self.data_browser.data_viewers[dv_lbl]
 
-        if isinstance(dv, p2d.MainWindow2D):
+        if isinstance(dv, p2d.DataViewer2D):
             self.ds_dv_plot.addItem('edc')
             self.ds_dv_plot.addItem('mdc')
             for key in dv.data_viewers.keys():
@@ -482,13 +559,17 @@ class PlotTool(QtWidgets.QMainWindow):
                     self.ds_dv_plot.addItem('edc_fitter')
                 if 'mdc_viewer' in key:
                     self.ds_dv_plot.addItem('mdc_fitter')
-        elif isinstance(dv, p3d.MainWindow3D):
+        elif isinstance(dv, p3d.DataViewer3D):
             self.ds_dv_plot.addItem('main edc')
             self.ds_dv_plot.addItem('single point edc')
             self.ds_dv_plot.addItem('vertical (analyzer)')
             self.ds_dv_plot.addItem('horizontal (scanned)')
 
-    def add_dataset(self):
+    def add_dataset(self) -> None:
+        """
+        Add a curve based on current *dataset* and *curve* (**Add/Remove data
+        tab**) selection.
+        """
 
         idx = self.ds_dv.currentIndex()
 
@@ -507,7 +588,7 @@ class PlotTool(QtWidgets.QMainWindow):
             no_entries_box.setIcon(QMessageBox.Information)
             no_entries_box.setWindowTitle('Doh.')
             no_entries_box.setText('Something went wrong.  '
-                                   'Open new data set and update.')
+                                   'Open new dataset and update.')
             no_entries_box.setStandardButtons(QMessageBox.Ok)
             if no_entries_box.exec() == QMessageBox.Ok:
                 return
@@ -518,7 +599,7 @@ class PlotTool(QtWidgets.QMainWindow):
                 no_name_box = QMessageBox()
                 no_name_box.setIcon(QMessageBox.Information)
                 no_name_box.setWindowTitle('Doh.')
-                no_name_box.setText('Need to specify data set\'s name.')
+                no_name_box.setText('Need to specify dataset\'s name.')
                 no_name_box.setStandardButtons(QMessageBox.Ok)
                 if no_name_box.exec() == QMessageBox.Ok:
                     return
@@ -530,7 +611,7 @@ class PlotTool(QtWidgets.QMainWindow):
                 no_dv_box = QMessageBox()
                 no_dv_box.setIcon(QMessageBox.Information)
                 no_dv_box.setWindowTitle('Doh.')
-                no_dv_box.setText('It seems the data set has been closed.  '
+                no_dv_box.setText('It seems the dataset has been closed.  '
                                   'Make sure to update.')
                 no_dv_box.setStandardButtons(QMessageBox.Ok)
                 if no_dv_box.exec() == QMessageBox.Ok:
@@ -543,9 +624,9 @@ class PlotTool(QtWidgets.QMainWindow):
             y = np.array([float(yi) for yi in y])
             data_item_lbl = plot
         else:
-            if isinstance(dv, p2d.MainWindow2D):
+            if isinstance(dv, p2d.DataViewer2D):
                 x, y = self.get_data_from_2dviewer(dv_lbl, plot)
-            elif isinstance(dv, p3d.MainWindow3D):
+            elif isinstance(dv, p3d.DataViewer3D):
                 x, y = self.get_data_from_3dviewer(dv_lbl, plot)
             data_item_lbl = dv_lbl.split('/')[-1] + ' - ' + plot
 
@@ -556,7 +637,8 @@ class PlotTool(QtWidgets.QMainWindow):
             data_item_colision_box.setText('Curve with this name already has '
                                            'been added.  Want to add '
                                            'another one?')
-            data_item_colision_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            data_item_colision_box.setStandardButtons(QMessageBox.Yes |
+                                                      QMessageBox.No)
             if data_item_colision_box.exec() == QMessageBox.Yes:
                 lbl, lbl_return_val = \
                     QtWidgets.QInputDialog.getText(self, '',
@@ -583,7 +665,11 @@ class PlotTool(QtWidgets.QMainWindow):
         self.plot_panel.addItem(self.data_items[data_item_lbl]['data_item'])
         self.main_added.addItem(data_item_lbl)
 
-    def remove_dataset(self):
+    def remove_dataset(self) -> None:
+        """
+        Remove dataset currently selected in *curves* (**main utilities
+        panel**).
+        """
 
         item = self.main_added.currentText()
         idx = self.main_added.currentIndex()
@@ -591,7 +677,13 @@ class PlotTool(QtWidgets.QMainWindow):
         self.main_added.removeItem(idx)
         del(self.data_items[item])
 
-    def current_selection_changed(self):
+    def current_selection_changed(self) -> None:
+        """
+        Change selection of the current curve (**main utilities** -> *Curves*)
+        without emitting any signals and triggering methods, but making them
+        ready for editing.
+        """
+
         try:
             di = self.data_items[self.main_added.currentText()]
         except KeyError:
@@ -611,7 +703,20 @@ class PlotTool(QtWidgets.QMainWindow):
             pass
         self.ec_color.setStyleSheet(f'background-color: rgb{clr}')
 
-    def get_data_from_2dviewer(self, dv_lbl, plot):
+    def get_data_from_2dviewer(self, dv_lbl: str, plot: str) -> tuple:
+        """
+        Get data from selected :class:`~_2Dviewer.DataViewer2D`, based on
+        *dataset* and *curve* selection in **Add/Remove data tab**.
+
+        :param dv_lbl: title/index of the **DataViewer** in
+                       :class:`DataBrowser`
+        :param plot: type of curve (`edc` or `mdc`)
+        :return: result in format:
+
+            - ``res[0]`` - :class:`np.ndarray`; `x` data
+            - ``res[1]`` - :class:`np.ndarray`; `y` data
+        """
+
         dv = self.data_browser.data_viewers[dv_lbl]
 
         if plot == 'edc':
@@ -629,9 +734,23 @@ class PlotTool(QtWidgets.QMainWindow):
             return edc_fitter.edc_erg_ax, edc_fitter.edc
         elif plot == 'mdc_fitter':
             mdc_fitter = dv.data_viewers[dv_lbl + '_mdc_viewer']
-            return mdc_fitter.k_ax, mdc_fitter.mdc
+            return mdc_fitter.x_axis, mdc_fitter.mdc
 
-    def get_data_from_3dviewer(self, dv_lbl, plot):
+    def get_data_from_3dviewer(self, dv_lbl: str, plot: str) -> tuple:
+        """
+        Get data from selected :class:`~_3Dviewer.DataViewer3D`, based on
+        *dataset* and *curve* selection in *Add/Remove data* tab.
+
+        :param dv_lbl: title/index of the **DataViewer** in
+                       :class:`DataBrowser`
+        :param plot: type of curve (`main edc` or `vertical (analyzer)`,
+                     etc.)
+        :return: result in format:
+
+            - ``res[0]`` - :class:`np.ndarray`; `x` data
+            - ``res[1]`` - :class:`np.ndarray`; `y` data
+        """
+
         dv = self.data_browser.data_viewers[dv_lbl]
 
         if plot == 'main edc':
@@ -651,7 +770,12 @@ class PlotTool(QtWidgets.QMainWindow):
         elif plot == 'horizontal (scanned)':
             return dv.data_set.xscale, dv.plot_x_data
 
-    def set_color(self):
+    def set_color(self) -> None:
+        """
+        Open a :class:`QColorDialog` and pick a new color for selected curve
+        and change its value in curve's parameters.
+        """
+
         cd = QColorDialog.getColor()
         cd_str = 'rgb' + str(cd.getRgb()[:3])
         self.ec_color.setStyleSheet(f'background-color: {cd_str}')
@@ -663,7 +787,15 @@ class PlotTool(QtWidgets.QMainWindow):
 
         self.set_pen()
 
-    def set_pen(self, loading=False):
+    def set_pen(self, loading: bool = False) -> None:
+        """
+        Do an actual update of the curve's appearance after changing color
+        (:meth:`set_color`) or style.
+
+        :param loading: if :py:obj:`True`, apply parameters of the curve being
+                        loaded, instead of currently selected
+        """
+
         data_item_lbl = self.main_added.currentText()
         if loading:
             w = self.data_items[data_item_lbl]['width']
@@ -681,7 +813,17 @@ class PlotTool(QtWidgets.QMainWindow):
         self.data_items[data_item_lbl]['width'] = w
         self.data_items[data_item_lbl]['line_style'] = style_lbl
 
-    def get_line_style(self):
+    def get_line_style(self) -> tuple:
+        """
+        Get style (solid line, dashed, etc.) of the curve.
+
+        :return: result in format:
+
+            - ``res[0]`` - :mod:`QtCore.Qt`; object of the selected line style
+            - ``res[1]`` - :py:obj:`str`; string representing selected line's
+              style
+        """
+
         s = self.ec_style.currentText()
         if s == '-':
             style = QtCore.Qt.SolidLine
@@ -696,13 +838,21 @@ class PlotTool(QtWidgets.QMainWindow):
 
         return style, s
 
-    def update_dataset(self, loading=False):
+    def update_dataset(self, loading: bool = False) -> None:
+        """
+        Update selected curve when offset or normalization changes.
+
+        :param loading: if :py:obj:`True`, apply parameters of the curve being
+                        loaded, instead of currently selected
+        """
+
         data_item_lbl = self.main_added.currentText()
         if loading:
             x_off = self.data_items[data_item_lbl]['x_off']
             y_off = self.data_items[data_item_lbl]['y_off']
             scale = self.data_items[data_item_lbl]['scale']
-            self.ec_normalize.setChecked(self.data_items[data_item_lbl]['normalize'])
+            self.ec_normalize.setChecked(
+                self.data_items[data_item_lbl]['normalize'])
         else:
             x_off = self.ec_offset_x.value()
             y_off = self.ec_offset_y.value()
@@ -724,7 +874,12 @@ class PlotTool(QtWidgets.QMainWindow):
         self.update_marker(marker=self.marker_1)
         self.update_marker(marker=self.marker_2)
 
-    def reset_scaling(self):
+    def reset_scaling(self) -> None:
+        """
+        Reset all offsets and normalization and bring curve back to original
+        values.
+        """
+
         data_item_lbl = self.main_added.currentText()
         org = self.data_items[data_item_lbl]['org_data']
         self.data_items[data_item_lbl]['data_item'].setData(deepcopy(org[0]),
@@ -738,7 +893,14 @@ class PlotTool(QtWidgets.QMainWindow):
         self.data_items[data_item_lbl]['scale'] = 1
         self.data_items[data_item_lbl]['normalize'] = False
 
-    def set_bgr_color(self, loading=False):
+    def set_bgr_color(self, loading: bool = False) -> None:
+        """
+        Change color of the plot's background.
+
+        :param loading: if :py:obj:`True`, apply parameters of the plot being
+                        loaded, instead of currently selected
+        """
+
         if loading:
             cd_str = 'rgb' + \
                      str(self.plot_panel_design['bgr_color'].getRgb()[:3])
@@ -750,7 +912,14 @@ class PlotTool(QtWidgets.QMainWindow):
 
         self.set_plot_layout(loading=loading)
 
-    def set_axes_color(self, loading=False):
+    def set_axes_color(self, loading: object = False) -> None:
+        """
+        Change color of the plot's axes.
+
+        :param loading: if :py:obj:`True`, apply parameters of the plot being
+                        loaded, instead of currently selected
+        """
+
         if loading:
             cd_str = 'rgb' + \
                      str(self.plot_panel_design['axes_color'].getRgb()[:3])
@@ -762,10 +931,14 @@ class PlotTool(QtWidgets.QMainWindow):
 
         self.set_plot_layout(loading=loading)
 
-    def set_ticks_fsize(self, loading=False):
-        self.set_plot_layout(loading=loading)
+    def set_plot_layout(self, loading: bool = False) -> None:
+        """
+        Set layout of the plot.
 
-    def set_plot_layout(self, loading=False):
+        :param loading: if :py:obj:`True`, apply parameters of the plot being
+                        loaded, instead of currently selected
+        """
+
         bgr_clr = self.plot_panel_design['bgr_color']
         ax_clr = self.plot_panel_design['axes_color']
 
@@ -812,7 +985,19 @@ class PlotTool(QtWidgets.QMainWindow):
             elif len(ylbl) == 2:
                 left_ax.setLabel(text=ylbl[0], units=ylbl[1], **label_style)
 
-    def get_data_limits(self):
+    def get_data_limits(self) -> Union[tuple, None]:
+        """
+        Get minimal and maximal values  of `x` and `y` considering all loaded
+        datasets.
+
+        :return: result in format:
+
+            - ``res[0]`` - :py:obj:`float`; x_min
+            - ``res[0]`` - :py:obj:`float`; x_max
+            - ``res[0]`` - :py:obj:`float`; y_min
+            - ``res[0]`` - :py:obj:`float`; y_max
+        """
+
         try:
             di_lbl = self.main_added.currentText()
             x, y = self.data_items[di_lbl]['data_item'].getData()
@@ -832,7 +1017,16 @@ class PlotTool(QtWidgets.QMainWindow):
                 ymax = y.max()
         return xmin, xmax, ymin, ymax
 
-    def drop_marker(self, marker=None):
+    def drop_marker(self, marker: dict) -> None:
+        """
+        Drop marker at the given curve. Markers help see exact value at the
+        axes and calculate differences if two markers were dropped.
+        If triggered on existing marker - remove it.
+
+        :param marker: dictionary containing all info on the marker
+        """
+
+        # check if there are any datasets
         if len(self.data_items.keys()) == 0:
             no_data_item_box = QMessageBox()
             no_data_item_box.setIcon(QMessageBox.Information)
@@ -875,7 +1069,12 @@ class PlotTool(QtWidgets.QMainWindow):
             self.plot_panel.removeItem(marker['marker'])
             self.set_markers_differences()
 
-    def set_markers_differences(self):
+    def set_markers_differences(self) -> None:
+        """
+        If two markers were dropped, display a difference between them along
+        `x` and `y` axes.
+        """
+
         if self.marker_1['dropped'] and self.marker_2['dropped']:
             dx = np.abs(self.marker_1['x'].value() -
                         self.marker_2['x'].value())
@@ -888,7 +1087,13 @@ class PlotTool(QtWidgets.QMainWindow):
             self.markers_dx.setText('-')
             self.markers_dy.setText('-')
 
-    def update_marker(self, marker=None):
+    def update_marker(self, marker: dict) -> None:
+        """
+        Update marker's position.
+
+        :param marker: dictionary containing all info on the marker
+        """
+
         marker = marker
         if marker['dropped']:
             x, y = self.data_items[marker['dumped_at']]['data_item'].getData()
@@ -901,7 +1106,11 @@ class PlotTool(QtWidgets.QMainWindow):
         else:
             return
 
-    def set_annotation_color(self):
+    def set_annotation_color(self) -> None:
+        """
+        Set color of the annotation text.
+        """
+
         name = self.ann_name.text()
         if not (name in self.annotations.keys()):
             no_annotation_box = QMessageBox()
@@ -918,7 +1127,11 @@ class PlotTool(QtWidgets.QMainWindow):
         self.annotations[name]['color'] = cd_str
         self.add_update_annotation()
 
-    def add_update_annotation(self):
+    def add_update_annotation(self) -> None:
+        """
+        Add/update existing annotation (text, color, fontsize, `etc.`).
+        """
+
         name = self.ann_name.text()
         if name == '':
             no_name_box = QMessageBox()
@@ -963,7 +1176,11 @@ class PlotTool(QtWidgets.QMainWindow):
         self.annotations[name]['x'] = x
         self.annotations[name]['y'] = y
 
-    def remove_annotation(self):
+    def remove_annotation(self) -> None:
+        """
+        Remove annotation.
+        """
+
         name = self.ann_name.text()
         try:
             self.plot_panel.removeItem(self.annotations[name]['text_item'])
@@ -974,7 +1191,12 @@ class PlotTool(QtWidgets.QMainWindow):
         except KeyError:
             pass
 
-    def ann_selection_changed(self):
+    def ann_selection_changed(self) -> None:
+        """
+        When selected annotation changed, fill the fields with its values to
+        allow for editing it.
+        """
+
         name = self.ann_added.currentText()
         if name == '':
             self.ann_name.setText('')
@@ -993,7 +1215,18 @@ class PlotTool(QtWidgets.QMainWindow):
             self.ann_color.setStyleSheet(f'background-color: rgb{str(clr)}')
 
     @staticmethod
-    def change_without_emitting_signal(widget, value):
+    def change_without_emitting_signal(widget: Any, value: Any) -> None:
+        """
+        Change value of a widget without emitting signal and triggering
+        connected methods.
+
+        :param widget: widget which value will be changed. Can be
+                       :class:`QCheckBox`, :class:`QComboBox`,
+                       :class:`QSpinBox`, `etc.`
+        :param value: value to be set. Can be :py:obj:`bool`, :py:obj:`str`,
+                      :py:obj:`int`, depending on the widget.
+        """
+
         widget.blockSignals(True)
         try:
             if isinstance(widget, QCheckBox):
@@ -1008,8 +1241,21 @@ class PlotTool(QtWidgets.QMainWindow):
             widget.blockSignals(False)
 
     @staticmethod
-    def set_qspinbox(box, box_range=[-1., 1.], value=1., decimals=3,
-                     step=0.1, max_w=80):
+    def set_qspinbox(box: QSpinBox, box_range: list = [-1., 1.],
+                     value: Union[int, float] = 1., decimals: int = 3,
+                     step: float = 0.1, max_w: int = 80) -> None:
+        """
+        Wrapper for setting up :class:`QSpinBox` or :class:`QDoubleSpinBox`.
+
+        :param box: QBox to set up
+        :param box_range: [`min`, `max`] values defining its range
+        :param value: initial value
+        :param decimals: if :class:`QDoubleSpinBox`, number of decimals to
+                         display
+        :param step: if :class:`QDoubleSpinBox`, value of single step
+        :param max_w: width of the widget in displayed layout
+        """
+
         box.setRange(box_range[0], box_range[1])
         box.setValue(value)
         box.setMaximumWidth(max_w)
@@ -1017,7 +1263,11 @@ class PlotTool(QtWidgets.QMainWindow):
             box.setDecimals(decimals)
             box.setSingleStep(step)
 
-    def save(self):
+    def save(self) -> None:
+        """
+        Save current image or the whole with all the parameters.
+        """
+
         save_selector_box = QMessageBox()
         save_selector_box.setIcon(QMessageBox.Question)
         save_selector_box.setWindowTitle('Save')
@@ -1036,7 +1286,13 @@ class PlotTool(QtWidgets.QMainWindow):
         elif choice == QMessageBox.Yes:
             self.save_image()
 
-    def save_session(self):
+    def save_session(self) -> None:
+        """
+        Get all datasets and parameters defining layout into
+        :class:`~argparse.Namespace` object and save it as a :mod:`pickle`
+        file.
+        """
+
         data_items_to_save = self.get_data_items_to_save()
         plot_design_to_save = self.get_plot_design_to_save()
         annotations_to_save = self.get_annotations_to_save()
@@ -1050,7 +1306,13 @@ class PlotTool(QtWidgets.QMainWindow):
 
         dl.dump(res, full_path, force=True)
 
-    def get_data_items_to_save(self):
+    def get_data_items_to_save(self) -> dict:
+        """
+        Get all plotted datasets and collect them into dictionary for saving.
+
+        :return: dictionary with all currently plotted datasets
+        """
+
         data_items_to_save = {}
         for key in self.data_items.keys():
             data_items_to_save[key] = {}
@@ -1063,7 +1325,13 @@ class PlotTool(QtWidgets.QMainWindow):
                         self.data_items[key][keyy]
         return data_items_to_save
 
-    def set_data_items_from_save(self, saved):
+    def set_data_items_from_save(self, saved: dict) -> None:
+        """
+        Get and plot datasets from loaded file.
+        
+        :param saved: dictionary with saved datasets
+        """
+
         self.data_items = {}
         for key in saved.keys():
             self.main_added.addItem(key)
@@ -1076,7 +1344,14 @@ class PlotTool(QtWidgets.QMainWindow):
                     self.data_items[key][keyy] = saved[key][keyy]
             self.plot_panel.addItem(self.data_items[key]['data_item'])
 
-    def get_plot_design_to_save(self):
+    def get_plot_design_to_save(self) -> dict:
+        """
+        Get plot's layout parameters and collect them into dictionary for 
+        saving.
+
+        :return: dictionary with all plot's parameters
+        """
+        
         plot_design_to_save = {}
         for key in self.plot_panel_design.keys():
             if key == 'ticks_fsize':
@@ -1086,7 +1361,13 @@ class PlotTool(QtWidgets.QMainWindow):
                 plot_design_to_save[key] = self.plot_panel_design[key]
         return plot_design_to_save
 
-    def set_plot_design_from_save(self, saved):
+    def set_plot_design_from_save(self, saved: dict) -> None:
+        """
+        Get and apply plot's layout parameters from loaded file.
+        
+        :param saved: dictionary with saved parameters
+        """
+        
         self.plot_panel_design = {}
         for key in saved.keys():
             if key == 'ticks_fsize':
@@ -1095,7 +1376,14 @@ class PlotTool(QtWidgets.QMainWindow):
             else:
                 self.plot_panel_design[key] = saved[key]
 
-    def get_annotations_to_save(self):
+    def get_annotations_to_save(self) -> dict:
+        """
+        Get annotations' parameters and collect them into dictionary for 
+        saving.
+
+        :return: dictionary with all annotations' parameters
+        """
+        
         annotations_to_save = {}
         for key in self.annotations.keys():
             annotations_to_save[key] = {}
@@ -1107,7 +1395,13 @@ class PlotTool(QtWidgets.QMainWindow):
                         self.annotations[key][keyy]
         return annotations_to_save
 
-    def set_annotations_from_save(self, saved):
+    def set_annotations_from_save(self, saved: dict) -> None:
+        """
+        Get and add annotations from loaded file.
+        
+        :param saved: dictionary with all annotations' parameters
+        """
+        
         self.annotations = {}
         for key in saved.keys():
             self.ann_added.addItem(key)
@@ -1121,9 +1415,12 @@ class PlotTool(QtWidgets.QMainWindow):
                 self.annotations[key]['text_item'] = \
                     pg.TextItem(text=saved[key]['text'],
                                 anchor=(1, 0), color=clr)
-        return self.annotations
 
-    def load(self):
+    def load(self) -> None:
+        """
+        Load a :mod:`pickle` file with saved plotting session.
+        """
+        
         warning_box = QMessageBox()
         warning_box.setIcon(QMessageBox.Information)
         warning_box.setWindowTitle('Load')
@@ -1166,7 +1463,11 @@ class PlotTool(QtWidgets.QMainWindow):
             self.ann_added.setCurrentIndex(idx)
             self.add_update_annotation()
 
-    def save_image(self):
+    def save_image(self) -> None:
+        """
+        Save current plot into an image file.
+        """
+        
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         full_path, types = QFileDialog.getSaveFileName(
@@ -1176,16 +1477,22 @@ class PlotTool(QtWidgets.QMainWindow):
 
         to_save.export(full_path)
 
-    def closeEvent(self, event):
-        """ closeEvent is triggered on `Alt-F4` or mouse-click closing a 
-        window. 
+    def closeEvent(self, event: Any) -> None:
         """
+        CloseEvent triggered on `Alt-F4` or mouse-click closing a window. 
+        Makes sure the window is deleted from
+        :class:`~data_browser.DataBrowser` to release memory.
+        """
+        
         del(self.data_browser.plotting_tools[self.title])
 
 
 class CustomDataItem(pg.PlotDataItem):
+    """
+    Subclass inheriting from :class:`pg.PlotDataItem`.
+    """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: dict, **kwargs: dict) -> Any:
         super(CustomDataItem, self).__init__(*args, **kwargs)
 
         self.created = datetime.datetime.now()

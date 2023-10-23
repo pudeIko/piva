@@ -1,9 +1,8 @@
-"""
-Data handler and main window creator for 3D data inspection
-"""
+from __future__ import annotations
 import os
 import warnings
 from copy import deepcopy
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,10 +13,14 @@ from pyqtgraph import InfiniteLine
 
 import piva._2Dviewer as p2d
 import piva.working_procedures as wp
-import piva.data_loader as dl
-import piva.imageplot as ip
+import piva.data_loaders as dl
+from piva.data_loaders import Dataset
+import piva.image_panels as ip
+from piva.utilities_panel import UtilitiesPanel, InfoWindow
 from piva._2Dviewer import ORIENTLINES_LINECOLOR
 from piva.cmaps import cmaps
+if TYPE_CHECKING:
+    from piva.data_browser import DataBrowser
 
 import time
 
@@ -27,13 +30,17 @@ erg_ax = 2
 
 
 class DataHandler3D:
-    """ Object that keeps track of a set of 3D data and allows
-    manipulations on it. In a Model-View-Controller framework this could be
-    seen as the Model, while :class:`MainWindow <data_slicer.pit.MainWindow>`
-    would be the View part.
+    """
+    Object that keeps track of a set of 3D data and allows manipulations on it.
     """
 
-    def __init__(self, main_window):
+    def __init__(self, main_window: DataViewer3D) -> None:
+        """
+        Initialize `DataHandler` for :class:`DataViewer3D`.
+
+        :param main_window: related viewer displaying the data
+        """
+
         self.main_window = main_window
         self.binning = False
 
@@ -44,7 +51,8 @@ class DataHandler3D:
         # Indices of *data* that are displayed in the main plot
         self.displayed_axes = (0, 1)
         # Index along the z axis at which to produce a slice
-        self.z = ip.TracedVariable(0, name='z')
+        # self.z = ip.TracedVariable(0, name='z')
+        self.z = ip.CustomTracedVariable(0, name='z')
 
         # moved to get rid of warnings
         self.zmin = 0
@@ -53,43 +61,45 @@ class DataHandler3D:
         self.cut_y_data = None
         self.cut_x_data = None
 
-    def get_data(self):
-        """ Convenience `getter` method. Allows writing ``self.get_data()``
-        instead of ``self.data.get_value()``.
+    def get_data(self) -> np.ndarray:
         """
+        Convenient *getter* method for entire 3D array of data.
+
+        :return: 3D array with data
+        """
+
         if self.main_window.util_panel.image_normalize.isChecked():
             return self.norm_data
         else:
             return self.data.get_value()
 
-    def set_data(self, data):
-        """ Convenience `setter` method. Allows writing ``self.set_data(d)``
-        instead of ``self.data.set_value(d)``.
+    def set_data(self, data: np.ndarray) -> None:
         """
+        Set data for the :class:`DataViewer3D`.
+
+        :param data: array with the data
+        """
+
         self.data.set_value(data)
         with warnings.catch_warnings():
             self.norm_data = wp.normalize(data)
 
-    def prepare_data(self, data, axes=3 * [None]):
-        """ Load the specified data and prepare the corresponding z range.
-        Then display the newly loaded data.
+    def prepare_data(self, data: np.ndarray, axes: list = 3 * [None]) -> None:
+        """
+        Register loaded data and axes and pass them to the
+        :class:`DataViewer3D`. Prepare normalized data for quick availability.
 
-        **Parameters**
-
-        ====  =================================================================
-        data  3d array; the data to display
-        axes  len(3) list or array of 1d-arrays or None; the units along the
-              x, y and z axes respectively. If any of those is *None*, pixels
-              are used.
-        ====  =================================================================
+        :param data: loaded array of data
+        :param axes: loaded list of axes
         """
 
-        self.data = ip.TracedVariable(data, name='data')
+        # self.data = ip.TracedVariable(data, name='data')
+        self.data = ip.CustomTracedVariable(data, name='data')
         self.axes = np.array(axes, dtype="object")
         with warnings.catch_warnings():
             self.norm_data = wp.normalize(data)
         self.prepare_axes()
-        self.on_z_dim_change()
+        self.set_main_z_plot()
 
         # Connect signal handling so changes in data are immediately reflected
         self.z.sig_value_changed.connect(
@@ -98,76 +108,43 @@ class DataHandler3D:
         self.main_window.update_main_plot()
         self.main_window.set_axes()
 
-    def get_main_data(self):
-        """ Return the 2d array that is currently displayed in the main plot.
+    def get_main_data(self) -> np.ndarray:
         """
+        Convenient *getter* method for data currently plotted on **main plot**.
+
+        :return: 2D array of data
+        """
+
         return self.main_window.main_plot.image_data
 
-    def get_cut_data(self):
-        """ Return the 2d array that is currently displayed in the cut plot.
+    def update_z_range(self) -> None:
         """
-        return self.main_window.cut_plot.image_data
-
-    def get_hprofile(self):
-        """ Return an array containing the y values displayed in the
-        horizontal profile plot (mw.y_plot).
-
-        .. seealso::
-            :func:`data_slicer.imageplot.CursorPlot.get_data`
+        Set allowed *z* values when data are first loaded or update when
+        binning is enabled.
         """
-        return self.main_window.y_plot.get_data()[1]
 
-    def get_vprofile(self):
-        """ Return an array containing the x values displayed in the
-        vertical profile plot (mw.x_plot).
-
-        .. seealso::
-            :func:`data_slicer.imageplot.CursorPlot.get_data`
-        """
-        return self.main_window.x_plot.get_data()[0]
-
-    def get_iprofile(self):
-        """ Return an array containing the y values displayed in the
-        integrated intensity profile plot (mw.integrated_plot).
-
-        .. seealso::
-            :func:`data_slicer.imageplot.CursorPlot.get_data`
-        """
-        return self.main_window.integrated_plot.get_data()[1]
-
-    def update_z_range(self):
-        """ When new data is loaded or the axes are rolled, the limits and
-        allowed values along the z dimension change.
-        """
         # Determine the new ranges for z
         self.zmin = 0
         self.zmax = self.get_data().shape[2]
 
         self.z.set_allowed_values(range(self.zmin, self.zmax))
 
-    def prepare_axes(self):
-        """ Create a list containing the three original x-, y- and z-axes
-        and replace *None* with the amount of pixels along the given axis.
+    def prepare_axes(self) -> None:
         """
+        Prepare loaded axes in order: [*scanned*, *analyzer*, *energy*].
+        """
+
         shapes = self.data.get_value().shape
         # Avoid undefined axes scales and replace them with len(1) sequences
         for i, axis in enumerate(self.axes):
             if axis is None:
                 self.axes[i] = np.arange(shapes[i])
 
-    def on_data_change(self):
-        """ Update self.main_window.image_data and replot. """
-        self.update_image_data()
-        self.main_window.redraw_plots()
-        # Also need to recalculate the intensity plot
-        self.on_z_dim_change()
-
-    def on_z_dim_change(self):
-        """ Called when either completely new data is loaded or the dimension
-        from which we look at the data changed (e.g. through :func:`roll_axes
-        <data_slicer.pit.PITDataHandler.roll_axes>`).
-        Update the z range and the integrated intensity plot.
+    def set_main_z_plot(self) -> None:
         """
+        Set the `z` range and the integrated intensity plot.
+        """
+
         self.update_z_range()
 
         # Get a shorthand for the integrated intensity plot
@@ -191,15 +168,18 @@ class DataHandler3D:
         ip.set_secondary_axis(0, len(zscale))
         ip.set_ticks(zmin, zmax, ip.main_xaxis)
 
-    def calculate_integrated_intensity(self):
+    def calculate_integrated_intensity(self) -> None:
+        """
+        Calculate EDC profile integrated over all scanned/analyzer channels.
+        """
+
         self.integrated = self.get_data().sum(0).sum(0)
 
-    def update_image_data(self):
-        """ Get the right (possibly integrated) slice out of *self.data*,
-        apply postprocessings and store it in *self.image_data*.
-        Skip this if the z value happens to be out of range, which can happen
-        if the image data changes and the z scale hasn't been updated yet.
+    def update_image_data(self) -> None:
         """
+        Calculate correct energy slice and update **main panel** image.
+        """
+
         z = self.z.get_value()
         integrate_z = self.main_window.plot_z.width
         data = self.get_data()
@@ -217,46 +197,18 @@ class DataHandler3D:
                 '({:.4f})'.format(self.main_window.new_energy_axis[z]))
 
     @staticmethod
-    def make_slice(data, dim, index, integrate=0, silent=True):
+    def make_slice(data: np.ndarray, dim: int, index: int,
+                   integrate: int = 0) -> np.ndarray:
         """
-        Take a slice out of an N dimensional dataset *data* at *index* along
-        dimension *dim*. Optionally integrate by +- *integrate* channels around
-        *index*.
-        If *data* has shape::
+        Take a slice of dataset at ``index`` along dimension ``dim``.
+        Optionally integrate by (+\-) ``integrate`` channels around ``index``.
 
-            (n0, n1, ..., n(dim-1), n(dim), n(dim+1), ..., n(N-1))
-
-        the result will be of dimension N-1 and have shape::
-
-            (n0, n1, ..., n(dim-1), n(dim+1), ..., n(N-1))
-
-        or in other words::
-
-            shape(result) = shape(data)[:dim] + shape(data)[dim+1:]
-
-        .
-
-        **Parameters**
-
-        =========  ============================================================
-        data       array-like; N dimensional dataset.
-        dim        int, 0 <= d < N; dimension along which to slice.
-        index      int, 0 <= index < data.size[d]; The index at which to create
-                   the slice.
-        integrate  int, ``0 <= integrate < |index|``; the number of slices
-                    above and below slice *index* over which to integrate.
-                    A warning is
-                    issued if the integration range would exceed the data
-                    (can be turned off with *silent*).
-        silent     bool; toggle warning messages.
-        =========  ============================================================
-
-        **Returns**
-
-        ===  ==================================================================
-        res  np.array; slice at *index* alond *dim* with dimensions shape[:d] +
-             shape[d+1:].
-        ===  ==================================================================
+        :param data: 3D array with data
+        :param dim: dimension along which data will be sliced
+        :param index: index around which slice will be integrated
+        :param integrate: number of bins around which (+\-) slice will be
+                          summed
+        :return: 2D array of sliced data
         """
         # Find the dimensionality and the number of slices
         # along the specified dimension.
@@ -273,15 +225,8 @@ class DataHandler3D:
         start = index - integrate
         stop = index + integrate + 1
         if start < 0:
-            if not silent:
-                warnings.warn(
-                    'i - integrate ({}) < 0, setting start=0'.format(start))
             start = 0
         if stop > n_slices:
-            if not silent:
-                warning = 'i + integrate ({}) > n_slices ({}), ' \
-                          'setting stop=n_slices'.format(stop, n_slices)
-                warnings.warn(warning)
             stop = n_slices
 
         # Roll the original data such that the specified dimension comes first
@@ -297,75 +242,26 @@ class DataHandler3D:
         i_rolled = np.roll(i_original, dim)
         return np.moveaxis(sliced, i_rolled, i_original)
 
-    def lineplot(self, plot='main', dim=0, ax=None, n=10, offset=0.2, lw=0.5,
-                 color='k', label_fmt='{:.2f}', n_ticks=5, **getlines_kwargs):
+
+class DataViewer3D(QtWidgets.QMainWindow):
+    """
+    Main window of the 3D viewer.
+    """
+
+    def __init__(self, data_browser: DataBrowser, data_set: Dataset = None,
+                 index: str = None) -> None:
         """
-        Create a matplotlib figure with *n* lines extracted out of one of the
-        visible plots. The lines are normalized to their global maximum and
-        shifted from each other by *offset*.
-        See :func:`get_lines <data_slicer.utilities.get_lines>` for more
-        options on the extraction of the lines.
-        This wraps the :class:`ImagePlot <data_slicer.imageplot.ImagePlot>`'s
-        lineplot method.
+        Initialize main window.
 
-        **Parameters**
-
-        ===============  ======================================================
-        plot             str; either "main" or "cut", specifies from which
-                         plot to extract the lines.
-        dim              int; either 0 or 1, specifies in which direction to
-                         take the lines.
-        ax               matplotlib.axes.Axes; the axes in which to plot. If
-                         *None*, create a new figure with a fresh axes.
-        n                int; number of lines to extract.
-        offset           float; spacing between neighboring lines.
-        lw               float; linewidth of the plotted lines.
-        color            any color argument understood by matplotlib; color
-                         of the plotted lines.
-        label_fmt        str; a format string for the ticklabels.
-        n_ticks          int; number of ticks to print.
-        getlines_kwargs  other kwargs are passed to :func:`get_lines
-                         <data_slicer.utilities.get_lines>`
-        ===============  ======================================================
-
-        **Returns**
-
-        ===========  ==========================================================
-        lines2ds     list of Line2D objects; the drawn lines.
-        xticks       list of float; locations of the 0 intensity value of
-                     each line.
-        xtickvalues  list of float; if *momenta* were supplied, corresponding
-                     xtick values in units of *momenta*. Otherwise this is
-                     just a copy of *xticks*.
-        xticklabels  list of str; *xtickvalues* formatted according to
-                     *label_fmt*.
-        ===========  ==========================================================
-
-        .. seealso::
-            :func:`get_lines <data_slicer.utilities.get_lines>`
+        :param data_browser: `DataBrowser` that was used for opening
+                             **DataViewer**, for keeping reference to all
+                             other opened **DataViewer**
+        :param data_set: loaded dataset with available metadata.
+        :param index: title of the window and index in the record of opened
+                      **DataViewer**
         """
-        # Get the specified data
-        if plot == 'main':
-            imageplot = self.main_window.main_plot
-        elif plot == 'cut':
-            imageplot = self.main_window.cut_plot
-        else:
-            raise ValueError('*plot* should be one of ("main", "cut").')
 
-        # Create a mpl axis object if none was given
-        if ax is None:
-            fig, ax = plt.subplots(1)
-
-        return imageplot.lineplot(ax=ax, dim=dim, n=n, offset=offset, lw=lw,
-                                  color=color, label_fmt=label_fmt,
-                                  n_ticks=n_ticks, **getlines_kwargs)
-
-
-class MainWindow3D(QtWidgets.QMainWindow):
-
-
-    def __init__(self, data_browser, data_set=None, index=None, slice=False):
-        super(MainWindow3D, self).__init__()
+        super(DataViewer3D, self).__init__()
         self.title = index.split('/')[-1]
         self.fname = index
         self.central_widget = QtWidgets.QWidget()
@@ -378,7 +274,6 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.lut = None
         self.db = data_browser
         self.index = index
-        self.slice = slice
         self.new_energy_axis = None
         self.kx_axis = None
         self.ky_axis = None
@@ -402,15 +297,15 @@ class MainWindow3D(QtWidgets.QMainWindow):
         # Create cut plot along x
         self.cut_x = ip.ImagePlot(name='cut_x')
         # Create cut of cut_x
-        self.plot_x = ip.CursorPlot(name='plot_x')
+        self.plot_x = ip.CurvePlot(name='plot_x')
         # Create cut plot along y
         self.cut_y = ip.ImagePlot(name='cut_y', orientation='vertical')
         # Create cut of cut_y
-        self.plot_y = ip.CursorPlot(name='plot_y', orientation='vertical')
+        self.plot_y = ip.CurvePlot(name='plot_y', orientation='vertical')
         # Create the integrated intensity plot
-        self.plot_z = ip.CursorPlot(name='plot_z', z_plot=True)
+        self.plot_z = ip.CurvePlot(name='plot_z', z_plot=True)
         # Create utilities panel
-        self.util_panel = ip.UtilitiesPanel(self, name='utilities_panel')
+        self.util_panel = UtilitiesPanel(self, name='utilities_panel')
 
         self.setStyleSheet(p2d.app_style)
         self.set_cmap()
@@ -459,7 +354,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
         self.set_sliders_initial_positions()
 
-    def initUI(self):
+    def initUI(self) -> None:
+        """
+        Initialize widgets by connecting triggered signals to actions.
+        """
+
         self.setWindowTitle(self.title)
         # Create a "central widget" and its layout
         self.central_widget.setLayout(self.layout)
@@ -467,16 +366,16 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
         # Create cut plot along x
         self.cut_x.register_momentum_slider(self.main_plot.pos[0])
-        self.cut_x.crosshair.vpos.sig_value_changed.connect(self.update_cut_y)
-        self.cut_x.crosshair.hpos.sig_value_changed.connect(self.update_plot_x)
+        self.cut_x.sliders.vpos.sig_value_changed.connect(self.update_cut_y)
+        self.cut_x.sliders.hpos.sig_value_changed.connect(self.update_plot_x)
 
         # Create cut of cut_x
         self.plot_x.register_traced_variable(self.main_plot.pos[0])
 
         # Create cut plot along y
         self.cut_y.register_momentum_slider(self.main_plot.pos[1])
-        self.cut_y.crosshair.vpos.sig_value_changed.connect(self.update_cut_x)
-        self.cut_y.crosshair.hpos.sig_value_changed.connect(self.update_plot_y)
+        self.cut_y.sliders.vpos.sig_value_changed.connect(self.update_cut_x)
+        self.cut_y.sliders.hpos.sig_value_changed.connect(self.update_plot_y)
 
         # Create cut of cut_y
         self.plot_y.register_traced_variable(self.main_plot.pos[1])
@@ -489,8 +388,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.util_panel.image_cmaps.currentIndexChanged.connect(self.set_cmap)
         self.util_panel.image_invert_colors.stateChanged.connect(self.set_cmap)
         self.util_panel.image_gamma.valueChanged.connect(self.set_gamma)
-        self.util_panel.image_colorscale.valueChanged.connect(
-            self.set_colorscale)
+        # self.util_panel.image_colorscale.valueChanged.connect(
+        #     self.set_colorscale)
         self.util_panel.image_normalize.stateChanged.connect(
             self.normalize_data)
         self.util_panel.image_normalize_to.currentIndexChanged.connect(
@@ -584,23 +483,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self._align()
         self.show()
 
-    def _align(self):
-        """ Align all the GUI elements in the QLayout::
-
-              0   1   2   3
-            +---+---+---+---+
-            |utilities panel| 0
-            +---+---+---+---+
-            | mdc x |       | 1
-            +-------+  edc  |
-            | cut x |       | 2
-            +-------+-------+
-            |       | c | m | 3
-            | main  | y | y | 4
-            +---+---+---+---+
-
-            (Units of subdivision [sd])
+    def _align(self) -> None:
         """
+        Align all GUI widgets in the window.
+        """
+
         # subdivision
         sd = 1
         # Get a short handle
@@ -629,17 +516,14 @@ class MainWindow3D(QtWidgets.QMainWindow):
             l.setColumnMinimumWidth(i, 50)
             l.setColumnStretch(i, 1)
 
-    def closeEvent(self, event):
-        """ Ensure that this instance is un-registered from the DataBrowser."""
-        self.db.delete_viewer_from_linked_lists(self.index.split('/')[-1])
-        del(self.db.data_viewers[self.index])
-
-    def update_main_plot(self, **image_kwargs):
-        """ Change *self.main_plot*`s currently displayed
-        :class:`image_item <data_slicer.imageplot.ImagePlot.image_item>` to
-        the slice of *self.data_handler.data* corresponding to the current
-        value of *self.z*.
+    def update_main_plot(self, **image_kwargs: dict) -> None:
         """
+        Change currently displayed **main plot's** image to the slice of data
+        corresponding to the current value of `z`.
+
+        :param image_kwargs: kwargs passed to :meth:`set_image`
+        """
+
         slider_pos = self.get_sliders_positions()
         self.data_handler.update_image_data()
 
@@ -663,15 +547,16 @@ class MainWindow3D(QtWidgets.QMainWindow):
                         z, self.db.data_viewers[dvi])
                     pos_variable.set_value(matching_idx)
 
-    def set_axes(self):
-        """ Set the x- and y-scales of the plots. The :class:`ImagePlot
-        <data_slicer.imageplot.ImagePlot>` object takes care of keeping the
-        scales as they are, once they are set.
+    def set_axes(self) -> None:
         """
+        Set the `x`- and `y`-scales of the plots.
+        :class:`.image_panels.ImagePlot` takes care of keeping the scales as
+        they are, once they are set.
+        """
+
         xaxis = self.data_handler.axes[scan_ax]
         yaxis = self.data_handler.axes[slit_ax]
         zaxis = self.data_handler.axes[erg_ax]
-        # self.main_plot.set_xscale(xaxis)
         self.main_plot.set_xscale(range(0, len(xaxis)))
         self.main_plot.set_ticks(xaxis[0], xaxis[-1],
                                  self.main_plot.main_xaxis)
@@ -679,7 +564,6 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.cut_y.set_ticks(yaxis[0], yaxis[-1], self.cut_y.main_xaxis)
         self.plot_x.set_ticks(xaxis[0], xaxis[-1], self.plot_x.main_xaxis)
         self.plot_x.set_secondary_axis(0, len(xaxis))
-        # self.main_plot.set_yscale(yaxis)
         self.main_plot.set_yscale(range(0, len(yaxis)))
         self.main_plot.set_ticks(yaxis[0], yaxis[-1],
                                  self.main_plot.main_yaxis)
@@ -689,7 +573,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.plot_y.set_secondary_axis(0, len(yaxis))
         self.main_plot.fix_viewrange()
 
-    def update_plot_x(self):
+    def update_plot_x(self) -> None:
+        """
+        Update MDC extracted from the horizontal cut.
+        """
+
         # Get shorthands for plot
         xp = self.plot_x
         try:
@@ -699,7 +587,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
             pass
 
         # Get the correct position indicator
-        pos = self.cut_x.crosshair.hpos
+        pos = self.cut_x.sliders.hpos
         if pos.allowed_values is not None:
             i_x = int(min(pos.get_value(), pos.allowed_values.max() - 1))
         else:
@@ -729,12 +617,16 @@ class MainWindow3D(QtWidgets.QMainWindow):
             linked_windows = self.util_panel.get_linked_windows()
             for dvi in self.db.data_viewers.keys():
                 if self.db.data_viewers[dvi].title in linked_windows:
-                    var = self.db.data_viewers[dvi].cut_x.crosshair.hpos
+                    var = self.db.data_viewers[dvi].cut_x.sliders.hpos
                     matching_idx = self.get_matching_energy_idx(
                         i_x, self.db.data_viewers[dvi])
                     var.set_value(matching_idx)
 
-    def update_plot_y(self):
+    def update_plot_y(self) -> None:
+        """
+        Update MDC extracted from the vertical cut.
+        """
+
         # Get shorthands for plot
         yp = self.plot_y
         try:
@@ -744,7 +636,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
             pass
 
         # Get the correct position indicator
-        pos = self.cut_y.crosshair.hpos
+        pos = self.cut_y.sliders.hpos
         if pos.allowed_values is not None:
             i_x = int(min(pos.get_value(), pos.allowed_values.max() - 1))
         else:
@@ -774,18 +666,19 @@ class MainWindow3D(QtWidgets.QMainWindow):
             linked_windows = self.util_panel.get_linked_windows()
             for dvi in self.db.data_viewers.keys():
                 if self.db.data_viewers[dvi].title in linked_windows:
-                    var = self.db.data_viewers[dvi].cut_y.crosshair.hpos
+                    var = self.db.data_viewers[dvi].cut_y.sliders.hpos
                     matching_idx = self.get_matching_energy_idx(
                         i_x, self.db.data_viewers[dvi])
                     var.set_value(matching_idx)
 
-    def update_cut_x(self):
-        """ Take a cut of *self.data_handler.data* along *self.cutline*. This
-        is used to update only the cut plot without affecting the main plot.
+    def update_cut_x(self) -> None:
         """
+        Update :class:`~image_panels.ImagePlot` with a horizontal cut.
+        """
+
         data = self.data_handler.get_data()
         # Transpose, if necessary
-        pos = self.main_plot.crosshair.hpos
+        pos = self.main_plot.sliders.hpos
         if pos.allowed_values is not None:
             i_x = int(min(pos.get_value(), pos.allowed_values.max() - 1))
         else:
@@ -809,9 +702,9 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.cut_x.xscale_rescaled = self.data_handler.axes[scan_ax]
         self.cut_x.yscale_rescaled = self.data_handler.axes[erg_ax]
         self.set_cut_x_image(image=cut, lut=self.lut)
-        self.cut_x.crosshair.vpos.set_allowed_values(np.arange(
+        self.cut_x.sliders.vpos._set_allowed_values(np.arange(
             0, len(self.data_handler.axes[scan_ax])), binning=binning)
-        self.cut_x.crosshair.hpos.set_allowed_values(np.arange(
+        self.cut_x.sliders.hpos._set_allowed_values(np.arange(
             0, len(self.data_handler.axes[erg_ax])), binning=binning)
         self.cut_x.set_bounds(0, len(self.data_handler.axes[scan_ax]),
                               0, len(self.data_handler.axes[erg_ax]))
@@ -837,18 +730,19 @@ class MainWindow3D(QtWidgets.QMainWindow):
             linked_windows = self.util_panel.get_linked_windows()
             for dvi in self.db.data_viewers.keys():
                 if self.db.data_viewers[dvi].title in linked_windows:
-                    var = self.db.data_viewers[dvi].main_plot.crosshair.hpos
+                    var = self.db.data_viewers[dvi].main_plot.sliders.hpos
                     matching_idx = self.get_matching_cut_x_idx(
                         i_x, self.db.data_viewers[dvi])
                     var.set_value(matching_idx)
 
-    def update_cut_y(self):
-        """ Take a cut of *self.data_handler.data* along *self.cutline*. This
-        is used to update only the cut plot without affecting the main plot.
+    def update_cut_y(self) -> None:
         """
+        Update :class:`~image_panels.ImagePlot` with a vertical cut.
+        """
+
         data = self.data_handler.get_data()
         # Transpose, if necessary
-        pos = self.cut_x.crosshair.vpos
+        pos = self.cut_x.sliders.vpos
         if pos.allowed_values is not None:
             i_x = int(min(pos.get_value(), pos.allowed_values.max() - 1))
         else:
@@ -892,12 +786,22 @@ class MainWindow3D(QtWidgets.QMainWindow):
             linked_windows = self.util_panel.get_linked_windows()
             for dvi in self.db.data_viewers.keys():
                 if self.db.data_viewers[dvi].title in linked_windows:
-                    var = self.db.data_viewers[dvi].cut_x.crosshair.vpos
+                    var = self.db.data_viewers[dvi].cut_x.sliders.vpos
                     matching_idx = self.get_matching_cut_y_idx(
                         i_x, self.db.data_viewers[dvi])
                     var.set_value(matching_idx)
 
-    def get_matching_energy_idx(self, master_idx, dv):
+    def get_matching_energy_idx(self, master_idx: int,
+                                dv: DataViewer3D) -> int:
+        """
+        When option for linking multiple windows is enabled, find position in
+        coordinates of master's axis energy values.
+
+        :param master_idx: index in master's energy axis
+        :param dv: enslaved :class:`DataViewer3D`
+        :return: index of energy for enslaved :class:`DataViewer3D`
+        """
+
         if self.new_energy_axis is None:
             erg = self.data_handler.axes[1][master_idx]
         else:
@@ -908,7 +812,16 @@ class MainWindow3D(QtWidgets.QMainWindow):
             erg_ax = dv.new_energy_axis
         return wp.indexof(erg, erg_ax)
 
-    def get_matching_cut_x_idx(self, master_idx, dv):
+    def get_matching_cut_x_idx(self, master_idx: int, dv: DataViewer3D) -> int:
+        """
+        When option for linking multiple windows is enabled, find position in
+        coordinates of master's horizontal momentum axis.
+
+        :param master_idx: index in master's energy axis
+        :param dv: enslaved :class:`DataViewer3D`
+        :return: index of energy for enslaved :class:`DataViewer3D`
+        """
+
         if self.ky_axis is None:
             k = self.data_handler.axes[slit_ax][master_idx]
         else:
@@ -919,7 +832,16 @@ class MainWindow3D(QtWidgets.QMainWindow):
             k_ax = dv.ky_axis
         return wp.indexof(k, k_ax)
 
-    def get_matching_cut_y_idx(self, master_idx, dv):
+    def get_matching_cut_y_idx(self, master_idx: int, dv: DataViewer3D) -> int:
+        """
+        When option for linking multiple windows is enabled, find position in
+        coordinates of master's vertical momentum axis.
+
+        :param master_idx: index in master's energy axis
+        :param dv: enslaved :class:`DataViewer3D`
+        :return: index of energy for enslaved :class:`DataViewer3D`
+        """
+
         if self.kx_axis is None:
             k = self.data_handler.axes[scan_ax][master_idx]
         else:
@@ -930,10 +852,15 @@ class MainWindow3D(QtWidgets.QMainWindow):
             k_ax = dv.kx_axis
         return wp.indexof(k, k_ax)
 
-    def set_sp_EDC_data(self):
+    def set_sp_EDC_data(self) -> None:
+        """
+        Set up/update single-point EDC, taken at the crossing point of
+        *main panel's* sliders
+        """
+
         try:
-            xpos = self.main_plot.crosshair.vpos.get_value()
-            ypos = self.main_plot.crosshair.hpos.get_value()
+            xpos = self.main_plot.sliders.vpos.get_value()
+            ypos = self.main_plot.sliders.hpos.get_value()
             bin_x, bin_y = self.util_panel.bin_x.isChecked(), \
                            self.util_panel.bin_y.isChecked()
             if bin_x and bin_y:
@@ -960,21 +887,29 @@ class MainWindow3D(QtWidgets.QMainWindow):
         except Exception:
             pass
 
-    def redraw_plots(self, image=None):
-        """ Redraw plotted data to reflect changes in data or its colors. """
+    def redraw_plots(self, image: np.ndarray = None) -> None:
+        """
+        Redraw plots to apply changes in data and color scales.
+
+        :param image: 2D array with an image
+        """
+
         try:
-            # Redraw main plot
             self.set_image(image,
                            displayed_axes=self.data_handler.displayed_axes)
-            # Redraw cut plot
-            self.update_cut()
         except AttributeError:
             pass
 
-    def set_image(self, image=None, *args, **kwargs):
-        """ Wraps the underlying ImagePlot3d's set_image method.
-        See :func:`~data_slicer.imageplot.ImagePlot3d.set_image`. *image* can
-        be *None* i.e. in order to just update the plot with a new colormap.
+    def set_image(self, image: np.ndarray = None, *args: dict,
+                  **kwargs: dict) -> None:
+        """
+        Wraps underlying :meth:`image_panels.ImagePlot.set_image()` method.
+
+        :param image: array with the data
+        :param args: additional arguments for
+                     :meth:`~image_panels.ImagePlot.set_image`
+        :param kwargs: additional keyword arguments for
+                       :meth:`~image_panels.ImagePlot.set_image`
         """
 
         # Reset the transformation
@@ -984,10 +919,17 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.main_plot.set_image(image, *args, lut=self.lut, **kwargs)
         self.set_orientating_lines()
 
-    def set_cut_x_image(self, image=None, *args, **kwargs):
-        """ Wraps the underlying ImagePlot3d's set_image method.
-        See :func:`~data_slicer.imageplot.ImagePlot3d.set_image`. *image* can
-        be *None* i.e. in order to just update the plot with a new colormap.
+    def set_cut_x_image(self, image: np.ndarray = None, *args: dict,
+                        **kwargs: dict) -> None:
+        """
+        Wraps the underlying :meth:`~image_panels.ImagePlot.set_image`
+        method for the **horizontal cut panel** image.
+
+        :param image: array with the data
+        :param args: additional arguments for
+                     :meth:`~image_panels.ImagePlot.set_image`
+        :param kwargs: additional keyword arguments for
+                       :meth:`~image_panels.ImagePlot.set_image`
         """
 
         # Reset the transformation
@@ -996,10 +938,17 @@ class MainWindow3D(QtWidgets.QMainWindow):
             image = self.image_data
         self.cut_x.set_image(image, *args, **kwargs)
 
-    def set_cut_y_image(self, image=None, *args, **kwargs):
-        """ Wraps the underlying ImagePlot3d's set_image method.
-        See :func:`~data_slicer.imageplot.ImagePlot3d.set_image`. *image* can
-        be *None* i.e. in order to just update the plot with a new colormap.
+    def set_cut_y_image(self, image: np.ndarray = None, *args: dict,
+                        **kwargs: dict) -> None:
+        """
+        Wraps the underlying :meth:`~image_panels.ImagePlot.set_image`
+        method for the **vertical cut panel** image.
+
+        :param image: array with the data
+        :param args: additional arguments for
+                     :meth:`~image_panels.ImagePlot.set_image`
+        :param kwargs: additional keyword arguments for
+                       :meth:`~image_panels.ImagePlot.set_image`
         """
 
         # Reset the transformation
@@ -1009,13 +958,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.cut_y.set_image(image, *args, **kwargs)
 
     # color methods
-    def set_cmap(self):
-        """ Set the colormap to *cmap* where *cmap* is one of the names
-        registered in :mod:`<data_slicer.cmaps>` which includes all matplotlib
-        and custom cmaps.
-        WP: small changes made to use only my list of cmaps (see cmaps.py) and
-        to shorten the list by using 'invert_colors' checkBox
+    def set_cmap(self) -> None:
         """
+        Set colormap to one of the standard :mod:`matplotlib` cmaps.
+        """
+
         try:
             cmap = self.util_panel.image_cmaps.currentText()
             if self.util_panel.image_invert_colors.isChecked() and ip.MY_CMAPS:
@@ -1030,39 +977,28 @@ class MainWindow3D(QtWidgets.QMainWindow):
             print(cmaps.keys())
         self.cmap_name = cmap
         # Since the cmap changed it forgot our settings for alpha and gamma
-        self.cmap.set_alpha(self.alpha)
+        # self.cmap.set_alpha(self.alpha)
         self.cmap.set_gamma()
         sliders_pos = self.get_sliders_positions()
         self.cmap_changed()
         self.set_sliders_postions(sliders_pos)
         self.update_z_binning_lines()
 
-    def cmap_changed(self):
-        """ Recalculate the lookup table and redraw the plots such that the
+    def cmap_changed(self) -> None:
+        """
+        Recalculate the lookup table and redraw the plots such that the
         changes are immediately reflected.
         """
+
         self.lut = self.cmap.getLookupTable()
         self.redraw_plots()
 
-    def set_alpha(self, alpha):
-        """ Set the alpha value of the currently used cmap. *alpha* can be a
-        single float or an array of length ``len(self.cmap.color)``.
+    def set_gamma(self) -> None:
         """
-        self.alpha = alpha
-        sliders_pos = self.get_sliders_positions()
-        self.cmap.set_alpha(alpha)
-        self.cmap_changed()
-        self.set_sliders_postions(sliders_pos)
-        self.update_z_binning_lines()
-        self.set_x_binning_lines()
-        self.set_y_binning_lines()
+        Set the exponent for the power-law norm that maps the colors to
+        values.
+        """
 
-    def set_gamma(self):
-        """ Set the exponent for the power-law norm that maps the colors to
-        values. I.e. the values where the colours are defined are mapped like
-        ``y=x**gamma``.
-        WP: changed to work with applied QDoubleSpinBox
-        """
         gamma = self.util_panel.image_gamma.value()
         self.gamma = gamma
         sliders_pos = self.get_sliders_positions()
@@ -1073,23 +1009,12 @@ class MainWindow3D(QtWidgets.QMainWindow):
         self.set_x_binning_lines()
         self.set_y_binning_lines()
 
-    def set_colorscale(self):
-        """ Set the relative maximum of the colormap. I.e. the colors are
-        mapped to the range `min(data)` - `vmax*max(data)`.
-        WP: changed to work with applied QDoubleSpinBox
-        """
-        vmax = self.util_panel.image_colorscale.value()
-        self.vmax = vmax
-        sliders_pos = self.get_sliders_positions()
-        self.cmap.set_vmax(vmax)
-        self.cmap_changed()
-        self.set_sliders_postions(sliders_pos)
-        self.set_x_binning_lines()
-        self.set_y_binning_lines()
-
     # sliders and binning methods
-    def set_x_binning_lines(self):
-        """ Update binning lines accordingly. """
+    def set_x_binning_lines(self) -> None:
+        """
+        Set/update binning lines of the main vertical sliders.
+        """
+
         # horizontal cut
         if self.util_panel.bin_x.isChecked():
             try:
@@ -1120,8 +1045,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
             except AttributeError:
                 pass
 
-    def set_y_binning_lines(self):
-        """ Update binning lines accordingly. """
+    def set_y_binning_lines(self) -> None:
+        """
+        Set/update binning lines of the main horizontal sliders.
+        """
+
         # vertical cut
         if self.util_panel.bin_y.isChecked():
             try:
@@ -1150,7 +1078,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
             except AttributeError:
                 pass
 
-    def set_zx_binning_line(self):
+    def set_zx_binning_line(self) -> None:
+        """
+        Set binning lines of the **horizontal cut panel** energy sliders.
+        """
+
         # horizontal plot
         if self.util_panel.bin_zx.isChecked():
             try:
@@ -1171,7 +1103,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
             except AttributeError:
                 pass
 
-    def set_zy_binning_line(self):
+    def set_zy_binning_line(self) -> None:
+        """
+        Set binning lines of the **vertical cut panel** energy sliders.
+        """
+
         # vertical plot
         if self.util_panel.bin_zy.isChecked():
             try:
@@ -1193,7 +1129,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
             except AttributeError:
                 pass
 
-    def update_xy_binning_lines(self):
+    def update_xy_binning_lines(self) -> None:
+        """
+        Update binning lines of the **horizontal cut panel** energy sliders.
+        """
+
         if self.util_panel.bin_x.isChecked():
             try:
                 pos = self.main_plot.pos[0].get_value()
@@ -1220,7 +1160,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
         else:
             pass
 
-    def update_zx_zy_binning_line(self):
+    def update_zx_zy_binning_line(self) -> None:
+        """
+        Set/update binning lines of the **vertical cut panel** energy sliders.
+        """
+
         if self.util_panel.bin_zx.isChecked():
             try:
                 pos = self.cut_x.pos[1].get_value()
@@ -1242,8 +1186,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
         else:
             pass
 
-    def update_z_binning_lines(self):
-        """ Update binning lines accordingly. """
+    def update_z_binning_lines(self) -> None:
+        """
+        Update binning lines of the **main energy panel** sliders.
+        """
+
         if self.util_panel.bin_z.isChecked():
             try:
                 half_width = self.util_panel.bin_z_nbins.value()
@@ -1255,7 +1202,6 @@ class MainWindow3D(QtWidgets.QMainWindow):
                 self.plot_z.width = half_width
                 self.plot_z.n_bins = half_width
                 self.plot_z.pos.set_allowed_values(new_range)
-                # self.update_main_plot(emit=False)
             except AttributeError:
                 pass
         else:
@@ -1265,27 +1211,51 @@ class MainWindow3D(QtWidgets.QMainWindow):
             except AttributeError:
                 pass
 
-    def set_main_energy_slider(self):
+    def set_main_energy_slider(self) -> None:
+        """
+        Set value of the main energy sliders.
+        """
+
         energy = self.util_panel.energy_main.value()
         self.data_handler.z.set_value(energy)
 
-    def set_hor_energy_slider(self):
+    def set_hor_energy_slider(self) -> None:
+        """
+        Set value of the energy sliders in **horizontal cut panel**.
+        """
+
         energy = self.util_panel.energy_hor.value()
-        self.cut_x.crosshair.hpos.set_value(energy)
+        self.cut_x.sliders.hpos.set_value(energy)
 
-    def set_vert_energy_slider(self):
+    def set_vert_energy_slider(self) -> None:
+        """
+        Set value of the energy sliders in **vertical cut panel**.
+        """
+
         energy = self.util_panel.energy_vert.value()
-        self.cut_y.crosshair.hpos.set_value(energy)
+        self.cut_y.sliders.hpos.set_value(energy)
 
-    def set_hor_momentum_slider(self):
+    def set_hor_momentum_slider(self) -> None:
+        """
+        Set value of the horizontal momentum sliders.
+        """
+
         angle = self.util_panel.momentum_hor.value()
         self.main_plot.pos[1].set_value(angle)
 
-    def set_vert_momentum_slider(self):
+    def set_vert_momentum_slider(self) -> None:
+        """
+        Set value of the vertical momentum sliders.
+        """
+
         angle = self.util_panel.momentum_vert.value()
         self.main_plot.pos[0].set_value(angle)
 
-    def set_sliders_initial_positions(self):
+    def set_sliders_initial_positions(self) -> None:
+        """
+        Set sliders initial positions to either middle of axes or *zeros*.
+        """
+
         if self.new_energy_axis is None:
             e_ax = self.data_handler.axes[erg_ax]
         else:
@@ -1314,25 +1284,48 @@ class MainWindow3D(QtWidgets.QMainWindow):
             mid_vert_angle = int(len(mv_ax) / 2)
 
         self.data_handler.z.set_value(mid_energy)
-        self.cut_x.crosshair.hpos.set_value(mid_energy)
-        self.cut_y.crosshair.hpos.set_value(mid_energy)
+        self.cut_x.sliders.hpos.set_value(mid_energy)
+        self.cut_y.sliders.hpos.set_value(mid_energy)
         self.main_plot.pos[0].set_value(mid_hor_angle)
         self.main_plot.pos[1].set_value(mid_vert_angle)
 
-    def get_sliders_positions(self):
-        main_hor = self.main_plot.crosshair.hpos.get_value()
-        main_ver = self.main_plot.crosshair.vpos.get_value()
-        cut_hor_energy = self.cut_x.crosshair.hpos.get_value()
-        cut_ver_energy = self.cut_y.crosshair.hpos.get_value()
+    def get_sliders_positions(self) -> list:
+        """
+        Get position of horizontal and vertical sliders. Useful for to storing
+        them before updating the main image, as afterwards they are moved to
+        initial positions.
+
+        :return: [`main_horizontal`, `main_vertical`, `cut_horizontal_energy`,
+                 `cut_vertical_energy`] of the sliders
+        """
+
+        main_hor = self.main_plot.sliders.hpos.get_value()
+        main_ver = self.main_plot.sliders.vpos.get_value()
+        cut_hor_energy = self.cut_x.sliders.hpos.get_value()
+        cut_ver_energy = self.cut_y.sliders.hpos.get_value()
         return [main_hor, main_ver, cut_hor_energy, cut_ver_energy]
 
-    def set_sliders_postions(self, positions):
+    def set_sliders_postions(self, positions: list) -> None:
+        """
+        Set positions of the sliders.
+
+        :param positions: [`main_horizontal`, `main_vertical`,
+                          `cut_horizontal_energy`, `cut_vertical_energy`] list
+                          of stored positions
+        """
+
         self.main_plot.pos[1].set_value(positions[0])
         self.main_plot.pos[0].set_value(positions[1])
         self.cut_x.pos[1].set_value(positions[2])
         self.cut_y.pos[1].set_value(positions[3])
 
-    def set_sliders_labels(self, dataset):
+    def set_sliders_labels(self, dataset: Dataset) -> None:
+        """
+        Set labels of the sliders depending on the :attr:`Dataset.scan_type`.
+
+        :param dataset: loaded dataset with available metadata
+        """
+
         if hasattr(dataset, 'scan_type'):
             if dataset.scan_type == 'hv scan':
                 self.util_panel.momentum_vert_label.setText('hv:')
@@ -1342,7 +1335,12 @@ class MainWindow3D(QtWidgets.QMainWindow):
         else:
             return
 
-    def apply_energy_correction(self):
+    def apply_energy_correction(self) -> None:
+        """
+        Apply saved energy corrections (*e.g.* for offset of the Fermi level)
+        and update energy axis between kinetic and binding scales.
+        """
+
         Ef = self.util_panel.axes_energy_Ef.value()
 
         scale = self.util_panel.axes_energy_scale.currentText()
@@ -1371,8 +1369,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
         # update energy labels
         main_erg_idx = self.plot_z.pos.get_value()
-        cut_x_erg_idx = self.cut_x.crosshair.hpos.get_value()
-        cut_y_erg_idx = self.cut_y.crosshair.hpos.get_value()
+        cut_x_erg_idx = self.cut_x.sliders.hpos.get_value()
+        cut_y_erg_idx = self.cut_y.sliders.hpos.get_value()
         self.util_panel.energy_main_value.setText('({:.4f})'.format(
             self.new_energy_axis[main_erg_idx]))
         self.util_panel.energy_hor_value.setText('({:.4f})'.format(
@@ -1381,7 +1379,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
             self.new_energy_axis[cut_y_erg_idx]))
 
     # analysis options
-    def normalize_data(self):
+    def normalize_data(self) -> None:
+        """
+        Normalize data along selected direction.
+        """
+
         if self.util_panel.image_normalize.isChecked():
             data = self.data_handler.data.get_value()
             norm_along = self.util_panel.image_normalize_along.currentIndex()
@@ -1396,7 +1398,12 @@ class MainWindow3D(QtWidgets.QMainWindow):
             pass
         self.update_main_plot()
 
-    def find_gamma(self):
+    def find_gamma(self) -> None:
+        """
+        Numeric routine for finding the highest symmetry point of the image.
+        See :func:`working_procedures.find_gamma` for more details.
+        """
+
         fs = self.image_data.T
         x_init = self.util_panel.orientate_init_x.value()
         y_init = self.util_panel.orientate_init_y.value()
@@ -1410,19 +1417,32 @@ class MainWindow3D(QtWidgets.QMainWindow):
             self.util_panel.orientate_find_gamma_message.setText(
                 'Couldn\'t find center of rotation.')
 
-    def copy_values_volume_to_orientate(self):
+    def copy_values_volume_to_orientate(self) -> None:
+        """
+        Copy found values for :math:`\Gamma` point to :class:`QSpinBox` of
+        **Orientate tab**.
+        """
+
         self.util_panel.orientate_init_x.setValue(
             self.util_panel.momentum_vert.value())
         self.util_panel.orientate_init_y.setValue(
             self.util_panel.momentum_hor.value())
 
-    def copy_values_orientate_to_axes(self):
+    def copy_values_orientate_to_axes(self) -> None:
+        """
+        Copy for :math:`\Gamma` point to :class:`QSpinBox` of **Axes tab**.
+        """
+
         self.util_panel.axes_gamma_x.setValue(
             self.util_panel.orientate_init_x.value())
         self.util_panel.axes_gamma_y.setValue(
             self.util_panel.orientate_init_y.value())
 
-    def set_orientating_lines(self):
+    def set_orientating_lines(self) -> None:
+        """
+        Set rotatable lines useful for finding correct
+        clockwise/counterclockwise (*azimuth*) rotation.
+        """
 
         x0 = self.util_panel.orientate_init_x.value()
         y0 = self.util_panel.orientate_init_y.value()
@@ -1490,7 +1510,22 @@ class MainWindow3D(QtWidgets.QMainWindow):
             self.orient_ver_line.setAngle(angle)
             self.main_plot.addItem(self.orient_ver_line)
 
-    def transform_angle(self, angle, orientation='horizontal'):
+    def transform_angle(self, angle: float,
+                        orientation: str = 'horizontal') -> float:
+        """
+        Transform angles to coordinates of :class:`~image_panels.ImagePlot`.
+
+        .. note::
+            When displaying straight lines rotated by some angle, the angle is
+            calculated as a tangent, taken in units of the image's pixels.
+            Since acquired images never have equal number of points, they need
+            to recalculate to dimension of the experiment.
+
+        :param angle: angle [deg] by which the line should be rotated
+        :param orientation: orientation of the analyzer slit
+        :return: transformed value of angle
+        """
+
         coeff = wp.get_step(self.data_handler.axes[scan_ax]) / \
                 wp.get_step(self.data_handler.axes[slit_ax])
         if orientation == 'horizontal':
@@ -1498,7 +1533,12 @@ class MainWindow3D(QtWidgets.QMainWindow):
         else:
             return np.rad2deg(np.arctan(np.tan(np.deg2rad(angle)) / coeff))
 
-    def convert_to_kspace(self):
+    def convert_to_kspace(self) -> None:
+        """
+        Convert angles to *k*-space. See
+        :func:`~working_procedures.angle2kspace` for more details.
+        """
+
         scanned_ax = self.data_handler.axes[scan_ax]
         anal_axis = self.data_handler.axes[slit_ax]
         d_anal_ax = self.data_handler.axes[slit_ax][
@@ -1576,7 +1616,7 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
         try:
             self.db.data_viewers[new_idx] = \
-                MainWindow3D(self.db, data_set=new_dataset, index=new_idx)
+                DataViewer3D(self.db, data_set=new_dataset, index=new_idx)
         except Exception:
             fail_box = QMessageBox()
             fail_box.setIcon(QMessageBox.Information)
@@ -1598,7 +1638,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
         if success_box.exec() == QMessageBox.Ok:
             return
 
-    def reset_kspace_conversion(self):
+    def reset_kspace_conversion(self) -> None:
+        """
+        Reset *k*-space conversion and bring analyzer axis back to [deg].
+        """
+
         self.kx_axis = None
         self.ky_axis = None
         org_hor_range = [self.data_handler.axes[0][0],
@@ -1624,7 +1668,12 @@ class MainWindow3D(QtWidgets.QMainWindow):
             self.data_handler.axes[scan_ax][
                 self.main_plot.pos[0].get_value()]))
 
-    def show_BZ_contour(self):
+    def show_BZ_contour(self) -> None:
+        """
+        Display the contour of the Brillouin zone if the material has 4- or
+        6-fold symmetry. Momentum axes must be converted to *k*-space.
+        """
+
         if not self.util_panel.image_show_BZ.isChecked():
             return
 
@@ -1663,7 +1712,14 @@ class MainWindow3D(QtWidgets.QMainWindow):
         pts = self.find_index_coords(raw_pts)
         self.plot_between_points(pts)
 
-    def plot_between_points(self, pts):
+    def plot_between_points(self, pts: list) -> None:
+        """
+        Plot shadow lines between calculated points to show contour of the
+        Brillouin zone.
+
+        :param pts: list of [[`x_0`, `y_0`], [`x_1`, `y_1`], ..., [`x_n`,
+                    `y_n`]] points to plot a lines between them
+        """
         for idx in range(len(pts) - 1):
             x = [pts[idx][0], pts[idx + 1][0]]
             y = [pts[idx][1], pts[idx + 1][1]]
@@ -1672,24 +1728,33 @@ class MainWindow3D(QtWidgets.QMainWindow):
         y = [pts[0][1], pts[-1][1]]
         self.main_plot.plot(x, y)
 
-    def show_orientation_info(self):
+    def show_orientation_info(self) -> None:
+        """
+        Show window with information on how the geometry of some beamlines
+        correspond to the way data are displayed in :mod:`piva`.
+        """
 
         title = 'piva -> beamline coordinates translator'
-        self.info_box = \
-            ip.InfoWindow(self.util_panel.orient_info_window, title)
+        self.info_box = InfoWindow(self.util_panel.orient_info_window, title)
         self.info_box.show()
 
-    def open_pit(self):
-        """ Open the data in an instance of 
-        :class:`data_slicer.pit.MainWindow`, which has the benefit of 
-        providing a free-slicing ROI.
+    def open_pit(self) -> None:
         """
+        Open the data in an instance of :class:`data_slicer.pit.MainWindow`,
+        which has the benefit of providing a free-slicing ROI.
+        """
+
         mw = pit.MainWindow()
         mw.data_handler.set_data(self.data_set.data,
                                  axes=self.data_handler.axes)
         mw.set_cmap(self.cmap_name)
 
-    def open_2dviewer(self):
+    def open_2dviewer(self) -> None:
+        """
+        Open currently displayed cut along selected direction in
+        :class:`~_2Dviewer.DataViewer2D`.
+        """
+
         data_set = deepcopy(self.data_set)
         cut_orient = self.util_panel.image_2dv_cut_selector.currentText()
 
@@ -1697,9 +1762,9 @@ class MainWindow3D(QtWidgets.QMainWindow):
             direction = 'analyzer'
             cut = self.data_handler.cut_x_data
             dim_value = self.data_set.yscale[
-                self.main_plot.crosshair.hpos.get_value()]
+                self.main_plot.sliders.hpos.get_value()]
             data_set.yscale = data_set.xscale
-            idx = self.main_plot.crosshair.hpos.get_value()
+            idx = self.main_plot.sliders.hpos.get_value()
             lbl = self.util_panel.momentum_hor_label.text()[:-1]
             if self.util_panel.bin_y.isChecked():
                 n_bin = self.util_panel.bin_y_nbins.value()
@@ -1712,8 +1777,8 @@ class MainWindow3D(QtWidgets.QMainWindow):
             direction = 'scanned'
             cut = self.data_handler.cut_y_data.T
             dim_value = self.data_set.xscale[
-                self.main_plot.crosshair.vpos.get_value()]
-            idx = self.main_plot.crosshair.vpos.get_value()
+                self.main_plot.sliders.vpos.get_value()]
+            idx = self.main_plot.sliders.vpos.get_value()
             lbl = self.util_panel.momentum_vert_label.text()[:-1]
             if self.util_panel.bin_x.isChecked():
                 n_bin = self.util_panel.bin_x_nbins.value()
@@ -1749,8 +1814,9 @@ class MainWindow3D(QtWidgets.QMainWindow):
         try:
             self.util_panel.dp_add_file_cut_entry(data_set, direction, idx,
                                                   n_bin)
+            self.db.add_viewer_to_linked_list(thread_idx, 2)
             self.db.data_viewers[thread_idx] = \
-                p2d.MainWindow2D(self.db, data_set=data_set,
+                p2d.DataViewer2D(self.db, data_set=data_set,
                                  index=thread_idx, slice=True)
         except Exception as e:
             raise e
@@ -1764,7 +1830,16 @@ class MainWindow3D(QtWidgets.QMainWindow):
             self.thread_count += 1
 
     @staticmethod
-    def transform_points(pts, angle):
+    def transform_points(pts: list, angle: float) -> list:
+        """
+        To rotate contour of the Brillouin zone, apply standard rotation
+        matrix on initially calculated points.
+
+        :param pts: list of original point
+        :param angle: angle by which the points should be transformed
+        :return: list of rotated points' coordinates
+        """
+
         theta = np.deg2rad(angle)
         transform_matrix = np.array([[np.cos(theta), -np.sin(theta)],
                                      [np.sin(theta), np.cos(theta)]])
@@ -1773,7 +1848,13 @@ class MainWindow3D(QtWidgets.QMainWindow):
             res_pts.append(np.array(pt) @ transform_matrix)
         return res_pts
 
-    def find_index_coords(self, raw_pts):
+    def find_index_coords(self, raw_pts: list) -> list:
+        """
+        Find values in index coordinates of the image's pixels
+
+        :param raw_pts: row points in [deg]
+        :return: transformed points in pixels' coordinates
+        """
 
         x0, dx = self.kx_axis[0], wp.get_step(self.kx_axis)
         y0, dy = self.ky_axis[0], wp.get_step(self.ky_axis)
@@ -1792,7 +1873,11 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
         return res_pts
 
-    def save_to_pickle(self):
+    def save_to_pickle(self) -> None:
+        """
+        Save current dataset and all applied corrections to :mod:`pickle` file.
+        """
+
         dataset = self.data_set
         savedir = self.fname[:-len(self.title)]
         up = self.util_panel
@@ -1857,7 +1942,13 @@ class MainWindow3D(QtWidgets.QMainWindow):
 
         dl.dump(dataset, (savedir + fname), force=True)
 
-    def load_corrections(self, data_set):
+    def load_corrections(self, data_set: Dataset) -> None:
+        """
+        Load saved energy corrections and axes transformed to *k*-space.
+
+        :param data_set: object containing data and available metadata.
+        """
+
         if type(data_set.Ef) == float:
             self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
         if type(data_set.hv) == float:
@@ -1871,3 +1962,12 @@ class MainWindow3D(QtWidgets.QMainWindow):
             self.kx_axis = data_set.kxscale
         if hasattr(data_set, 'kyscale'):
             self.ky_axis = data_set.kyscale
+
+    def closeEvent(self, event: Any) -> None:
+        """
+        Ensure that this instance is closed and un-registered from the
+        :class:`~data_browser.DataBrowser`.
+        """
+
+        self.db.delete_viewer_from_linked_lists(self.index.split('/')[-1])
+        del(self.db.data_viewers[self.index])

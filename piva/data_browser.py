@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QAction, QHBoxLayout, QLabel, QVBoxLayout, \
     QLineEdit, QMessageBox, QMainWindow
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
-import piva.data_loader as dl
+import piva.data_loaders as dl
 import piva.working_procedures as wp
 import piva._3Dviewer as p3d
 import piva._2Dviewer as p2d
@@ -27,22 +27,26 @@ all_dls = {
 
 
 class DataBrowser(QMainWindow):
+    """
+    Initializes and displays the **DataBrowser** window.
+    """
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         super(DataBrowser, self).__init__()
+        # get time required for opening a window
         time_packages = time.time()
         print("loading packages: {:.3f} s".format(time_packages - START_TIME))
 
-        self.working_dir = self.add_slash(os.getcwd())
-        self.thread = {}
         self.thread_count = 0
+        # self.thread = {}
         self.data_viewers = {}
         self.plotting_tools = {}
         self.file_explorer = None
         self.model = None
         self.jl_session_running = False
         self.sb_timeout = 2500
+        self.working_dir = self.add_slash(os.getcwd())
         self.set_file_explorer()
         self.set_menu_bar()
         self.set_status_bar()
@@ -60,12 +64,23 @@ class DataBrowser(QMainWindow):
                                                            time_packages))
 
     @staticmethod
-    def add_slash(path):
+    def add_slash(path: str) -> str:
+        """
+        Add ``/`` at the end of the path string (if it's not there).
+
+        :param path: initial path string
+        :return: path with appended slash
+        """
+
         if path[-1] != '/':
             path += '/'
         return path
 
-    def align(self):
+    def align(self) -> None:
+        """
+        Align panels of the :class:`DataBrowser` GUI.
+        """
+
         self.resize(700, 600)
 
         self.central_widget = QtWidgets.QWidget()
@@ -78,17 +93,11 @@ class DataBrowser(QMainWindow):
 
         self.setCentralWidget(self.central_widget)
 
-    @staticmethod
-    def del_hidden(l):
-        res = []
-        for li in l:
-            if li[0] == '.':
-                pass
-            else:
-                res.append(li)
-        return res
+    def launch_piva(self) -> None:
+        """
+        Get selected file and check if it's not opened already.
+        """
 
-    def launch_piva(self):
         fname = self.get_selected_path()
 
         if fname in self.data_viewers:
@@ -101,7 +110,12 @@ class DataBrowser(QMainWindow):
 
         self.open_dv(fname)
 
-    def mb_open_dir(self):
+    def mb_open_dir(self) -> None:
+        """
+        Open file dialog to select different working directory and change
+        the highest directory of the :class:`DataBrowser` file explorer to it.
+        """
+
         chosen_dir = str(QtWidgets.QFileDialog.getExistingDirectory(
             self, 'Select Directory', self.working_dir))
         try:
@@ -111,10 +125,13 @@ class DataBrowser(QMainWindow):
         except IndexError:
             pass
 
-    def open_dv(self, fname):
-        """ Load the currently selected file and show the data in a 
-        dataviewer. 
+    def open_dv(self, fname: str) -> None:
         """
+        Open selected file in a **DataViewer**.
+
+        :param fname: absolute path to selected file
+        """
+
         selected_loader = self.dp_dl_picker.currentText()
         if selected_loader == 'All':
             data_set = dl.load_data(fname)
@@ -123,44 +140,41 @@ class DataBrowser(QMainWindow):
             data_set = loader.load_data(fname)
 
         try:
+            # choose correct viewer
             if data_set.xscale.size == 1:
                 self.add_viewer_to_linked_list(fname, 2)
                 self.data_viewers[fname] = \
-                    p2d.MainWindow2D(self, data_set=data_set, index=fname)
+                    p2d.DataViewer2D(self, data_set=data_set, index=fname)
             else:
                 self.add_viewer_to_linked_list(fname, 3)
                 self.data_viewers[fname] = \
-                    p3d.MainWindow3D(self, data_set=data_set, index=fname)
+                    p3d.DataViewer3D(self, data_set=data_set, index=fname)
         except Exception as e:
             self.sb.showMessage('Couldn\'t load data,  format not supported.',
                                 self.sb_timeout)
             if testing:
                 raise e
 
-    def open_single_plotting_tool(self):
-        thread_lbl = f'Plotting tool - {self.thread_count + 1}'
-        self.single_plotting_tool(thread_lbl)
+    def open_single_plotting_tool(self) -> None:
+        """
+        Open :class:`PlotTool` window.
+        """
 
-    def single_plotting_tool(self, thread_index):
+        thread_lbl = f'Plotting tool - {self.thread_count + 1}'
         try:
-            self.plotting_tools[thread_index] = pt.PlotTool(self,
-                                                            title=thread_index)
+            self.plotting_tools[thread_lbl] = pt.PlotTool(self,
+                                                            title=thread_lbl)
         except Exception:
             self.sb.showMessage('Couldn\'t open plotting tool',
                                 self.sb_timeout)
         finally:
             self.thread_count += 1
 
-    def open_multiple_plotting_tool(self):
-        print('elo')
+    def reset_detail_panel(self) -> None:
+        """
+        Set all metadata fields to ``-``.
+        """
 
-    def remove_dir_string(self, dir_str, files):
-        res = []
-        for file in files:
-            res.append(file.replace(dir_str, ''))
-        return self.del_hidden(res)
-
-    def reset_detail_panel(self):
         self.dp_scan_type.setText(self.dp_def_fill)
         self.dp_scan_start.setText(self.dp_def_fill)
         self.dp_scan_stop.setText(self.dp_def_fill)
@@ -191,7 +205,12 @@ class DataBrowser(QMainWindow):
         self.dp_bl_exit.setText(self.dp_def_fill)
         self.dp_bl_fe.setText(self.dp_def_fill)
 
-    def set_details_panel(self):
+    def set_details_panel(self) -> None:
+        """
+        Create and align all metadata fields and add them to
+        :class:`DataBrowser` window.
+        """
+
         dp = QtWidgets.QWidget()
         dp_layout = QVBoxLayout()
 
@@ -505,13 +524,17 @@ class DataBrowser(QMainWindow):
             dp_layout.addWidget(dp_bl_lbl)
             dp_layout.addLayout(dp_bl_layout)
 
+        # add layout to main window
         dp_layout.addStretch()
         dp.setLayout(dp_layout)
         self.dp_def_fill = dp_def_fill
         self.details_panel_layout = dp_layout
         self.details_panel = dp
 
-    def set_menu_bar(self):
+    def set_menu_bar(self) -> None:
+        """
+        Create menu bar and connect all methods.
+        """
 
         menu_bar = QtWidgets.QMenuBar()
         file_menu = menu_bar.addMenu('&File')
@@ -534,21 +557,25 @@ class DataBrowser(QMainWindow):
         single_plot.triggered.connect(self.open_single_plotting_tool)
         plot_menu.addAction(single_plot)
 
-        multiple_plot = QAction('Multiple Plotting Tool', self)
-        multiple_plot.setShortcut('Ctrl+M')
-        multiple_plot.setStatusTip('Multiple Plotting Tool')
-        multiple_plot.triggered.connect(self.open_multiple_plotting_tool)
-
         file_menu.addSeparator()
 
         self.menu_bar = menu_bar
 
-    def set_status_bar(self):
+    def set_status_bar(self) -> None:
+        """
+        Create status bar on the botton of the **DataBrowser's** window.
+        It will be displaying some information.
+        """
+
         self.sb = QtWidgets.QStatusBar()
         self.setStatusBar(self.sb)
 
-    def set_file_explorer(self):
-        """ Create or recreate the file explorer view (QTreeView). """
+    def set_file_explorer(self) -> None:
+        """
+        Create the file explorer view using
+        :class:`~pyqtgraph.Qt.QtWidgets.QTreeView`.
+        """
+
         model = QtGui.QFileSystemModel()
         file_explorer = QtWidgets.QTreeView()
         file_explorer.setModel(model)
@@ -573,9 +600,12 @@ class DataBrowser(QMainWindow):
         self.file_explorer = file_explorer
         self.model = model
 
-    def change_working_dir(self, path):
-        """ Change working directory in a shell and update data_browser
-        tree view"""
+    def change_working_dir(self, path: str) -> None:
+        """
+        Change working directory in a shell and update :class:`DataBrowser`
+        tree view.
+        """
+
         if QtCore.QDir.exists(QtCore.QDir(), path):
             os.chdir(path)
         else:
@@ -584,25 +614,31 @@ class DataBrowser(QMainWindow):
         self.model.setRootPath(cwd)
         self.file_explorer.setRootIndex(self.model.index(cwd))
 
-    def on_selection_change(self):
-        """ Fired when a new item in the QTreeView was clicked or selected 
-        through arrow keys. Ensure the new item is visible in the tree and 
-        try to load the selected item as ARPES data.
+    def on_selection_change(self) -> None:
         """
+        Triggered when a new item in the :class:`~QTreeView` was clicked or
+        selected through arrow keys. Ensure the new item is visible in the
+        tree and try to update selected metadata panel.
+        """
+
         self.file_explorer.resizeColumnToContents(0)
         self.update_details_panel()
 
-    def get_selected_path(self):
-        """ Get the path of selected file in the QTreeView as a string. """
+    def get_selected_path(self) -> str:
+        """
+        Get the path of selected file in the :class:`QTreeView` as a string.
+        """
+
         index = self.file_explorer.currentIndex()
         path = self.file_explorer.model().filePath(index)
         return path
 
-    def update_details_panel(self):
-        """ Try reading the file currently selected by the QTreeView. In case 
-        of success, fill the details panel with metadata from the selected
-        file.
+    def update_details_panel(self) -> None:
         """
+        Try reading the file currently selected by :class:`QTreeView`.
+        In case of success, fill the metadata panel with metadata.
+        """
+
         selected_loader = self.dp_dl_picker.currentText()
         fname = self.get_selected_path()
 
@@ -702,14 +738,28 @@ class DataBrowser(QMainWindow):
         except AttributeError:
             self.reset_detail_panel()
 
-    def add_viewer_to_linked_list(self, fname, dim=2):
+    def add_viewer_to_linked_list(self, fname: str, dim: int = 2) -> None:
+        """
+        Add a newly opened viewer to linking lists of other with matching
+        dimensionality, enabling it for linking.
+        :param fname: viewer's name/index
+        :param dim: dataset's dimensionality
+        """
+
         for dvi in self.data_viewers.keys():
             if dim == self.data_viewers[dvi].util_panel.dim:
                 win_list = self.data_viewers[dvi].util_panel.link_windows_list
                 win_list.addItem(fname.split('/')[-1])
                 win_list.model().item(win_list.count() - 1).setCheckable(True)
 
-    def delete_viewer_from_linked_lists(self, fname):
+    def delete_viewer_from_linked_lists(self, fname: str) -> None:
+        """
+        Delete current **DataViewer** from linking lists of others with
+        matching dimensionality.
+
+        :param fname: current **DataViewer's** name/index
+        """
+
         for dvi in self.data_viewers.keys():
             list = self.data_viewers[dvi].util_panel.link_windows_list
             for idx in range(list.count()):
@@ -717,7 +767,13 @@ class DataBrowser(QMainWindow):
                     list.removeItem(idx)
                     break
 
-    def load_custom_plugins(self):
+    def load_custom_plugins(self) -> None:
+        """
+        If configured, try to load user-implemented, custom
+        :class:`~data_loaders.Dataloader`, allowing to read
+        other formats of data.
+        """
+
         plugins_directory = os.environ.get('PIVA_PLUGINS_DIR')
         if plugins_directory:
             print('Loading custom plugins:')
@@ -725,6 +781,8 @@ class DataBrowser(QMainWindow):
                 if filename.endswith('custom_data_loaders.py'):
                     print('\tData loaders: ', end='')
                     plugin_name = os.path.splitext(filename)[0]
+                    # get directory under environmental variable
+                    # and search for modules in it
                     plugin_path = os.path.join(plugins_directory, filename)
                     spec = importlib.util.spec_from_file_location(plugin_name,
                                                                   plugin_path)

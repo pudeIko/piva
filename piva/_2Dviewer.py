@@ -1,21 +1,21 @@
-"""
-Data handler and main window creator for 2D data inspection
-"""
+from __future__ import annotations
 import os
-import time
 from copy import deepcopy
-
+from typing import TYPE_CHECKING, Any
 import numpy as np
 from pyqtgraph.Qt import QtWidgets
 from PyQt5.QtWidgets import QMessageBox
 
 import piva.working_procedures as wp
-import piva.data_loader as dl
-import piva.imageplot as ip
+import piva.data_loaders as dl
+import piva.image_panels as ip
+from utilities_panel import UtilitiesPanel
 from data_slicer import pit
 from piva.cmaps import cmaps
-from piva.edc_fitter import EDCFitter
-from piva.mdc_fitter import MDCFitter
+from piva.fitters import MDCFitter, EDCFitter
+if TYPE_CHECKING:
+    from piva.data_browser import DataBrowser
+    from piva._3Dviewer import DataViewer3D
 
 app_style = """
 QMainWindow{background-color: rgb(64,64,64);}
@@ -26,13 +26,17 @@ ORIENTLINES_LINECOLOR = (164, 37, 22, 255)
 
 
 class DataHandler2D:
-    """ Object that keeps track of a set of 2D data and allows
-    manipulations on it. In a Model-View-Controller framework this could be
-    seen as the Model, while :class:`MainWindow <data_slicer.pit.MainWindow>`
-    would be the View part.
+    """
+    Object that keeps track of a set of 2D data and allows manipulations on it.
     """
 
-    def __init__(self, main_window):
+    def __init__(self, main_window: DataViewer2D) -> None:
+        """
+        Initialize `DataHandler` for :class:`DataViewer2D`.
+
+        :param main_window: related viewer displaying the data
+        """
+
         self.main_window = main_window
         self.binning = False
 
@@ -43,90 +47,82 @@ class DataHandler2D:
         # Indices of *data* that are displayed in the main plot
         self.displayed_axes = (0, 1)
 
-    def get_data(self):
-        """ Convenience `getter` method. Allows writing ``self.get_data()``
-        instead of ``self.data.get_value()``.
+    def get_data(self) -> np.ndarray:
         """
+        Convenient `getter` method.
+
+        :return: 2D array with data
+        """
+
         if self.main_window.util_panel.image_normalize.isChecked():
             return self.norm_data
         else:
             return self.data.get_value()[0, :, :]
 
-    def set_data(self, data):
-        """ Convenience `setter` method. Allows writing ``self.set_data(d)``
-        instead of ``self.data.set_value(d)``.
+    def set_data(self, data: np.ndarray) -> None:
         """
+        Set data for the :class:`DataViewer2D`.
+
+        :param data: array with the data
+        """
+
         self.data.set_value(data)
 
-    def prepare_data(self, data, axes=3 * [None]):
-        """ Load the specified data and prepare the corresponding z range.
-        Then display the newly loaded data.
+    def prepare_data(self, data: np.ndarray, axes: list = 3 * [None]) -> None:
+        """
+        Register loaded data and axes and pass them to the
+        :class:`DataViewer2D`. Prepare normalized data for quick availability.
 
-        **Parameters**
-
-        ====  =================================================================
-        data  3d array; the data to display
-        axes  len(3) list or array of 1d-arrays or None; the units along the
-              x, y and z axes respectively. If any of those is *None*, pixels
-              are used.
-        ====  =================================================================
+        :param data: loaded array of data
+        :param axes: loaded list of axes
         """
 
-        self.data = ip.TracedVariable(data, name='data')
+        # self.data = ip.TracedVariable(data, name='data')
+        self.data = ip.CustomTracedVariable(data, name='data')
         self.axes = np.array(axes, dtype="object")
         self.norm_data = wp.normalize(self.data.get_value()[0, :, :].T).T
 
         self.prepare_axes()
-        self.on_z_dim_change()
 
-        self.main_window.update_main_plot()
-        self.main_window.set_axes()
+        self.main_window.image_data = self.get_data()
+        self.main_window.set_image(self.main_window.image_data)
 
-    def prepare_axes(self):
-        """ Create a list containing the three original x-, y- and z-axes
-        and replace *None* with the amount of pixels along the given axis.
+    def prepare_axes(self) -> None:
         """
+        Prepare loaded axes in order: [*scanned*, *analyzer*, *energy*].
+        Here *scanned*  is a single-element array.
+        """
+
         shapes = self.data.get_value().shape
         # Avoid undefined axes scales and replace them with len(1) sequences
         for i, axis in enumerate(self.axes):
             if axis is None:
                 self.axes[i] = np.arange(shapes[i])
 
-    def on_data_change(self):
-        """ Update self.main_window.image_data and replot. """
-        self.update_image_data()
 
-    def on_z_dim_change(self):
-        """ Called when either completely new data is loaded or the dimension
-        from which we look at the data changed (e.g. through :func:`roll_axes
-        <data_slicer.pit.PITDataHandler.roll_axes>`).
-        Update the z range and the integrated intensity plot.
+class DataViewer2D(QtWidgets.QMainWindow):
+    """
+    Main window of the 2D data.
+    """
+
+    def __init__(self, data_browser: DataBrowser, data_set: dl.Dataset,
+                 index: str = None, slice: bool = False) -> None:
         """
-
-        # Calculate the integrated intensity and plot it
-        self.calculate_integrated_intensity()
-
-    def calculate_integrated_intensity(self):
-        self.integrated = self.get_data().sum(0).sum(0)
-
-    def update_image_data(self):
-        """ Get the right (possibly integrated) slice out of *self.data*,
-        apply postprocessings and store it in *self.image_data*.
-        Skip this if the z value happens to be out of range, which can happen
-        if the image data changes and the z scale hasn't been updated yet.
+        Initialize main window.
+        
+        :param data_browser: `DataBrowser` that was used for opening
+                             **DataViewer**, for keeping reference to all
+                             other opened  **DataViewer**
+        :param data_set: loaded dataset with available metadata.
+        :param index: title of the window and index in the record of opened 
+                      **DataViewer**
+        :param slice: if :py:obj:`True`, opened
+                      :class:`DataViewer2D` is a slice extracted from
+                      :class:`~_3Dviewer.DataViewer3D`, that affects behavior
+                      of some methods
         """
-        data = self.get_data()
-        try:
-            self.main_window.image_data = data
-        except IndexError:
-            print(('update_image_data(): z index {} out '
-                   'of range for data of length {}.'))
-
-
-class MainWindow2D(QtWidgets.QMainWindow):
-
-    def __init__(self, data_browser, data_set=None, index=None, slice=False):
-        super(MainWindow2D, self).__init__()
+        
+        super(DataViewer2D, self).__init__()
         self.title = index.split('/')[-1]
         self.fname = index
         self.central_widget = QtWidgets.QWidget()
@@ -166,11 +162,11 @@ class MainWindow2D(QtWidgets.QMainWindow):
         # Create the 3D (main) and cut ImagePlots
         self.main_plot = ip.ImagePlot(name='main_plot', crosshair=True)
         # Create cut of cut_x
-        self.plot_x = ip.CursorPlot(name='plot_x')
+        self.plot_x = ip.CurvePlot(name='plot_x')
         # Create cut of cut_y
-        self.plot_y = ip.CursorPlot(name='plot_y', orientation='vertical')
+        self.plot_y = ip.CurvePlot(name='plot_y', orientation='vertical')
         # Create utilities panel
-        self.util_panel = ip.UtilitiesPanel(self, name='utilities_panel',
+        self.util_panel = UtilitiesPanel(self, name='utilities_panel',
                                             dim=2)
         self.util_panel.positions_momentum_label.setText('Sliders')
 
@@ -206,7 +202,11 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.set_sliders_initial_positions()
 
     # initialization methods
-    def initUI(self):
+    def initUI(self) -> None:
+        """
+        Initialize widgets by connecting triggered signals to actions.
+        """
+        
         self.setWindowTitle(self.title)
         # Create a "central widget" and its layout
         self.central_widget.setLayout(self.layout)
@@ -238,7 +238,7 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.util_panel.image_cmaps.currentIndexChanged.connect(self.set_cmap)
         self.util_panel.image_invert_colors.stateChanged.connect(self.set_cmap)
         self.util_panel.image_gamma.valueChanged.connect(self.set_gamma)
-        self.util_panel.image_colorscale.valueChanged.connect(self.set_alpha)
+        # self.util_panel.image_colorscale.valueChanged.connect(self.set_alpha)
         self.util_panel.image_normalize.stateChanged.connect(
             self.normalize_data)
         self.util_panel.image_normalize_to.currentIndexChanged.connect(
@@ -279,22 +279,10 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.show()
 
     def _align(self):
-        """ Align all the GUI elements in the QLayout::
-
-              0   1   2   3
-            +---+---+---+---+
-            |utilities panel| 0
-            +---+---+---+---+
-            | mdc x |       | 1
-            +-------+  edc  |
-            | cut x |       | 2
-            +-------+-------+
-            |       | c | m | 3
-            | main  | y | y | 4
-            +---+---+---+---+
-
-            (Units of subdivision [sd])
+        """ 
+        Align all GUI widgets in the window.
         """
+
         # subdivision
         sd = 1
         # Get a short handle
@@ -318,7 +306,11 @@ class MainWindow2D(QtWidgets.QMainWindow):
             l.setColumnMinimumWidth(i, 50)
             l.setColumnStretch(i, 1)
 
-    def set_sliders_initial_positions(self):
+    def set_sliders_initial_positions(self) -> None:
+        """
+        Set sliders initial positions to either middle of axes or *zeros*.
+        """
+        
         if self.new_energy_axis is None:
             e_ax = self.data_handler.axes[1]
         else:
@@ -340,7 +332,12 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.main_plot.pos[0].set_value(mid_energy)
         self.main_plot.pos[1].set_value(mid_angle)
 
-    def load_corrections(self, data_set):
+    def load_corrections(self, data_set: dl.Dataset) -> None:
+        """
+        Load saved energy corrections and axes transformed to *k*-space.
+        
+        :param data_set: object containing data and available metadata.
+        """
 
         if hasattr(data_set, 'saved'):
             raise AttributeError
@@ -362,10 +359,15 @@ class MainWindow2D(QtWidgets.QMainWindow):
                 self.k_axis[self.main_plot.pos[1].get_value()]))
 
     @staticmethod
-    def swap_axes_aroud(D):
+    def swap_axes_aroud(D: np.ndarray) -> np.ndarray:
         """
-        Swap axes and data dimensions to fit rest of the code
+        Swap axes to plot data with energy scale along *x* axis. This sort of
+        breaks the general convention, but only in inside this class.
+
+        :param D: array with originally shaped data
+        :return: array with swapped axes
         """
+
         tmp = deepcopy(D)
         D.xscale = tmp.yscale
         D.yscale = tmp.zscale
@@ -376,11 +378,13 @@ class MainWindow2D(QtWidgets.QMainWindow):
         return D
 
     # volume/sliders methods
-    def set_axes(self):
-        """ Set the x- and y-scales of the plots. The :class:`ImagePlot
-        <data_slicer.imageplot.ImagePlot>` object takes care of keeping the
+    def set_axes(self) -> None:
+        """
+        Set the `x`- and `y`-scales of the plots. The
+        :class:`~imageplot.ImagePlot` object takes care of keeping the
         scales as they are, once they are set.
         """
+
         xaxis = self.data_handler.axes[1]
         yaxis = self.data_handler.axes[0]
         self.main_plot.set_xscale(range(0, len(xaxis)))
@@ -395,7 +399,11 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.plot_y.set_secondary_axis(0, len(yaxis))
         self.main_plot.fix_viewrange()
 
-    def update_plot_x(self):
+    def update_plot_x(self) -> None:
+        """
+        Update extracted horizontal curve, corresponding to EDC.
+        """
+
         # Get shorthands for plot
         xp = self.plot_x
         try:
@@ -452,7 +460,11 @@ class MainWindow2D(QtWidgets.QMainWindow):
                         i_x, self.db.data_viewers[dvi])
                     pos_variable.set_value(matching_idx)
 
-    def update_plot_y(self):
+    def update_plot_y(self) -> None:
+        """
+        Update extracted horizontal curve, corresponding to MDC.
+        """
+
         # Get shorthands for plot
         yp = self.plot_y
         try:
@@ -508,7 +520,17 @@ class MainWindow2D(QtWidgets.QMainWindow):
                         i_y, self.db.data_viewers[dvi])
                     pos_variable.set_value(matching_idx)
 
-    def get_matching_energy_idx(self, master_idx, dv):
+    def get_matching_energy_idx(self, master_idx: int,
+                                dv: DataViewer2D) -> int:
+        """
+        When option for linking multiple windows is enabled, find position in
+        coordinates of master's energy axis.
+
+        :param master_idx: index in master's energy axis
+        :param dv: enslaved :class:`DataViewer2D`
+        :return: index of energy for enslaved :class:`DataViewer2D`
+        """
+
         if self.new_energy_axis is None:
             erg = self.data_handler.axes[1][master_idx]
         else:
@@ -519,7 +541,17 @@ class MainWindow2D(QtWidgets.QMainWindow):
             erg_ax = dv.new_energy_axis
         return wp.indexof(erg, erg_ax)
 
-    def get_matching_momentum_idx(self, master_idx, dv):
+    def get_matching_momentum_idx(self, master_idx: int,
+                                  dv: DataViewer2D) -> int:
+        """
+        When option for linking multiple windows is enabled, find position in
+        coordinates of master's momentum axis.
+
+        :param master_idx: index in master's momentum axis
+        :param dv: concerned :class:`DataViewer2D`
+        :return: index of momentum for enslaved :class:`DataViewer2D`
+        """
+
         if self.k_axis is None:
             k = self.data_handler.axes[0][master_idx]
         else:
@@ -530,8 +562,12 @@ class MainWindow2D(QtWidgets.QMainWindow):
             k_ax = dv.k_axis
         return wp.indexof(k, k_ax)
 
-    def update_binning_lines(self):
-        """ Update binning lines accordingly. """
+    def update_binning_lines(self) -> None:
+        """
+        Set up/update binning lines indicating integration of the plotted
+        curves.
+        """
+
         # edc plot
         if self.util_panel.bin_y.isChecked():
             try:
@@ -581,48 +617,55 @@ class MainWindow2D(QtWidgets.QMainWindow):
             except AttributeError:
                 pass
 
-    def set_vert_energy_slider(self):
+    def set_vert_energy_slider(self) -> None:
+        """
+        Set position of vertical sliders, moving along the energy direction.
+        """
+
         energy = self.util_panel.energy_vert.value()
         self.main_plot.pos[0].set_value(energy)
         self.update_binning_lines()
 
-    def set_hor_momentum_slider(self):
+    def set_hor_momentum_slider(self) -> None:
+        """
+        Set position of horizontal sliders, moving along the momentum
+        direction.
+        """
+
         angle = self.util_panel.momentum_hor.value()
         self.main_plot.pos[1].set_value(angle)
         self.update_binning_lines()
 
-    def set_sliders_postions(self, positions):
+    def set_sliders_postions(self, positions: list) -> None:
+        """
+        Set positions of horizontal and vertical sliders.
+
+        :param positions: [`horizontal_position`, `vertical_position`] list
+                          of stored positions
+        """
+
         self.main_plot.pos[1].set_value(positions[0])
         self.main_plot.pos[0].set_value(positions[1])
 
-    def get_sliders_positions(self):
-        main_hor = self.main_plot.crosshair.hpos.get_value()
-        main_ver = self.main_plot.crosshair.vpos.get_value()
+    def get_sliders_positions(self) -> list:
+        """
+        Get position of horizontal and vertical sliders. Useful for to storing
+        them before updating the main image, as afterwards they are moved to
+        initial positions.
+
+        :return: [`horizontal_position`, `vertical_position`] of the sliders
+        """
+
+        main_hor = self.main_plot.sliders.hpos.get_value()
+        main_ver = self.main_plot.sliders.vpos.get_value()
         return [main_hor, main_ver]
 
     # image methods
-    def update_main_plot(self, **image_kwargs):
-        """ Change *self.main_plot*`s currently displayed
-        :class:`image_item <data_slicer.imageplot.ImagePlot.image_item>` to
-        the slice of *self.data_handler.data* corresponding to the current
-        value of *self.z*.
+    def set_cmap(self) -> None:
+        """
+        Set colormap to one of the standard :mod:`matplotlib` cmaps.
         """
 
-        self.data_handler.update_image_data()
-
-        if image_kwargs != {}:
-            self.image_kwargs = image_kwargs
-        # Add image to main_plot
-        self.set_image(self.image_data, **image_kwargs)
-
-    def set_cmap(self):
-        """ Set the colormap to *cmap* where *cmap* is one of the names
-        registered in :mod:`<data_slicer.cmaps>` which includes all matplotlib
-        and custom cmaps.
-        WP: small changes made to use only my list of cmaps (see cmaps.py)
-        and to shorten the list
-        by using 'invert_colors' checkBox
-        """
         try:
             cmap = self.util_panel.image_cmaps.currentText()
             if self.util_panel.image_invert_colors.isChecked() and ip.MY_CMAPS:
@@ -644,29 +687,39 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.set_sliders_postions(sliders_pos)
         self.update_binning_lines()
 
-    def cmap_changed(self):
-        """ Recalculate the lookup table and redraw the plots such that the
+    def cmap_changed(self) -> None:
+        """
+        Recalculate the lookup table and redraw the plots such that the
         changes are immediately reflected.
         """
+
         self.lut = self.cmap.getLookupTable()
         self.redraw_plots()
 
-    def redraw_plots(self, image=None):
-        """ Redraw plotted data to reflect changes in data or its colors. """
+    def redraw_plots(self, image: np.ndarray = None) -> None:
+        """
+        Redraw plots to apply changes in data and color scales.
+
+        :param image: 2D array with an image
+        """
+
         try:
-            # Redraw main plot
             self.set_image(image,
                            displayed_axes=self.data_handler.displayed_axes)
-            # Redraw cut plot
-        except AttributeError as e:
-            # In some cases (namely initialization)
-            # the mainwindow is not defined yet
+        except AttributeError:
+            # In case mainwindow is not defined yet
             pass
 
-    def set_image(self, image=None, *args, **kwargs):
-        """ Wraps the underlying ImagePlot3d's set_image method.
-        See :func:`~data_slicer.imageplot.ImagePlot3d.set_image`. *image* can
-        be *None* i.e. in order to just update the plot with a new colormap.
+    def set_image(self, image: np.ndarray = None, *args: dict,
+                  **kwargs: dict) -> None:
+        """
+        Wraps underlying :meth:`image_panels.ImagePlot.set_image()` method.
+
+        :param image: array with the data
+        :param args: additional arguments for
+                     :meth:`~image_panels.ImagePlot.set_image`
+        :param kwargs: additional keyword arguments for
+                       :meth:`~image_panels.ImagePlot.set_image`
         """
 
         # Reset the transformation
@@ -675,23 +728,12 @@ class MainWindow2D(QtWidgets.QMainWindow):
             image = self.image_data
         self.main_plot.set_image(image, *args, lut=self.lut, **kwargs)
 
-    def set_alpha(self, alpha):
-        """ Set the alpha value of the currently used cmap. *alpha* can be a
-        single float or an array of length ``len(self.cmap.color)``.
+    def set_gamma(self) -> None:
         """
-        self.alpha = alpha
-        sliders_pos = self.get_sliders_positions()
-        self.cmap.set_alpha(alpha)
-        self.cmap_changed()
-        self.set_sliders_postions(sliders_pos)
-        self.update_binning_lines()
+        Set the exponent for the power-law norm that maps the colors to
+        values.
+        """
 
-    def set_gamma(self):
-        """ Set the exponent for the power-law norm that maps the colors to
-        values. I.e. the values where the colours are defined are mapped like
-        ``y=x**gamma``.
-        WP: changed to work with applied QDoubleSpinBox
-        """
         gamma = self.util_panel.image_gamma.value()
         self.gamma = gamma
         sliders_pos = self.get_sliders_positions()
@@ -700,26 +742,26 @@ class MainWindow2D(QtWidgets.QMainWindow):
         self.set_sliders_postions(sliders_pos)
         self.update_binning_lines()
 
-    def set_colorscale(self):
-        """ Set the relative maximum of the colormap. I.e. the colors are
-        mapped to the range `min(data)` - `vmax*max(data)`.
-        WP: changed to work with applied QDoubleSpinBox
+    def normalize_data(self) -> None:
         """
-        vmax = self.util_panel.image_colorscale.value()
-        self.vmax = vmax
-        self.cmap.set_vmax(vmax)
-        self.cmap_changed()
+        Normalize data along selected direction.
+        """
 
-    def normalize_data(self):
         if self.util_panel.image_normalize.isChecked():
             data = self.data_handler.data.get_value()[0, :, :]
             norm_along = self.util_panel.image_normalize_along.currentIndex()
             self.data_handler.norm_data = wp.normalize(data, axis=norm_along)
         else:
             pass
-        self.update_main_plot()
 
-    def smoooth_data(self):
+        self.image_data = self.data_handler.get_data()
+        self.set_image(self.image_data)
+
+    def smoooth_data(self) -> None:
+        """
+        Smooth main-plot data using 2D, square mask.
+        """
+
         self.smooth = not self.smooth
         if self.smooth:
             data = self.data_handler.get_data()
@@ -735,7 +777,14 @@ class MainWindow2D(QtWidgets.QMainWindow):
             self.util_panel.image_smooth_button.setText('Smooth')
             self.util_panel.image_curvature_button.setText('Do curvature')
 
-    def curvature_method(self):
+    def curvature_method(self) -> None:
+        """
+        Apply selected curvature method to the data to highlight weak
+        dispersive features in the spectra. See
+        :func:`~working_procedures.curvature_1d` and
+        :func:`~working_procedures.curvature_2d` for more details.
+        """
+
         self.curvature = not self.curvature
         if self.curvature:
             a = self.util_panel.image_curvature_a.value()
@@ -772,7 +821,12 @@ class MainWindow2D(QtWidgets.QMainWindow):
             self.util_panel.image_curvature_button.setText('Do curvature')
 
     # axes methods
-    def apply_energy_correction(self):
+    def apply_energy_correction(self) -> None:
+        """
+        Apply saved energy corrections (*e.g.* for offset of the Fermi level)
+        and update energy axis between kinetic and binding scales.
+        """
+
         Ef = self.util_panel.axes_energy_Ef.value()
 
         scale = self.util_panel.axes_energy_scale.currentText()
@@ -800,11 +854,16 @@ class MainWindow2D(QtWidgets.QMainWindow):
             *new_range)
 
         # update energy labels
-        erg_idx = self.main_plot.crosshair.vpos.get_value()
+        erg_idx = self.main_plot.sliders.vpos.get_value()
         self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
             self.new_energy_axis[erg_idx]))
 
-    def convert_to_kspace(self):
+    def convert_to_kspace(self) -> None:
+        """
+        Convert angles to *k*-space. See
+        :func:`~working_procedures.angle2kspace` for more details.
+        """
+
         scan_ax = np.array([0])
         anal_axis = self.data_handler.axes[0]
         d_scan_ax = self.util_panel.axes_angle_off.value()
@@ -845,21 +904,33 @@ class MainWindow2D(QtWidgets.QMainWindow):
             self.k_axis[self.main_plot.pos[1].get_value()]))
         self.util_panel.dp_add_k_space_conversion_entry(self.data_set)
 
-    def reset_kspace_conversion(self):
+    def reset_kspace_conversion(self) -> None:
+        """
+        Reset *k*-space conversion and bring analyzer axis back to [deg].
+        """
+
         self.k_axis = None
-        org_range = [self.data_handler.axes[0][0], self.data_handler.axes[0][-1]]
-        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*org_range)
-        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*org_range)
+        org_range = [self.data_handler.axes[0][0],
+                     self.data_handler.axes[0][-1]]
+        self.main_plot.plotItem.getAxis(
+            self.main_plot.main_yaxis).setRange(*org_range)
+        self.plot_y.plotItem.getAxis(
+            self.plot_y.main_xaxis).setRange(*org_range)
         self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
             self.data_handler.axes[0][self.main_plot.pos[1].get_value()]))
         self.data_set.data_provenance['k_space_conv'] = []
 
     # general functionalities
-    def open_mdc_fitter(self):
-        thread_lbl = self.index + '_mdc_viewer'
-        self.mdc_thread_lbl = thread_lbl
+    def open_mdc_fitter(self) -> None:
+        """
+        Open current dataset in :class:`~fitters.MDCFitter` to inspect momentum
+        distribution curves (MDCs).
+        """
 
-        if thread_lbl in self.data_viewers:
+        title = self.title + ' - mdc fitter'
+        self.mdc_thread_lbl = title
+
+        if title in self.data_viewers:
             already_opened_box = QMessageBox()
             already_opened_box.setIcon(QMessageBox.Information)
             already_opened_box.setText('MDC viewer already opened.')
@@ -867,7 +938,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
 
-        title = self.title + ' - mdc fitter'
         if self.new_energy_axis is not None:
             erg_ax = self.new_energy_axis
         else:
@@ -878,21 +948,27 @@ class MainWindow2D(QtWidgets.QMainWindow):
             k_ax = self.data_set.yscale
         axes = [k_ax, erg_ax]
         try:
-            self.data_viewers[thread_lbl] = \
-                MDCFitter(self, self.data_set, axes, title, index=thread_lbl)
-        except Exception:
+            self.data_viewers[title] = \
+                MDCFitter(self, self.data_set, axes, title)
+        except Exception as e:
             error_box = QMessageBox()
             error_box.setIcon(QMessageBox.Information)
             error_box.setText('Couldn\'t load data,  something went wrong.')
             error_box.setStandardButtons(QMessageBox.Ok)
             if error_box.exec() == QMessageBox.Ok:
+                raise e
                 return
 
-    def open_edc_fitter(self):
-        thread_idx = self.index + '_edc_viewer'
-        self.edc_thread_lbl = thread_idx
+    def open_edc_fitter(self) -> None:
+        """
+        Open current dataset in :class:`~fitters.EDCFitter` to inspect energy
+        distribution curves (MDCs).
+        """
 
-        if thread_idx in self.data_viewers:
+        title = self.title + ' - edc fitter'
+        self.edc_thread_lbl = title
+
+        if title in self.data_viewers:
             already_opened_box = QMessageBox()
             already_opened_box.setIcon(QMessageBox.Information)
             already_opened_box.setText('EDC viewer already opened.')
@@ -900,7 +976,6 @@ class MainWindow2D(QtWidgets.QMainWindow):
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
 
-        title = self.title + ' - edc fitter'
         if self.new_energy_axis is not None:
             erg_ax = self.new_energy_axis
         else:
@@ -909,14 +984,18 @@ class MainWindow2D(QtWidgets.QMainWindow):
             k_ax = self.k_axis
         else:
             k_ax = self.data_set.yscale
-        axes = [k_ax, erg_ax]
+        axes = [erg_ax, k_ax]
         try:
-            self.data_viewers[thread_idx] = \
-                EDCFitter(self, self.data_set, axes, title, index=thread_idx)
+            self.data_viewers[title] = \
+                EDCFitter(self, self.data_set, axes, title)
         except Exception as e:
             raise e
 
-    def save_to_pickle(self):
+    def save_to_pickle(self) -> None:
+        """
+        Save current dataset and all applied corrections to :mod:`pickle` file.
+        """
+
         # energy axis
         dataset = self.data_set
         savedir = self.fname[:-len(self.title)]
@@ -983,18 +1062,23 @@ class MainWindow2D(QtWidgets.QMainWindow):
 
         dl.dump(dataset, (savedir + fname), force=True)
 
-    def open_pit(self):
-        """ Open the data in an instance of 
-        :class:`data_slicer.pit.MainWindow`, which has the benefit of 
-        providing a free-slicing ROI.
+    def open_pit(self) -> None:
         """
+        Open the data in an instance of :class:`data_slicer.pit.MainWindow`,
+        which has the benefit of providing a free-slicing ROI.
+        """
+
         mw = pit.MainWindow()
         # Move the empty axis back
         data = np.moveaxis(self.data_set.data, 0, -1)
         mw.data_handler.set_data(data, axes=self.data_handler.axes)
         mw.set_cmap(self.cmap_name)
 
-    def closeEvent(self, event):
-        """ Ensure that this instance is un-registered from the DataBrowser."""
+    def closeEvent(self, event: Any) -> None:
+        """
+        Ensure that this instance is closed and un-registered from the
+        :class:`~data_browser.DataBrowser`.
+        """
+
         self.db.delete_viewer_from_linked_lists(self.title)
         del(self.db.data_viewers[self.index])

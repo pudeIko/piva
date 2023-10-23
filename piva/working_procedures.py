@@ -1,20 +1,19 @@
 import numpy as np
+import scipy.optimize
 from numba import njit, prange
 import pandas as pd
 import scipy.signal as sig
 from matplotlib import pyplot as plt
-from matplotlib import colors, patches
 from numpy.linalg import norm   # for shriley bckgrd
-from scipy.special import voigt_profile
 from scipy import ndimage
 from scipy.optimize import curve_fit, minimize
 from scipy.signal import convolve2d
 from scipy.fft import fft, ifft, ifftshift
 
-import piva.data_loader as dl
-import piva.my_constants as const
+import piva.constants as const
 
 from itertools import groupby
+from typing import Union, Callable, Any
 
 
 # +-------------------------------------+ #
@@ -22,42 +21,110 @@ from itertools import groupby
 # +-------------------------------------+ #
 
 
-def gaussian(x, a=1, mu=0, sigma=1):
+def gaussian(x: np.ndarray, a: float = 1, mu: float = 0, sigma: float = 1) \
+        -> np.ndarray:
+    r"""
+        Gaussian line shape function represented as:
+
+    .. math::
+        G(x) = a_0 \exp{\bigg(-\frac{(x - \mu)^2}{2\sigma^2}\bigg)}
+
+    :param x: arguments
+    :param a: normalization factor
+    :param mu: expected value
+    :param sigma: standard deviation
+    :return: function values
+    """
 
     return a * np.exp(-0.5 * (x - mu) ** 2 / sigma ** 2)
 
 
-def two_gaussians(x, a0=1, mu0=0, sigma0=1, a1=1, mu1=0, sigma1=1):
+def two_gaussians(x: np.ndarray, a0: float = 1, mu0: float = 0,
+                  sigma0: float = 1, a1: float = 1, mu1: float = 0,
+                  sigma1: float = 1) -> np.ndarray:
+    """
+    Two overlapping gaussians. See :func:`gaussian` for more details.
+
+    :param x: arguments
+    :param a0: normalization factor of the 1st gaussian
+    :param mu0: expected value of the 1st gaussian
+    :param sigma0: standard deviation of the 1st gaussian
+    :param a1: normalization factor of the 2nd gaussian
+    :param mu1: expected value of the 2nd gaussian
+    :param sigma1: standard deviation of the 2nd gaussian
+    :return: function values
+    """
 
     return gaussian(x, a0, mu0, sigma0) + gaussian(x, a1, mu1, sigma1)
 
 
-def lorentzian(x, a0, mu, gamma, resol=0):
+def lorentzian(x: np.ndarray, a0: float, mu: float, gamma: float,
+               resol: float = 0) -> np.ndarray:
     r"""
+    Lorentzian line shape function represented as:
+
     .. math::
-        a_0 \cdot \frac{\Gamma^2}{(x-x_\mathrm{max})^2 + \Gamma^2}
+     L(x) = \frac{a_0}{2\pi} \frac{\Gamma}{(x-\mu)^2 + \frac{1}{4} \Gamma^2}
 
-    **Parameters**
-
-    =====  =====================================================================
-    x      float or array; the variable.
-    a0     float; normalization factor.
-    xmax   float; peak position of the Lorentzian in *x* units.
-    gamma  float; peak width in *x* units.
-    =====  =====================================================================
+    :param x: arguments
+    :param a0: normalization factor
+    :param mu: expected value
+    :param gamma: full width at half maximum
+    :param resol: resolution parameter for convolving with gaussian;
+            optional, default = 0
+    :return: function values
     """
-    # a0, xmax, gamma = pars[0], pars[1], pars[2]
+
     y = a0 * (1 / (2 * np.pi)) * gamma / ((x - mu) ** 2 + (.5 * gamma) ** 2)
     return ndimage.gaussian_filter(y, resol)
 
 
-def dynes_formula(omega, n0, gamma, delta):
+def dynes_formula(omega: np.ndarray, n0: float, gamma: float, delta: float) \
+        -> np.ndarray:
+    r"""
+    Dynes formula for tunneling density of states of superconductor,
+    given by the formula:
+
+    .. math::
+        N(\omega) = N_0 \textrm{Re}\Bigg[
+        \frac{\omega + i\Gamma}{\sqrt{(\omega + i\Gamma)^2 - \Delta^2}}\Bigg]
+
+    :param omega: energy axis
+    :param n0: normal-state density of states
+    :param gamma: parameter quantifying for the pair-breaking processes
+    :param delta: superconducting gap
+    :return: superconductor's density of states
+    """
+
     num = omega + gamma * 1.j
     n_omega = num / np.sqrt((num ** 2) + delta ** 2)
     return n0 * n_omega.real
 
 
-def asym_lorentzian(x, a0, mu, gamma, alpha=0, resol=0):
+def asym_lorentzian(x: np.ndarray, a0: float, mu: float, gamma: float,
+                    alpha: float = 0, resol: float = 0) -> np.ndarray:
+    r"""
+    Asymmetric Lorentzian line shape represented as:
+
+    .. math::
+        L(x) = \frac{a_0}{2\pi} \frac{\Gamma(x)}{(x-\mu)^2 +
+        \frac{1}{4} \Gamma(x)^2}
+
+    where
+
+    .. math::
+        \Gamma(x) = \frac{2 \Gamma_0}{1 + \exp{(\alpha(x - \mu))}}
+
+    :param x: arguments
+    :param a0: normalization factor
+    :param mu: expected value
+    :param gamma: full width at half maximum
+    :param alpha: asymmetric factor
+    :param resol: resolution parameter for convolving with gaussian;
+            optional, default = 0
+    :return: function values
+    """
+
     if resol == 0:
         gamma *= 2 / (1 + np.exp(alpha * (x - mu)))
         return a0 * (1 / (2 * np.pi)) * gamma / \
@@ -69,37 +136,41 @@ def asym_lorentzian(x, a0, mu, gamma, alpha=0, resol=0):
         return ndimage.gaussian_filter(y, sigma=resol)
 
 
-def two_lorentzians(x, a0, mu0, gamma0, a1, mu1, gamma1, resol=0):
+def two_lorentzians(x: np.ndarray, a0: float, mu0: float, gamma0: float,
+                    a1: float, mu1: float, gamma1: float,
+                    resol: float = 0) -> np.ndarray:
+    """
+    Two overlapping lorentzians. See :func:`lorentzian` for more details.
+
+    :param x: arguments
+    :param a0: normalization factor of the 1st lorentzian
+    :param mu0: expected value of the 1st lorentzian
+    :param gamma0: full width at half maximum of the 1st lorentzian
+    :param a1: normalization factor of the 2nd lorentzian
+    :param mu1: expected value of the 2nd lorentzian
+    :param gamma1: full width at half maximum of the 2nd lorentzian
+    :param resol: resolution parameter for convolving with gaussian;
+                  optional, default = 0
+    :return: function values
+    """
+
     y = lorentzian(x, a0, mu0, gamma0) + lorentzian(x, a1, mu1, gamma1)
     return ndimage.gaussian_filter(y, resol)
 
 
-def three_lorentzians(x, a0, mu0, gamma0, a1, mu1, gamma1, a2, mu2, gamma2,
-                      resol=0):
-    y = lorentzian(x, a0, mu0, gamma0) + lorentzian(x, a1, mu1, gamma1) + \
-           lorentzian(x, a2, mu2, gamma2)
-    return ndimage.gaussian_filter(y, resol)
-
-
-def voigt(x, a, mu, gamma, sigma):
+def lorentzian_dublet(x: np.ndarray, *p: Union[list, np.ndarray, tuple],
+                      delta: float = 1, line: str = 'f') -> np.ndarray:
     """
-        Return the Voigt line shape at x with Lorentzian component FWHM gamma
-        and Gaussian component FWHM sigma.
+    Return a two lorentzian line shapes representing doublet of the XPS
+    core-level spectra.
 
-    """
-
-    return a * voigt_profile(x - mu, sigma, gamma)
-
-
-def lorentzian_dublet(x, *p, delta=1, line='f'):
+    :param x: arguments (energies)
+    :param p: lorentzian parameters. See :func:`lorentzian` for more details.
+    :param delta: energy splitting of the doublet spectral lines.
+    :param line: type of the orbital line. Can be `'p'`, `'d'` or `'f'`.
+    :return: function values (spectra)
     """
 
-    :param line:
-    :param x:
-    :param p:   [a0, mu, gamma, a1]
-    :param delta:
-    :return:
-    """
     if line == 'p':
         coeff = 0.5
     elif line == 'd':
@@ -113,8 +184,41 @@ def lorentzian_dublet(x, *p, delta=1, line='f'):
            lorentzian(x, p[0] * coeff, p[1] - delta, p[2])
 
 
-def fit_n_dublets(data, x, a0, mu, gamma, delta, constr=None, fit_delta=False,
-                  line='d'):
+def fit_n_dublets(data: np.ndarray, x: np.ndarray,
+                  a0: Union[float, list, np.ndarray, tuple],
+                  mu: Union[float, list, np.ndarray, tuple],
+                  gamma: Union[float, list, np.ndarray, tuple],
+                  delta: float, constr: tuple = None,
+                  fit_delta: bool = False,
+                  line: str = 'd') -> list:
+    """
+    Fit multiple lorentzian doublets, corresponding to different chemical
+    shifts of the core-level line.
+
+    :param data: XPS data
+    :param x: arguments (energy axis)
+    :param a0: normalization factors of each doublet.
+               len(a0) corresponds to number of individual chemical shifts.
+    :param mu: expected values of each doublet.
+               len(mu) corresponds to number of individual chemical shifts.
+    :param gamma: full width at half maximum of each doublet.
+                  len(gamma) corresponds to number of individual chemical shifts.
+    :param delta: energy splitting between doublet lines
+    :param constr: constrains on the fitting, according to
+                   :func:`scipy.curve_fit` format
+    :param fit_delta: if :py:obj:`True`, fit also splitting delta;
+                      default :py:obj:`False`
+    :param line: type of the orbital line. Can be `'p'`, `'d'` or `'f'`.
+    :return: results of the fitting in format:
+
+        - ``res[0]`` - :class:`np.ndarray`; fitted_profiles,
+        - ``res[1]`` - :class:`np.ndarray`; fitted parameters,
+        - ``res[2]`` - :class:`np.ndarray`; parameters' errors,
+        - ``res[3]`` - :class:`np.ndarray`; parameters' covariance matrix,
+        - ``res[4]`` - :class:`pandas.DataFrame`, contains results in
+          summarized form
+    """
+
     pars = []
     pcovs = []
     errs = []
@@ -191,15 +295,22 @@ def fit_n_dublets(data, x, a0, mu, gamma, delta, constr=None, fit_delta=False,
     return [fitted_profiles, pars, errs, pcovs, df]
 
 
-def shirley_calculate(x, y, tol=1e-5, maxit=10):
-    """ S = specs.shirley_calculate(x,y, tol=1e-5, maxit=10)
-    Calculate the best auto-Shirley background S for a dataset (x,y). Finds the biggest peak
-    and then uses the minimum value either side of this peak as the terminal points of the
-    Shirley background.
-    The tolerance sets the convergence criterion, maxit sets the maximum number
-    of iterations.
+def shirley_calculate(x: np.ndarray, y: np.ndarray, tol: float = 1e-5, 
+                      maxit: int = 10) -> np.ndarray:
+    """
+    Calculate the best auto-Shirley background S for a dataset (``x``,``y``).
+    Finds the biggest peak and then uses the minimum value either side of this
+    peak as the terminal points of the Shirley background.
 
-    from:       https://github.com/kaneod/physics/blob/master/python/specs.py
+    .. note::
+        Implemented from:
+        https://github.com/kaneod/physics/blob/master/python/specs.py
+    
+    :param x: arguments, energies
+    :param y: values, XPS signal/intensity
+    :param tol: convergence criterion
+    :param maxit: maximum number of iterations
+    :return: shirley background
     """
 
     # Make sure we've been passed arrays and not lists.
@@ -280,7 +391,15 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
         return yr + B
 
 
-def get_linear(points):
+def get_linear(points: list) -> Callable:
+    """
+    Get linear fit between two points.
+
+    :param points: list of two points in a format:
+            points = [[``x0``, ``x1``], [``y0``, ``y1``]]
+    :return: linear function: f(x) = ax + b
+    """
+
     x = points[0]
     y = points[1]
 
@@ -289,7 +408,16 @@ def get_linear(points):
     return fun
 
 
-def print_fit_results(p, cov, labels=None):
+def print_fit_results(p: np.ndarray, cov: np.ndarray, labels: list = None) -> \
+        None:
+    """
+    Print fit results in a nice :class:`pandas.DataFrame` format
+
+    :param p: fitted parameters of size `n`
+    :param cov: covariance matrix of shape (`n` x `n`)
+    :param labels: list of parameter's names
+    """
+
     if labels is None:
         labels = []
         for i in range(len(p)):
@@ -305,119 +433,84 @@ def print_fit_results(p, cov, labels=None):
     print(df)
 
 
-def subtract_bg_shirley(data, dim=0, profile=False, normindex=0):
-    """ Use an iterative approach for the background of an EDC as described in
-    DOI:10.1103/PhysRevB.5.4709. Mathematically, the value of the EDC after
-    BG subtraction for energy E EDC'(E) can be expressed as follows::
-
-                               E1
-                               /
-        EDC'(E) = EDC(E) - s * | EDC(e) de
-                               /
-                               E
-
-    where EDC(E) is the value of the EDC at E before bg subtraction, E1 is a
-    chosen energy value (in our case the last value in the EDC) up to which
-    the subtraction is applied and s is chosen such that EDC'(E0)=EDC'(E1)
-    with E0 being the starting value of the bg subtraction (in our case the
-    first value in the EDC).
-
-    In principle, this is an iterative method, so it should be applied
-    repeatedly, until no appreciable change occurs through an iteration. In
-    practice this convergence is reached in 4-5 iterations at most and even a
-    single iteration may suffice.
-
-    **Parameters**
-
-    =======  ==================================================================
-    data     np.array; input data with shape (m x n) or (1 x m x n) containing
-             an E(k) cut
-    dim      int; either 0 or 1. Determines whether the input is aranged as
-             E(k) (n EDCs of length m, dim=0) or k(E) (m EDCs of length n,
-             dim=1)
-    profile  boolean; if True, a list of the background values for each MDC
-             is returned additionally.
-    =======  ==================================================================
-
-    **Returns**
-
-    =======  ==================================================================
-    data     np.array; has the same dimensions as the input array.
-    profile  1D-array; only returned as a tuple with data (`data, profile`)
-             if argument `profile` was set to True. Contains the
-             background profile, i.e. the background value for each MDC.
-    =======  ==================================================================
+def shift_k_coordinates(kx: np.ndarray, ky: np.ndarray, qx: float = 0,
+                        qy: float = 0) -> tuple:
     """
-    # Prevent original data from being overwritten by retaining a copy
-    data = data.copy()
+    Shift k-space coordinate system by a wavevector q = [``q_x``, ``q_y``].
 
-    data, d, m, n = convert_data(data)
+    :param kx: initial `kx` axis (1D or :class:`np.meshgrid`)
+    :param ky: initial `ky` axis (1D or :class:`np.meshgrid`)
+    :param qx: wavevector shift along the `kx` direction
+    :param qy: wavevector shift along the `ky` direction
+    :return: (``kx``, ``ky``) shifted coordinate axes (1D or
+             :class:`np.meshgrid`)
+    """
 
-    if dim == 0:
-        nk = n
-        ne = m
-        get_edc = lambda k: data[0, :, k]
-    elif dim == 1:
-        nk = m
-        ne = n
-        get_edc = lambda k: data[0, k]
-
-    # Take shirley bg from the angle-averaged EDC
-    average_edc = np.mean(data[0], dim + 1)
-
-    # Calculate the "normalization" prefactor
-    s = np.abs(average_edc[normindex] - average_edc[-1]) / average_edc.sum()
-
-    # Prepare a function that sums the EDC from a given index upwards
-    sum_from = np.frompyfunc(lambda e: average_edc[e:].sum(), 1, 1)
-    indices = np.arange(ne)
-    bg = s * sum_from(indices).astype(float)
-
-    # Subtract the bg profile from each EDC
-    for k in range(nk):
-        edc = get_edc(k)
-        # Update data in-place
-        edc -= bg
-
-    data = convert_data_back(data, d, m, n)
-    if profile:
-        return data, bg
-    else:
-        return data
-
-
-def shift_k_coordinates(kx, ky, qx=0, qy=0):
     kxx = kx + np.ones_like(kx) * qx
     kyy = ky + np.ones_like(ky) * qy
     return kxx, kyy
 
 
-def kk_im2re(gamma, vF=1):
+def kk_im2re(gamma: np.ndarray, vF: float = 1) -> np.ndarray:
+    """
+    Transform imaginary part of the self-energy (scattering rates) to real
+    parts using Kramers-Kronig relations in Fourier transform approach.
+
+    :param gamma: imaginary part (scattering rates)
+    :param vF: Fermi velocity
+    :return: real part of the self-energy
+    """
 
     im = 0.5 * vF * np.array(gamma) * 1j
     im = np.hstack((im, np.flip(im[1:])))
     im[0] *= 0.5
     im_t = np.fft.ifft(im)
     n = im.size // 2 + 1
+    # impose causality
     im_t[n:] = np.zeros(n - 1)
     re = 2 * np.fft.fftshift(np.fft.fft(im_t))
     return re
 
 
-def kk_re2im(re):
+def kk_re2im(re: np.ndarray) -> np.ndarray:
+    """
+    Transform real part of the self-energy (energy differences) to imaginary
+    part using Kramers-Kronig relations in Fourier transform approach.
+
+    :param re: real part of the self-energy
+    :return: imaginary part
+    """
 
     re = np.array(re)
     re = np.hstack((np.array(re), np.flip(re[1:])))
     re[0] *= 0.5
     re_t = np.fft.ifft(re)
     n = re.size // 2 + 1
+    # impose causality
     re_t[n:] = np.zeros(n - 1)
     re = 2 * np.fft.fftshift(np.fft.fft(re_t))
     return re
 
 
-def find_vF(gamma, re_disp, vF0=3, method='Nelder-Mead'):
+def find_vF(gamma: np.ndarray, re_disp: np.ndarray, vF0: float = 3,
+            method: str = 'Nelder-Mead') -> float:
+    """
+    Iteratively find a value of the Fermi velocity by minimizing the difference
+    between real parts of self energy calculated by Kramers-Kronig
+    transformation of the scattering rates and obtained directly from the
+    experiment.
 
+    :param gamma: scaterring rates
+    :param re_disp: real part of the self-energy; difference between real and
+                    bare band dispersion
+    :param vF0: initial guess Fermi velocity
+    :param method: minimization method, see :meth:`scipy.optimize.minimize`
+                   for more details
+    :return: minimized value
+    """
+
+    # function to minimize: difference between experimentally and
+    # KK-transformed real parts
     def disp_kk_diff(vF, gamma, re_disp):
         re_kk = kk_im2re(gamma, vF=vF).real
         return np.sum(np.abs(re_kk[:re_disp.size] - re_disp))
@@ -426,7 +519,20 @@ def find_vF(gamma, re_disp, vF0=3, method='Nelder-Mead'):
     return res
 
 
-def McMillan_Tc(omega_D=1, lam=1, mu=1):
+def McMillan_Tc(omega_D: float = 1, lam: float = 1, mu: float = 1) -> float:
+    r"""
+    McMillan's formula for superconducting Tc:
+
+    .. math::
+        T_c = \frac{\omega_D}{1.45}\exp{\bigg(
+        \frac{1.04(1 + \lambda)}{\lambda - \mu(1 + 0.62\lambda)}}\bigg)
+
+    :param omega_D: Debay frequency (temperature) of the material
+    :param lam: electron-boson coupling constant, lambda
+    :param mu: Coulomb pseudopotential
+    :return: superconducting critical temperature (Tc)
+    """
+    
     frac = 1.04 * (1 + lam) / (lam - mu * (1 + 0.62 * lam))
     Tc = (omega_D / 1.45) * np.exp(-frac)
     return Tc
@@ -437,69 +543,105 @@ def McMillan_Tc(omega_D=1, lam=1, mu=1):
 # +--------------------------------------------------+ #
 
 
-def step_function_core(x, step_x=0, flip=False):
+def step_function_core(x: np.ndarray, x0: float = 0, flip: bool = False) \
+        -> np.ndarray:
+    r"""
+    Basic step function, with step occuring at x0. Gives values:
+
+    .. math::
+                        0  \textrm{  } \textrm{    for  } \textrm{  } x < x_0
+    
+                f(x) =  0.5  \textrm{  } \textrm{  for  } \textrm{  } x = x_0
+    
+                        1  \textrm{  } \textrm{    for  } \textrm{  } x > x_0
+    
+    :param x: arguments
+    :param x0: `x` value of the step
+    :param flip: if :py:obj:`True`, flip function values around the step
+    :return: step profile
+    """
+    
     sign = -1 if flip else 1
-    if sign * x < sign * step_x:
+    if sign * x < sign * x0:
         result = 0
-    elif x == step_x:
+    elif x == x0:
         result = 0.5
-    elif sign * x > sign * step_x:
+    elif sign * x > sign * x0:
         result = 1
     return result
 
 
-def step_function(x, step_x=0, flip=False):
-    """ np.ufunc wrapper for step_function_core. Confer corresponding
-    documentation.
+def step_function(x: np.ndarray, step_x: float = 0, flip: bool = False) \
+        -> np.ndarray:
     """
+    np.ufunc wrapper for step_function_core. Confer corresponding
+    documentation.
+    
+    :param x: arguments
+    :param step_x: `x` value of the step
+    :param flip: if :py:obj:`True`, flip function values around the step
+    :return: step profile
+    """
+    
     res = \
         np.frompyfunc(lambda x: step_function_core(x, step_x, flip), 1, 1)(x)
     return res.astype(float)
 
 
-def step_ufunc(x, step_x=0, flip=False):
-    """ np.ufunc wrapper for :func:`step_core
-    <arpys.postprocessing.step_core>`. Confer corresponding documentation.
+def detect_step(signal: np.ndarray, n_box: int = 15, n_smooth: int = 3) -> int:
     """
-    res = np.frompyfunc(lambda x: step_core(x, step_x, flip), 1, 1)(x)
-    return res.astype(float)
-
-
-def step_core(x, step_x=0, flip=False):
-
-    sign = -1 if flip else 1
-    if sign * x < sign * step_x:
-        result = 0
-    elif sign * x >= sign * step_x:
-        result = 1
-    return result
-
-
-def detect_step(signal, n_box=15, n_smooth=3):
-    """ Try to detect the biggest, clearest step in a signal by smoothing
-    it and looking at the maximum of the first derivative.
+    Detect the biggest, clearest step in a signal by smoothing it and looking
+    at the maximum of the first derivative.
+    
+    :param signal: signal to detect step in
+    :param n_box: box size for smoothing prior to calculating derivative
+    :param n_smooth: number of smoothing runs prior to calculating derivative
+    :return: index at which step occurs
     """
+    
     smoothened = smooth(signal, n_box=n_box, recursion_level=n_smooth)
     grad = np.gradient(smoothened)
     step_index = np.argmax(np.abs(grad))
     return step_index
 
 
-def fermi_fit_func(E, E_F, sigma, a0, b0, a1, b1, T=5):
-    """ Fermi Dirac distribution with an additional linear inelastic
-    background and convoluted with a Gaussian for the instrument resolution.
-
-    **Parameters**
-
-    =====  =====================================================================
-    E      1d-array; energy values in eV
-    E_F    float; Fermi energy in eV
-    sigma  float; instrument resolution in units of the energy step size in *E*.
-    a      float; slope of the linear background.
-    b      float; offset of the linear background at *E_F*.
-    T      float; temperature.
-    =====  =====================================================================
+def fermi_dirac(E: np.ndarray, mu: float = 0, T: float = 4.2) -> np.ndarray:
+    r"""
+    Fermi-Dirac distribution with chemical potential *mu* at temperature *T* 
+    for energy *E*. The Fermi Dirac distribution is given by:
+    
+    .. math::
+        n(E) = \frac{1}{\exp{\big(\frac{E - \mu}{k_B T}\big)} + 1}
+    
+    :param E: energies
+    :param mu: chemical potential
+    :param T: temperature
+    :return: Fermi-Dirac distribution
     """
+    
+    kT = const.k_B * T / const.eV
+    res = 1 / (np.exp((E - mu) / kT) + 1)
+    return res
+
+
+def fermi_fit_func(E: np.ndarray, E_F: float, sigma: float, a0: float, 
+                   b0: float, a1: float, b1: float, T: float = 5) \
+        -> np.ndarray:
+    """
+    Fermi Dirac distribution with an additional linear inelastic background 
+    and convoluted with a Gaussian for the instrument resolution.
+    
+    :param E: energy values [eV]
+    :param E_F: position of Fermi energy [eV]
+    :param sigma: experimental resolution in units of *E* step size
+    :param a0: slope of the linear background below the *E_F*
+    :param b0: offset of the linear background below *E_F*.
+    :param a1: slope of the linear background above the E_F
+    :param b1: offset of the linear background above *E_F*.
+    :param T: temperature [K]
+    :return: Fermi-Dirac distribution at given temperature
+    """
+
     # Basic Fermi Dirac distribution at given T
     E = E
     y = fermi_dirac(E, E_F, T)
@@ -516,36 +658,31 @@ def fermi_fit_func(E, E_F, sigma, a0, b0, a1, b1, T=5):
     return y
 
 
-def fit_fermi_dirac(energies, edc, e_0, T=5, sigma0=10, a0=0, b0=-0.1, a1=0,
-                    b1=-0.1):
-    """ Try fitting a Fermi Dirac distribution convoluted by a Gaussian
-    (simulating the instrument resolution) plus a linear component on the
-    side with E<E_F to a given energy distribution curve.
+def fit_fermi_dirac(energies: np.ndarray, edc: np.ndarray, e_0: float, 
+                    T: float = 5, sigma0: float = 10, a0: float = 0, 
+                    b0: float = -0.1, a1: float = 0, b1: float = -0.1) \
+        -> tuple:
+    """
+    Fit Fermi-Dirac distribution convoluted by a Gaussian (simulating the 
+    instrument resolution) plus a linear components to a given energy 
+    distribution curve.
+    
+    :param energies: energy values [eV]
+    :param edc: energy distribution curve (intensities)
+    :param e_0: starting guess for the Fermi energy [eV]
+    :param T: temperature [K]
+    :param sigma0: experimental resolution in units of *E* step size
+    :param a0: slope of the linear background below the *E_F*
+    :param b0: offset of the linear background below *E_F*.
+    :param a1: slope of the linear background above the E_F
+    :param b1: offset of the linear background above *E_F*.
+    :return: results of the fitting in format:
 
-    **Parameters**
-
-    ========  =================================================================
-    energies  1D array of float; energy values.
-    edc       1D array of float; corresponding intensity counts.
-    e_0       float; starting guess for the Fermi energy. The fitting
-              procedure is quite sensitive to this.
-    T         float; (fixed) temperature.
-    sigma0    float; starting guess for the standard deviation of the
-              Gaussian in units of pixels (i.e. the step size in *energies*).
-    a0        float; starting guess for the slope of the linear component.
-    b0        float; starting guess for the linear offset.
-    ========  =================================================================
-
-    **Returns**
-
-    ========  =================================================================
-    p         list of float; contains the fit results for [E_F, sigma, a, b].
-                NOTE: sigma in convoluted gaussian is converted to FWHM (since
-                that corresponds to the actual resolution).
-    res_func  callable; the fit function with the optimized parameters. With
-              this you can just do res_func(E) to get the value of the
-              Fermi-Dirac distribution at energy E.
-    ========  =================================================================
+        - ``res[0]`` - :class:`np.ndarray`; fitted_profiles,
+        - ``res[1]`` - :py:obj:`callable`; Fermi-Dirac function,
+        - ``res[2]`` - :class:`np.ndarray`; parameters' covariance matrix,
+        - ``res[3]`` - :py:obj:`float`; fitted instrumental resolution,
+        - ``res[4]`` - :py:obj:`float`; fitted instrumental resolution's error
     """
 
     # Initial guess and bounds for parameters
@@ -569,36 +706,28 @@ def fit_fermi_dirac(energies, edc, e_0, T=5, sigma0=10, a0=0, b0=-0.1, a1=0,
     return p, res_func, cov, resolution, resolution_err
 
 
-def fermi_dirac(E, mu=0, T=4.2):
-    """ Return the Fermi Dirac distribution with chemical potential *mu* at
-    temperature *T* for energy *E*. The Fermi Dirac distribution is given by::
-
-                         1
-        n(E) = ----------------------
-                exp((E-mu)/(kT)) + 1
-
-    and assumes values from 0 to 1.
+def pgm_calibration(hv: np.ndarray, error_offset: float, dtheta: float,
+                    dbeta: float, cff: float = 2.25, k: float = 1,
+                    lines_per_mm: float = 300) -> np.ndarray:
     """
-    kT = const.k_B * T / const.eV
-    res = 1 / (np.exp((E - mu) / kT) + 1)
-    return res
+    Function for PGM motors calibration.
+
+    .. note::
+        Follows procedure described by
+        `Weiss et al. <https://doi.org/10.1016/S0168-9002(01)00375-8>`_
 
 
-def PGM_calibration(hv, error_offset, dtheta, dbeta, cff=2.25, k=1,
-                    lines_per_mm=300):
+    :param hv: measured photon energies
+    :param error_offset: 
+    :param dtheta: correction for theta angle
+    :param dbeta: correction for beta angle
+    :param cff: cff parameter
+    :param k: 
+    :param lines_per_mm: lines per mm, parameter characterizing PGM
+                         monochromator
+    :return: 
     """
-    Function for PGM motors calibration. Based on:
-        Absolute Energy Calibration for Plane Grating Monochromators, Nucl. Instrum. Meth. A 467-468, 482-484 (2001)
-    :param data:
-    :param hv:
-    :param error_offset:
-    :param dtheta:
-    :param dbeta:
-    :param cff:
-    :param n:
-    :param lines_per_mm:
-    :return:
-    """
+    
     # convert from 'lines per mm' to 'lines per nm'
     N = lines_per_mm * (1e-6)
 
@@ -610,19 +739,41 @@ def PGM_calibration(hv, error_offset, dtheta, dbeta, cff=2.25, k=1,
 
     coeff = cff ** 2 - 1
     alpha = (coeff / (wl * N * k)) ** 2
-    alpha = np.arcsin((np.sqrt(cff ** 2 + alpha) - 1) * ((wl * N * k) / coeff))
+    alpha = np.arcsin((np.sqrt(cff ** 2 + alpha) - 1) *
+                      ((wl * N * k) / coeff))
 
     beta = -np.arccos(cff * np.cos(alpha))
     theta = 0.5 * (alpha - beta)
 
     # wavelength from grating equation, taking into account offsets
-    actualEnergy = 2 * np.cos(theta + dt) * np.sin(theta + dt + beta + db) / (N * k)
+    actualEnergy = 2 * np.cos(theta + dt) * \
+                   np.sin(theta + dt + beta + db) / (N * k)
 
     return const.convert_eV_nm(actualEnergy) - hv + error_offset
 
 
-def fit_PGM_calibration(data, hv, error_offset=-0.06, dtheta=0.001,
-                        dbeta=-0.001, cff=2.25, k=1, lines_per_mm=300):
+def fit_PGM_calibration(data: np.ndarray, hv: np.ndarray, 
+                        error_offset: float = -0.06, dtheta: float = 0.001,
+                        dbeta: float = -0.001, cff: float = 2.25, k: float = 1,
+                        lines_per_mm: int = 300) -> tuple:
+    """
+    Run PGM calubration procedure (see :func:`pgm_calibration` for more
+    details) and find angles corrections for monochromator.
+
+    :param data: 
+    :param hv: measured photon energies
+    :param error_offset: 
+    :param dtheta: correction for theta angle
+    :param dbeta: correction for beta angle
+    :param cff: cff parameter
+    :param k: 
+    :param lines_per_mm: lines per mm, parameter characterizing PGM 
+                         monochromator
+    :return: results of the fitting in format:
+
+        - ``res[0]`` - :class:`np.ndarray`; fitted parameters,
+        - ``res[1]`` - :class:`np.ndarray`; parameters' covariance matrix
+    """
     # Initial guess and bounds for parameters
     p0 = [error_offset, dtheta, dbeta]
     lower = [-100, -1, -1]
@@ -630,7 +781,8 @@ def fit_PGM_calibration(data, hv, error_offset=-0.06, dtheta=0.001,
 
     # wrapper to fix cff, n and lines_per_mm
     def fit_fun(hv, error_offset, dtheta, dbeta):
-        return PGM_calibration(hv, error_offset, dtheta, dbeta, cff=cff, k=k, lines_per_mm=lines_per_mm)
+        return pgm_calibration(hv, error_offset, dtheta, dbeta, cff=cff, k=k,
+                               lines_per_mm=lines_per_mm)
 
     p, cov = curve_fit(fit_fun, hv, data, p0=p0, bounds=(lower, upper))
 
@@ -642,9 +794,22 @@ def fit_PGM_calibration(data, hv, error_offset=-0.06, dtheta=0.001,
 # +-----------------+ #
 
 
-def dec_fermi_div(edc, erg, res, Ef, fd_cutoff, T=5):
+def dec_fermi_div(edc: np.ndarray, erg: np.ndarray, res: float, Ef: float,
+                  fd_cutoff: float, T: float = 5) -> np.ndarray:
+    """
+    Divide measured EDC by Fermi-Dirac function.
+    
+    :param edc: energy distribution curve, intensities
+    :param erg: energy axis
+    :param res: instrumental resolution
+    :param Ef: Fermi energy
+    :param fd_cutoff: energy cut off 
+    :param T: temperature [K]
+    :return: divided energy distribution function
+    """
+    
     # deconvolve resolution
-    fd = fermi_dirac(erg, T=T)
+    fd = fermi_dirac(erg, Ef, T=T)
     fd = normalize(ndimage.gaussian_filter(fd, res))
     co_idx = indexof(fd_cutoff, erg)
     edc = normalize(edc)
@@ -652,11 +817,25 @@ def dec_fermi_div(edc, erg, res, Ef, fd_cutoff, T=5):
     return edc
 
 
-def deconvolve_resolution(data, energy, resolution, Ef=0):
+def deconvolve_resolution(edc: np.ndarray, energy: np.ndarray, 
+                          resolution: float) -> tuple:
+    """
+    Deconvolve instrumental resolution from EDC by dividing the 
+    Fourier transforms.
+    
+    :param edc: energy distribution curve, intensities
+    :param energy: ebergy axis
+    :param resolution: instrumental resolution
+    :return: results in format:
+
+        - ``res[0]`` - :class:`np.ndarray`; deconvolved profile,
+        - ``res[1]`` - :class:`np.ndarray`; resolution mask
+    """
+    
     sigma = resolution / (2 * np.sqrt(2 * np.log(2)))
     de = get_step(energy)
-    res_mask = sig.gaussian(data.size, sigma / de)
-    deconv = np.abs(ifftshift(ifft(fft(data) / fft(res_mask))))
+    res_mask = sig.gaussian(edc.size, sigma / de)
+    deconv = np.abs(ifftshift(ifft(fft(edc) / fft(res_mask))))
     # move first element at the end. stupid, but works
     tmp = deconv[0]
     deconv[:-1] = deconv[1:]
@@ -664,22 +843,17 @@ def deconvolve_resolution(data, energy, resolution, Ef=0):
     return deconv, res_mask
 
 
-def find_mid_old(xdata, ydata, xrange=None):
-    """ Find middle point of EDC between given energy range
+def find_mid_old(xdata: np.ndarray, ydata: np.ndarray, xrange: list = None) \
+        -> list:
+    """
+    Find step point at the middle of step intensity 
+    
+    :param xdata: `x` scale
+    :param ydata: `y` scale
+    :param xrange: list of points to crop the `x` scale
+    :return: coordinated of the middle point
+    """
 
-        **Parameters**
-        =======================================================================
-        xdata               1D array; energy scale
-        ydata               1D array; intensities
-        xrange              2D vector; range between which to look for,
-                            in energy units
-        =======================================================================
-
-        **Returns**
-        =======================================================================
-        [x_mid, y_mid]      2D vector; point's coordinates
-        =======================================================================
-        """
     if xrange is None:
         x0, x1 = indexof(-0.1, xdata), indexof(0.1, xdata)
     else:
@@ -690,13 +864,20 @@ def find_mid_old(xdata, ydata, xrange=None):
     return [x_mid, y_mid]
 
 
-def find_midpoint(data, xscale):
-    deriv = np.gradient(data)
-    mid_idx = indexof(deriv.min(), deriv)
-    return xscale[mid_idx], data[mid_idx]
+def symmetrize_edc(data: np.ndarray, energies: np.ndarray) -> tuple:
+    """
+    Symmetrize EDC around the Fermi level, sum intensities in the overlapping 
+    region.
+     
+    :param data: energy distribution function, intensities
+    :param energies: energy axis (must be in binding)
+    :return: result in a format:
 
-
-def symmetrize_edc(data, energies):
+        - ``res[0]`` - :class:`np.ndarray`; symmetrized energy distribution
+          curve
+        - ``res[1]`` - :class:`np.ndarray`; symmetrized energies
+    """
+    
     Ef_idx = indexof(0, energies)
     sym_edc = np.zeros((2 * Ef_idx))
     sym_energies = np.zeros_like(sym_edc)
@@ -711,7 +892,19 @@ def symmetrize_edc(data, energies):
     return sym_edc, sym_energies
 
 
-def symmetrize_edc_around_Ef(data, energies):
+def symmetrize_edc_around_Ef(data: np.ndarray, energies: np.ndarray) -> tuple:
+    """
+    Symmetrize EDC around the Fermi level, disregard signal above it.
+     
+    :param data: energy distribution function, intensities
+    :param energies: energy axis (must be in binding)
+    :return: result in a format:
+
+        - ``res[0]`` - :class:`np.ndarray`; symmetrized energy distribution
+          curve
+        - ``res[1]`` - :class:`np.ndarray`; symmetrized energies
+    """
+    
     Ef_idx = indexof(0, energies)
     sym_edc = np.hstack((data[:Ef_idx], np.flip(data[:Ef_idx])))
     sym_energies = np.hstack((energies[:Ef_idx], np.flip(-energies[:Ef_idx])))
@@ -724,100 +917,52 @@ def symmetrize_edc_around_Ef(data, energies):
 # +--------------+ #
 
 
-def add_attr(data, name, value):
-    data.__dict__.update({name: value})
-
-
-def add_kinetic_factor(data):
-    if hasattr(data, 'ekin'):
-        return
-    else:
-        if hasattr(data, 'wf'):
-            pass
-        else:
-            dl.update_namespace(data, ('wf', 4.464))
-        e_kin = data.hv - data.wf
-        dl.update_namespace(data, ('ekin', e_kin))
-
-
-def indexof(value, array):
+def indexof(value: float, array: np.ndarray) -> int:
     """
-    Return the first index of the value in the array closest to the given
-    `value`.
+    Find first index at which given value occurs in searched array.
 
-    Example::
-
-        >>> a = np.array([1, 0, 0, 2, 1])
-        >>> indexof(0, a)
-        1
-        >>> indexof(0.9, a)
-        0
+    :param value: value
+    :param array: array hosting value
+    :return: index of occurrence
     """
+
     return np.argmin(np.abs(array - value))
 
 
-def get_step(data):
-    return np.abs(data[0] - data[1])
-
-
-def convert_data(data):
-    """ Helper function to convert data to the right shape. """
-    # Find out whether we have a (m x n) (d=2) or a (1 x m x n) (d=3) array
-    shape = data.shape
-    d = len(shape)
-
-    # Convert to shape (1 x m x n)
-    if d == 2:
-        m = shape[0]
-        n = shape[1]
-        data = data.reshape(1, m, n)
-    elif d == 3:
-        m = shape[1]
-        n = shape[2]
-    else:
-        raise ValueError('Could not bring data with shape {} into right form.'.format(shape))
-    return data, d, m, n
-
-
-def convert_data_back(data, d, m, n):
-    """ Helper function to convert data back to the original shape which is
-    determined by the values of d, m and n (outputs of :func:`convert_data
-    <arpys.postprocessing.convert_data>`).
+def get_step(axis: np.ndarray) -> float:
     """
-    if d == 2:
-        data = data.reshape(m, n)
-    return data
+    Get step of the axis. Returns difference between first and second value.
+
+    :param axis: axis of uniformly (**!**) distributed values
+    :return: step value
+    """
+
+    return np.abs(axis[0] - axis[1])
 
 
-def smooth(x, n_box=5, recursion_level=1):
-    """ Implement a linear midpoint smoother: Move an imaginary 'box' of size
-    'n_box' over the data points 'x' and replace every point with the mean
+def smooth(x: np.ndarray, n_box: int = 5, recursion_level: int = 1) \
+        -> np.ndarray:
+    """
+    Implement a linear midpoint smoother: Move an imaginary 'box' of size
+    ``n_box`` over the data points `x` and replace every point with the mean
     value of the box centered at that point.
-    Can be called recursively to apply the smoothing n times in a row
-    by setting 'recursion_level' to n.
+    Can be called recursively to apply the smoothing `n` times in a row
+    by setting ``recursion_level`` to `n`.
 
     At the endpoints, the arrays are assumed to continue by repeating their
     value at the start/end as to minimize endpoint effects. I.e. the array
     [1,1,2,3,5,8,13] becomes [1,1,1,1,2,3,5,8,13,13,13] for a box with
-    n_box=5.
+    ``n_box`` = 5.
 
-    **Parameters**
-
-    ===============  ===========================================================
-    x                1D array-like; the data to smooth
-    n_box            int; size of the smoothing box (i.e. number of points
-                     around the central point over which to take the mean).
-                     Should be an odd number - otherwise the next lower odd
-                     number is taken.
-    recursion_level  int; equals the number of times the smoothing is applied.
-    ===============  ===========================================================
-
-    **Returns**
-
-    ===  =======================================================================
-    res  np.array; smoothed data points of same shape as input.
-    ===  =======================================================================
+    :param x: data to smooth
+    :param n_box: size of the smoothing box (i.e. number of points
+                  around the central point over which to take the mean).
+                  Should be an odd number - otherwise the next lower odd
+                  number is taken
+    :param recursion_level: the number of times the smoothing is applied
+    :return: smoothed data points of same shape as input
     """
+
     # Ensure odd n_box
     if n_box % 2 == 0:
         n_box -= 1
@@ -841,7 +986,18 @@ def smooth(x, n_box=5, recursion_level=1):
         return smooth(smoothened, n_box, recursion_level - 1)
 
 
-def smooth_2d(x, n_box=5, recursion_level=1):
+def smooth_2d(x: np.ndarray, n_box: int = 5, recursion_level: int = 1) \
+        -> np.ndarray:
+    """
+    Smooth 2-dimensional dataset, uses the same principal as in :func:`smooth`
+    with a box of size (``n_box`` x ``n_box``).
+
+    :param x: data set to smooth
+    :param n_box: size of the square (``n_box`` x ``n_box``) smoothing box
+    :param recursion_level: the number of times the smoothing is applied
+    :return: smoothed data points of same shape as input
+    """
+
     if n_box % 2 == 0:
         n_box -= 1
 
@@ -870,7 +1026,8 @@ def smooth_2d(x, n_box=5, recursion_level=1):
                     y[i, j] = x[-1, -1]
                 else:
                     y[i, j] = x[i - n_append, -1]
-            elif (i > x.shape[0] + n_append) and (n_append < j < (x.shape[1] + n_append - 1)):
+            elif (i > x.shape[0] + n_append) and \
+                    (n_append < j < (x.shape[1] + n_append - 1)):
                 y[i, j] = x[-1, j - n_append]
     y[n_append:-n_append, n_append:-n_append] = x
 
@@ -884,7 +1041,15 @@ def smooth_2d(x, n_box=5, recursion_level=1):
         return smooth_2d(smoothened, n_box, recursion_level - 1)
 
 
-def normalize(data, axis=2):
+def normalize(data: np.ndarray, axis: int = 2) -> np.ndarray:
+    """
+    Normalize data along the given axis. Recognizes different dimensions.
+
+    :param data: data set to normalize
+    :param axis: index of axis to normalize along
+    :return: normalized data set
+    """
+
     if len(data.shape) == 1:
         if data.max() == 0:
             normalized = 0
@@ -918,7 +1083,16 @@ def normalize(data, axis=2):
     return normalized
 
 
-def normalize_to_sum(data, axis=0):
+def normalize_to_sum(data: np.ndarray, axis: int = 0) -> np.ndarray:
+    """
+    Normalize data sets to the sum of the intensity along the specified
+    direction.
+
+    :param data: data set to normalize
+    :param axis: index of axis to normalize along
+    :return: normalized data set
+    """
+
     norm_data = np.zeros_like(data)
     if axis == 0:
         for i in range(data.shape[axis]):
@@ -941,27 +1115,21 @@ def normalize_to_sum(data, axis=0):
     return norm_data
 
 
-def average_over_range(data, center, n):
+def rotate(matrix: np.ndarray, alpha: float, deg: bool = True) -> np.ndarray:
     """
-    Average 3D data set over 2n slices (predominantly FS) around center
-    :param data:        np.array; 3D data set
-    :param center:      int; index of the central slice
-    :param n:           int; number of slices taken for average
-                        (in one direction!)
-    :return:            np.array; averaged and normalized data
+    Apply rotation on the matrix of coordinate's system.
+
+    :param matrix: matrix of coordinates
+    :param alpha: rotation angle
+    :param deg: if :py:obj:`True`, rotation angle is in degrees
+    :return: rotated matrix of coordinates
     """
-    start = center - n
-    stop = center + n
-    avr = np.sum(data[start:stop, :, :], axis=0)
-    return normalize(avr)
-
-
-def rotate(matrix, alpha, deg=True):
 
     matrix = np.array(matrix)
     if deg:
         alpha = np.deg2rad(alpha)
 
+    # specify rotation matrix
     r = np.array([[np.cos(alpha), -np.sin(alpha)],
                   [np.sin(alpha),  np.cos(alpha)]])
 
@@ -977,7 +1145,19 @@ def rotate(matrix, alpha, deg=True):
         return
 
 
-def sum_edcs_around_k(data, kx, ky, ik=0):
+def sum_edcs_around_k(data: np.ndarray, kx: np.ndarray, ky: np.ndarray,
+                      ik: int = 0) -> np.ndarray:
+    """
+    Sum EDCs around a given k-point, in a box specified by ``ik``.
+    The box is binning over ``ik`` in all directions.
+
+    :param data: dataset
+    :param kx: `kx` coordinate of the k-point
+    :param ky: `ky` coordinate of the k-point
+    :param ik: box size of summation
+    :return: summed EDC
+    """
+
     dkx = np.abs(data.xscale[0] - data.xscale[1])
     min_kx = indexof(kx - ik * dkx, data.xscale)
     max_kx = indexof(kx + ik * dkx, data.xscale)
@@ -989,33 +1169,19 @@ def sum_edcs_around_k(data, kx, ky, ik=0):
     return edc
 
 
-def sum_edcs_around(data, x, y, n=3):
-    result = np.zeros((data.shape[0]))
-    start_x, stop_x = x - n, x + n
-    start_y, stop_y = y-n, y+n
-    for xi in range(start_x, stop_x):
-        for yi in range(start_y, stop_y):
-            result += data[:, yi, xi]
-    return normalize(result)
+def sum_XPS(data: list, crop: list = None, plot: bool = False) -> tuple:
+    """
+    Sum XPS spectra from separate scans.
 
+    :param data: list of :class:`np.ndarray` to sum. ``len(data)`` corresponds
+                 to number of separate scans to be summed
+    :param crop: list [`E_i`, `E_f`] of energy values to crop between
+    :param plot: if :py:obj:`True`, plot results
+    :return: result in a format:
 
-def sum_shifted_cuts(data):
-    steps = []
-    for xi in range(data.xscale.size):
-        tmp = np.sum(data.data[xi, :, :], axis=0)
-        steps.append(detect_step(tmp))
-    steps = np.array(steps)
-    steps_min, steps_max, steps_diff = steps.min(), steps.max(), steps.max() - steps.min()
-    cut = np.zeros((data.yscale.size, data.zscale.size + steps_diff))
-    nk, ne = data.data[0, :, :].shape
-    for idx, step in enumerate(steps):
-        shift = np.abs(step - steps_max)
-        cut[:, shift:(shift + ne)] += data.data[idx, :, :]
-    cut = cut[:, steps_diff:-steps_diff]
-    return cut, data.zscale[:cut.shape[1]]
-
-
-def sum_XPS(data, crop=None, plot=False):
+        - ``res[0]`` - :class:`np.ndarray`; summed spectrum
+        - ``res[1]`` - :class:`np.ndarray`; energy scale
+    """
 
     n = len(data)
     spectra = [np.sum(data_i.data[0, :, :], axis=0) for data_i in data]
@@ -1031,8 +1197,10 @@ def sum_XPS(data, crop=None, plot=False):
         min_ergs = [data_i.zscale.min() for data_i in data]
         max_ergs = [data_i.zscale.max() for data_i in data]
         if narrow.size == 1:
-            cond1 = np.all([data[narrow].zscale.min() >= min_ergs_i for min_ergs_i in min_ergs])
-            cond2 = np.all([data[narrow].zscale.max() >= max_ergs_i for max_ergs_i in max_ergs])
+            cond1 = np.all([data[narrow].zscale.min() >= min_ergs_i for
+                            min_ergs_i in min_ergs])
+            cond2 = np.all([data[narrow].zscale.max() >= max_ergs_i for
+                            max_ergs_i in max_ergs])
             if cond1 and cond2:
                 energy = data[narrow].zscale
                 e0 = energy[0]
@@ -1056,184 +1224,30 @@ def sum_XPS(data, crop=None, plot=False):
     return spectrum, energy
 
 
-def gradient_fill(x, y, fill_color=None, ax=None, origin='upper',
-                  lower_curve=None, ymin=None, upper_curve=None,
-                  **kwargs):
-    """
-    Plot a line with a linear alpha gradient filled beneath it.
-
-    Parameters
-    ----------
-    x, y : array-like
-        The data values of the line.
-    fill_color : a matplotlib color specifier (string, tuple) or None
-        The color for the fill. If None, the color of the line will be used.
-    ax : a matplotlib Axes instance
-        The axes to plot on. If None, the current pyplot axes will be used.
-    Additional arguments are passed on to matplotlib's ``plot`` function.
-
-    Returns
-    -------
-    line : a Line2D instance
-        The line plotted.
-    im : an AxesImage instance
-        The transparent gradient clipped to just the area beneath the curve.
-    """
-    if ax is None:
-        ax = plt.gca()
-
-    line, = ax.plot(x, y, **kwargs)
-    if fill_color is None:
-        fill_color = line.get_color()
-
-    zorder = line.get_zorder()
-    alpha = line.get_alpha()
-    alpha = 1.0 if alpha is None else alpha
-
-    z = np.empty((100, 1, 4), dtype=float)
-    rgb = colors.colorConverter.to_rgb(fill_color)
-    z[:, :, :3] = rgb
-    z[:, :, -1] = np.linspace(0, alpha, 100)[:, None]
-
-    if ymin is None:
-        xmin, xmax, ymin, ymax = x.min(), x.max(), y.min(), y.max()
-    else:
-        xmin, xmax, ymin, ymax = x.min(), x.max(), ymin, y.max()
-    im = ax.imshow(z, aspect='auto', extent=[xmin, xmax, ymin, ymax],
-                   origin=origin, zorder=zorder)
-
-    if lower_curve is None and upper_curve is None:
-        xy = np.column_stack([x, y])
-        xy = np.vstack([[xmin, ymin], xy, [xmax, ymin], [xmin, ymin]])
-    elif lower_curve is not None and upper_curve is None:
-        xy = np.column_stack([x, y])
-        xy_lower = np.column_stack([np.flip(x), np.flip(lower_curve)])
-        xy = np.vstack([[xmin, ymin], xy, [xmax, ymin],
-                        xy_lower, [xmin, ymin]])
-    else:
-        xy = np.column_stack([x, upper_curve])
-        xy_lower = np.column_stack([np.flip(x), np.flip(lower_curve)])
-        xy = np.vstack([[xmin, ymin], xy, [xmax, ymin],
-                        xy_lower, [xmin, ymin]])
-    clip_path = patches.Polygon(xy, facecolor='none', edgecolor='none',
-                                closed=True)
-    ax.add_patch(clip_path)
-    im.set_clip_path(clip_path)
-
-    ax.autoscale(True)
-    return line, im
-
-
-def scan_whole_FS_for_gaps(data1, data2, erg1, erg2, e_range=None,
-                           gap_cutoff=10, bin_edcs=False, n_bin=3):
-
-    data1 = normalize(data1)
-    data2 = normalize(data2)
-    points_x = []
-    points_y = []
-    gaps = []
-
-    # sanity check
-    if not (data1.shape[1] == data2.shape[1] and
-            data1.shape[2] == data2.shape[2]):
-        print('Compared data sets have different dimensions: {} and {}'.format(
-            data1.shape, data2.shape))
-        return
-
-    if e_range is None:
-        e_range = [-0.3, 0.1]
-
-    if bin_edcs:
-        range_x = range(n_bin, data1.shape[1] - n_bin)
-        range_y = range(n_bin, data1.shape[2] - n_bin)
-    else:
-        range_x = range(data1.shape[1])
-        range_y = range(data1.shape[2])
-    for x in range_x:
-        for y in range_y:
-            if bin_edcs:
-                edc1 = sum_edcs_around(data1, y, x, n=n_bin)
-                edc2 = sum_edcs_around(data2, y, x, n=n_bin)
-            else:
-                edc1 = data1[:, x, y]
-                edc2 = data2[:, x, y]
-            e_mid_1 = find_mid_old(erg1, edc1, e_range)
-            e_mid_2 = find_mid_old(erg2, edc2, e_range)
-            gap_size = np.abs(e_mid_1[0] - e_mid_2[0]) * 1000
-            if gap_size > gap_cutoff:
-                points_x.append(x)
-                points_y.append(y)
-                gaps.append(gap_size)
-
-    print('{} points were found.'.format(len(points_x)))
-
-    return [np.array(points_x), np.array(points_y), gaps]
-
-
-def get_conc_from_xps(I, elem, line, imfp=1):
-    K_sf = {'2s': 2.27, '2p_1': 1.35, '2p_3': 2.62}
-    Ba_sf = {'3p_1': 5.42, '3p_3': 11.71, '3d_3': 17.92, '3d_5': 25.84,
-             '4s': 1.13, '4p_1': 1.34, '4p_3': 2.73, '4d_3': 2.4, '4d_5': 3.46}
-    Bi_sf = {'4s': 1.96, '4p_1': 2.1, '4p_3': 6.48, '4d_3': 9.14,
-             '4d_5': 13.44, '4f_5': 10.93, '4f_7': 13.9, '5s': 0.563,
-             '5p_1': 0.546, '5p_3': 1.41, '5d_3': 1.24, '5d_5': 1.76}
-    sf = {'K': K_sf, 'Ba': Ba_sf, 'Bi': Bi_sf}
-
-    try:
-        return I / (sf[elem][line] * imfp)
-    except KeyError:
-        print('Element or line not found.')
-
-
-def append_xps_fit_results(tab, label, elem, line, res, delta=0):
-    area = 0.5 * np.pi * res[0] * res[2]
-    if 'p_1' in line:
-        area *= 0.5
-    elif 'd_3' in line:
-        area *= 2/3
-    elif 'f_5' in line:
-        area *= 0.75
-    tab['label'].append(label)
-    tab['element'].append(elem)
-    tab['line'].append(line)
-    tab['area'].append(np.round(get_conc_from_xps(area, elem, line), 3))
-    tab['mu'].append(np.round(res[1] - delta, 3))
-    tab['gamma'].append(np.round(res[2], 3))
-
-
-@njit(parallel=True)
-def get_kz_coordinates(ky, kz, KY, KZ):
-    y, z = 0, 0
-    d = 1e6
-    for zi in range(KY.shape[0]):
-        for yi in range(KY.shape[1]):
-            new_d = np.sqrt((ky - KY[zi, yi])**2 + (kz - KZ[zi, yi])**2)
-            if new_d < d:
-                d = new_d
-                y, z = yi, zi
-    return y, z
-
-
 # +---------------------+ #
 # | Image processing    | # ===================================================
 # +---------------------+ #
 
 
-def find_gamma(FS, x0, y0, method='Nelder-Mead', print_output=False):
+def find_gamma(FS: np.ndarray, x0: int, y0: int, method: str = 'Nelder-Mead',
+               print_output: bool = False) -> scipy.optimize.OptimizeResult:
     """
-    Wrapper for doing minimization and finding Gamma in Fermi surface.
-    :param FS:              np.array; FS 2D data
-    :param x0:              int; initial guess for x-axis coordinate
-    :param y0:              int; initial guess for y-axis coordinate
-    :param method:          string; method used for scipy minimization;
-                                default: simplex, which was tested and should
-                                be enough.
-                            For other methods check documentation for
-                            <scipy.optimize.minimize>.
-    :param print_output:    bool; printing option
-    :return:
-            res.x   np.array; [x0, y0] minimized values
+    Find Gamma-point (center of rotation) of an image.
+
+    .. note::
+        Implements method described by Junck et al.
+        (PubMed ID: `2362201 <https://pubmed.ncbi.nlm.nih.gov/2362201/>`_)
+
+    :param FS: Fermi surface, 2D array of numbers
+    :param x0: initial guess of center `x` coordinate
+    :param y0: initial guess of center `y` coordinate
+    :param method: minimization method, see :meth:`scipy.minimize` for mode
+                   details
+    :param print_output: if :py:obj:`True`, print results as a
+                         :class:`pandas.DataFrame`
+    :return: result of the minimization routine
     """
+
     # do the minimization and find optimized values
     res = minimize(rotate_around_xy, x0=[x0, y0], args=(FS,), method=method)
 
@@ -1256,14 +1270,17 @@ def find_gamma(FS, x0, y0, method='Nelder-Mead', print_output=False):
     return res
 
 
-def rotate_around_xy(init_guess, data_org):
+def rotate_around_xy(init_guess: list, data_org: object) -> object:
     """
-    Rotate matrix by 180 deg around (x0, y0) and return only overlapping region, original and flipped
-    :param init_guess:      list; [x0, y0] center of rotation coordinates
-    :param data_org:        np.array; original full FS
-    :return:
-            r:              float; corelation coeffitient of the cut of the data, and flipped one
+    Rotate matrix by 180 deg around (``x0``, ``y0``) and return only
+    overlapping region.
+
+    :param init_guess: [``x0``, ``y0``] list of center of rotation coordinates
+    :param data_org: original full image (Fermi surface)
+    :return: correlation coefficient between original and rotated images.
+             See :func:`imgs_corr` for mode details
     """
+
     # get coordinates values
     x0 = init_guess[0]
     y0 = init_guess[1]
@@ -1303,14 +1320,19 @@ def rotate_around_xy(init_guess, data_org):
         return -imgs_corr(data, np.flip(data))
 
 
-def imgs_corr(img1, img2):
+def imgs_corr(img1: np.ndarray, img2: np.ndarray) -> float:
     """
-    Calculate the correlation coefficient between two matrices based on (PubMed ID: 2362201)
-    :param img1:    np.array; original image
-    :param img2:    np.array; rotated image
-    :return:
-            r:      float; correlation coefficient [-1 - total garbage; 1 - perfect match]
+    Calculate the correlation coefficient between two matrices.
+
+    .. note::
+        For reference, see Junck et al. (PubMed ID:
+        `2362201 <https://pubmed.ncbi.nlm.nih.gov/2362201/>`_)
+
+    :param img1: original image
+    :param img2: rotated image
+    :return: correlation coefficient, parameter to minimize
     """
+
     # calculate averages
     avr_img1 = np.mean(img1)
     avr_img2 = np.mean(img2)
@@ -1328,7 +1350,25 @@ def imgs_corr(img1, img2):
     return num / np.sqrt(den1 * den2)
 
 
-def curvature_1d(data, dx, a0=0.0005, nb=None, rl=None, xaxis=None):
+def curvature_1d(data: np.ndarray, dx: float, a0: float = 0.0005,
+                 nb: int = None, rl: int = None, xaxis: np.ndarray = None) \
+        -> np.ndarray:
+    """
+    Calculate 1D curvature profile, similar to second derivative.
+
+    .. note::
+        Implements method described by `Zhang et al.
+        <http://dx.doi.org/10.1063/1.3585113>`_
+
+    :param data: original data, intensities
+    :param dx: step in the units of experiment
+    :param a0: free parameter
+    :param nb: size of the smoothing box, for smoothing prior to calculating
+               curvature profile
+    :param rl: the number of times the smoothing is applied
+    :param xaxis: energy axis. If given, zero values above the Fermi level
+    :return: curvature profile
+    """
 
     if (nb is not None) and (rl is not None):
         data = smooth(data, n_box=nb, recursion_level=rl)
@@ -1344,7 +1384,28 @@ def curvature_1d(data, dx, a0=0.0005, nb=None, rl=None, xaxis=None):
     return normalize(np.abs(C_x))
 
 
-def curvature_2d(data, dx, dy, a0=100, nb=None, rl=None, eaxis=None):
+def curvature_2d(data: np.ndarray, dx: float, dy: float, a0: float = 100,
+                 nb: int = None, rl: int = None, eaxis: np.ndarray = None) \
+        -> np.ndarray:
+    """
+    Calculate 2D curvature profile, similar to second derivative. Procedure is
+    an image enhancement method to highlight small variations in a measured
+    signal.
+
+    .. note::
+        Implements method described by `Zhang et al.
+        <http://dx.doi.org/10.1063/1.3585113>`_
+
+    :param data: original data, intensities image
+    :param dx: step (along the 1st dimension) in the units of experiment
+    :param dy: step (along the 2nd dimension) in the units of experiment
+    :param a0: free parameter
+    :param nb: size of the smoothing box (nb x nb), for smoothing prior to
+               calculating curvature profile
+    :param rl: the number of times the smoothing is applied
+    :param eaxis: energy axis. If given, zero values above the Fermi level
+    :return: curvature image
+    """
 
     if (nb is not None) and (rl is not None):
         data = smooth_2d(data, n_box=nb, recursion_level=rl)
@@ -1372,68 +1433,64 @@ def curvature_2d(data, dx, dy, a0=100, nb=None, rl=None, eaxis=None):
     return np.abs(C_xy)
 
 
-def order_points(x0, y0):
-    """
-    Sort random set of points to create list of polygon's coordinates (closed shape)
-    :param x0:
-    :param y0:
-    :return:
-    """
-    x = np.array(x0)
-    y = np.array(y0)
-    x_res = np.array([x[0]])
-    y_res = np.array([y[0]])
-    if not (x.size == y.size):
-        print('x and y must be same size!')
-        return
-    while x.size > 0:
-        dist = 100
-        idx = len(list(x0))
-        for i in range(x.size):
-            tmp = np.sqrt((x_res[-1] - x[i])**2 + (y_res[-1] - y[i])**2)
-            if tmp < dist:
-                dist = tmp
-                idx = i
-        x_res = np.append(x_res, x[idx])
-        y_res = np.append(y_res, y[idx])
-        x = np.delete(x, idx)
-        y = np.delete(y, idx)
-
-    return x_res, y_res
-
-
-def shape_area(x, y):
-    """
-    Get arbitrary polygon area using Shoelace formula. Vertices are described by their Cartesian
-    coordinates in the plane.
-    :param x:   np.array; 1D, x coorginates
-    :param y:   np.array; 1D, y coordinates
-    :return:    float; area
-    """
-    S = 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
-    return S
-
-
 # +-----------------------+ #
 # | K-space conversion    | # =================================================
 # +-----------------------+ #
 
 
-def k_fac(energy, Eb=0, hv=0, work_func=4.5):
+def k_fac(energy: float, Eb: float = 0, hv: float = 0,
+          work_func: float = 4.5) -> float:
+    """
+    Calculate scaling factor for `k`-space conversion depending on kinetic
+    energy of photoemitted electrons.
+
+    :param energy: energy value [eV]
+    :param Eb: binding energy [eV]
+    :param hv: photon energy [eV]
+    :param work_func: work function [eV]
+    :return: scaling factor
+    """
+
     me = const.m_e / const.eV / 1e20
     hbar = const.hbar_eV
     return np.sqrt(2 * me * (energy - Eb + hv - work_func)) / hbar
 
 
-def angle2kspace(scan_ax, anal_ax, d_scan_ax=0, d_anal_ax=0,
-                 orientation='horizontal', a=np.pi, energy=np.array([0]),
-                 **kwargs):
+def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
+                 d_scan_ax: float = 0, d_anal_ax: float = 0,
+                 orientation: str = 'horizontal', a: float = np.pi,
+                 energy: np.ndarray = np.array([0]),
+                 **kwargs: dict) -> tuple:
+    """
+    Convert experimental axes o `k`-space.
+
+    .. note::
+        Follows procedure described by
+        `Ishida et al. <https://doi.org/10.1063/1.5007226>`_
+
+    :param scan_ax: angle axis along the scanned direction
+    :param anal_ax: angle axis along the analyzer direction
+    :param d_scan_ax: angle offset along the scanned direction
+    :param d_anal_ax: angle offset along the analyzer direction
+    :param orientation: orientation of the analyzer slit. Can be '`horizontal`'
+                        or '`vertical`'
+    :param a: in-plane lattice constant [Angstrom]. When given, convert
+              momentum axis to a/2pi units
+    :param energy: energy axis
+    :param kwargs: kwargs for `k`-factor. See :func:`k_fac` for more details
+    :return: result in a format:
+
+        - ``res[0]`` - :class:`np.ndarray`; meshgrid of `kx` coordinates
+        - ``res[1]`` - :class:`np.ndarray`; meshgrid of `ky`/energy coordinates.
+            int = 1 for single momentum axis
+    """
+
     # Angle to radian conversion and setting offsets
-    scan_ax, anal_ax, energy = np.array(scan_ax), np.array(anal_ax), np.array(energy)
-    d_scan_ax = -np.deg2rad(d_scan_ax)
-    d_anal_ax = -np.deg2rad(d_anal_ax)
-    scan_ax = np.deg2rad(scan_ax) + d_scan_ax
-    anal_ax = np.deg2rad(anal_ax) + d_anal_ax
+    scan_ax, anal_ax, energy = np.array(scan_ax), \
+                               np.array(anal_ax), \
+                               np.array(energy)
+    scan_ax = np.deg2rad(scan_ax) - np.deg2rad(d_scan_ax)
+    anal_ax = np.deg2rad(anal_ax) - np.deg2rad(d_anal_ax)
 
     nkx, nky, ne = scan_ax.size, anal_ax.size, energy.size
 
@@ -1482,7 +1539,8 @@ def angle2kspace(scan_ax, anal_ax, d_scan_ax=0, d_anal_ax=0,
                 ky[kxi] = np.sin(anal_ax)
         return k0 * kx, k0 * ky
 
-    # 3D set of momentum vs momentum coordinates, for all given binding energies
+    # 3D set of momentum vs momentum coordinates, for all given
+    # binding energies
     elif (nkx != 1) and (ne != 1):
         kx = np.zeros((ne, nkx, nky))
         ky = np.zeros_like(kx)
@@ -1492,16 +1550,42 @@ def angle2kspace(scan_ax, anal_ax, d_scan_ax=0, d_anal_ax=0,
             if orientation == 'horizontal':
                 for kxi in range(nkx):
                     kx[ei, kxi, :] = k0i * np.ones(nky) * np.sin(scan_ax[kxi])
-                    ky[ei, kxi, :] = k0i * np.cos(scan_ax[kxi]) * np.sin(anal_ax)
+                    ky[ei, kxi, :] = k0i * np.cos(scan_ax[kxi]) * \
+                                     np.sin(anal_ax)
             elif orientation == 'vertical':
                 for kxi in range(nkx):
-                    kx[ei, kxi, :] = k0i * np.cos(anal_ax) * np.sin(scan_ax[kxi])
+                    kx[ei, kxi, :] = k0i * np.cos(anal_ax) * \
+                                     np.sin(scan_ax[kxi])
                     ky[ei, kxi, :] = k0i * np.sin(anal_ax)
         return kx, ky
 
 
-def hv2kz(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi,
-          energy=np.array([0]), **kwargs):
+def hv2kz(ang: np.ndarray, hvs: np.ndarray, work_func: float = 4.5,
+          V0: float = 0, trans_kz: bool = False, c: float = np.pi,
+          energy: np.ndarray = np.array([0]), **kwargs: dict) -> tuple:
+    """
+    Convert photon energy scan to `k`-space.
+
+    .. note::
+        Follows procedure described by
+        `Ishida et al. <https://doi.org/10.1063/1.5007226>`_
+
+    :param ang: angle axis along the analyzer direction
+    :param hvs: photon energies
+    :param work_func: work function [eV]
+    :param V0: tin potential [eV]
+    :param trans_kz: if :py:obj:`True`, transform photon energies to momentum
+                     units
+    :param c: out-of-plane lattice constant [Angstrom].
+              When given, convert momentum axis to c/2pi units
+    :param energy: energy axis
+    :param kwargs: kwargs. See :func:`k_fac` and :func:`angle2kspace` for more
+                   details
+    :return: result in a format:
+
+        - ``res[0]`` - :class:`np.ndarray`; meshgrid of `ky` coordinates
+        - ``res[1]`` - :class:`np.ndarray`; meshgrid of `kz` coordinates
+    """
 
     ang, hvs, energy = np.array(ang), np.array(hvs), np.array(energy)
     ky = []
@@ -1538,7 +1622,24 @@ def hv2kz(ang, hvs, work_func=4.5, V0=0, trans_kz=False, c=np.pi,
 
 
 @njit(parallel=True)
-def rescale_data(data, org_scale, new_scale):
+def rescale_data(data: np.ndarray, org_scale: np.ndarray,
+                 new_scale: np.ndarray) -> np.ndarray:
+    """
+    Rescales dataset, to make `k`-space converted image from photon energy scan
+    possible to plot on rectangular lattice. That is required to plot data
+    as a regular image instead of :class:`~matplotlib.pyplot.pcolormesh`
+    object, which is incredibly slow.
+
+    Method changes axes to span between lowest and highest values (specified
+    by axis at the highest photon energy), with the smallest step (specified by
+    axis at the lowest photon energy).
+
+    :param data: original data
+    :param org_scale: original `k`-space converted axis
+    :param new_scale: new scale with fine step, over widest momentum range
+    :return: rescaled data
+    """
+
     new_data = np.zeros((data.shape[0], new_scale.size, data.shape[2]))
     for zi in prange(data.shape[2]):
         for xi in range(data.shape[0]):
@@ -1557,6 +1658,13 @@ def rescale_data(data, org_scale, new_scale):
 # +----------+ #
 
 
-def all_equal(iterable):
+def all_equal(iterable: Union[list, tuple]) -> bool:
+    """
+    Check if all elements in iterable are equal.
+
+    :param iterable: list to check
+    :return: logic test result
+    """
+
     g = groupby(iterable)
     return next(g, True) and not next(g, False)
