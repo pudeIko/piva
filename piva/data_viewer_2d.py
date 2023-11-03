@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QMessageBox
 import piva.working_procedures as wp
 import piva.data_loaders as dl
 import piva.image_panels as ip
-from utilities_panel import UtilitiesPanel
+from piva.utilities_panel import UtilitiesPanel
 from data_slicer import pit
 from piva.cmaps import cmaps
 from piva.fitters import MDCFitter, EDCFitter
