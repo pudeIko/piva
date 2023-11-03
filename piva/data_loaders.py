@@ -6,7 +6,8 @@ import os
 import pickle
 import re
 import h5py
-from igor import binarywave, igorpy
+# from igor import igorpy
+from igor2 import binarywave, packed
 import zipfile
 from argparse import Namespace
 from errno import ENOENT
@@ -14,7 +15,7 @@ from warnings import catch_warnings, simplefilter
 from PyQt5.QtWidgets import QDialog, QLabel, QComboBox, QDialogButtonBox, \
     QGridLayout
 from datetime import datetime
-from typing import Union
+from typing import Union, Any
 
 
 class Dataset(Namespace):
@@ -303,6 +304,30 @@ class Dataloader:
 
         ds = self.ds
         wave = binarywave.load(filename)['wave']
+        self._read_ibw_(ds, wave, bl_md=bl_md)
+
+    def load_ses_pxt(self, filename: str, bl_md: list = None,
+                     metadata: bool = False) -> None:
+        """
+        Load data from SES (Scianta) IGOR packed experiment (**\ *.pxt**)
+        files.
+
+        :param filename: absolute path to the file
+        :param bl_md: beamline specific metadata. Not used here, but required
+                      to mach format of other **Dataloaders**. See
+                      :meth:`load_ses_zip` for more info.
+        :param metadata: if :py:obj:`True`, read only metadata and size of the
+                         dataset. See :meth:`load_ses_zip` for more info.
+        """
+
+        ds = self.ds
+        wave = packed.load(filename)[0][0].wave['wave']
+
+        self._read_ibw_(ds, wave, bl_md=bl_md)
+
+    def _read_ibw_(self, ds: Dataset, wave: Any, bl_md: list = None,
+                   metadata: bool = False) -> None:
+
         # The `header` contains some metadata
         header = wave['wave_header']
         nDim = header['nDim']
@@ -329,73 +354,6 @@ class Dataloader:
         # Convert  bytestring of ASCII characters `note` containing some
         # metadata, to a list of strings
         meta = wave['note'].decode('ASCII').split('\r')
-        self.read_ses_metadata(ds, meta, bl_md=bl_md)
-
-        if ds.xscale.size == 1:
-            ds.scan_type = 'cut'
-        else:
-            ds.scan_dim = [ds.xscale[0], ds.xscale[-1],
-                           np.abs(ds.xscale[0] - ds.xscale[1])]
-
-    def load_ses_pxt(self, filename: str, bl_md: list = None,
-                     metadata: bool = False) -> None:
-        """
-        Load data from SES (Scianta) IGOR packed experiment (**\ *.pxt**)
-        files.
-
-        :param filename: absolute path to the file
-        :param bl_md: beamline specific metadata. Not used here, but required
-                      to mach format of other **Dataloaders**. See
-                      :meth:`load_ses_zip` for more info.
-        :param metadata: if :py:obj:`True`, read only metadata and size of the
-                         dataset. See :meth:`load_ses_zip` for more info.
-        """
-
-        ds = self.ds
-        pxt = igorpy.load(filename)[0]
-        data = pxt.data.T
-        shape = data.shape
-
-        # if file contains single cut
-        if len(shape) == 2:
-            x = 1
-            y = pxt.axis[1].size
-            N_E = pxt.axis[0].size
-            # Make data 3D
-            data = data.reshape((1, y, N_E))
-            # Extract the limits
-            xlims = [1, 1]
-            xscale = start_step_n(*xlims, x)
-            yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
-            zscale = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
-        # if it contains multiple cuts, choose which one to load
-        else:
-            multiple_cuts_box = PXT_Dialog(shape[0])
-            box_return_value = multiple_cuts_box.exec()
-            selection = multiple_cuts_box.selection_box.currentIndex()
-            if box_return_value == 0:
-                return
-            data = data[selection, :, :]
-            x = 1
-            y = pxt.axis[1].size
-            N_E = pxt.axis[0].size
-            # Make data 3D
-            data = data.reshape((1, y, N_E))
-            # Extract the limits
-            xlims = [1, 1]
-            xscale = start_step_n(*xlims, x)
-            yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
-            zscale = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
-
-        # set data and axes
-        ds.data = data
-        ds.xscale = xscale
-        ds.yscale = yscale
-        ds.zscale = zscale
-
-        # Convert `note`, which is a bytestring of ASCII characters that
-        # contains some metadata, to a list of strings
-        meta = pxt.notes.decode('ASCII').split('\r')
         self.read_ses_metadata(ds, meta, bl_md=bl_md)
 
         if ds.xscale.size == 1:
@@ -462,6 +420,76 @@ class Dataloader:
                 elif tokens[0] == 'Thetay_StepSize':
                     ns.__setattr__('scan_step',
                                    float(tokens[1].split()[0]))
+
+    def _load_ses_pxt(self, filename: str, bl_md: list = None,
+                      metadata: bool = False) -> None:
+        """
+        This is a deprecated, equivalent to original :meth:`load_ses_pxt`
+        method, but based on not maintained anymore :mod:`igor` package.
+        Kept, because old version provided better API, but had dependencies
+        conflicts.
+
+        :param filename: absolute path to the file
+        :param bl_md: beamline specific metadata. Not used here, but required
+                      to mach format of other **Dataloaders**. See
+                      :meth:`load_ses_zip` for more info.
+        :param metadata: if :py:obj:`True`, read only metadata and size of the
+                         dataset. See :meth:`load_ses_zip` for more info.
+        """
+
+        ds = self.ds
+        pxt = 0#igorpy.load(filename)[0]
+
+        data = pxt.data.T
+        shape = data.shape
+
+        # if file contains single cut
+        if len(shape) == 2:
+            x = 1
+            y = pxt.axis[1].size
+            N_E = pxt.axis[0].size
+            # Make data 3D
+            data = data.reshape((1, y, N_E))
+            # Extract the limits
+            xlims = [1, 1]
+            xscale = start_step_n(*xlims, x)
+            yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
+            zscale = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
+        # if it contains multiple cuts, choose which one to load
+        else:
+            multiple_cuts_box = PXT_Dialog(shape[0])
+            box_return_value = multiple_cuts_box.exec()
+            selection = multiple_cuts_box.selection_box.currentIndex()
+            if box_return_value == 0:
+                return
+            data = data[selection, :, :]
+            x = 1
+            y = pxt.axis[1].size
+            N_E = pxt.axis[0].size
+            # Make data 3D
+            data = data.reshape((1, y, N_E))
+            # Extract the limits
+            xlims = [1, 1]
+            xscale = start_step_n(*xlims, x)
+            yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
+            zscale = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
+
+        # set data and axes
+        ds.data = data
+        ds.xscale = xscale
+        ds.yscale = yscale
+        ds.zscale = zscale
+
+        # Convert `note`, which is a bytestring of ASCII characters that
+        # contains some metadata, to a list of strings
+        meta = pxt.notes.decode('ASCII').split('\r')
+        self.read_ses_metadata(ds, meta, bl_md=bl_md)
+
+        if ds.xscale.size == 1:
+            ds.scan_type = 'cut'
+        else:
+            ds.scan_dim = [ds.xscale[0], ds.xscale[-1],
+                           np.abs(ds.xscale[0] - ds.xscale[1])]
 
 
 class DataloaderPickle(Dataloader):

@@ -17,10 +17,10 @@ Alternatively, one can also install it directly from the git repo::
 
 
 .. note::
-    Cloning git repo using ``pip`` downloads only source files, skipping among
-    the others example files used for :ref:`testing <sec-testing>`. To clone
-    entire repository go to the directory in which you want to store the
-    package and run::
+    Cloning git repo using ``pip`` downloads only source files, skipping *i.a.*
+    example files used for :ref:`testing <sec-testing>`. To clone entire
+    repository go to the directory in which you want to store the package and
+    run::
 
         git clone https://github.com/pudeIko/piva.git
         cd piva
