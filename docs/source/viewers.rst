@@ -1,154 +1,272 @@
 .. _sec-viewers:
 
-Data viewers
+Data Viewers
 ============
+
+.. _sec-2d-viewer:
+
+2D DataViewer
+-------------
+
+This viewer allows for processing two-dimensional *energy vs. momentum*
+datasets that are basic detector's images acquired in ARPES experiment.
+
+Window consists of two main objects: :class:`~data_viewer_2d.DataViewer2D`
+and :class:`~utilities_panel.UtilitiesPanel`, responsible for slicing and
+displaying updated plots and manipulation on the data, respectively. Its layout
+and components are described below:
+
+.. figure:: ../img/dv-2d-main.png
+   :alt: Image not found.
+
+.. _sec-2d-viewer-table:
+
+=====   =======================================================================
+**a**   Main data plot. Horizontal and vertical axes correspond to energy and
+        angle (momentum), respectively.
+**b**   Horizontal and vertical slices taken at the positions of the sliders.
+**c**   Utilities panel containing all image processing and analysis features,
+        to large extent shared between :ref:`2D <sec-2d-viewer>` and
+        :ref:`3D Viewer <sec-3d-viewer>`. Detailed description of all its
+        options can be found :ref:`below <sec-utilities-panel>`.
+**d**    - **close** - close this window
+         - **save** - save current dataset to a :mod:`pickle` file.
+         - **open in PIT** - open current dataset with `data-slicer's PIT
+           <https://data-slicer.readthedocs.io/en/latest/quickstart.html>`_.
+         - **MDC fitter** - open current dataset in :ref:`MDC Fitter
+           <sec-mdc-fitter>`
+         - **EDC fitter** - open current dataset in :ref:`EDC Fitter
+           <sec-edc-fitter>`
+=====   =======================================================================
+
+.. note::
+    **save** button saves applied energy corrections and *k*-space
+    conversion but does not keep information on performed image processing
+    like smoothing or curvature analysis.
+
+
 
 .. _sec-3d-viewer:
 
-3D viewer
----------
+3D DataViewer
+-------------
 
-In this window three-dimensional ARPES data is displayed.
-The layout should be familiar to anyone with experience with the Igor *Image 
-Tool* that has been circulating in the ARPES community.
+During the measurement, *energy vs. momentum* images are very often acquired
+as a function of a third parameter, *e.g.* rotation angle or photon energy.
+:ref:`3D Viewer <sec-3d-viewer>` allows for inspection of such datasets.
+Window's layout helps to simultaneously and intuitively present slices across
+all three perpendicular directions.
 
-.. figure:: ../img/3dviewer_annotated.png
+.. figure:: ../img/dv-3d-main.png
    :alt: Image not found.
 
-=====  =========================================================================
-**a**  Main data plot. Like a *top view* of your data cube.
-**b**  Cut through the data cube along the vertical yellow line in **a**.
-**c**  Cut through the data cube along the horizontal yellow line in **a**.
-**d**  Integrated intensity along the axis perpendicular to the plane in **a**.
-**e**  :ref:`Utility panel <sec-utility-panel3d>`.
-=====  =========================================================================
+=====   =======================================================================
+**a**   **Main image plot**. Horizontal and vertical axes correspond to scanned
+        dimension and analyzer (angle/momentum) axis, respectively.
+**b**   **Main energy slider**, allowing to choose different slices shown on
+        **main image plot**. White curve shows energy distribution curve (EDC)
+        integrated over entire dataset, red curve corresponds to EDC taken at
+        the crossing point of **main image plot** sliders.
+**c**   Horizontal and vertical cuts taken along the sliders in
+        **main image plot**. Vertical axes correspond to energy, horizontal to
+        corresponing axes of **main image plot**.
+**d**   Slices taken along energy sliders of horizontal/vertical cuts.
+**e**   Utilities panel containing all image processing and analysis features,
+        to large extent shared between :ref:`2D <sec-2d-viewer>` and
+        :ref:`3D Viewer <sec-3d-viewer>`. Detailed description of all its
+        options can be found :ref:`below <sec-utilities-panel>`.
+**f**   See description :ref:`here <sec-2d-viewer-table>`.
+=====   =======================================================================
 
-The buttons
-^^^^^^^^^^^
 
-===========  ===================================================================
-button       function
-===========  ===================================================================
-close        Close this window.
-save         Save the dataset with all applied corrections and conversions as 
-             a `pickle` file.
-hide tabs    Hide the *utility panel* for a less distractive view.
-open in PIT  Open the current dataset with `data-slicer's PIT <https://data-slicer.readthedocs.io/en/latest/quickstart.html>`_.
-===========  ===================================================================
 
-.. _sec-utility-panel3d:
+.. _sec-utilities-panel:
 
-The Utility Panel
-^^^^^^^^^^^^^^^^^
+The Utilities Panel
+-------------------
 
-The different tabs in this panel give access to a lot of `piva`'s functionality.
+Top panel of the **DataViewers**, consists of different tabs, which give access
+to :mod:`piva`'s functionalities. **Utilities Panels** of
+:ref:`2D <sec-2d-viewer>` and :ref:`3D Viewers <sec-3d-viewer>` share a lot of
+similarities and therefore are discussed together on example windows ``dv2D.p``
+and ``dv3D.p``.
 
-Volume
-""""""
 
-Here one can manually set the location (in pixels) of the yellow lines in the 
-plots **a** - **d** (*Energy sliders* and *Momentum sliders*).
+.. _sec-utilities-panel-volume:
 
-It's also possible to different integration windows by enabling the 
-respective *binning* checkbox and setting the size of the window in units of 
-pixels.
+Volume tab
+^^^^^^^^^^
 
-Image
-"""""
+Gives additional control over the sliders and allows to integrate data.
+Helps to better orientate on both levels: data matrix and experimental
+coordinates.
 
-.. figure:: ../img/image.png
+.. figure:: ../img/dv-up-volume.png
    :alt: Image not found.
 
-Visual aspects of the colormap can be adjusted here.
-*color scale* refers to the relative max value for the colormap normalization.
-*gamma* is the exponent in a power-law normalization according to :math:`x 
-\rightarrow x^{1/\gamma}`.
+===============  ==============================================================
+Functionality    Description
+===============  ==============================================================
+positions        Set manually the location (in pixels) of the *Energy* and
+                 *Momentum sliders*.
+binning options  Apply integration window by enabling the respective *binning*
+                 checkbox and setting the size of the window in units of
+                 pixels.
+linking options  Link different **DataViewers** (of the same type) to control
+                 their sliders simultaneously.
 
-An EDC-wise normalization can be applied to and a BZ contour can be overlayed 
-over the data (requires :ref:`conversion to *k*-space first 
-<sec-utility-panel-axes>`).
+                 Functionality operates in a `master`-`slave` system, where
+                 one (`master`) window controls all the others. `Master`
+                 window is established as the window from which *Link*
+                 button was clicked. All other windows receive status
+                 `slave`. Windows added to existing linked combination will
+                 also receive status `slave`.
+===============  ==============================================================
 
-Finally, one can open the horizontal (**c**) and vertical (**b**) cuts in a 
-new :ref:`2D viewer window <sec-2d-viewer>` for closer inspection.
 
-.. _sec-utility-panel-axes:
+.. _sec-utilities-panel-image:
 
-Axes
-""""
+Image tab
+^^^^^^^^^
 
-.. figure:: ../img/axes.png
+Controls visual aspects of displayed images, from simple colormap
+selection and color scaling to more advanced processing methods.
+
+.. figure:: ../img/dv-up-image.png
    :alt: Image not found.
 
-Here, the energy axis can be adjusted by manually setting the Fermi level 
-and/or switching between binding and kinetic energy scales.
+======================  =======================================================
+Functionality           Description
+======================  =======================================================
+colors                  Select :mod:`matplotlib` colormap, invert its colors,
+                        apply power-law normalization according to :math:`x
+                        \rightarrow x^{1/\gamma}`.
+normalization options   Apply normalization along selected direction.
+smoothing options       Perform smoothing using uniform square kernel.
+                        `box size` determines size of the square in pixels,
+                        `recursion` number of smoothing iterations.
+curvature method        Perform selected curvature method. Helps to enhance
+                        dispersive features hidden in a spectra. See
+                        :func:`~working_procedures.curvature_2d` and
+                        :func:`~working_procedures.curvature_1d` for more
+                        details.
+Brillouin zone contour  Overlay a Brillouin zone contour centered at (0, 0)
+                        with a specified symmetry. Requires :ref:`conversion
+                        to  momentum space <sec-utilities-panel-axes>` first.
+open in **2D Viewer**   Open the horizontal or vertical cut in a new
+                        :ref:`2D Viewer <sec-2d-viewer>` for closer inspection.
+======================  =======================================================
 
-The remaining options allow conversion of angles to momentum *k*.
-Put in the pixel coordinates of the location of the Brillouin zone center 
-:math:`\Gamma` and the crystal's lattice parameters *a* (and *c* for 
-additional *kz* conversion), select the analyzer slit geometry (*horizontal* 
-or *vertical*) and click *Convert*.
 
-The button *Copy from 'Orientate'* allows using the values for the location of 
-:math:`\Gamma` found in the *Orientate* tab.
+.. _sec-utilities-panel-axes:
 
-Orientate
-"""""""""
+Axes tab
+^^^^^^^^
 
-.. figure:: ../img/orientate.png
+Allows to apply corrections, change scale of the energy axis and perform
+transformation to momentum space.
+
+.. figure:: ../img/dv-up-axes.png
    :alt: Image not found.
 
-This tab is intended to help with sample alignment, especially with azimuthal 
-rotation.
-One can manually input the pixel coordinates of the desired center of 
-rotation (usually :math:`\Gamma`) or use an automated routine *Find* 
-:math:`\Gamma`.
-Then, rotatable lines can be overlayed to the plot to identify the sample 
-azimuthal rotation.
+======================  =======================================================
+Functionality           Description
+======================  =======================================================
+Energy correction       Apply manually energy corrections for Fermi level and
+                        change scale between *kinetic* and *binding*.
+*k*-space conversion    Perform conversion from angle (photon energy) to
+                        momentum space. Note:
 
-File
-""""
+                         - Position of the Brillouin zone center
+                           :math:`\Gamma_{x0}` (and :math:`\Gamma_{y0}`) must
+                           be given in pixels, while *angle offset* in 2D case
+                           should be in degrees.
+                         - Tick the *kz* box if converted dataset is along
+                           *out-of-plane* direction.
+                         - *a* and *c* correspond to *in-* and *out-of-plane*
+                           lattice constants. Conversion with default values
+                           (:math:`\pi`) gives axes in units of inverse
+                           angstroms.
+                         - *Copy from 'Orientate'* button allows to use the
+                           values for the location of :math:`\Gamma` found in
+                           the *Orientate* tab.
 
-.. figure:: ../img/file.png
+                        Conversion algorithm follows procedure described by
+                        `Ishida et al. <https://doi.org/10.1063/1.5007226>`_
+======================  =======================================================
+
+.. note::
+    *k*-space conversion of 3D datasets will create new
+    :class:`~data_loaders.Dataset` with rescaled axes. New axes span between
+    lowest and highest values, with the smallest step in new momentum
+    coordinates.
+    Such approach is applied to plot data as a regular rectangular image
+    instead of :class:`~matplotlib.pyplot.pcolormesh` object, which is
+    incredibly slow.
+
+    See :func:`~working_procedures.rescale_data` for more details.
+
+.. _sec-utilities-panel-orientate:
+
+Orientate tab
+^^^^^^^^^^^^^
+
+Contains tools useful for sample alignment at the beginning of the
+experiment.
+
+.. figure:: ../img/dv-up-orientate.png
    :alt: Image not found.
 
-With the *add/update* button, arbitrary metadata of the datafile can be added 
-or changed.
-The metadata will use the key entered in *name* and the value from *value*.
+=======================  ======================================================
+Functionality            Description
+=======================  ======================================================
+find :math:`\Gamma`      Automated image processing routine for finding highest
+                         symmetry point in displayed image. Follows method
+                         described by `Junck et al.
+                         <https://pubmed.ncbi.nlm.nih.gov/2362201/>`_
+rotatable lines          Append rotatable lines to the plot to identify the
+                         sample azimuthal rotation.
+Beamlines' orientations  Display window showing relative dependency between
+                         some beamlines' geometries and convention used in
+                         :mod:`piva`.
+=======================  ======================================================
+
+
+.. _sec-utilities-panel-file:
+
+File tab
+^^^^^^^^
+
+File related options. Allows to edit and browse through metadata. Gives a
+quick, *one-click* solution for jumping to the JupyterLab to perform more
+sophisticated analysis.
+
+.. figure:: ../img/dv-up-file.png
+   :alt: Image not found.
+
+============================  =================================================
+Functionality                 Description
+============================  =================================================
+data provenance and metadata  Display windows showing *data provenance* entries
+                              and available metadata.
+edit metadata                 Edit (*add/update* or *remove*) metadata entries
+                              of loaded file. *name* indicates an attribute of
+                              the :class:`~data_loaders.Dataset` object.
+summing options               Sum current data with a given data file. Method
+                              will compare available metadata and return
+                              detected conflicts. See
+                              :meth:`sum_datasets
+                              <utilities_panel.UtilitiesPanel.sum_datasets>`
+                              for more details.
+open in JupyterLab            Create (*touch* button) new ``notebook`` file
+                              with exported details for plotting currently
+                              displayed image. *start JL session* opens new
+                              ``jupyter-lab`` server.
+open experimental logbook     Create new ``notebook`` file with an automated
+                              experimental logbook for selected beamline.
+============================  =================================================
 
 .. note::
     Any changes in the metadata will only be saved to the pickle file 
     generated/updated by hitting the *save* button in the top-right.
-
-Finally, the *open in jn* button creates and opens a **J** upyter **n** 
-otebook with the supplied name for further data analysis.
-
-.. _sec-2d-viewer:
-
-2D viewer
----------
-
-This is used to display single *angle versus energy* ARPES spectra, as they are 
-typically created by electron analyzers.
-
-For the most part, this window is identical to its :ref:`3D counterpart 
-<sec-3d-viewer>` except for the absence of an integrated intensity plot (**d**).
-The *utility panel* also provides slightly different functionality, geared 
-towards 2D datasets.
-Therefore, confer the previous section for all things not covered here.
-
-Utility Panel in 2D
-^^^^^^^^^^^^^^^^^^^
-
-Image
-"""""
-
-In addition to the functionality already present in the 3D case, one can 
-employ a box smoothing algorithm and the *curvature method* for better 
-visualization of dispersive features.
-
-File
-""""
-
-Additionally allows opening this dataset in the :ref:`MDC/EDC fitter windows 
-<sec-fitters>`.
 

@@ -14,10 +14,11 @@ from PyQt5.QtWidgets import QColorDialog, QFileDialog, QWidget, \
 import piva.data_browser as db
 import piva.working_procedures as wp
 import piva.data_loaders as dl
-import piva._2Dviewer as p2d
-import piva._3Dviewer as p3d
+import piva.data_viewer_2d as p2d
+import piva.data_viewer_3d as p3d
 from piva.image_panels import bold_font
 from typing import Union, Any
+import pickle
 
 MDC_PANEL_BGR = (236, 236, 236)
 
@@ -235,10 +236,10 @@ class PlotTool(QtWidgets.QMainWindow):
         self.datasets_tab = QWidget()
         dtl = QtWidgets.QGridLayout()
 
-        self.ds_dv_label = QLabel('dataset:')
+        self.ds_dv_label = QLabel('source:')
         self.ds_dv = QComboBox()
         self.ds_dv.addItem('custom')
-        self.ds_dv_plot_label = QLabel('curve:')
+        self.ds_dv_plot_label = QLabel('plot:')
         self.ds_dv_plot = QComboBox()
 
         self.ds_update_lists = QPushButton('update')
@@ -1304,7 +1305,7 @@ class PlotTool(QtWidgets.QMainWindow):
 
         full_path, types = QFileDialog.getSaveFileName(self, 'Save Session')
 
-        dl.dump(res, full_path, force=True)
+        pickle.dump(res, full_path, force=True)
 
     def get_data_items_to_save(self) -> dict:
         """
@@ -1434,7 +1435,8 @@ class PlotTool(QtWidgets.QMainWindow):
             return
 
         full_path, types = QFileDialog.getOpenFileName(self, 'Load Session')
-        session = dl.load_pickle(full_path)
+        with open(full_path, 'rb') as f:
+            session = pickle.load(f)
 
         self.main_added.blockSignals(True)
         self.ann_added.blockSignals(True)

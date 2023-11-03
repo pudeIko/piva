@@ -16,7 +16,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - linking viewers functionality, allowing for simultaneous inspection of 
 similar datasets
 - automated tests
-- full in-code and docstring documentation
+- full in-code and finished docstring documentation
 - 
 
 ### Changed
@@ -24,7 +24,7 @@ similar datasets
 - JuPyter functionalities from JuPyter-notebook to JuPyterLab environment
 - generalizes superclass `Dataloader` and simplifies Dataloaders from different 
 beamlines
-- changes `Dataset` to inherit directly from Namespace
+- changes `Dataset` to directly inherit from Namespace
 - unifies fitters into `Fitter` class, from which `MDCFitter` and `EDCFitter` 
 inherit
 - 

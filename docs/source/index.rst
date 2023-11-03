@@ -3,23 +3,35 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to piva's documentation!
-================================
+Welcome to piva - Python Interactive Viewer for ARPES!
+======================================================
 
-This is the documentation for **piva**, the **p**\ ython **i**\ nteractive 
-**v**\ iewer for **A**\ RPES.
-
-Please be aware that the documentation is very much a work in progress.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Overview
 
+   intro
    installation
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: GUI
+
    db
    viewers
    fitters
-   file-formats
+   plottool
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Data formats
+
+   dataset
+   dataloaders
+
 
 .. toctree::
    :maxdepth: 2
@@ -27,8 +39,8 @@ Please be aware that the documentation is very much a work in progress.
 
    modules/data_browser
    modules/data_loaders
-   modules/_2Dviewer
-   modules/_3Dviewer
+   modules/data_viewer_2d
+   modules/data_viewer_3d
    modules/fitters
    modules/plot_tool
    modules/utilities_panel

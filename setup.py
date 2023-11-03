@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Command
 
 with open('requirements.txt', 'r') as fh:
     requirements = fh.read()
@@ -21,12 +21,10 @@ setup(
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
-        'Operating System :: OS Independent',
-    ],
+        'Operating System :: OS Independent',],
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'db = piva.main:db'
-        ],
+            'db = piva.main:db'],
     }
 )

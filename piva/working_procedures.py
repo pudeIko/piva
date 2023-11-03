@@ -1033,6 +1033,7 @@ def smooth_2d(x: np.ndarray, n_box: int = 5, recursion_level: int = 1) \
 
     # Let numpy do the work
     smoothened = convolve2d(y, box, mode='valid')
+    # smoothened = _smooth_2d(y, box)
 
     # Do it again (enter next recursion level) or return the result
     if recursion_level == 1:
@@ -1410,8 +1411,7 @@ def curvature_2d(data: np.ndarray, dx: float, dy: float, a0: float = 100,
     if (nb is not None) and (rl is not None):
         data = smooth_2d(data, n_box=nb, recursion_level=rl)
 
-    dfdx = np.gradient(data, dx, axis=0)
-    dfdy = np.gradient(data, dy, axis=1)
+    dfdx, dfdy = np.gradient(data, dx, dy)
     d2fdx2 = np.gradient(dfdx, dx, axis=0)
     d2fdy2 = np.gradient(dfdy, dy, axis=1)
     d2fdxdy = np.gradient(dfdx, dy, axis=1)
@@ -1419,10 +1419,14 @@ def curvature_2d(data: np.ndarray, dx: float, dy: float, a0: float = 100,
     cx = a0 * (dx ** 2)
     cy = a0 * (dy ** 2)
 
-    nom = (1 + cx * (dfdx ** 2)) * cy * d2fdy2 - \
+    # mdfdx, mdfdy = np.max(np.abs(dfdx)), np.max(np.abs(dfdy))
+    # cy = (dy / dx) * (mdfdx ** 2 + mdfdy ** 2) * a0
+    # cx = (dx / dy) * (mdfdx ** 2 + mdfdy ** 2) * a0
+
+    nom = (1 + cx * np.power(dfdx, 2)) * cy * d2fdy2 - \
           2 * cx * cy * dfdx * dfdy * d2fdxdy + \
-          (1 + cy * (dfdy ** 2)) * cx * d2fdx2
-    den = (1 + cx * (dfdx ** 2) + cy * (dfdy ** 2)) ** 1.5
+          (1 + cy * np.power(dfdy, 2)) * cx * d2fdx2
+    den = (1 + cx * np.power(dfdx, 2) + cy * np.power(dfdy, 2)) ** 1.5
 
     C_xy = nom / den
 

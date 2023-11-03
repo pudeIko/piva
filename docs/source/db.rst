@@ -1,35 +1,43 @@
 .. _sec-db:
 
-``piva`` data browser (db)
-==========================
 
-Once installed, you can launch the ``piva`` data browser with the command::
+Data Browser
+============
+
+**DataBrowser** is a main window of the :mod:`piva` package. To open it, in
+terminal simply run::
 
     db
 
-Alternatively, one can use::
+This will start :mod:`piva` session and open the following window:
 
-    python -m piva.main
-
-This brings up a window like the following:
-
-.. figure:: ../img/db.png
+.. figure:: ../img/db-labels.png
     :alt: Image not found.
 
-The left half of this window provides a tree-view of your filesystem.
-This allows you to browse throug your files using the mouse or arrow keys.
-Whenever you select a :ref:`recognizable ARPES file <sec-file-formats>`, 
-the databrowser will attempt to read its metadata and display it in the right 
-half of the window.
+- Left-hand side of the window provides a **tree-view** of the filesystem,
+  allowing to browse through the files.
 
-.. note::
-   If you know which dataloader will be suitable for your dataset, you can 
-   select it from the dropdown at the top of the right half. This should 
-   speed up metadata extraction and is generally safer than the default 
-   option *All*.
+  Currently displayed directory can be changed from menu bar (**File** ->
+  **Open directory**) or by using the ``CTRL + O`` shortcut.
 
-The selected file can be opened in ``piva`` by choosing ``File -> Launch 
-piva`` or by using the keyboard shortcut ``CTRL + L``.
-Depending on the dimensionality/scan type this will launch either a :ref:`2D 
-<sec-2d-viewer>` or :ref:`3D viewer <sec-3d-viewer>` in a new window.
+- On the right-hand side one can see the metadata panel, displaying all
+  metadata available in loaded file. Whenever file selection in the
+  **tree-view** changes, DataBrowser will attempt to read its metadata and
+  display it in the corresponding fields. See also
+  :class:`~data_loaders.Dataset` for more details.
+
+  To open selected file go to menu bar (**File** -> **Launch piva**) or use
+  the ``CTRL + L`` shortcut.
+
+  .. note::
+    Default :class:`~data_loaders.Dataloader` selection set to `All` (dropdown
+    menu at top of the **metadata panel**) attempts to load selected file by
+    iterating through all implemented Dataloaders. As a consequence, it can
+    succeed loading :class:`~data_loaders.Dataset` but with limited number of
+    metadata. Selecting suitable :class:`~data_loaders.Dataloader` makes sure
+    all available metadata are extracted and speeds up loading time.
+
+  Depending on the dimensionality/scan type this will launch either a
+  :ref:`2D <sec-2d-viewer>` or :ref:`3D Viewer <sec-3d-viewer>` in a new
+  window.
 

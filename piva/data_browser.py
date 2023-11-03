@@ -9,9 +9,10 @@ from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
 import piva.data_loaders as dl
 import piva.working_procedures as wp
-import piva._3Dviewer as p3d
-import piva._2Dviewer as p2d
+import piva.data_viewer_3d as p3d
+import piva.data_viewer_2d as p2d
 import piva.plot_tool as pt
+
 
 START_TIME = time.time()
 testing = True
@@ -54,7 +55,7 @@ class DataBrowser(QMainWindow):
         self.align()
 
         # loading custom plugins
-        self.load_custom_plugins()
+        self.load_custom_data_loaders()
 
         # set window
         self.setWindowTitle('piva data browser - ' + self.working_dir)
@@ -110,6 +111,16 @@ class DataBrowser(QMainWindow):
 
         self.open_dv(fname)
 
+    def launch_example(self) -> None:
+        """
+        Open **DataViewer** with axample data.
+        """
+
+        fname = os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__))) + \
+                       '/tests/data/pickle_map.p'
+        self.open_dv(fname)
+
     def mb_open_dir(self) -> None:
         """
         Open file dialog to select different working directory and change
@@ -125,19 +136,24 @@ class DataBrowser(QMainWindow):
         except IndexError:
             pass
 
-    def open_dv(self, fname: str) -> None:
+    def open_dv(self, fname: str, example: bool = False) -> None:
         """
         Open selected file in a **DataViewer**.
 
+        :type example: if :py:obj:`True` open example dataset
         :param fname: absolute path to selected file
         """
 
-        selected_loader = self.dp_dl_picker.currentText()
-        if selected_loader == 'All':
-            data_set = dl.load_data(fname)
-        else:
-            loader = all_dls[selected_loader]()
+        if example:
+            loader = all_dls['Pickle']()
             data_set = loader.load_data(fname)
+        else:
+            selected_loader = self.dp_dl_picker.currentText()
+            if selected_loader == 'All':
+                data_set = dl.load_data(fname)
+            else:
+                loader = all_dls[selected_loader]()
+                data_set = loader.load_data(fname)
 
         try:
             # choose correct viewer
@@ -550,12 +566,18 @@ class DataBrowser(QMainWindow):
         open_file.triggered.connect(self.launch_piva)
         file_menu.addAction(open_file)
 
-        plot_menu = menu_bar.addMenu('&Plot')
+        open_menu = menu_bar.addMenu('&Open')
         single_plot = QAction('Plotting Tool', self)
         single_plot.setShortcut('Ctrl+P')
         single_plot.setStatusTip('Plotting Tool')
         single_plot.triggered.connect(self.open_single_plotting_tool)
-        plot_menu.addAction(single_plot)
+        open_menu.addAction(single_plot)
+
+        example_data = QAction('Example', self)
+        example_data.setStatusTip('Example')
+        # print(EXAMPLE_DATA, type(EXAMPLE_DATA))
+        example_data.triggered.connect(self.launch_example)
+        open_menu.addAction(example_data)
 
         file_menu.addSeparator()
 
@@ -767,35 +789,24 @@ class DataBrowser(QMainWindow):
                     list.removeItem(idx)
                     break
 
-    def load_custom_plugins(self) -> None:
+    def load_custom_data_loaders(self) -> None:
         """
         If configured, try to load user-implemented, custom
         :class:`~data_loaders.Dataloader`, allowing to read
         other formats of data.
         """
 
-        plugins_directory = os.environ.get('PIVA_PLUGINS_DIR')
-        if plugins_directory:
+        try:
+            import custom_data_loaders as cdl
+            dl_picker = self.dp_dl_picker
+            dl_picker.insertSeparator(dl_picker.count())
+            for module in dir(cdl):
+                if 'CustomDataloader' in module:
+                    loader = getattr(cdl, module)
+                    dl_label = 'Custom: {}'.format(loader.name)
+                    dl_picker.addItem(dl_label)
+                    all_dls[dl_label] = loader
+                    print('\t', loader.name, dl_label)
             print('Loading custom plugins:')
-            for filename in os.listdir(plugins_directory):
-                if filename.endswith('custom_data_loaders.py'):
-                    print('\tData loaders: ', end='')
-                    plugin_name = os.path.splitext(filename)[0]
-                    # get directory under environmental variable
-                    # and search for modules in it
-                    plugin_path = os.path.join(plugins_directory, filename)
-                    spec = importlib.util.spec_from_file_location(plugin_name,
-                                                                  plugin_path)
-                    module = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(module)
-                    dl_picker = self.dp_dl_picker
-                    dl_picker.insertSeparator(dl_picker.count())
-                    class_objects = inspect.getmembers(module, inspect.isclass)
-
-                    # Find all custom DLs and add them to the data_browser
-                    for dl_name, dl in class_objects:
-                        if 'CustomDataloader' in dl_name:
-                            dl_label = 'Custom: {}'.format(dl.name)
-                            dl_picker.addItem(dl_label)
-                            all_dls[dl_label] = dl
-                            print('\t', dl.name, dl_label)
+        except ModuleNotFoundError:
+            pass

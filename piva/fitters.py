@@ -18,7 +18,7 @@ from piva.data_loaders import Dataset
 from piva.cmaps import cmaps, my_cmaps
 from piva.image_panels import TracedVariable
 if TYPE_CHECKING:
-    from piva._2Dviewer import DataViewer2D
+    from piva.data_viewer_2d import DataViewer2D
 
 
 BASE_LINECOLOR = (255, 255, 0, 255)

@@ -11,8 +11,8 @@ from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QComboBox, \
 from PyQt5.QtWidgets import QTableWidgetItem as QTabItem, QSizePolicy
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 if TYPE_CHECKING:
-    from piva._2Dviewer import DataViewer2D
-    from piva._3Dviewer import DataViewer3D
+    from piva.data_viewer_2d import DataViewer2D
+    from piva.data_viewer_3d import DataViewer3D
 
 import piva.working_procedures as wp
 import piva.data_loaders as dl
@@ -223,8 +223,8 @@ class UtilitiesPanel(QWidget):
         self.image_curvature_method.addItems(curvature_methods)
         self.image_curvature_a_lbl = QLabel('a:')
         self.image_curvature_a = QDoubleSpinBox()
-        self.image_curvature_a.setRange(-10, 10)
-        self.image_curvature_a.setSingleStep(0.1)
+        self.image_curvature_a.setRange(-10e5, 10e10)
+        self.image_curvature_a.setSingleStep(0.001)
         self.image_curvature_a.setValue(10.)
         self.image_curvature_a.setMaximumWidth(max_w)
         self.image_curvature_button = QPushButton('Do it')
@@ -388,7 +388,7 @@ class UtilitiesPanel(QWidget):
             self.positions_energies_label = QLabel('Energy sliders')
             self.positions_energies_label.setFont(bold_font)
             self.energy_main_label = QLabel('main:')
-            self.energy_main_label.setMaximumWidth(max_lbl_w)
+            self.energy_main_label.setMaximumWidth(50)
             self.energy_main = QSpinBox()
             self.energy_main.setMaximumWidth(coords_box_w)
             self.energy_main_value = QLabel('eV')
@@ -626,7 +626,8 @@ class UtilitiesPanel(QWidget):
         self.orientate_angle.setRange(-180, 180)
         self.orientate_angle.setSingleStep(0.5)
 
-        self.orientate_info_button = QPushButton('info')
+        self.orientate_info_lbl = QLabel('Orientations table:')
+        self.orientate_info_button = QPushButton('open')
 
         # addWidget(widget, row, column, rowSpan, columnSpan)
         row = 0
@@ -647,6 +648,7 @@ class UtilitiesPanel(QWidget):
         otl.addWidget(self.orientate_ver_line,              1, col + 1)
         otl.addWidget(self.orientate_angle_lbl,             2, col)
         otl.addWidget(self.orientate_angle,                 2, col + 1)
+        otl.addWidget(self.orientate_info_lbl,              3, col)
         otl.addWidget(self.orientate_info_button,           3, col + 1)
 
         # dummy lbl
@@ -1299,7 +1301,7 @@ class UtilitiesPanel(QWidget):
             self.mw.data_set.n_sweeps += new_dataset.n_sweeps
             d = np.swapaxes(self.mw.data_set.data, 1, 2)
             self.mw.data_handler.set_data(d)
-            self.mw.update_main_plot()
+            self.mw.set_image(self.mw.data_handler.get_data())
             self.dp_add_file_sum_entry(file_path)
         else:
             return
@@ -1330,7 +1332,7 @@ class UtilitiesPanel(QWidget):
             self.mw.data_set.n_sweeps = self.mw.org_dataset.n_sweeps
             d = np.swapaxes(self.mw.data_set.data, 1, 2)
             self.mw.data_handler.set_data(d)
-            self.mw.update_main_plot()
+            self.mw.set_image(self.mw.data_handler.get_data())
         else:
             return
 

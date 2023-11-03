@@ -4,7 +4,7 @@ constants.py
 ============
 
 A database like file containing numerical values of various natural constants
-in SI units.
+in SI units .
 
 Avogadro constant [1/mol]
     - ``N_A`` = 6.022 :math:`\cdot` 10\ :math:`{}^{23}`

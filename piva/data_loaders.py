@@ -496,11 +496,9 @@ class DataloaderPickle(Dataloader):
             raise NotImplementedError
 
         # synchronize all attributes in case file was saved using older version
-        dict_ds = vars(self.ds)
-        dict_filedata = vars(filedata)
         for attr in dir(filedata):
             if not (attr[0] == '_'):
-                dict_ds[attr] = dict_filedata[attr]
+                setattr(self.ds, attr, getattr(filedata, attr))
 
         self.ds.add_org_file_entry(filename, self.name)
         return self.ds
