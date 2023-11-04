@@ -4,10 +4,10 @@ Data loaders
 ============
 
 As emphasized in :ref:`Data format <sec-dataset>` section, different
-experimental setups return various file formats. To handle those discrepancies,
-:ref:`data_loaders <sec-data-loaders-file>` module implements objects, that
-take care of proper data extraction and return :class:`data_loaders.Dataset`,
-recognizable by rest of the package.
+experimental setups return different file formats. To handle those
+discrepancies, :ref:`data_loaders <sec-data-loaders-file>` module implements
+objects, that take care of proper data extraction and return
+:class:`data_loaders.Dataset`, recognizable by rest of the package.
 
 It provides the :class:`~data_loaders.Dataloader` class as a base structure
 for different sources (beamlines, electron analyzers, labs) and a number of

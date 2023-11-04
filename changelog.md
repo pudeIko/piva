@@ -9,6 +9,19 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+
+## [2.0.0] = 2023-11-04
+
+### Added
+
 - `DataLoader` classes for MERLIN (ALS) and URANOS (Solaris) beamlines
 - experimental logbook feature for implemented `DataLoaders`
 - data provenance functionality, to track modifications in original data sets
@@ -17,7 +30,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 similar datasets
 - automated tests
 - full in-code and finished docstring documentation
-- 
+
 
 ### Changed
 
@@ -27,11 +40,7 @@ beamlines
 - changes `Dataset` to directly inherit from Namespace
 - unifies fitters into `Fitter` class, from which `MDCFitter` and `EDCFitter` 
 inherit
-- 
  
-
-### Deprecated
-
 
 ### Removed
 - `DataLoader` classes for MAESTRO (ALS)
