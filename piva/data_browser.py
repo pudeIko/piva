@@ -22,6 +22,7 @@ all_dls = {
     'SLS - ADRESS': dl.DataloaderADRESS,
     'MAX IV - Bloch': dl.DataloaderBloch,
     'ALS - MERLIN (4.0.3)': dl.DataloaderMERLIN,
+    'ALS - HERS (10.0.1)': dl.DataloaderHERS,
     'Diamond - i05': dl.DataloaderI05,
     'SOLARIS - URANOS': dl.DataloaderURANOS,
     'SOLEIL - CASSIOPEE': dl.DataloaderCASSIOPEE}

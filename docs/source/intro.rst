@@ -47,10 +47,6 @@ Finally, :ref:`Fitters <sec-fitters>` and :ref:`PlotTool <sec-plottool>`
 applications contain additional functionalities allowing for detailed analysis
 and personalized representation of acquired results.
 
-
-What :mod:`piva` is not
------------------------
-
 In contrary to for example diffraction, discrepancies in ARPES results between
 different physical systems require one to implement unique analysis methods
 for virtually every investigated system. For that reason, :mod:`piva` does not
@@ -68,5 +64,5 @@ sophisticated analysis, requiring hands-on scripting.
 Summing up, :mod:`piva` provides a time efficient, intuitive GUI application
 for examination of multiple datasets and is equipped with a platform for
 importing data into convenient format. It is based on ``python`` and
-``jupyter-lab`` environments, allowing one to easily carry on on with a
+``jupyter-lab`` environments, allowing one to easily carry on with their own
 detailed analysis of obtained spectra.

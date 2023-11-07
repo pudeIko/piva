@@ -1105,6 +1105,18 @@ class UtilitiesPanel(QWidget):
                         '{:.4e}'.format((dataset[key])))
                     entries[str(row)]['value'].setAlignment(
                         QtCore.Qt.AlignCenter)
+            elif key == 'scan_dim':
+                if dataset[key] is None or dataset[key] == []:
+                    continue
+                else:
+                    entries[str(row)] = {}
+                    entries[str(row)]['name'] = QLabel(key)
+                    entries[str(row)]['value'] = QLabel(
+                        '[{:.3f}, {:.3f}, {:.3f}]'.format(dataset[key][0],
+                                                          dataset[key][1],
+                                                          dataset[key][2]))
+                    entries[str(row)]['value'].setAlignment(
+                        QtCore.Qt.AlignCenter)
             else:
                 entries[str(row)] = {}
                 entries[str(row)]['name'] = QLabel(key)

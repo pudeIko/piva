@@ -723,8 +723,7 @@ class MDCFitter(Fitter):
         e_idx = self.hor_pos.get_value()
         if self.image_bin.isChecked():
             n = self.image_bin_n.value()
-            self.mdc = np.sum(
-                self.data[0, :, (e_idx - n):(e_idx + n)], axis=1)
+            self.mdc = np.sum(self.data[:, (e_idx - n):(e_idx + n)], axis=1)
         else:
             self.mdc = self.data[:, e_idx]
 

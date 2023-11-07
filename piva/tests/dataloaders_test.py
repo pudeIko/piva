@@ -7,8 +7,6 @@ import argparse
 import os
 import pkg_resources
 
-# PATH = os.path.expanduser('~') + '/piva-dev/tests/'
-# PATH = './piva/tests/data/'
 PATH = pkg_resources.resource_filename('piva', 'tests/data/')
 
 

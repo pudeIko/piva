@@ -1228,6 +1228,43 @@ class DataloaderMERLIN(Dataloader):
         h5py.File.close(self.datfile)
 
 
+class DataloaderHERS(Dataloader):
+    """
+    Dataloader for opening files from Merlin beamline at ALS (Advanced Light
+    Source, Berkeley, CA).
+    """
+
+    name = 'HERS'
+
+    def __init__(self):
+        super(DataloaderHERS, self).__init__()
+        self.datfile = None
+
+    def load_data(self, filename: str, metadata: bool = False) -> Dataset:
+        """
+        Recognize correct format and load data from the file.
+
+        :param filename: absolute path to the file
+        :param metadata: if :py:obj:`True`, read only metadata and size of the
+                         dataset. Not used here, but required to mach format
+                         of other **Dataloaders**.See :meth:`load_ses_zip`
+                         for more info.
+        :return: loaded dataset with available metadata
+        """
+
+        if filename.endswith('zip'):
+            self.load_ses_zip(filename, metadata=metadata)
+        elif filename.endswith('ibw'):
+            self.load_ses_ibw(filename, metadata=metadata)
+        elif filename.endswith('pxt'):
+            self.load_ses_pxt(self, filename, metadata=metadata)
+        else:
+            raise NotImplementedError
+
+        self.ds.add_org_file_entry(filename, 'ALSMerlin')
+        return self.ds
+
+
 class DataloaderURANOS(Dataloader):
     """
     Dataloader for opening files from Uranos beamline at Solaris (Poland).

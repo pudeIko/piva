@@ -1793,6 +1793,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
         data_set.data = data
         data_set.xscale = np.array([1])
         data_set.scan_type = 'cut'
+        data_set.scan_dim = []
 
         if (data_set.scan_type == 'tilt scan') or \
                 (data_set.scan_type == 'DA scan'):
