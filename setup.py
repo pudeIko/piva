@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='piva',
-    version='2.0.0a0',
+    version='2.0.0',
     author='Wojtek Pudelko',
     author_email='wojciech.pudelko@psi.ch',
     description='PIVA - Python Interactive Viewer for Arpes',

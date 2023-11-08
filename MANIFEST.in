@@ -2,3 +2,7 @@ include README.md
 include LICENSE
 include piva/*
 include requirements.txt
+graft piva/tests/*
+
+exclude piva/misc/
+exclude piva/tests/data/pickle_map.p

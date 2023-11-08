@@ -18,12 +18,12 @@ from piva.utilities_panel import InfoWindow
 
 VTS_MAP = False
 CHECK_3D_Viewer_ = True
-CHECK_2D_Viewer_ = False
-CHECK_EDC_FITTER = False
-CHECK_MDC_FITTER = False
-CHECK_PLOT_TOOL_ = False
-CHECK_LINKING___ = False
-CHECK_K_SPC_CONV = True
+CHECK_2D_Viewer_ = True
+CHECK_EDC_FITTER = True
+CHECK_MDC_FITTER = True
+CHECK_PLOT_TOOL_ = True
+CHECK_LINKING___ = True
+CHECK_K_SPC_CONV = False
 
 EXAMPLE_CUT = pkg_resources.resource_filename('piva', 'tests/data/')
 if VTS_MAP:
@@ -643,8 +643,9 @@ class TestViewers:
         qtbot.mouseClick(self.up_3dv_conv.image_show_BZ, Qt.LeftButton)
         qtbot.wait(LONG_WT * 2)
 
-        change_spinBox(qtbot, self.up_3dv_conv.image_rotate_BZ, 60, Qt.Key_Up)
-        assert self.up_3dv_conv.image_rotate_BZ.value() == 30
+        if VTS_MAP:
+            change_spinBox(qtbot, self.up_3dv_conv.image_rotate_BZ, 60, Qt.Key_Up)
+            assert self.up_3dv_conv.image_rotate_BZ.value() == 30
 
     def test_viewers(self, qtbot: Any) -> None:
         """

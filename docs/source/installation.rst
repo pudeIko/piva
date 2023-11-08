@@ -52,8 +52,13 @@ Detailed instructions for Anaconda users follow:
       % conda activate piva-env
       (piva-env) %
 
-3) Inside your virtual environment, run the following commands to download and 
-   install piva with all its dependencies::
+3) Enter your virtual environment and first make sure latest version of ``pip``
+   is installed::
+
+      (piva-env) % pip install --upgrade pip
+
+4) Run the following commands to download and install piva with all its
+   dependencies::
 
       (piva-env) % pip install piva
 
