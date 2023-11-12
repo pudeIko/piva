@@ -18,6 +18,13 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 
+## [2.0.1] = 2023-11-12
+
+### Fixed
+
+- Example data feature directing to correct datafile
+
+
 ## [2.0.0] = 2023-11-04
 
 ### Added

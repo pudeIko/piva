@@ -119,7 +119,7 @@ class DataBrowser(QMainWindow):
 
         fname = os.path.dirname(
             os.path.dirname(os.path.abspath(__file__))) + \
-                       '/tests/data/pickle_map.p'
+                       '/piva/tests/data/test_map.p'
         self.open_dv(fname)
 
     def mb_open_dir(self) -> None:
@@ -166,7 +166,7 @@ class DataBrowser(QMainWindow):
                 self.add_viewer_to_linked_list(fname, 3)
                 self.data_viewers[fname] = \
                     p3d.DataViewer3D(self, data_set=data_set, index=fname)
-        except Exception as e:
+        except (Exception, AttributeError) as e:
             self.sb.showMessage('Couldn\'t load data,  format not supported.',
                                 self.sb_timeout)
             if testing:
