@@ -646,8 +646,13 @@ class DataloaderSIS(Dataloader):
         theta = metadata['Theta'][0]
         phi = metadata['Phi'][0]
         tilt = metadata['Tilt'][0]
-        temp = metadata['Temperature B (Sample 1)'][0]
-        pressure = metadata['Pressure AC (ACMI)'][0]
+        # account for differences from before the beamline upgrade
+        try:
+            temp = metadata['Temperature B (Sample 1)'][0]
+            pressure = metadata['Pressure AC (ACMI)'][0]
+        except KeyError:
+            temp = metadata['Temperature B'][0]
+            pressure = metadata['Pressure AC1'][0]
         hv = attributes['Excitation Energy (eV)']
         wf = attributes['Work Function (eV)']
         polarization = metadata['hv'].attrs['Mode'][10:]

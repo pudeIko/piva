@@ -169,7 +169,7 @@ class UtilitiesPanel(QWidget):
         self.image_invert_colors = QCheckBox('invert colors')
         self.image_gamma_label = QLabel('gamma:')
         self.image_gamma = QDoubleSpinBox()
-        self.image_gamma.setRange(0.0, 10)
+        self.image_gamma.setRange(0.05, 10)
         self.image_gamma.setValue(1)
         self.image_gamma.setSingleStep(0.05)
         # self.image_colorscale_label = QLabel('color scale:')

@@ -200,8 +200,8 @@ class ImagePlot(pg.PlotWidget):
     sig_clicked = QtCore.Signal(object)
 
     def __init__(self, image: np.ndarray = None, background: Any = BGR_COLOR,
-                 mainplot: bool = True, orientation: str = 'horizontal',
-                 **kwargs: dict) -> None:
+                 name: str = None, mainplot: bool = True,
+                 orientation: str = 'horizontal', **kwargs: dict) -> None:
         """
         Initialize color-scaled plot.
 
@@ -234,6 +234,10 @@ class ImagePlot(pg.PlotWidget):
         self.binning = False
         self.orientation = orientation
 
+        if name is not None:
+            self.name = name
+        else:
+            self.name = 'Unnamed'
         self.orientate()
 
         if image is not None:
@@ -634,7 +638,7 @@ class CurvePlot(pg.PlotWidget):
 
     hover_color = HOVER_COLOR
 
-    def __init__(self, background: Any = BGR_COLOR,
+    def __init__(self, background: Any = BGR_COLOR, name: str = None,
                  orientation: str = 'horizontal', slider_width: int = 1,
                  z_plot: bool = False, **kwargs: dict) -> None:
         """
@@ -677,10 +681,10 @@ class CurvePlot(pg.PlotWidget):
         self.binning = False
         self.z_plot = z_plot
 
-        # if name is not None:
-        #     self.name = name
-        # else:
-        #     self.name = 'Unnamed'
+        if name is not None:
+            self.name = name
+        else:
+            self.name = 'Unnamed'
 
         # Hide the pyqtgraph auto-rescale button
         self.getPlotItem().buttonsHidden = True

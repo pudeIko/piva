@@ -500,7 +500,7 @@ def find_vF(gamma: np.ndarray, re_disp: np.ndarray, vF0: float = 3,
     transformation of the scattering rates and obtained directly from the
     experiment.
 
-    :param gamma: scaterring rates
+    :param gamma: scattering rates
     :param re_disp: real part of the self-energy; difference between real and
                     bare band dispersion
     :param vF0: initial guess Fermi velocity
@@ -516,6 +516,40 @@ def find_vF(gamma: np.ndarray, re_disp: np.ndarray, vF0: float = 3,
         return np.sum(np.abs(re_kk[:re_disp.size] - re_disp))
 
     res = minimize(disp_kk_diff, x0=vF0, args=(gamma, re_disp,), method=method)
+    return res
+
+
+def find_vF_v2(omega: np.ndarray, km: np.ndarray, kF: float, gamma: np.ndarray,
+               vF0: float = 3, method: str = 'Nelder-Mead') -> float:
+    """
+    Iteratively find a value of the Fermi velocity by minimizing the difference
+    between real parts of self energy calculated by Kramers-Kronig
+    transformation of the scattering rates and obtained directly from the
+    experiment.
+
+    :param kF:
+    :param km:
+    :param omega:
+    :param gamma: scattering rates
+    :param re_disp: real part of the self-energy; difference between real and
+                    bare band dispersion
+    :param vF0: initial guess Fermi velocity
+    :param method: minimization method, see :meth:`scipy.optimize.minimize`
+                   for more details
+    :return: minimized value
+    """
+
+    # function to minimize: difference between experimentally and
+    # KK-transformed real parts
+    def disp_kk_diff(vF, omega, km, kF, gamma):
+        re_kk = kk_im2re(gamma, vF=vF).real
+        re_disp = omega - vF * (-km + kF)
+        # re_disp = omega - vF * (km - kF)
+        # return np.sum(np.abs((re_kk[:re_disp.size] - re_disp)))
+        return np.sum((re_kk[:re_disp.size] - re_disp)**2)
+
+    res = minimize(disp_kk_diff, x0=vF0, args=(omega, km, kF, gamma,),
+                   method=method)
     return res
 
 
@@ -1271,7 +1305,7 @@ def find_gamma(FS: np.ndarray, x0: int, y0: int, method: str = 'Nelder-Mead',
     return res
 
 
-def rotate_around_xy(init_guess: list, data_org: object) -> object:
+def rotate_around_xy(init_guess: list, data_org: Any) -> object:
     """
     Rotate matrix by 180 deg around (``x0``, ``y0``) and return only
     overlapping region.
@@ -1442,7 +1476,7 @@ def curvature_2d(data: np.ndarray, dx: float, dy: float, a0: float = 100,
 # +-----------------------+ #
 
 
-def k_fac(energy: float, Eb: float = 0, hv: float = 0,
+def k_fac(energy: Union[float, np.ndarray], Eb: float = 0, hv: float = 0,
           work_func: float = 4.5) -> float:
     """
     Calculate scaling factor for `k`-space conversion depending on kinetic
@@ -1485,8 +1519,8 @@ def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
     :return: result in a format:
 
         - ``res[0]`` - :class:`np.ndarray`; meshgrid of `kx` coordinates
-        - ``res[1]`` - :class:`np.ndarray`; meshgrid of `ky`/energy coordinates.
-            int = 1 for single momentum axis
+        - ``res[1]`` - :class:`np.ndarray`; meshgrid of `ky`/energy
+            coordinates. int = 1 for single momentum axis
     """
 
     # Angle to radian conversion and setting offsets
@@ -1608,7 +1642,7 @@ def hv2kz(ang: np.ndarray, hvs: np.ndarray, work_func: float = 4.5,
     me = const.m_e / const.eV / 1e20
     hbar = const.hbar_eV
     k0 = np.sqrt(2 * me) / hbar
-    k0 *= (c / (2 * np.pi))
+    k0 *= (c / (1 * np.pi))
     ang = ang - anal_ax_off
 
     if trans_kz:
