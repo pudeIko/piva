@@ -1180,6 +1180,17 @@ def rotate(matrix: np.ndarray, alpha: float, deg: bool = True) -> np.ndarray:
         return
 
 
+def rotate_vector(x_coords: Union[float, np.ndarray],
+                  y_coords: Union[float, np.ndarray], alpha: float,
+                  deg: bool = True) -> tuple:
+    res_x, res_y = np.zeros_like(x_coords), np.zeros_like(y_coords)
+    for idx, (xi, yi) in enumerate(zip(x_coords, y_coords)):
+        tmp_rotated = rotate(np.array([xi, yi]), alpha, deg=deg)
+        res_x[idx] = tmp_rotated[0]
+        res_y[idx] = tmp_rotated[1]
+    return res_x, res_y
+
+
 def sum_edcs_around_k(data: np.ndarray, kx: np.ndarray, ky: np.ndarray,
                       ik: int = 0) -> np.ndarray:
     """
@@ -1386,8 +1397,8 @@ def imgs_corr(img1: np.ndarray, img2: np.ndarray) -> float:
 
 
 def curvature_1d(data: np.ndarray, dx: float, a0: float = 0.0005,
-                 nb: int = None, rl: int = None, xaxis: np.ndarray = None) \
-        -> np.ndarray:
+                 nb: int = None, rl: int = None, xaxis: np.ndarray = None,
+                 clip_co: float = 0.1) -> np.ndarray:
     """
     Calculate 1D curvature profile, similar to second derivative.
 
@@ -1402,6 +1413,8 @@ def curvature_1d(data: np.ndarray, dx: float, a0: float = 0.0005,
                curvature profile
     :param rl: the number of times the smoothing is applied
     :param xaxis: energy axis. If given, zero values above the Fermi level
+    :param clip_co: cutoff value of the curvature profile; useful to improve
+                    clarity of the image
     :return: curvature profile
     """
 
@@ -1416,7 +1429,8 @@ def curvature_1d(data: np.ndarray, dx: float, a0: float = 0.0005,
         ef = indexof(0, xaxis)
         C_x[ef:] = 0
 
-    return normalize(np.abs(C_x))
+    # return normalize(np.abs(C_x))
+    return -normalize(C_x).clip(max=clip_co)
 
 
 def curvature_2d(data: np.ndarray, dx: float, dy: float, a0: float = 100,

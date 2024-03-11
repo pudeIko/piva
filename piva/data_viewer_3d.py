@@ -349,7 +349,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
         try:
             self.load_corrections(data_set)
         except AttributeError:
-            print('Old settings, corrections not loaded.')
             pass
 
         self.set_sliders_initial_positions()
@@ -1950,14 +1949,12 @@ class DataViewer3D(QtWidgets.QMainWindow):
         :param data_set: object containing data and available metadata.
         """
 
-        if type(data_set.Ef) == float:
-            self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
-        if type(data_set.hv) == float:
+        if not (data_set.hv is None):
             self.util_panel.axes_energy_hv.setValue(data_set.hv)
-        if type(data_set.wf) == float:
+        if not (data_set.wf is None):
             self.util_panel.axes_energy_scale.setCurrentIndex(0)
             self.util_panel.axes_energy_wf.setValue(data_set.wf)
-        if type(data_set.Ef) == float:
+        if not (data_set.Ef is None):
             self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
         if hasattr(data_set, 'kxscale'):
             self.kx_axis = data_set.kxscale

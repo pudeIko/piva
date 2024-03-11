@@ -1329,7 +1329,7 @@ class PlotTool(QtWidgets.QMainWindow):
     def set_data_items_from_save(self, saved: dict) -> None:
         """
         Get and plot datasets from loaded file.
-        
+
         :param saved: dictionary with saved datasets
         """
 
@@ -1347,12 +1347,12 @@ class PlotTool(QtWidgets.QMainWindow):
 
     def get_plot_design_to_save(self) -> dict:
         """
-        Get plot's layout parameters and collect them into dictionary for 
+        Get plot's layout parameters and collect them into dictionary for
         saving.
 
         :return: dictionary with all plot's parameters
         """
-        
+
         plot_design_to_save = {}
         for key in self.plot_panel_design.keys():
             if key == 'ticks_fsize':
@@ -1365,10 +1365,10 @@ class PlotTool(QtWidgets.QMainWindow):
     def set_plot_design_from_save(self, saved: dict) -> None:
         """
         Get and apply plot's layout parameters from loaded file.
-        
+
         :param saved: dictionary with saved parameters
         """
-        
+
         self.plot_panel_design = {}
         for key in saved.keys():
             if key == 'ticks_fsize':
@@ -1379,12 +1379,12 @@ class PlotTool(QtWidgets.QMainWindow):
 
     def get_annotations_to_save(self) -> dict:
         """
-        Get annotations' parameters and collect them into dictionary for 
+        Get annotations' parameters and collect them into dictionary for
         saving.
 
         :return: dictionary with all annotations' parameters
         """
-        
+
         annotations_to_save = {}
         for key in self.annotations.keys():
             annotations_to_save[key] = {}
@@ -1399,10 +1399,10 @@ class PlotTool(QtWidgets.QMainWindow):
     def set_annotations_from_save(self, saved: dict) -> None:
         """
         Get and add annotations from loaded file.
-        
+
         :param saved: dictionary with all annotations' parameters
         """
-        
+
         self.annotations = {}
         for key in saved.keys():
             self.ann_added.addItem(key)
@@ -1421,7 +1421,7 @@ class PlotTool(QtWidgets.QMainWindow):
         """
         Load a :mod:`pickle` file with saved plotting session.
         """
-        
+
         warning_box = QMessageBox()
         warning_box.setIcon(QMessageBox.Information)
         warning_box.setWindowTitle('Load')
@@ -1469,7 +1469,7 @@ class PlotTool(QtWidgets.QMainWindow):
         """
         Save current plot into an image file.
         """
-        
+
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         full_path, types = QFileDialog.getSaveFileName(
@@ -1481,11 +1481,11 @@ class PlotTool(QtWidgets.QMainWindow):
 
     def closeEvent(self, event: Any) -> None:
         """
-        CloseEvent triggered on `Alt-F4` or mouse-click closing a window. 
+        CloseEvent triggered on `Alt-F4` or mouse-click closing a window.
         Makes sure the window is deleted from
         :class:`~data_browser.DataBrowser` to release memory.
         """
-        
+
         del(self.data_browser.plotting_tools[self.title])
 
 

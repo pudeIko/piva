@@ -8,5 +8,5 @@ curves from separate **DataViewers** and plotting them together.
 Contains additional formatting options to personalize appearance of the plot.
 
 
- .. automodule:: plot_tool
+.. automodule:: plot_tool
     :members:

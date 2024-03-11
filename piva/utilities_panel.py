@@ -1034,7 +1034,8 @@ class UtilitiesPanel(QWidget):
         row = 1
         for key in dataset.keys():
             if (key == 'ekin') or (key == 'saved') or \
-                    (key == 'data_provenance'):
+                    (key == 'data_provenance') or \
+                    (key == 'add_org_file_entry'):
                 continue
             elif key == 'data':
                 s = dataset[key].shape
