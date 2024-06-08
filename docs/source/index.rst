@@ -23,6 +23,7 @@ Welcome to piva - Python Interactive Viewer for ARPES!
    viewers
    fitters
    plottool
+   custom_widgets
 
 
 .. toctree::

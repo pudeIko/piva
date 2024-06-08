@@ -57,6 +57,7 @@ class DataBrowser(QMainWindow):
 
         # loading custom plugins
         self.load_custom_data_loaders()
+        self.load_custom_widgets()
 
         # set window
         self.setWindowTitle('piva data browser - ' + self.working_dir)
@@ -798,16 +799,38 @@ class DataBrowser(QMainWindow):
         """
 
         try:
-            import custom_data_loaders as cdl
-            dl_picker = self.dp_dl_picker
-            dl_picker.insertSeparator(dl_picker.count())
-            for module in dir(cdl):
-                if 'CustomDataloader' in module:
-                    loader = getattr(cdl, module)
-                    dl_label = 'Custom: {}'.format(loader.name)
-                    dl_picker.addItem(dl_label)
-                    all_dls[dl_label] = loader
-                    print('\t', loader.name, dl_label)
-            print('Loading custom plugins:')
+            import piva_dataloader_importer as dli
+            print('Loading custom data loaders:')
+
+            if 'DataloaderImporter' not in dir(dli):
+                print('\t', 'Couldn\'t find class DataloaderImporter.')
+                return
+
+            self.dli = getattr(dli, 'DataloaderImporter')(self)
+
+        except ModuleNotFoundError:
+            pass
+
+    @staticmethod
+    def add_dataloader_to_record(name, loader):
+        all_dls[name] = loader
+
+    def load_custom_widgets(self) -> None:
+        """
+        If configured, try to load user-implemented, custom
+        QtWidgets, allowing to expand PIVA's functionalities.
+        """
+
+        try:
+            import piva_widget_importer as pwi
+            print('Loading custom widgets:')
+
+            if 'WidgetImporter' not in dir(pwi):
+                print('\t', 'Couldn\'t find class WidgetImporter.')
+                return
+
+            self.custom_widgets = {}
+            self.wi = getattr(pwi, 'WidgetImporter')(self)
+
         except ModuleNotFoundError:
             pass

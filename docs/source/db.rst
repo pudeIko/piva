@@ -4,12 +4,13 @@
 Data Browser
 ============
 
-**DataBrowser** is a main window of the :mod:`piva` package. To open it, in
-terminal simply run::
+**DataBrowser** is the main window of the :mod:`piva` package. To open it,
+simply run::
 
     db
 
-This will start :mod:`piva` session and open the following window:
+in terminal. This will start a :mod:`piva` session and open the following
+window:
 
 .. figure:: ../img/db-labels.png
     :alt: Image not found.
@@ -33,8 +34,8 @@ This will start :mod:`piva` session and open the following window:
     Default :class:`~data_loaders.Dataloader` selection set to `All` (dropdown
     menu at top of the **metadata panel**) attempts to load selected file by
     iterating through all implemented Dataloaders. As a consequence, it can
-    succeed loading :class:`~data_loaders.Dataset` but with limited number of
-    metadata. Selecting suitable :class:`~data_loaders.Dataloader` makes sure
+    succeed loading :class:`~data_loaders.Dataset` but with a reduced amount of
+    metadata. Selecting suitable :class:`~data_loaders.Dataloader` ensures
     all available metadata are extracted and speeds up loading time.
 
   Depending on the dimensionality/scan type this will launch either a

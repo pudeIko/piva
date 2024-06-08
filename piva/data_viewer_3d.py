@@ -1969,3 +1969,4 @@ class DataViewer3D(QtWidgets.QMainWindow):
 
         self.db.delete_viewer_from_linked_lists(self.index.split('/')[-1])
         del(self.db.data_viewers[self.index])
+

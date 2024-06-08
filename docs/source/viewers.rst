@@ -9,12 +9,12 @@ Data Viewers
 -------------
 
 This viewer allows for processing two-dimensional *energy vs. momentum*
-datasets that are basic detector's images acquired in ARPES experiment.
+datasets that are basic detector's images acquired during ARPES experiment.
 
-Window consists of two main objects: :class:`~data_viewer_2d.DataViewer2D`
-and :class:`~utilities_panel.UtilitiesPanel`, responsible for slicing and
-displaying updated plots and manipulation on the data, respectively. Its layout
-and components are described below:
+The window consists of two main objects: :class:`~data_viewer_2d.DataViewer2D`
+and :class:`~utilities_panel.UtilitiesPanel`, responsible for
+slicing/displaying updated plots and manipulation on the data, respectively.
+Its layout and components are described below:
 
 .. figure:: ../img/dv-2d-main.png
    :alt: Image not found.
@@ -22,8 +22,8 @@ and components are described below:
 .. _sec-2d-viewer-table:
 
 =====   =======================================================================
-**a**   Main data plot. Horizontal and vertical axes correspond to energy and
-        angle (momentum), respectively.
+**a**   Main data plot. Horizontal and vertical axes correspond to the energy
+        and angle (momentum) directions, respectively.
 **b**   Horizontal and vertical slices taken at the positions of the sliders.
 **c**   Utilities panel containing all image processing and analysis features,
         to large extent shared between :ref:`2D <sec-2d-viewer>` and
@@ -85,8 +85,8 @@ all three perpendicular directions.
 The Utilities Panel
 -------------------
 
-Top panel of the **DataViewers**, consists of different tabs, which give access
-to :mod:`piva`'s functionalities. **Utilities Panels** of
+The top panel of the **DataViewers**, consists of different tabs, which give
+access to :mod:`piva`'s functionalities. **Utilities Panels** of
 :ref:`2D <sec-2d-viewer>` and :ref:`3D Viewers <sec-3d-viewer>` share a lot of
 similarities and therefore are discussed together on example windows ``dv2D.p``
 and ``dv3D.p``.
@@ -268,5 +268,5 @@ open experimental logbook     Create new ``notebook`` file with an automated
 
 .. note::
     Any changes in the metadata will only be saved to the pickle file 
-    generated/updated by hitting the *save* button in the top-right.
+    generated/updated by hitting the *save* button in the top-righ.
 

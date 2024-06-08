@@ -1,5 +1,37 @@
 import numpy as np
-from piva.data_loaders import Dataloader
+from piva.data_loaders import Dataloader, Dataset
+from piva.data_browser import DataBrowser
+
+
+class DataloaderImporter:
+    """
+    Dataloader importer for custom **Dataloaders** written for PIVA.
+    """
+
+    def __init__(self, data_browser: DataBrowser) -> None:
+        """
+        Initialize DataloaderImporter.
+
+        :param data_browser: `DataBrowser` of the current session
+        """
+
+        self.db = data_browser
+        self.db.dp_dl_picker.insertSeparator(self.db.dp_dl_picker.count())
+
+        self.add_dataloader1()
+
+    def add_dataloader1(self) -> None:
+        """
+        Example method for importing custom Dataloader.
+        """
+
+        loader = CustomDataloader
+        dl_label = 'Custom Dataloader'.format(loader.name)
+
+        self.db.dp_dl_picker.addItem(dl_label)
+        self.db.add_dataloader_to_record(dl_label, loader)
+
+        print('\t', loader.name, dl_label)
 
 
 class CustomDataloader(Dataloader):
@@ -9,11 +41,11 @@ class CustomDataloader(Dataloader):
 
     name = 'Custom1'
 
-    def __init__(self):
+    def __init__(self) -> None:
         super(CustomDataloader, self).__init__()
 
     # kwarg "metadata" necessary to match arguments of all other data loaders
-    def load_data(self, filename, metadata=False):
+    def load_data(self, filename: str, metadata: bool = False) -> Dataset:
         """
         Recognize correct format and load data from the file.
 

@@ -3,10 +3,10 @@
 Fitters
 =======
 
-Two-dimensional datasets can be opened in available **Fitters**. Those GUI
+Two-dimensional datasets can be opened in available **Fitters**. These GUI
 applications contain standard data processing technics and constitute
 additional utility allowing for more detailed inspection and quantitative
-analysis of investigated system.
+analysis of investigated data.
 
 Two, :ref:`MDC <sec-mdc-fitter>` and :ref:`EDC <sec-edc-fitter>` **Fitters**
 are implemented within :mod:`piva`, including methods useful when dealing
@@ -126,9 +126,10 @@ Development
 
 At the moment only basic methods are implemented within :mod:`piva`
 **Fitters**, leaving a large playground for improvement. Users are highly
-encouraged to contribute and extend their capabilities. This can be done
-directly through `github  <https://github.com/pudeIko/piva>`_ or
-alternatively by contacting the development team:
+encouraged to contribute and extend their capabilities or implement
+:ref:`entirely new widgets <sec-custom_widgets>`. This can be done directly
+through `github  <https://github.com/pudeIko/piva>`_ or alternatively by
+contacting the development team:
 
 .. include:: contact.rst
 

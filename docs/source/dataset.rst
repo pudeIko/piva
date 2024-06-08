@@ -13,7 +13,7 @@ Problem of multiple file formats
 
 Within ARPES community, the tendency seems to be that each beamline and each
 lab uses their own file formats and conventions.
-Therefore, in order to be able to handle these different files there is really
+Therefore, in order to handle these different files there is really
 no other way than to have a dedicated script which converts these into a
 common form.
 
@@ -135,9 +135,6 @@ Attributes that are mandatory for functioning of the **DataViewers** are marked
 in above table with asterix (*).
 A lot of the other information, however, is needed for processing routines, 
 such as angle-to-`k`-space conversion.
-
-Attributes that are not present in a given dataset are represented by the 
-value `None`.
 
 
 

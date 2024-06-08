@@ -36,9 +36,9 @@ else:
     N_SLIDER_E, N_SLIDER_K, N_BINS_E = 20, 26, 3
     N_E, N_X, N_Y = 20, 14, 3
     K0_IDX = 83
-# LONG_WT, SHORT_WT = 700, 5
 CMAP, CMAP_IDX = 'inferno', 27
 N_GAMMA = 10
+# LONG_WT, SHORT_WT = 700, 5
 LONG_WT, SHORT_WT = 300, 1
 
 

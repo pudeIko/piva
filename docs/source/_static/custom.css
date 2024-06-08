@@ -1,5 +1,41 @@
 
+:root {
+    --custom_theme_color: rgba(255, 164, 42, 0.90);
+    --custom_boxes_color: rgba(255, 164, 42, 0.90);
+    --custom_light_color: rgba(255, 164, 42, 0.15);
+}
+
 /* Don't put a scrollbar in tables */
 .wy-table-responsive table td {
     white-space: normal;
+}
+
+/* Top of the sidebar */
+.wy-side-nav-search, .wy-nav-top {
+    background: var(--custom_theme_color);
+}
+
+/* Headers in sidebar */
+.wy-menu-vertical header, .wy-menu-vertical p.caption {
+    color: var(--custom_theme_color);
+}
+
+
+/* Customizing the "note" box */
+.admonition.note .admonition-title {
+    background-color: var(--custom_boxes_color);
+}
+
+.admonition.note {
+    background-color: var(--custom_light_color);
+}
+
+
+/* Customizing the "see also" box */
+.admonition.seealso .admonition-title {
+    background-color: var(--custom_boxes_color);
+}
+
+.admonition.seealso {
+    background-color: var(--custom_light_color);
 }

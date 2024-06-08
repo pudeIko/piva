@@ -3,10 +3,10 @@
 Plot Tool
 =========
 
-**PlotTool** is a utility allowing for plotting together multiple curves.
+**PlotTool** is an utility allowing for plotting multiple curves together.
 Every 1D set of data displayed currently on **DataViewers** or **Fitters** can
-be imported and further processed to compare differences between *e.g* results
-obtained under different conditions.
+be imported and further processed to compare differences between results
+obtained under, *e.g*, different conditions.
 
 To open **PlotTool** window one can simply use a ``CTRL + P`` shortcut or
 access it from menu bar of the :ref:`DataBrowser <sec-db>`.
@@ -84,7 +84,7 @@ Edit curves tab
 ^^^^^^^^^^^^^^^
 
 Helps to adjust and personalize appearance of the imported curves. All changes
-made in this tab are performed on a curve currently selected in **Curves**
+made in this tab are performed on a curve currently selected in the **Curves**
 list.
 
 .. figure:: ../img/plottool-up-edit_curves.png
@@ -158,5 +158,5 @@ action buttons          - **add** new or **update** selected annotation,
 .. note::
 
     Many more options are embedded in :class:`pyqtgraph.PlotWidget` object and
-    can be accessed by clicking right mouse button on the panel.
+    can be accessed by clicking on the panel with a right mouse button.
 

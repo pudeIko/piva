@@ -79,28 +79,6 @@ def lorentzian(x: np.ndarray, a0: float, mu: float, gamma: float,
     return ndimage.gaussian_filter(y, resol)
 
 
-def dynes_formula(omega: np.ndarray, n0: float, gamma: float, delta: float) \
-        -> np.ndarray:
-    r"""
-    Dynes formula for tunneling density of states of superconductor,
-    given by the formula:
-
-    .. math::
-        N(\omega) = N_0 \textrm{Re}\Bigg[
-        \frac{\omega + i\Gamma}{\sqrt{(\omega + i\Gamma)^2 - \Delta^2}}\Bigg]
-
-    :param omega: energy axis
-    :param n0: normal-state density of states
-    :param gamma: parameter quantifying for the pair-breaking processes
-    :param delta: superconducting gap
-    :return: superconductor's density of states
-    """
-
-    num = omega + gamma * 1.j
-    n_omega = num / np.sqrt((num ** 2) + delta ** 2)
-    return n0 * n_omega.real
-
-
 def asym_lorentzian(x: np.ndarray, a0: float, mu: float, gamma: float,
                     alpha: float = 0, resol: float = 0) -> np.ndarray:
     r"""
@@ -433,22 +411,9 @@ def print_fit_results(p: np.ndarray, cov: np.ndarray, labels: list = None) -> \
     print(df)
 
 
-def shift_k_coordinates(kx: np.ndarray, ky: np.ndarray, qx: float = 0,
-                        qy: float = 0) -> tuple:
-    """
-    Shift k-space coordinate system by a wavevector q = [``q_x``, ``q_y``].
-
-    :param kx: initial `kx` axis (1D or :class:`np.meshgrid`)
-    :param ky: initial `ky` axis (1D or :class:`np.meshgrid`)
-    :param qx: wavevector shift along the `kx` direction
-    :param qy: wavevector shift along the `ky` direction
-    :return: (``kx``, ``ky``) shifted coordinate axes (1D or
-             :class:`np.meshgrid`)
-    """
-
-    kxx = kx + np.ones_like(kx) * qx
-    kyy = ky + np.ones_like(ky) * qy
-    return kxx, kyy
+# +----------------+ #
+# | ARPES analysis | # ========================================================
+# +----------------+ #
 
 
 def kk_im2re(gamma: np.ndarray, vF: float = 1) -> np.ndarray:
@@ -527,9 +492,9 @@ def find_vF_v2(omega: np.ndarray, km: np.ndarray, kF: float, gamma: np.ndarray,
     transformation of the scattering rates and obtained directly from the
     experiment.
 
-    :param kF:
-    :param km:
-    :param omega:
+    :param omega: energy axis
+    :param km: momenta positions of the fitted MDCs
+    :param kF: Fermi momentum
     :param gamma: scattering rates
     :param re_disp: real part of the self-energy; difference between real and
                     bare band dispersion
@@ -539,7 +504,7 @@ def find_vF_v2(omega: np.ndarray, km: np.ndarray, kF: float, gamma: np.ndarray,
     :return: minimized value
     """
 
-    # function to minimize: difference between experimentally and
+    # function to minimize: difference between experimental dispersion and
     # KK-transformed real parts
     def disp_kk_diff(vF, omega, km, kF, gamma):
         re_kk = kk_im2re(gamma, vF=vF).real
@@ -553,191 +518,190 @@ def find_vF_v2(omega: np.ndarray, km: np.ndarray, kF: float, gamma: np.ndarray,
     return res
 
 
-def McMillan_Tc(omega_D: float = 1, lam: float = 1, mu: float = 1) -> float:
-    r"""
-    McMillan's formula for superconducting Tc:
-
-    .. math::
-        T_c = \frac{\omega_D}{1.45}\exp{\bigg(
-        \frac{1.04(1 + \lambda)}{\lambda - \mu(1 + 0.62\lambda)}}\bigg)
-
-    :param omega_D: Debay frequency (temperature) of the material
-    :param lam: electron-boson coupling constant, lambda
-    :param mu: Coulomb pseudopotential
-    :return: superconducting critical temperature (Tc)
+def get_A(omega: np.ndarray, ek: np.ndarray, eta: float = 0.075) -> np.ndarray:
     """
-    
-    frac = 1.04 * (1 + lam) / (lam - mu * (1 + 0.62 * lam))
-    Tc = (omega_D / 1.45) * np.exp(-frac)
-    return Tc
+    Calculate spectral function A(k, omega) based on known dispersion.
+
+    :param omega: real frequencies (energies), must be the same shape as `ek`
+    :param ek: electronic dispersion obtained using, *e.g.*,
+               tight-binding model
+    :param eta: imaginary factor, responsible for broadening of the spectra
+    :return: spectral function A(k, omega)
+    """
+
+    G = (omega + eta * 1.j) - ek
+    return (-1 / np.pi) * np.imag(np.power(G, -1))
+
+
+def get_chi(ek: Callable, ek_kwargs: dict, kx: np.ndarray, qx: np.ndarray,
+            ky: Union[np.ndarray, None] = None,
+            kz: Union[np.ndarray, float] = 0.,
+            qy: Union[np.ndarray, None] = None,
+            qz: Union[np.ndarray, None] = None,
+            in_plnae: bool = True, crop: bool = False) -> np.ndarray:
+    """
+    Calculate real part of the Lindhard susceptibility at the limit omega -> 0.
+
+    .. note::
+        Algorithm implemented for a single-band case, based on the approach
+        described by `Inosov et al.
+        <https://iopscience.iop.org/article/10.1088/1367-2630/10/12/125027>`_.
+
+    :param ek: function returning electronic dispersion, *e.g.*, using
+               tight-binding model
+    :param ek_kwargs: keyword arguments for the dispersion function
+    :param kx: momentum axis along x direction
+    :param qx: scattering q-vectors along x direction
+    :param ky: momentum axis along y direction; if :class:`None`, equal to `kx`
+    :param kz: momentum axis along y direction.
+    :param qy: scattering q-vectors along y direction
+    :param qz: scattering q-vectors along z direction
+    :param in_plnae: determine direction of the calculated susceptibility;
+                     if :py:obj:`True` - compute in-plane scattering
+                     (qx, qy, qz = 0), if :py:obj:`False` - compute diagonal
+                     scattering (qx, qy=qx, qz)
+    :param crop: if :py:obj:`True` - compute only one quarter of the map. Helps
+                 to save a lot of time taking advantage of the symmetry
+                 conditions.
+    :return: 2D Lindhard susceptibility map
+    """
+
+    if ky is None:
+        ky = kx
+    chi = np.zeros((qx.size, qx.size))
+    if crop:
+        x_range = range(chi.shape[0] // 2, chi.shape[0])
+        y_range = range(chi.shape[1] // 2, chi.shape[1])
+    else:
+        x_range, y_range = range(chi.shape[0]), range(chi.shape[1])
+
+    for i in x_range:
+        for j in y_range:
+            if in_plnae:
+                qxi, qyi = qx[i], qy[j]
+                ek_0 = ek(kx - 0.0, ky=ky - 0.0, kz=kz - 0.0, **ek_kwargs)
+                ek_q = ek(kx - qxi, ky=ky - qyi, kz=kz - 0.0, **ek_kwargs)
+            else:
+                qxi, qzi = qx[i], qz[j]
+                ek_0 = ek(kx - 0.0, ky=ky - 0.0, kz=kz - 0.0, **ek_kwargs)
+                ek_q = ek(kx - qxi, ky=ky - qxi, kz=kz - qzi, **ek_kwargs)
+
+            integrand = fermi_dirac(ek_q) - fermi_dirac(ek_0)
+            den = ek_0 - ek_q
+            den = np.where(den == 0., 1e-10, den)
+            integrand /= den
+
+            if crop:
+                chi[i, j], chi[-i - 1, j], chi[i, -j - 1], chi[
+                    -i - 1, -j - 1] = np.sum(integrand), np.sum(
+                    integrand), np.sum(integrand), np.sum(integrand)
+            else:
+                chi[i, j] = np.sum(integrand)
+
+    return chi / chi.size
+
+
+def get_fluctuating_DW(Q: tuple, K: tuple, ek: Callable,
+                       ek_kwargs: dict, omega: np.ndarray, Q_DW: np.ndarray,
+                       N: int, a: float = np.pi, eta: float = 0.1,
+                       crop: bool = False) -> np.ndarray:
+    """
+    Calculate self-energy of the fluctuating density wave order.
+
+    .. note::
+        Algorithm based on the approach described by `Hashimoto et al.
+        <https://doi.org/10.1038/nmat4116>`_.
+
+    :param Q: 3-element tuple of the (qx, qy, qz) axes, each being a 1D
+              :class:`np.ndarray`
+    :param K: 3-element tuple of the (kx, ky, kz) axes, each being a 1D
+              :class:`np.ndarray`
+    :param ek: function returning electronic dispersion, *e.g.*, using
+               tight-binding model
+    :param ek_kwargs: keyword arguments for the dispersion function
+    :param omega: real frequencies (energies), must be the same shape as `ek`
+    :param Q_DW: density wave vector
+    :param N: number of the density wave modulation unit cells
+    :param a: lattice constant in Angstroms
+    :param eta: imaginary factor, responsible for broadening of the spectra
+    :param crop: if :py:obj:`True` - compute only one quarter of the map. Helps
+                 to save a lot of time taking advantage of the symmetry
+                 conditions.
+    :return: self energy of the density wave modulation
+    """
+
+    def single_q(qi: np.ndarray, Qi: float, gamma: float) -> np.ndarray:
+        """
+        Get a Lorentzian centered at the density wave ordering vector Q.
+
+        :param qi: q-vector axis
+        :param Qi: value of the density wave Q vector along particular
+                   direction
+        :param gamma: half-width of the underlying density wave modulation
+        :return: one-direction component of the Lorentzian-like density wave
+                 modulation
+        """
+
+        return 1 / np.pi * ((gamma / ((qi - Qi * np.pi) ** 2 + gamma ** 2)) +
+                            (gamma / ((qi + Qi * np.pi) ** 2 + gamma ** 2)))
+
+    def get_Pq(qx: np.ndarray, qz: np.ndarray,
+               Q: np.ndarray = np.array([0.5, 0.5, 0.5]),
+               gamma: float = 0.1) -> np.ndarray:
+        """
+
+        :param qx: q-axis along the x direction, q-axis along the y direction
+                   is assumed to be the same
+        :param qz: q-axis along the z direction
+        :param Q: density wave vector
+        :param gamma: Lorentzian-like half-width of the underlying density wave
+                      modulation
+        :return: Lorentzian-like density wave modulation
+        """
+
+        res_Pq = np.zeros((qx.size, qx.size, qx.size))
+        for i, qxi in enumerate(qx):
+            for j, qyi in enumerate(qx):
+                tmp_qx = np.ones_like(qx, dtype=float) * qxi,
+                tmp_qy = np.ones_like(qx, dtype=float) * qyi
+                res_Pq[i, j, :] = single_q(tmp_qx, Q[0], gamma) * \
+                                  single_q(tmp_qy, Q[1], gamma) * \
+                                  single_q(qz, Q[2], gamma)
+        return np.array(res_Pq, dtype=complex)
+
+    kx, ky, kz = K
+    qx, qy, qz = Q
+    QQ = np.meshgrid(qx, qy, qz)
+
+    gamma = np.power(N * a, -1)
+    Pq = get_Pq(qx, qz, Q_DW, gamma)
+
+    res = np.zeros_like(QQ, dtype=complex)
+    if crop:
+        x_range, y_range, z_range = range(res.shape[0]//2, res.shape[0]), \
+                                    range(res.shape[1]//2, res.shape[1]), \
+                                    range(res.shape[2]//2, res.shape[2])
+    else:
+        x_range, y_range, z_range = range(res.shape[0]), \
+                                    range(res.shape[1]), \
+                                    range(res.shape[2])
+    for xi in x_range:
+        for yi in y_range:
+            for zi in z_range:
+                qxi, qyi, qzi = qx[xi], qy[yi], qz[zi]
+                # the notation here is reversed: summation should go over all
+                # qs, for each k. But as long as these two are identical it
+                # doesn't matter
+                ek = ek(kx + qxi, ky=kx + qyi, kz=kz + qzi, **ek_kwargs)
+                ek = np.array(np.where(ek == 0, 1e-10, ek), dtype=complex)
+                res[xi, yi, zi] = np.sum(Pq / ((omega + eta * 1.j) - ek))
+
+    return res / res.size
 
 
 # +--------------------------------------------------+ #
 # | Resolution fitting functions and PGM calibration | # ======================
 # +--------------------------------------------------+ #
-
-
-def step_function_core(x: np.ndarray, x0: float = 0, flip: bool = False) \
-        -> np.ndarray:
-    r"""
-    Basic step function, with step occuring at x0. Gives values:
-
-    .. math::
-                        0  \textrm{  } \textrm{    for  } \textrm{  } x < x_0
-    
-                f(x) =  0.5  \textrm{  } \textrm{  for  } \textrm{  } x = x_0
-    
-                        1  \textrm{  } \textrm{    for  } \textrm{  } x > x_0
-    
-    :param x: arguments
-    :param x0: `x` value of the step
-    :param flip: if :py:obj:`True`, flip function values around the step
-    :return: step profile
-    """
-    
-    sign = -1 if flip else 1
-    if sign * x < sign * x0:
-        result = 0
-    elif x == x0:
-        result = 0.5
-    elif sign * x > sign * x0:
-        result = 1
-    return result
-
-
-def step_function(x: np.ndarray, step_x: float = 0, flip: bool = False) \
-        -> np.ndarray:
-    """
-    np.ufunc wrapper for step_function_core. Confer corresponding
-    documentation.
-    
-    :param x: arguments
-    :param step_x: `x` value of the step
-    :param flip: if :py:obj:`True`, flip function values around the step
-    :return: step profile
-    """
-    
-    res = \
-        np.frompyfunc(lambda x: step_function_core(x, step_x, flip), 1, 1)(x)
-    return res.astype(float)
-
-
-def detect_step(signal: np.ndarray, n_box: int = 15, n_smooth: int = 3) -> int:
-    """
-    Detect the biggest, clearest step in a signal by smoothing it and looking
-    at the maximum of the first derivative.
-    
-    :param signal: signal to detect step in
-    :param n_box: box size for smoothing prior to calculating derivative
-    :param n_smooth: number of smoothing runs prior to calculating derivative
-    :return: index at which step occurs
-    """
-    
-    smoothened = smooth(signal, n_box=n_box, recursion_level=n_smooth)
-    grad = np.gradient(smoothened)
-    step_index = np.argmax(np.abs(grad))
-    return step_index
-
-
-def fermi_dirac(E: np.ndarray, mu: float = 0, T: float = 4.2) -> np.ndarray:
-    r"""
-    Fermi-Dirac distribution with chemical potential *mu* at temperature *T* 
-    for energy *E*. The Fermi Dirac distribution is given by:
-    
-    .. math::
-        n(E) = \frac{1}{\exp{\big(\frac{E - \mu}{k_B T}\big)} + 1}
-    
-    :param E: energies
-    :param mu: chemical potential
-    :param T: temperature
-    :return: Fermi-Dirac distribution
-    """
-    
-    kT = const.k_B * T / const.eV
-    res = 1 / (np.exp((E - mu) / kT) + 1)
-    return res
-
-
-def fermi_fit_func(E: np.ndarray, E_F: float, sigma: float, a0: float, 
-                   b0: float, a1: float, b1: float, T: float = 5) \
-        -> np.ndarray:
-    """
-    Fermi Dirac distribution with an additional linear inelastic background 
-    and convoluted with a Gaussian for the instrument resolution.
-    
-    :param E: energy values [eV]
-    :param E_F: position of Fermi energy [eV]
-    :param sigma: experimental resolution in units of *E* step size
-    :param a0: slope of the linear background below the *E_F*
-    :param b0: offset of the linear background below *E_F*.
-    :param a1: slope of the linear background above the E_F
-    :param b1: offset of the linear background above *E_F*.
-    :param T: temperature [K]
-    :return: Fermi-Dirac distribution at given temperature
-    """
-
-    # Basic Fermi Dirac distribution at given T
-    E = E
-    y = fermi_dirac(E, E_F, T)
-    dE = np.abs(E[0] - E[1])
-
-    # Add a linear contribution to the 'above' and 'below-E_F' part
-    y += (a0 * E + b0) * step_function(E, step_x=E_F, flip=True)  # below part
-    y += (a1 * E + b1) * step_function(E, step_x=E_F+dE)  # above part
-
-    # Convolve with instrument resolution
-    if sigma > 0:
-        y = ndimage.gaussian_filter(y, sigma)  # , mode='nearest')
-
-    return y
-
-
-def fit_fermi_dirac(energies: np.ndarray, edc: np.ndarray, e_0: float, 
-                    T: float = 5, sigma0: float = 10, a0: float = 0, 
-                    b0: float = -0.1, a1: float = 0, b1: float = -0.1) \
-        -> tuple:
-    """
-    Fit Fermi-Dirac distribution convoluted by a Gaussian (simulating the 
-    instrument resolution) plus a linear components to a given energy 
-    distribution curve.
-    
-    :param energies: energy values [eV]
-    :param edc: energy distribution curve (intensities)
-    :param e_0: starting guess for the Fermi energy [eV]
-    :param T: temperature [K]
-    :param sigma0: experimental resolution in units of *E* step size
-    :param a0: slope of the linear background below the *E_F*
-    :param b0: offset of the linear background below *E_F*.
-    :param a1: slope of the linear background above the E_F
-    :param b1: offset of the linear background above *E_F*.
-    :return: results of the fitting in format:
-
-        - ``res[0]`` - :class:`np.ndarray`; fitted_profiles,
-        - ``res[1]`` - :py:obj:`callable`; Fermi-Dirac function,
-        - ``res[2]`` - :class:`np.ndarray`; parameters' covariance matrix,
-        - ``res[3]`` - :py:obj:`float`; fitted instrumental resolution,
-        - ``res[4]`` - :py:obj:`float`; fitted instrumental resolution's error
-    """
-
-    # Initial guess and bounds for parameters
-    p0 = [e_0, sigma0, a0, b0, a1, b1]
-    de = 1
-    lower = [e_0 - de, 0, -100, -10, -10, -20]
-    upper = [e_0 + de, 100, 100, 10, 10, 20]
-
-    def fit_func(E, E_F, sigma, a0, b0, a1, b1):
-        """ Wrapper around fermi_fit_func that fixes T. """
-        return fermi_fit_func(E, E_F, sigma, a0, b0, a1, b1, T=T)
-
-    # Carry out the fit
-    p, cov = curve_fit(fit_func, energies, edc, p0=p0, bounds=(lower, upper))
-    resolution = 2 * np.sqrt(2 * np.log(2)) * p[1] * \
-                 np.abs(energies[1] - energies[0])
-    resolution_err = 2 * np.sqrt(2 * np.log(2)) * np.sqrt(cov[1][1]) * \
-                     np.abs(energies[1] - energies[0])
-
-    res_func = lambda x: fit_func(x, *p)
-    return p, res_func, cov, resolution, resolution_err
 
 
 def pgm_calibration(hv: np.ndarray, error_offset: float, dtheta: float,
@@ -877,6 +841,76 @@ def deconvolve_resolution(edc: np.ndarray, energy: np.ndarray,
     return deconv, res_mask
 
 
+def detect_step(signal: np.ndarray, n_box: int = 15, n_smooth: int = 3) -> int:
+    """
+    Detect the biggest, clearest step in a signal by smoothing it and looking
+    at the maximum of the first derivative.
+
+    :param signal: signal to detect step in
+    :param n_box: box size for smoothing prior to calculating derivative
+    :param n_smooth: number of smoothing runs prior to calculating derivative
+    :return: index at which step occurs
+    """
+
+    smoothened = smooth(signal, n_box=n_box, recursion_level=n_smooth)
+    grad = np.gradient(smoothened)
+    step_index = np.argmax(np.abs(grad))
+    return step_index
+
+
+def fermi_dirac(E: np.ndarray, mu: float = 0, T: float = 4.2) -> np.ndarray:
+    r"""
+    Fermi-Dirac distribution with chemical potential *mu* at temperature *T*
+    for energy *E*. The Fermi Dirac distribution is given by:
+
+    .. math::
+        n(E) = \frac{1}{\exp{\big(\frac{E - \mu}{k_B T}\big)} + 1}
+
+    :param E: energies
+    :param mu: chemical potential
+    :param T: temperature
+    :return: Fermi-Dirac distribution
+    """
+
+    kT = const.k_B * T / const.eV
+    res = 1 / (np.exp((E - mu) / kT) + 1)
+    return res
+
+
+def fermi_fit_func(E: np.ndarray, E_F: float, sigma: float, a0: float,
+                   b0: float, a1: float, b1: float, T: float = 5) \
+        -> np.ndarray:
+    """
+    Fermi Dirac distribution with an additional linear inelastic background
+    and convoluted with a Gaussian for the instrument resolution.
+
+    :param E: energy values [eV]
+    :param E_F: position of Fermi energy [eV]
+    :param sigma: experimental resolution in units of *E* step size
+    :param a0: slope of the linear background below the *E_F*
+    :param b0: offset of the linear background below *E_F*.
+    :param a1: slope of the linear background above the E_F
+    :param b1: offset of the linear background above *E_F*.
+    :param T: temperature [K]
+    :return: Fermi-Dirac distribution at given temperature
+    """
+
+    # Basic Fermi Dirac distribution at given T
+    E = E
+    y = fermi_dirac(E, E_F, T)
+    dE = np.abs(E[0] - E[1])
+
+    # Add a linear contribution to the 'above' and 'below-E_F' part
+    y += (a0 * E + b0) * step_function(E, step_x=E_F, flip=True)  # below part
+    y += (a1 * E + b1) * step_function(E, step_x=E_F + dE)  # above part
+
+    # Convolve with instrument resolution
+    if sigma > 0:
+        y = ndimage.gaussian_filter(y, sigma)  # , mode='nearest')
+
+    return y
+
+
 def find_mid_old(xdata: np.ndarray, ydata: np.ndarray, xrange: list = None) \
         -> list:
     """
@@ -896,6 +930,99 @@ def find_mid_old(xdata: np.ndarray, ydata: np.ndarray, xrange: list = None) \
     y_mid = 0.5 * (ydata[x0:x1].max() - ydata[x0:x1].min())
     x_mid = xdata[x0:x1][indexof(y_mid, ydata[x0:x1])]
     return [x_mid, y_mid]
+
+
+def fit_fermi_dirac(energies: np.ndarray, edc: np.ndarray, e_0: float,
+                    T: float = 5, sigma0: float = 10, a0: float = 0,
+                    b0: float = -0.1, a1: float = 0, b1: float = -0.1) \
+        -> tuple:
+    """
+    Fit Fermi-Dirac distribution convoluted by a Gaussian (simulating the
+    instrument resolution) plus a linear components to a given energy
+    distribution curve.
+
+    :param energies: energy values [eV]
+    :param edc: energy distribution curve (intensities)
+    :param e_0: starting guess for the Fermi energy [eV]
+    :param T: temperature [K]
+    :param sigma0: experimental resolution in units of *E* step size
+    :param a0: slope of the linear background below the *E_F*
+    :param b0: offset of the linear background below *E_F*.
+    :param a1: slope of the linear background above the E_F
+    :param b1: offset of the linear background above *E_F*.
+    :return: results of the fitting in format:
+
+        - ``res[0]`` - :class:`np.ndarray`; fitted_profiles,
+        - ``res[1]`` - :py:obj:`callable`; Fermi-Dirac function,
+        - ``res[2]`` - :class:`np.ndarray`; parameters' covariance matrix,
+        - ``res[3]`` - :py:obj:`float`; fitted instrumental resolution,
+        - ``res[4]`` - :py:obj:`float`; fitted instrumental resolution's error
+    """
+
+    # Initial guess and bounds for parameters
+    p0 = [e_0, sigma0, a0, b0, a1, b1]
+    de = 1
+    lower = [e_0 - de, 0, -100, -10, -10, -20]
+    upper = [e_0 + de, 100, 100, 10, 10, 20]
+
+    def fit_func(E, E_F, sigma, a0, b0, a1, b1):
+        """ Wrapper around fermi_fit_func that fixes T. """
+        return fermi_fit_func(E, E_F, sigma, a0, b0, a1, b1, T=T)
+
+    # Carry out the fit
+    p, cov = curve_fit(fit_func, energies, edc, p0=p0, bounds=(lower, upper))
+    resolution = 2 * np.sqrt(2 * np.log(2)) * p[1] * \
+                 np.abs(energies[1] - energies[0])
+    resolution_err = 2 * np.sqrt(2 * np.log(2)) * np.sqrt(cov[1][1]) * \
+                     np.abs(energies[1] - energies[0])
+
+    res_func = lambda x: fit_func(x, *p)
+    return p, res_func, cov, resolution, resolution_err
+
+
+def step_function(x: np.ndarray, step_x: float = 0, flip: bool = False) \
+        -> np.ndarray:
+    """
+    np.ufunc wrapper for step_function_core. Confer corresponding
+    documentation.
+
+    :param x: arguments
+    :param step_x: `x` value of the step
+    :param flip: if :py:obj:`True`, flip function values around the step
+    :return: step profile
+    """
+
+    res = \
+        np.frompyfunc(lambda x: step_function_core(x, step_x, flip), 1, 1)(x)
+    return res.astype(float)
+
+
+def step_function_core(x: np.ndarray, x0: float = 0, flip: bool = False) \
+        -> np.ndarray:
+    r"""
+    Basic step function, with step occuring at x0. Gives values:
+
+    .. math::
+                        0  \textrm{  } \textrm{    for  } \textrm{  } x < x_0
+
+                f(x) =  0.5  \textrm{  } \textrm{  for  } \textrm{  } x = x_0
+
+                        1  \textrm{  } \textrm{    for  } \textrm{  } x > x_0
+
+    :param x: arguments
+    :param x0: `x` value of the step
+    :param flip: if :py:obj:`True`, flip function values around the step
+    :return: step profile
+    """
+
+    sign = -1 if flip else 1
+    if sign * x < sign * x0:
+        result = 0
+    elif x == x0:
+        result = 0.5
+    elif sign * x > sign * x0:
+        result = 1
+    return result
 
 
 def symmetrize_edc(data: np.ndarray, energies: np.ndarray) -> tuple:
@@ -944,6 +1071,30 @@ def symmetrize_edc_around_Ef(data: np.ndarray, energies: np.ndarray) -> tuple:
     sym_energies = np.hstack((energies[:Ef_idx], np.flip(-energies[:Ef_idx])))
 
     return sym_edc, sym_energies
+
+
+def sum_edcs_around_k(data: np.ndarray, kx: np.ndarray, ky: np.ndarray,
+                      ik: int = 0) -> np.ndarray:
+    """
+    Sum EDCs around a given k-point, in a box specified by ``ik``.
+    The box is binning over ``ik`` in all directions.
+
+    :param data: dataset
+    :param kx: `kx` coordinate of the k-point
+    :param ky: `ky` coordinate of the k-point
+    :param ik: box size of summation
+    :return: summed EDC
+    """
+
+    dkx = np.abs(data.xscale[0] - data.xscale[1])
+    min_kx = indexof(kx - ik * dkx, data.xscale)
+    max_kx = indexof(kx + ik * dkx, data.xscale)
+    min_ky = indexof(ky - ik * dkx, data.yscale)
+    max_ky = indexof(ky + ik * dkx, data.yscale)
+
+    edc = np.sum(np.sum(data.data[min_kx:max_kx, min_ky:max_ky, :], axis=0),
+                 axis=0)
+    return edc
 
 
 # +--------------+ #
@@ -1191,28 +1342,22 @@ def rotate_vector(x_coords: Union[float, np.ndarray],
     return res_x, res_y
 
 
-def sum_edcs_around_k(data: np.ndarray, kx: np.ndarray, ky: np.ndarray,
-                      ik: int = 0) -> np.ndarray:
+def shift_k_coordinates(kx: np.ndarray, ky: np.ndarray, qx: float = 0,
+                        qy: float = 0) -> tuple:
     """
-    Sum EDCs around a given k-point, in a box specified by ``ik``.
-    The box is binning over ``ik`` in all directions.
+    Shift k-space coordinate system by a wavevector q = [``q_x``, ``q_y``].
 
-    :param data: dataset
-    :param kx: `kx` coordinate of the k-point
-    :param ky: `ky` coordinate of the k-point
-    :param ik: box size of summation
-    :return: summed EDC
+    :param kx: initial `kx` axis (1D or :class:`np.meshgrid`)
+    :param ky: initial `ky` axis (1D or :class:`np.meshgrid`)
+    :param qx: wavevector shift along the `kx` direction
+    :param qy: wavevector shift along the `ky` direction
+    :return: (``kx``, ``ky``) shifted coordinate axes (1D or
+             :class:`np.meshgrid`)
     """
 
-    dkx = np.abs(data.xscale[0] - data.xscale[1])
-    min_kx = indexof(kx - ik * dkx, data.xscale)
-    max_kx = indexof(kx + ik * dkx, data.xscale)
-    min_ky = indexof(ky - ik * dkx, data.yscale)
-    max_ky = indexof(ky + ik * dkx, data.yscale)
-
-    edc = np.sum(np.sum(data.data[min_kx:max_kx, min_ky:max_ky, :], axis=0),
-                 axis=0)
-    return edc
+    kxx = kx + np.ones_like(kx) * qx
+    kyy = ky + np.ones_like(ky) * qy
+    return kxx, kyy
 
 
 def sum_XPS(data: list, crop: list = None, plot: bool = False) -> tuple:
@@ -1275,127 +1420,6 @@ def sum_XPS(data: list, crop: list = None, plot: bool = False) -> tuple:
 # +---------------------+ #
 
 
-def find_gamma(FS: np.ndarray, x0: int, y0: int, method: str = 'Nelder-Mead',
-               print_output: bool = False) -> scipy.optimize.OptimizeResult:
-    """
-    Find Gamma-point (center of rotation) of an image.
-
-    .. note::
-        Implements method described by Junck et al.
-        (PubMed ID: `2362201 <https://pubmed.ncbi.nlm.nih.gov/2362201/>`_)
-
-    :param FS: Fermi surface, 2D array of numbers
-    :param x0: initial guess of center `x` coordinate
-    :param y0: initial guess of center `y` coordinate
-    :param method: minimization method, see :meth:`scipy.minimize` for mode
-                   details
-    :param print_output: if :py:obj:`True`, print results as a
-                         :class:`pandas.DataFrame`
-    :return: result of the minimization routine
-    """
-
-    # do the minimization and find optimized values
-    res = minimize(rotate_around_xy, x0=[x0, y0], args=(FS,), method=method)
-
-    # for printing results in nice table
-    if print_output:
-        if res.success:
-            status = 'succes'
-        else:
-            status = 'failed'
-        labels = ['status', 'r value', 'niter', 'x0', 'y0']
-        entries = [status, '{:.4f}'.format(-res.fun), res.nit,
-                   '{:.2f}'.format(res.x[0]), '{:.2f}'.format(res.x[1])]
-
-        d = {'param': labels,
-             'value': entries}
-        df = pd.DataFrame(data=d)
-        pd.set_option('display.max_columns', 50)
-        print(df)
-
-    return res
-
-
-def rotate_around_xy(init_guess: list, data_org: Any) -> object:
-    """
-    Rotate matrix by 180 deg around (``x0``, ``y0``) and return only
-    overlapping region.
-
-    :param init_guess: [``x0``, ``y0``] list of center of rotation coordinates
-    :param data_org: original full image (Fermi surface)
-    :return: correlation coefficient between original and rotated images.
-             See :func:`imgs_corr` for mode details
-    """
-
-    # get coordinates values
-    x0 = init_guess[0]
-    y0 = init_guess[1]
-
-    # transpose if necessary and get dimensions
-    transposed = False
-    if data_org.shape[0] > data_org.shape[1]:
-        data_org = data_org.T
-        transposed = True
-    x_org = data_org.shape[0]
-    y_org = data_org.shape[1]
-
-    # get lengths (half of them) of the overlapped cuts
-    if x0 <= x_org // 2:
-        x = x0
-    else:
-        x = x_org - x0
-
-    if y0 <= y_org // 2:
-        y = y0
-    else:
-        y = y_org - y0
-
-    # specify boundaries
-    x_start = int(np.max([0, x0 - x]))
-    x_stop = int(np.min([x + x0, x_org]))
-    y_start = int(np.max([0, y0 - y]))
-    y_stop = int(np.min([y + y0, y_org]))
-
-    data = data_org[x_start:x_stop, y_start:y_stop]
-
-    # calculate correlation coefficient (minus, because we actually want to
-    # maximize it)
-    if transposed:
-        return -imgs_corr(data.T, np.flip(data).T)
-    else:
-        return -imgs_corr(data, np.flip(data))
-
-
-def imgs_corr(img1: np.ndarray, img2: np.ndarray) -> float:
-    """
-    Calculate the correlation coefficient between two matrices.
-
-    .. note::
-        For reference, see Junck et al. (PubMed ID:
-        `2362201 <https://pubmed.ncbi.nlm.nih.gov/2362201/>`_)
-
-    :param img1: original image
-    :param img2: rotated image
-    :return: correlation coefficient, parameter to minimize
-    """
-
-    # calculate averages
-    avr_img1 = np.mean(img1)
-    avr_img2 = np.mean(img2)
-
-    # calculate rest of the coefficient
-    num = 0.
-    den1 = 0.
-    den2 = 0.
-    for i in range(img1.shape[0]):
-        for j in range(img1.shape[1]):
-            num += (img1[i][j] - avr_img1) * (img2[i][j] - avr_img2)
-            den1 += (img1[i][j] - avr_img1) ** 2
-            den2 += (img2[i][j] - avr_img2) ** 2
-
-    return num / np.sqrt(den1 * den2)
-
-
 def curvature_1d(data: np.ndarray, dx: float, a0: float = 0.0005,
                  nb: int = None, rl: int = None, xaxis: np.ndarray = None,
                  clip_co: float = 0.1) -> np.ndarray:
@@ -1429,8 +1453,10 @@ def curvature_1d(data: np.ndarray, dx: float, a0: float = 0.0005,
         ef = indexof(0, xaxis)
         C_x[ef:] = 0
 
-    # return normalize(np.abs(C_x))
+    # return -C_x
+    # return -normalize(C_x)
     return -normalize(C_x).clip(max=clip_co)
+    # return -np.where(C_x <= clip_co, clip_co, C_x)
 
 
 def curvature_2d(data: np.ndarray, dx: float, dy: float, a0: float = 100,
@@ -1483,6 +1509,127 @@ def curvature_2d(data: np.ndarray, dx: float, dy: float, a0: float = 100,
         C_xy[ef:, :] = 0
 
     return np.abs(C_xy)
+
+
+def find_gamma(FS: np.ndarray, x0: int, y0: int, method: str = 'Nelder-Mead',
+               print_output: bool = False) -> scipy.optimize.OptimizeResult:
+    """
+    Find Gamma-point (center of rotation) of an image.
+
+    .. note::
+        Implements method described by Junck et al.
+        (PubMed ID: `2362201 <https://pubmed.ncbi.nlm.nih.gov/2362201/>`_)
+
+    :param FS: Fermi surface, 2D array of numbers
+    :param x0: initial guess of center `x` coordinate
+    :param y0: initial guess of center `y` coordinate
+    :param method: minimization method, see :meth:`scipy.minimize` for mode
+                   details
+    :param print_output: if :py:obj:`True`, print results as a
+                         :class:`pandas.DataFrame`
+    :return: result of the minimization routine
+    """
+
+    # do the minimization and find optimized values
+    res = minimize(rotate_around_xy, x0=[x0, y0], args=(FS,), method=method)
+
+    # for printing results in nice table
+    if print_output:
+        if res.success:
+            status = 'succes'
+        else:
+            status = 'failed'
+        labels = ['status', 'r value', 'niter', 'x0', 'y0']
+        entries = [status, '{:.4f}'.format(-res.fun), res.nit,
+                   '{:.2f}'.format(res.x[0]), '{:.2f}'.format(res.x[1])]
+
+        d = {'param': labels,
+             'value': entries}
+        df = pd.DataFrame(data=d)
+        pd.set_option('display.max_columns', 50)
+        print(df)
+
+    return res
+
+
+def imgs_corr(img1: np.ndarray, img2: np.ndarray) -> float:
+    """
+    Calculate the correlation coefficient between two matrices.
+
+    .. note::
+        For reference, see Junck et al. (PubMed ID:
+        `2362201 <https://pubmed.ncbi.nlm.nih.gov/2362201/>`_)
+
+    :param img1: original image
+    :param img2: rotated image
+    :return: correlation coefficient, parameter to minimize
+    """
+
+    # calculate averages
+    avr_img1 = np.mean(img1)
+    avr_img2 = np.mean(img2)
+
+    # calculate rest of the coefficient
+    num = 0.
+    den1 = 0.
+    den2 = 0.
+    for i in range(img1.shape[0]):
+        for j in range(img1.shape[1]):
+            num += (img1[i][j] - avr_img1) * (img2[i][j] - avr_img2)
+            den1 += (img1[i][j] - avr_img1) ** 2
+            den2 += (img2[i][j] - avr_img2) ** 2
+
+    return num / np.sqrt(den1 * den2)
+
+
+def rotate_around_xy(init_guess: list, data_org: Any) -> object:
+    """
+    Rotate matrix by 180 deg around (``x0``, ``y0``) and return only
+    overlapping region.
+
+    :param init_guess: [``x0``, ``y0``] list of center of rotation coordinates
+    :param data_org: original full image (Fermi surface)
+    :return: correlation coefficient between original and rotated images.
+             See :func:`imgs_corr` for mode details
+    """
+
+    # get coordinates values
+    x0 = init_guess[0]
+    y0 = init_guess[1]
+
+    # transpose if necessary and get dimensions
+    transposed = False
+    if data_org.shape[0] > data_org.shape[1]:
+        data_org = data_org.T
+        transposed = True
+    x_org = data_org.shape[0]
+    y_org = data_org.shape[1]
+
+    # get lengths (half of them) of the overlapped cuts
+    if x0 <= x_org // 2:
+        x = x0
+    else:
+        x = x_org - x0
+
+    if y0 <= y_org // 2:
+        y = y0
+    else:
+        y = y_org - y0
+
+    # specify boundaries
+    x_start = int(np.max([0, x0 - x]))
+    x_stop = int(np.min([x + x0, x_org]))
+    y_start = int(np.max([0, y0 - y]))
+    y_stop = int(np.min([y + y0, y_org]))
+
+    data = data_org[x_start:x_stop, y_start:y_stop]
+
+    # calculate correlation coefficient (minus, because we actually want to
+    # maximize it)
+    if transposed:
+        return -imgs_corr(data.T, np.flip(data).T)
+    else:
+        return -imgs_corr(data, np.flip(data))
 
 
 # +-----------------------+ #
@@ -1720,3 +1867,45 @@ def all_equal(iterable: Union[list, tuple]) -> bool:
 
     g = groupby(iterable)
     return next(g, True) and not next(g, False)
+
+
+def dynes_formula(omega: np.ndarray, n0: float, gamma: float, delta: float) \
+        -> np.ndarray:
+    r"""
+    Dynes formula for tunneling density of states of superconductor,
+    given by the formula:
+
+    .. math::
+        N(\omega) = N_0 \textrm{Re}\Bigg[
+        \frac{\omega + i\Gamma}{\sqrt{(\omega + i\Gamma)^2 - \Delta^2}}\Bigg]
+
+    :param omega: energy axis
+    :param n0: normal-state density of states
+    :param gamma: parameter quantifying for the pair-breaking processes
+    :param delta: superconducting gap
+    :return: superconductor's density of states
+    """
+
+    num = omega + gamma * 1.j
+    n_omega = num / np.sqrt((num ** 2) + delta ** 2)
+    return n0 * n_omega.real
+
+
+def McMillan_Tc(omega_D: float = 1, lam: float = 1, mu: float = 1) -> float:
+    r"""
+    McMillan's formula for superconducting Tc:
+
+    .. math::
+        T_c = \frac{\omega_D}{1.45}\exp{\bigg(
+        \frac{1.04(1 + \lambda)}{\lambda - \mu(1 + 0.62\lambda)}}\bigg)
+
+    :param omega_D: Debay frequency (temperature) of the material
+    :param lam: electron-boson coupling constant, lambda
+    :param mu: Coulomb pseudopotential
+    :return: superconducting critical temperature (Tc)
+    """
+
+    frac = 1.04 * (1 + lam) / (lam - mu * (1 + 0.62 * lam))
+    Tc = (omega_D / 1.45) * np.exp(-frac)
+    return Tc
+

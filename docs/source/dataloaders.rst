@@ -6,8 +6,8 @@ Data loaders
 As emphasized in :ref:`Data format <sec-dataset>` section, different
 experimental setups return different file formats. To handle those
 discrepancies, :ref:`data_loaders <sec-data-loaders-file>` module implements
-objects, that take care of proper data extraction and return
-:class:`data_loaders.Dataset`, recognizable by rest of the package.
+objects that take care of a proper data extraction and returns
+:class:`data_loaders.Dataset`, recognizable by the rest of the package.
 
 It provides the :class:`~data_loaders.Dataloader` class as a base structure
 for different sources (beamlines, electron analyzers, labs) and a number of
@@ -20,9 +20,10 @@ below.
 .. figure:: ../img/dl-scheme.png
     :alt: Image not found.
 
-If a file format is not yet supported, one needs to implement a **Dataloader**
-and make it accessible for :mod:`piva`. Detailed guidelines on how to do it
-can be found in section :ref:`"Writing custom Dataloader" <sec-custom-dl>`.
+If the file format is not yet supported, one needs to implement a
+**Dataloader** and make it accessible for :mod:`piva`. Detailed guidelines on
+how to do it can be found in section
+:ref:`"Writing custom Dataloader" <sec-custom-dl>`.
 
 
 .. _sec-dl-list:
@@ -81,13 +82,13 @@ Description below shows step by step how to achieve both.
 1. A :mod:`piva` dataloader is nothing else than a subclass of
    :class:`~data_loaders.Dataloader` that takes care of three things:
 
-    - Reading in an ARPES data file.
+    - Reading an ARPES data file.
     - Extracting all relevant data and metadata from loaded file.
     - Creating :class:`~data_loaders.Dataset` object and filling it with so
       extracted data.
 
-   The :class:`~data_loaders.Dataloader` class offers an interface for this
-   functionality. In order to write a custom dataloader, let's call it
+   The :class:`~data_loaders.Dataloader` class offers an interface for that.
+   In order to write a custom dataloader, let's call it
    :class:`CustomDataloader` for the sake of the following example, one needs
    to start by creating a subclass of :class:`~data_loader.Dataloader`::
 
@@ -111,9 +112,9 @@ Description below shows step by step how to achieve both.
 
    .. note::
         Both:
-           - ``filename``, :obj:`str`, an absolut path to the file
-           - ``metadata``, :obj:`bool`, determining if method should load entire
-             dataset or just its metadata
+           - ``filename``, :obj:`str`, absolut path to the file
+           - ``metadata``, :obj:`bool`, determine whether method should load
+             entire dataset or just its metadata
 
         have to be arguments of the ``load_data()`` method. See *e.g*
         :meth:`~data_loaders.DataloaderPickle.load_data` for more details.
@@ -124,19 +125,23 @@ Description below shows step by step how to achieve both.
         It is recommended to use prepared template, which can be downloaded
         from :download:`here <../misc/custom_data_loaders.py>`.
 
-2. To make **CustomDataloader** visible for :mod:`piva`, three conditions needs
-   to be fulfilled:
+2. Making **CustomDataloader** visible for :mod:`piva` is accomplished through
+   :class:`DataloaderImporter` object. Its proper configuration requires
+   following conditions:
 
-    - The module (python file) in which class is defined **must** be called
-      ``custom_data_loaders.py``.
-    - Name of implemented class **must** contain a substring `CustomDataloader`
-      (*e.g* `CustomDataloader1`, `CustomDataloaderWhatever`,
-      `ItCanReallyCustomDataloaderBeAnything` *etc.*). If more such classes
-      will be defined, :mod:`piva` will attempt to load all of them.
-    - Path to the ``custom_data_loaders.py`` needs to be added to the
+    - The module (python file) in which :class:`DataloaderImporter` is defined
+      **must** be called ``piva_dataloader_importer.py``.
+    - Path to the ``piva_dataloader_importer.py`` needs to be added to the
       ``$PYTHONPATH`` of your virtual environment. A simple guide on how to do
       it on any operating system can be found `here <https://stackoverflow.com/
       questions/10738919/how-do-i-add-a-path-to-pythonpath-in-virtualenv>`_.
+
+   At the beginning of the session :mod:`piva` will search for the
+   :class:`DataloaderImporter` class and execute whatever code it contains.
+   Users are in complete liberty of implementing the object according to
+   his/her preferences, but they might benefit from the example code provided
+   :download:`here <../misc/piva_dataloader_importer.py>`, that contains most
+   basic solution.
 
    .. seealso::
       See :meth:`~data_browser.DataBrowser.load_custom_data_loaders` for more
@@ -151,15 +156,14 @@ Description below shows step by step how to achieve both.
     :align: center
     :alt: Image not found.
 
-|
 
 .. note::
-    The advantage of such approach is that created ``custom_data_loaders.py``
-    with a :class:`CustomDataloader` can be stored in arbitrary directory,
+    The advantage of such approach is that ``piva_dataloader_importer.py``
+    module and **CustomDataloaders** can be stored in arbitrary directory,
     without `digging` into :mod:`piva` package. Moreover, once correctly
     implemented, instead of loading it manually or reinstalling the whole
     package, loader will be automatically imported at the beginning of each
-    :mod:`piva` session and available to use right away.
+    :mod:`piva` session and available to a user right away.
 
 
 Everyone is highly encouraged to share tested, self-written data loaders with
