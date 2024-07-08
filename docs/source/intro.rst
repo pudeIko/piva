@@ -19,7 +19,7 @@ What is :mod:`piva`
 -------------------
 
 :mod:`piva` is a GUI application based on :mod:`PyQt5` and :mod:`pyqtgraph`
-toolkits, designed for interactive and intuitive examination of large,
+toolkits, designed for interactive and intuitive exploration of large,
 image-like datasets. Although it is generally capable of displaying any
 multidimensional data, vast majority of implemented functionalities are
 geared towards users performing Angle-Resolved Photoemission Spectroscopy
@@ -29,7 +29,7 @@ Package allows for *live* investigation of many different datasets
 individually, as well as for linking separate datasets and browsing through
 them simultaneously. Interactive sliders allow one to display multidimensional
 data across all available directions (see :ref:`DataViewers <sec-viewers>`).
-Next to many image processing methods it allows for presenting ARPES images in
+Next to many image processing methods it allows representing ARPES images in
 momentum space and apply corrections specific to experimental conditions at
 which data were acquired.
 

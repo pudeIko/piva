@@ -3,7 +3,7 @@
 data_viewer_2d.py
 =================
 
-Module implementing GUI for visualization of 2D datasets.
+Module implementing GUI for visualizing 2D datasets.
 
 .. automodule:: data_viewer_2d
     :members:

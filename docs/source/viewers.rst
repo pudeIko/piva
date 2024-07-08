@@ -22,13 +22,14 @@ Its layout and components are described below:
 .. _sec-2d-viewer-table:
 
 =====   =======================================================================
-**a**   Main data plot. Horizontal and vertical axes correspond to the energy
-        and angle (momentum) directions, respectively.
+**a**   **Main data plot**. Horizontal and vertical axes correspond to the
+        energy and angle (momentum) directions, respectively.
 **b**   Horizontal and vertical slices taken at the positions of the sliders.
 **c**   Utilities panel containing all image processing and analysis features,
-        to large extent shared between :ref:`2D <sec-2d-viewer>` and
-        :ref:`3D Viewer <sec-3d-viewer>`. Detailed description of all its
-        options can be found :ref:`below <sec-utilities-panel>`.
+        to large extent shared between :ref:`2D <sec-2d-viewer>`,
+        :ref:`3D Viewer <sec-3d-viewer>` and :ref:`4D Viewer <sec-4d-viewer>`.
+        Detailed description of all its options can be found
+        :ref:`below <sec-utilities-panel>`.
 **d**    - **close** - close this window
          - **save** - save current dataset to a :mod:`pickle` file.
          - **open in PIT** - open current dataset with `data-slicer's PIT
@@ -63,19 +64,51 @@ all three perpendicular directions.
 =====   =======================================================================
 **a**   **Main image plot**. Horizontal and vertical axes correspond to scanned
         dimension and analyzer (angle/momentum) axis, respectively.
-**b**   **Main energy slider**, allowing to choose different slices shown on
-        **main image plot**. White curve shows energy distribution curve (EDC)
-        integrated over entire dataset, red curve corresponds to EDC taken at
-        the crossing point of **main image plot** sliders.
-**c**   Horizontal and vertical cuts taken along the sliders in
+**b**   Horizontal and vertical cuts taken along the sliders in
         **main image plot**. Vertical axes correspond to energy, horizontal to
         corresponing axes of **main image plot**.
-**d**   Slices taken along energy sliders of horizontal/vertical cuts.
-**e**   Utilities panel containing all image processing and analysis features,
-        to large extent shared between :ref:`2D <sec-2d-viewer>` and
-        :ref:`3D Viewer <sec-3d-viewer>`. Detailed description of all its
-        options can be found :ref:`below <sec-utilities-panel>`.
-**f**   See description :ref:`here <sec-2d-viewer-table>`.
+**c**   Slices taken along energy sliders of horizontal/vertical cuts.
+**d**   Utilities panel containing all image processing and analysis features,
+        to large extent shared between :ref:`2D <sec-2d-viewer>`,
+        :ref:`3D Viewer <sec-3d-viewer>` and :ref:`4D Viewer <sec-4d-viewer>`.
+        Detailed description of all its options can be found
+        :ref:`below <sec-utilities-panel>`.
+**e**   See description :ref:`here <sec-2d-viewer-table>`.
+=====   =======================================================================
+
+
+
+.. _sec-4d-viewer:
+
+4D DataViewer
+-------------
+
+Micro- and nano-ARPES are methods interested in examining physically small
+systems, like microscopic crystallographic domains, nano-structures or
+fabricated devices. They use special focusing optics to minimize beam spot size
+and obtain information about how band structure varies between different
+regions of the sample. :ref:`4D Viewer <sec-4d-viewer>` is a convenient tool
+for visualizing such datasets, acquired by rastering the beam over the sample's
+surface and spatially resolving electronic dispersion.
+
+
+.. figure:: ../img/dv-4d-main.png
+   :alt: Image not found.
+
+=====   =======================================================================
+**a**   **Raster scan plot**. Horizontal and vertical axes correspond to the
+        translation of the manipulator. Each data point represents spectrum
+        acquired at the given position. Details on the representation can be
+        found in :meth:`~data_viewer_4d.DataHandler4D.update_raster_data`
+**b**   **Band map plot**. Horizontal and vertical axes correspond to the
+        energy and angle (momentum) directions, respectively.
+**c**   Horizontal and vertical slices taken at the positions of the sliders.
+**d**   Utilities panel containing all image processing and analysis features,
+        to large extent shared between :ref:`2D <sec-2d-viewer>`,
+        :ref:`3D Viewer <sec-3d-viewer>` and :ref:`4D Viewer <sec-4d-viewer>`.
+        Detailed description of all its options can be found
+        :ref:`below <sec-utilities-panel>`.
+**e**   See description :ref:`here <sec-2d-viewer-table>`.
 =====   =======================================================================
 
 
@@ -87,9 +120,9 @@ The Utilities Panel
 
 The top panel of the **DataViewers**, consists of different tabs, which give
 access to :mod:`piva`'s functionalities. **Utilities Panels** of
-:ref:`2D <sec-2d-viewer>` and :ref:`3D Viewers <sec-3d-viewer>` share a lot of
-similarities and therefore are discussed together on example windows ``dv2D.p``
-and ``dv3D.p``.
+:ref:`2D <sec-2d-viewer>`, :ref:`3D Viewers <sec-3d-viewer>` and
+:ref:`4D Viewers <sec-4d-viewer>` share a lot of similarities and, therefore,
+are discussed on example of ``dv2D.p`` and ``dv3D.p`` windows.
 
 
 .. _sec-utilities-panel-volume:

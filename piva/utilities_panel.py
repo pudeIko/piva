@@ -74,12 +74,15 @@ class UtilitiesPanel(QWidget):
         self.buttons_layout = QtWidgets.QGridLayout()
         self.buttons_layout.addWidget(self.close_button,    1, 0)
         self.buttons_layout.addWidget(self.save_button,     2, 0)
-        self.buttons_layout.addWidget(self.pit_button,      3, 0)
-        if self.dim == 2:
+        if self.dim in (2, 4):
             self.file_mdc_fitter_button = QPushButton('MDC fitter')
             self.file_edc_fitter_button = QPushButton('EDC fitter')
-            self.buttons_layout.addWidget(self.file_mdc_fitter_button, 4, 0)
-            self.buttons_layout.addWidget(self.file_edc_fitter_button, 5, 0)
+            self.buttons_layout.addWidget(self.file_mdc_fitter_button, 3, 0)
+            self.buttons_layout.addWidget(self.file_edc_fitter_button, 4, 0)
+        if self.dim == 2:
+            self.buttons_layout.addWidget(self.pit_button,      5, 0)
+        elif self.dim == 3:
+            self.buttons_layout.addWidget(self.pit_button,      3, 0)
         self.buttons.setLayout(self.buttons_layout)
 
         if name is not None:
@@ -102,7 +105,7 @@ class UtilitiesPanel(QWidget):
 
         self.align()
 
-        if self.dim == 2:
+        if self.dim in (2, 4):
             self.energy_vert_value.setFixedWidth(energy_labels_width)
             self.momentum_hor_value.setFixedWidth(momentum_labels_width)
         elif self.dim == 3:
@@ -118,7 +121,8 @@ class UtilitiesPanel(QWidget):
         self.setLayout(self.layout)
 
         # linking options
-        self.link_windows.clicked.connect(self.link_selected_windows)
+        if self.dim in (2, 3):
+            self.link_windows.clicked.connect(self.link_selected_windows)
 
         # file options
         self.file_show_dp_button.clicked.connect(
@@ -184,73 +188,100 @@ class UtilitiesPanel(QWidget):
         self.image_normalize_along = QComboBox()
         self.image_normalize = QCheckBox('normalize')
 
-        self.image_BZ_contour_lbl = QLabel('BZ contour')
-        self.image_BZ_contour_lbl.setFont(bold_font)
-        self.image_show_BZ = QCheckBox('show')
-        self.image_symmetry_label = QLabel('symmetry:')
-        self.image_symmetry = QSpinBox()
-        self.image_symmetry.setRange(4, 6)
-        self.image_rotate_BZ_label = QLabel('rotate:')
-        self.image_rotate_BZ = QDoubleSpinBox()
-        self.image_rotate_BZ.setRange(-90, 90)
-        self.image_rotate_BZ.setSingleStep(0.5)
+        # self.image_BZ_contour_lbl = QLabel('BZ contour')
+        # self.image_BZ_contour_lbl.setFont(bold_font)
+        # self.image_show_BZ = QCheckBox('show')
+        # self.image_symmetry_label = QLabel('symmetry:')
+        # self.image_symmetry = QSpinBox()
+        # self.image_symmetry.setRange(4, 6)
+        # self.image_rotate_BZ_label = QLabel('rotate:')
+        # self.image_rotate_BZ = QDoubleSpinBox()
+        # self.image_rotate_BZ.setRange(-90, 90)
+        # self.image_rotate_BZ.setSingleStep(0.5)
 
-        self.image_2dv_lbl = QLabel('Open in 2D viewer')
-        self.image_2dv_lbl.setFont(bold_font)
-        self.image_2dv_cut_selector_lbl = QLabel('select cut')
-        self.image_2dv_cut_selector = QComboBox()
-        self.image_2dv_cut_selector.addItems(['vertical', 'horizontal'])
-        self.image_2dv_button = QPushButton('Open')
+        if self.dim in (3, 4):
+            self.image_2dv_lbl = QLabel('Open in 2D viewer')
+            self.image_2dv_lbl.setFont(bold_font)
+            self.image_2dv_cut_selector_lbl = QLabel('select cut')
+            self.image_2dv_cut_selector = QComboBox()
+            self.image_2dv_cut_selector.addItems(['vertical', 'horizontal'])
+            self.image_2dv_button = QPushButton('Open')
 
-        self.image_smooth_lbl = QLabel('Smooth')
-        self.image_smooth_lbl.setFont(bold_font)
-        self.image_smooth_n_lbl = QLabel('box size:')
-        self.image_smooth_n = QSpinBox()
-        self.image_smooth_n.setValue(3)
-        self.image_smooth_n.setRange(3, 50)
-        self.image_smooth_n.setMaximumWidth(max_w)
-        self.image_smooth_rl_lbl = QLabel('recursion:')
-        self.image_smooth_rl = QSpinBox()
-        self.image_smooth_rl.setValue(3)
-        self.image_smooth_rl.setRange(1, 20)
-        self.image_smooth_button = QPushButton('Smooth')
-
-        self.image_curvature_lbl = QLabel('Curvature')
-        self.image_curvature_lbl.setFont(bold_font)
-        self.image_curvature_method_lbl = QLabel('method:')
-        self.image_curvature_method = QComboBox()
-        curvature_methods = ['2D', '1D (EDC)', '1D (MDC)']
-        self.image_curvature_method.addItems(curvature_methods)
-        self.image_curvature_a_lbl = QLabel('a:')
-        self.image_curvature_a = QDoubleSpinBox()
-        self.image_curvature_a.setRange(-10e5, 10e10)
-        self.image_curvature_a.setSingleStep(0.001)
-        self.image_curvature_a.setValue(10.)
-        self.image_curvature_a.setMaximumWidth(max_w)
-        self.image_curvature_button = QPushButton('Do it')
+        # self.image_smooth_lbl = QLabel('Smooth')
+        # self.image_smooth_lbl.setFont(bold_font)
+        # self.image_smooth_n_lbl = QLabel('box size:')
+        # self.image_smooth_n = QSpinBox()
+        # self.image_smooth_n.setValue(3)
+        # self.image_smooth_n.setRange(3, 50)
+        # self.image_smooth_n.setMaximumWidth(max_w)
+        # self.image_smooth_rl_lbl = QLabel('recursion:')
+        # self.image_smooth_rl = QSpinBox()
+        # self.image_smooth_rl.setValue(3)
+        # self.image_smooth_rl.setRange(1, 20)
+        # self.image_smooth_button = QPushButton('Smooth')
+        #
+        # self.image_curvature_lbl = QLabel('Curvature')
+        # self.image_curvature_lbl.setFont(bold_font)
+        # self.image_curvature_method_lbl = QLabel('method:')
+        # self.image_curvature_method = QComboBox()
+        # curvature_methods = ['2D', '1D (EDC)', '1D (MDC)']
+        # self.image_curvature_method.addItems(curvature_methods)
+        # self.image_curvature_a_lbl = QLabel('a:')
+        # self.image_curvature_a = QDoubleSpinBox()
+        # self.image_curvature_a.setRange(-10e5, 10e10)
+        # self.image_curvature_a.setSingleStep(0.001)
+        # self.image_curvature_a.setValue(10.)
+        # self.image_curvature_a.setMaximumWidth(max_w)
+        # self.image_curvature_button = QPushButton('Do it')
 
         # addWidget(widget, row, column, rowSpan, columnSpan)
-        row = 0
-        itl.addWidget(self.image_colors_label,          row, 0)
-        itl.addWidget(self.image_cmaps_label,           row, 1)
-        itl.addWidget(self.image_cmaps,                 row, 2)
-        itl.addWidget(self.image_invert_colors,         row, 3, 1, 2)
 
-        row = 1
-        itl.addWidget(self.image_gamma_label,           row, 1)
-        itl.addWidget(self.image_gamma,                 row, 2)
-        # itl.addWidget(self.image_colorscale_label,      row, 3)
-        # itl.addWidget(self.image_colorscale,            row, 4)
+        if self.dim in (2, 3):
+            row = 0
+            itl.addWidget(self.image_colors_label,          row, 0)
+            itl.addWidget(self.image_cmaps_label,           row, 1)
+            itl.addWidget(self.image_cmaps,                 row, 2)
+            itl.addWidget(self.image_invert_colors,         row, 3, 1, 2)
 
-        row = 2
-        itl.addWidget(self.image_normalize_lbl,         row, 0)
-        itl.addWidget(self.image_normalize_to_lbl,      row, 1)
-        itl.addWidget(self.image_normalize_to,          row, 2)
-        itl.addWidget(self.image_normalize_along_lbl,   row, 3)
-        itl.addWidget(self.image_normalize_along,       row, 4)
-        itl.addWidget(self.image_normalize,             row, 5)
+            row = 1
+            itl.addWidget(self.image_gamma_label,           row, 1)
+            itl.addWidget(self.image_gamma,                 row, 2)
+
+            row = 2
+            itl.addWidget(self.image_normalize_lbl,         row, 0)
+            itl.addWidget(self.image_normalize_to_lbl,      row, 1)
+            itl.addWidget(self.image_normalize_to,          row, 2)
+            itl.addWidget(self.image_normalize_along_lbl,   row, 3)
+            itl.addWidget(self.image_normalize_along,       row, 4)
+            itl.addWidget(self.image_normalize,             row, 5)
 
         if self.dim == 2:
+            self.image_smooth_lbl = QLabel('Smooth')
+            self.image_smooth_lbl.setFont(bold_font)
+            self.image_smooth_n_lbl = QLabel('box size:')
+            self.image_smooth_n = QSpinBox()
+            self.image_smooth_n.setValue(3)
+            self.image_smooth_n.setRange(3, 50)
+            self.image_smooth_n.setMaximumWidth(max_w)
+            self.image_smooth_rl_lbl = QLabel('recursion:')
+            self.image_smooth_rl = QSpinBox()
+            self.image_smooth_rl.setValue(3)
+            self.image_smooth_rl.setRange(1, 20)
+            self.image_smooth_button = QPushButton('Smooth')
+
+            self.image_curvature_lbl = QLabel('Curvature')
+            self.image_curvature_lbl.setFont(bold_font)
+            self.image_curvature_method_lbl = QLabel('method:')
+            self.image_curvature_method = QComboBox()
+            curvature_methods = ['2D', '1D (EDC)', '1D (MDC)']
+            self.image_curvature_method.addItems(curvature_methods)
+            self.image_curvature_a_lbl = QLabel('a:')
+            self.image_curvature_a = QDoubleSpinBox()
+            self.image_curvature_a.setRange(-10e5, 10e10)
+            self.image_curvature_a.setSingleStep(0.001)
+            self.image_curvature_a.setValue(10.)
+            self.image_curvature_a.setMaximumWidth(max_w)
+            self.image_curvature_button = QPushButton('Do it')
 
             self.image_normalize_to.addItems(['maximum', 'intensity sum'])
             self.image_normalize_along.addItems(['slit', 'energy'])
@@ -271,7 +302,18 @@ class UtilitiesPanel(QWidget):
             itl.addWidget(self.image_curvature_a,           row, 4)
             itl.addWidget(self.image_curvature_button,      row, 5, 1, 2)
 
-        if self.dim == 3:
+        elif self.dim == 3:
+
+            self.image_BZ_contour_lbl = QLabel('BZ contour')
+            self.image_BZ_contour_lbl.setFont(bold_font)
+            self.image_show_BZ = QCheckBox('show')
+            self.image_symmetry_label = QLabel('symmetry:')
+            self.image_symmetry = QSpinBox()
+            self.image_symmetry.setRange(4, 6)
+            self.image_rotate_BZ_label = QLabel('rotate:')
+            self.image_rotate_BZ = QDoubleSpinBox()
+            self.image_rotate_BZ.setRange(-90, 90)
+            self.image_rotate_BZ.setSingleStep(0.5)
 
             self.image_normalize_to.addItems(['maximum', 'intensity sum'])
             self.image_normalize_along.addItems(['scanned', 'slit', 'energy'])
@@ -294,6 +336,66 @@ class UtilitiesPanel(QWidget):
             dummy_lbl = QLabel('')
             itl.addWidget(dummy_lbl, 5, 0, 1, 7)
 
+        elif self.dim == 4:
+
+            self.image_normalize_lbl.setText('Normalize spectrum')
+            self.image_only_spectrum = QCheckBox('only spectrum')
+            self.image_raster_label = QLabel('Spectra in raster image')
+            self.image_raster_label.setFont(bold_font)
+            self.image_raster_options = QComboBox()
+            self.image_raster_options.addItems(
+                ['sum', 'signal/noise', 'sharpest edge'])
+            # self.image_raster_button = QPushButton('Do it')
+
+            self.image_normalize_to.addItems(['maximum', 'intensity sum'])
+            self.image_normalize_along.addItems(['slit', 'energy'])
+
+            row = 0
+            itl.addWidget(self.image_colors_label,          row, 0)
+            itl.addWidget(self.image_cmaps_label,           row, 1)
+            itl.addWidget(self.image_cmaps,                 row, 2)
+            itl.addWidget(self.image_invert_colors,         row, 3)
+
+            row = 1
+            itl.addWidget(self.image_gamma_label,           row, 1)
+            itl.addWidget(self.image_gamma,                 row, 2)
+            itl.addWidget(self.image_only_spectrum,         row, 3)
+
+            row = 2
+            itl.addWidget(self.image_normalize_lbl,         row, 0)
+            itl.addWidget(self.image_normalize_to_lbl,      row, 1)
+            itl.addWidget(self.image_normalize_to,          row, 2)
+            itl.addWidget(self.image_normalize_along_lbl,   row, 3)
+            itl.addWidget(self.image_normalize_along,       row, 4)
+            itl.addWidget(self.image_normalize,             row, 5)
+
+            row = 3
+            itl.addWidget(self.image_raster_label,          row, 0)
+            itl.addWidget(self.image_raster_options,        row, 1, 1, 2)
+            # itl.addWidget(self.image_raster_button,         row, 3)
+
+            row = 4
+            itl.addWidget(self.image_2dv_lbl,               row, 0)
+            itl.addWidget(self.image_2dv_cut_selector_lbl,  row, 2)
+            itl.addWidget(self.image_2dv_cut_selector,      row, 3)
+            itl.addWidget(self.image_2dv_button,            row, 4)
+
+            # row = 3
+            # itl.addWidget(self.image_smooth_lbl,        row, 0)
+            # itl.addWidget(self.image_smooth_n_lbl,      row, 1)
+            # itl.addWidget(self.image_smooth_n,          row, 2)
+            # itl.addWidget(self.image_smooth_rl_lbl,     row, 3)
+            # itl.addWidget(self.image_smooth_rl,         row, 4)
+            # itl.addWidget(self.image_smooth_button,     row, 5, 1, 2)
+            #
+            # row = 4
+            # itl.addWidget(self.image_curvature_lbl,         row, 0)
+            # itl.addWidget(self.image_curvature_method_lbl,  row, 1)
+            # itl.addWidget(self.image_curvature_method,      row, 2)
+            # itl.addWidget(self.image_curvature_a_lbl,       row, 3)
+            # itl.addWidget(self.image_curvature_a,           row, 4)
+            # itl.addWidget(self.image_curvature_button,      row, 5, 1, 2)
+
         self.image_tab.layout = itl
         self.image_tab.setLayout(itl)
         self.tabs.addTab(self.image_tab, 'Image')
@@ -309,6 +411,8 @@ class UtilitiesPanel(QWidget):
         bin_box_w = 50
         coords_box_w = 70
 
+        # if self.dim in (2, 3):
+        #     print('elo')
         self.link_windows_lbl = QLabel('Link windows')
         self.link_windows_lbl.setFont(bold_font)
         self.link_windows_list = CheckComboBox(
@@ -320,7 +424,7 @@ class UtilitiesPanel(QWidget):
         self.link_windows_status.blockSignals(True)
         self.link_windows = QPushButton('Link')
 
-        if self.dim == 2:
+        if self.dim in (2, 4):
             # binning option
             self.bins_label = QLabel('Integrate')
             self.bins_label.setFont(bold_font)
@@ -341,6 +445,7 @@ class UtilitiesPanel(QWidget):
             self.momentum_hor = QSpinBox()
             self.momentum_hor_value = QLabel('deg')
 
+        if self.dim == 2:
             col = 0
             vtl.addWidget(self.positions_momentum_label,    0, col, 1, 3)
             vtl.addWidget(self.energy_vert_label,           1, col)
@@ -454,6 +559,57 @@ class UtilitiesPanel(QWidget):
             vtl.addWidget(self.link_windows_status,             5, 6)
             vtl.addWidget(self.link_windows,                    5, 7)
 
+        elif self.dim == 4:
+            # cross' hairs positions
+            self.raster_label = QLabel('Position sliders')
+            self.raster_label.setFont(bold_font)
+            self.rx_vert_label = QLabel('x:')
+            self.rx_vert = QSpinBox()
+            self.rx_vert_value = QLabel('eV')
+            self.ry_hor_label = QLabel('y:')
+            self.ry_hor = QSpinBox()
+            self.ry_hor_value = QLabel('deg')
+            self.bin_y.setText('bin E')
+            self.bin_z.setText('bin k')
+
+            # # binning option
+            # self.bins_r_label = QLabel('Integrate')
+            # self.bins_r_label.setFont(bold_font)
+            # self.bin_ry = QCheckBox('bin EDCs')
+            # self.bin_ry_nbins = QSpinBox()
+            # self.bin_rz = QCheckBox('bin MDCs')
+            # self.bin_rz_nbins = QSpinBox()
+            # self.bin_rz_nbins.setRange(0, 1000)
+            # self.bin_rz_nbins.setValue(0)
+
+            col = 0
+            vtl.addWidget(self.raster_label,    0, col, 1, 3)
+            vtl.addWidget(self.rx_vert_label,   1, col)
+            vtl.addWidget(self.rx_vert,         1, col + 1)
+            vtl.addWidget(self.rx_vert_value,   1, col + 2)
+            vtl.addWidget(self.ry_hor_label,    2, col)
+            vtl.addWidget(self.ry_hor,          2, col + 1)
+            vtl.addWidget(self.ry_hor_value,    2, col + 2)
+
+            col = 3
+            vtl.addWidget(self.positions_momentum_label,    0, col, 1, 3)
+            vtl.addWidget(self.energy_vert_label,           1, col)
+            vtl.addWidget(self.energy_vert,                 1, col + 1)
+            vtl.addWidget(self.energy_vert_value,           1, col + 2)
+            vtl.addWidget(self.momentum_hor_label,          2, col)
+            vtl.addWidget(self.momentum_hor,                2, col + 1)
+            vtl.addWidget(self.momentum_hor_value,          2, col + 2)
+
+            col = 6
+            vtl.addWidget(self.bins_label,                  0, col, 1, 2)
+            vtl.addWidget(self.bin_y,                       1, col)
+            vtl.addWidget(self.bin_y_nbins,                 1, col + 1)
+            vtl.addWidget(self.bin_z,                       2, col)
+            vtl.addWidget(self.bin_z_nbins,                 2, col + 1)
+
+            # dummy lbl
+            dummy_lbl = QLabel('')
+            vtl.addWidget(dummy_lbl, 3, 0, 1, 6)
         self.volume_tab.layout = vtl
         self.volume_tab.setLayout(vtl)
         self.tabs.addTab(self.volume_tab, 'Volume')
@@ -540,7 +696,7 @@ class UtilitiesPanel(QWidget):
         atl.addWidget(self.axes_energy_wf_lbl,          row + 1, 4)
         atl.addWidget(self.axes_energy_wf,              row + 1, 5)
 
-        if self.dim == 2:
+        if self.dim in (2, 4):
             self.axes_angle_off_lbl = QLabel('ang offset:')
             self.axes_angle_off = QDoubleSpinBox()
             self.axes_angle_off.setMaximumWidth(box_max_w)
@@ -732,7 +888,7 @@ class UtilitiesPanel(QWidget):
         ftl.addWidget(self.file_jl_explog,                      row, 3, 1, 2)
         ftl.addWidget(self.file_jl_explog_button,               row, 5)
 
-        if self.dim == 3:
+        if self.dim in (3, 4):
             # dummy lbl
             row += 1
             dummy_lbl = QLabel('')
@@ -1159,7 +1315,10 @@ class UtilitiesPanel(QWidget):
         details.
         """
 
-        self.set_metadata_window(self.mw.data_set)
+        if self.dim in (2, 3):
+            self.set_metadata_window(self.mw.data_set)
+        elif self.dim == 4:
+            self.set_metadata_window(self.mw.scan[0, 0])
         title = self.mw.title + ' - metadata'
         self.info_box = InfoWindow(self.md_window, title)
         self.info_box.setMinimumWidth(350)
@@ -1548,7 +1707,7 @@ class UtilitiesPanel(QWidget):
         else:
             a = self.axes_conv_lc.value()
 
-        if self.dim == 2:
+        if self.dim in (2, 4):
             anal_off = self.axes_gamma_x.value()
             scan_off = self.axes_angle_off.value()
             kz = '-'
@@ -1615,7 +1774,11 @@ class UtilitiesPanel(QWidget):
 
         self.dp_window = QWidget()
         dpw = QVBoxLayout()
-        dp = self.mw.data_set.data_provenance
+        if self.dim in (2, 3):
+            dp = self.mw.data_set.data_provenance
+        elif self.dim == 4:
+            dp = self.mw.scan[0, 0].data_provenance
+
         file_entries = ['#', 'Date & time', 'path', 'type', 'taken @',
                         'n_bins', 'Data loader']
         kspc_entries = ['#', 'Date & time', 'Analyzer axis offset',

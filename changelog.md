@@ -9,6 +9,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `CustomWidget`: a framework for importing new, user defined widgets, template 
+  and documentation on how to implement it
+- `data_viewer_4D` class for visualization of *x-y* raster scans
+- high-level analysis methods
+
 ### Changed
 
 ### Deprecated
@@ -16,6 +21,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Removed
 
 ### Fixed
+
+- minor bugs
 
 
 ## [2.0.1] = 2023-11-12

@@ -937,8 +937,8 @@ class CustomTracedVariable(TracedVariable):
     Wrapper around :class:`data_slicer.imageplot.TracedVariable`
     (see for more details).
 
-    In short, object inheriting taking care of traced variables using
-    signalling mechanism.
+    In short, object taking care of traced variables using signalling
+    mechanism.
     """
 
     def __init__(self, value: Any = None, name: str = None) -> None:

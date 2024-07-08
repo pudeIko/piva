@@ -162,7 +162,7 @@ class Dataset(Namespace):
         self.date = None
         self.data_provenance = dp
 
-    def add_org_file_entry(self, fname: str, dl: Dataloader) -> None:
+    def add_org_file_entry(self, fname: str, dl: str) -> None:
         """
         Add information about the original data file to data provenance
         logbook.
@@ -197,6 +197,8 @@ class Dataloader:
 
     def __init__(self) -> None:
         self.ds = Dataset()
+        self.raster = False
+        self.scan = None
 
     def load_ses_zip(self, filename: str, bl_md: list = None,
                      metadata: bool = False) -> None:
@@ -304,7 +306,7 @@ class Dataloader:
 
         ds = self.ds
         wave = binarywave.load(filename)['wave']
-        self._read_ibw_(ds, wave, bl_md=bl_md)
+        self._read_ibw_(ds, wave, bl_md=bl_md, metadata=metadata)
 
     def load_ses_pxt(self, filename: str, bl_md: list = None,
                      metadata: bool = False) -> None:
@@ -327,9 +329,28 @@ class Dataloader:
 
     def _read_ibw_(self, ds: Dataset, wave: Any, bl_md: list = None,
                    metadata: bool = False) -> None:
+        """
+        Read igor binary wave file.
+
+        :param ds: :class:`Dataset` object to fill up with values.
+        :param wave: loaded ibw wave.
+        :param bl_md: beamline specific metadata. Not used here, but required
+                      to mach format of other **Dataloaders**. See
+                      :meth:`load_ses_zip` for more info.
+        :param metadata: if :py:obj:`True`, read only metadata and size of the
+                         dataset. See :meth:`load_ses_zip` for more info.
+        :return:
+        """
 
         # The `header` contains some metadata
         header = wave['wave_header']
+
+        # load raster scan in data are 4D
+        if not ((header['nDim'][2] == 0) and (header['nDim'][3] == 0)):
+            self.raster = True
+            self.scan = self.load_raster_scan(wave, bl_md=bl_md,
+                                              metadata=metadata)
+
         nDim = header['nDim']
         steps = header['sfA']
         starts = header['sfB']
@@ -491,6 +512,53 @@ class Dataloader:
             ds.scan_dim = [ds.xscale[0], ds.xscale[-1],
                            np.abs(ds.xscale[0] - ds.xscale[1])]
 
+    @staticmethod
+    def load_raster_scan(wave: Any, bl_md: list = None,
+                         metadata: bool = False) -> np.ndarray:
+        """
+        Load data from `xy` manipulator raster scan. Each energy-momentum map
+        is saved as a separate :class:`Dataset` object.
+
+        :param wave: loaded ibw wave.
+        :param bl_md: beamline specific metadata. Not used here, but required
+                      to mach format of other **Dataloaders**. See
+                      :meth:`load_ses_zip` for more info.
+        :param metadata: if :py:obj:`True`, read only metadata and size of the
+                         dataset. See :meth:`load_ses_zip` for more info.
+        :return: array with loaded :class:`Dataset` objects
+        """
+
+        # The `header` contains some metadata
+        header = wave['wave_header']
+        nDim = header['nDim']
+        steps = header['sfA']
+        starts = header['sfB']
+
+        scan = np.empty((nDim[2], nDim[3]), dtype=object)
+        xscale = np.array([0])
+        yscale = start_step_n(starts[1], steps[1], nDim[1])
+        zscale = start_step_n(starts[0], steps[0], nDim[0])
+        x_axis = start_step_n(starts[2], steps[2], nDim[2])
+        y_axis = start_step_n(starts[3], steps[3], nDim[3])
+        for xi in range(nDim[2]):
+            for yi in range(nDim[3]):
+                scan[xi, yi] = Dataset()
+                tmp_dl = Dataloader()
+                meta = wave['note'].decode('ASCII').split('\r')
+                tmp_dl.read_ses_metadata(scan[xi, yi], meta, bl_md)
+                scan[xi, yi].x = x_axis[xi]
+                scan[xi, yi].y = y_axis[yi]
+                scan[xi, yi].data = np.zeros((1, nDim[1], nDim[0]))
+                if not metadata:
+                    scan[xi, yi].data[0, :, :] = wave['wData'][:, :, xi, yi].T
+                scan[xi, yi].xscale = xscale
+                scan[xi, yi].yscale = yscale
+                scan[xi, yi].zscale = zscale
+                scan[xi, yi].scan_type = 'raster scan'
+        # print(type(scan))
+        # print(isinstance(scan, np.ndarray))
+        return scan
+
 
 class DataloaderPickle(Dataloader):
     """
@@ -523,13 +591,23 @@ class DataloaderPickle(Dataloader):
         else:
             raise NotImplementedError
 
+        if isinstance(filedata, np.ndarray):
+            self.raster = True
+            self.scan = filedata
+
         # synchronize all attributes in case file was saved using older version
         for attr in dir(filedata):
             if not (attr[0] == '_'):
                 setattr(self.ds, attr, getattr(filedata, attr))
 
-        self.ds.add_org_file_entry(filename, self.name)
-        return self.ds
+        if self.raster:
+            for xi in range(self.scan.shape[0]):
+                for yi in range(self.scan.shape[1]):
+                    self.scan[xi, yi].add_org_file_entry(filename, self.name)
+            return self.scan
+        else:
+            self.ds.add_org_file_entry(filename, self.name)
+            return self.ds
 
 
 class DataloaderSIS(Dataloader):
@@ -566,8 +644,14 @@ class DataloaderSIS(Dataloader):
         else:
             raise NotImplementedError
 
-        self.ds.add_org_file_entry(filename, self.name)
-        return self.ds
+        if self.raster:
+            for xi in range(self.scan.shape[0]):
+                for yi in range(self.scan.shape[1]):
+                    self.scan[xi, yi].add_org_file_entry(filename, self.name)
+            return self.scan
+        else:
+            self.ds.add_org_file_entry(filename, self.name)
+            return self.ds
 
     def load_h5(self, filename: str, metadata: bool = False) -> None:
         """
@@ -899,8 +983,14 @@ class DataloaderBloch(Dataloader):
         else:
             raise NotImplementedError
 
-        self.ds.add_org_file_entry(filename, self.name)
-        return self.ds
+        if self.raster:
+            for xi in range(self.scan.shape[0]):
+                for yi in range(self.scan.shape[1]):
+                    self.scan[xi, yi].add_org_file_entry(filename, self.name)
+            return self.scan
+        else:
+            self.ds.add_org_file_entry(filename, self.name)
+            return self.ds
 
 
 class DataloaderI05(Dataloader):
@@ -1111,8 +1201,14 @@ class DataloaderMERLIN(Dataloader):
         else:
             raise NotImplementedError
 
-        self.ds.add_org_file_entry(filename, 'ALSMerlin')
-        return self.ds
+        if self.raster:
+            for xi in range(self.scan.shape[0]):
+                for yi in range(self.scan.shape[1]):
+                    self.scan[xi, yi].add_org_file_entry(filename, self.name)
+            return self.scan
+        else:
+            self.ds.add_org_file_entry(filename, self.name)
+            return self.ds
 
     def load_h5(self, filename: str, metadata: bool = False) -> None:
         """
@@ -1266,8 +1362,14 @@ class DataloaderHERS(Dataloader):
         else:
             raise NotImplementedError
 
-        self.ds.add_org_file_entry(filename, 'ALSMerlin')
-        return self.ds
+        if self.raster:
+            for xi in range(self.scan.shape[0]):
+                for yi in range(self.scan.shape[1]):
+                    self.scan[xi, yi].add_org_file_entry(filename, self.name)
+            return self.scan
+        else:
+            self.ds.add_org_file_entry(filename, self.name)
+            return self.ds
 
 
 class DataloaderURANOS(Dataloader):
@@ -1308,8 +1410,14 @@ class DataloaderURANOS(Dataloader):
         else:
             raise NotImplementedError
 
-        self.ds.add_org_file_entry(filename, self.name)
-        return self.ds
+        if self.raster:
+            for xi in range(self.scan.shape[0]):
+                for yi in range(self.scan.shape[1]):
+                    self.scan[xi, yi].add_org_file_entry(filename, self.name)
+            return self.scan
+        else:
+            self.ds.add_org_file_entry(filename, self.name)
+            return self.ds
 
 
 class DataloaderCASSIOPEE(Dataloader):

@@ -38,14 +38,4 @@ Welcome to piva - Python Interactive Viewer for ARPES!
    :maxdepth: 2
    :caption: Modules
 
-   modules/data_browser
-   modules/data_loaders
-   modules/data_viewer_2d
-   modules/data_viewer_3d
-   modules/fitters
-   modules/plot_tool
-   modules/utilities_panel
-   modules/image_panels
-   modules/working_procedures
-   modules/cmaps
-   modules/constants
+   modules/modules_index

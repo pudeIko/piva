@@ -977,7 +977,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
         self.cmap_name = cmap
         # Since the cmap changed it forgot our settings for alpha and gamma
         # self.cmap.set_alpha(self.alpha)
-        self.cmap.set_gamma()
+        self.cmap.set_gamma(self.util_panel.image_gamma.value())
         sliders_pos = self.get_sliders_positions()
         self.cmap_changed()
         self.set_sliders_postions(sliders_pos)
@@ -1826,8 +1826,8 @@ class DataViewer3D(QtWidgets.QMainWindow):
             error_box.setStandardButtons(QMessageBox.Ok)
             if error_box.exec() == QMessageBox.Ok:
                 return
-        finally:
-            self.thread_count += 1
+        # finally:
+        #     self.thread_count += 1
 
     @staticmethod
     def transform_points(pts: list, angle: float) -> list:

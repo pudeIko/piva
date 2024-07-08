@@ -3,14 +3,16 @@ import time
 import importlib.util
 import inspect
 
+import numpy as np
 from PyQt5.QtWidgets import QAction, QHBoxLayout, QLabel, QVBoxLayout, \
     QLineEdit, QMessageBox, QMainWindow
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
 import piva.data_loaders as dl
 import piva.working_procedures as wp
-import piva.data_viewer_3d as p3d
 import piva.data_viewer_2d as p2d
+import piva.data_viewer_3d as p3d
+import piva.data_viewer_4d as p4d
 import piva.plot_tool as pt
 
 
@@ -156,6 +158,19 @@ class DataBrowser(QMainWindow):
             else:
                 loader = all_dls[selected_loader]()
                 data_set = loader.load_data(fname)
+
+        if isinstance(data_set, np.ndarray):
+            try:
+                # self.add_viewer_to_linked_list(fname, 3)
+                self.data_viewers[fname] = \
+                    p4d.DataViewer4D(self, data_set=data_set, index=fname)
+            except (Exception, AttributeError) as e:
+                self.sb.showMessage(
+                    'Couldn\'t load data,  format not supported.',
+                    self.sb_timeout)
+                if testing:
+                    raise e
+            return
 
         try:
             # choose correct viewer
@@ -690,6 +705,9 @@ class DataBrowser(QMainWindow):
             self.reset_detail_panel()
 
         # Reaching this point means we have succeeded in loading *something*.
+        if isinstance(data, np.ndarray):
+            data = data[0, 0]
+
         try:
             # scan
             if not (data.scan_type is None):
