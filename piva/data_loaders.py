@@ -346,7 +346,8 @@ class Dataloader:
         header = wave['wave_header']
 
         # load raster scan in data are 4D
-        if not ((header['nDim'][2] == 0) and (header['nDim'][3] == 0)):
+        # if not ((header['nDim'][2] == 0) and (header['nDim'][3] == 0)):
+        if header['nDim'][3] != 0:
             self.raster = True
             self.scan = self.load_raster_scan(wave, bl_md=bl_md,
                                               metadata=metadata)
