@@ -20,7 +20,7 @@ below.
 .. figure:: ../img/dl-scheme.png
     :alt: Image not found.
 
-If the file format is not yet supported, one needs to implement a
+If the file format is not yet supported, one needs to implement a custom
 **Dataloader** and make it accessible for :mod:`piva`. Detailed guidelines on
 how to do it can be found in section
 :ref:`"Writing custom Dataloader" <sec-custom-dl>`.
@@ -31,8 +31,8 @@ how to do it can be found in section
 Implemented Dataloaders
 -----------------------
 
-Table below shows list of **Dataloader** corresponding to Light Sources and
-data formats currently implemented within :mod:`piva`, together with the most
+Table below shows list of **Dataloader** corresponding to light sources and
+data formats currently implemented within :mod:`piva`, along with the most
 recent dates when the **Dataloader** was tested.
 
 .. table::
@@ -139,7 +139,7 @@ Description below shows step by step how to achieve both.
    At the beginning of the session :mod:`piva` will search for the
    :class:`DataloaderImporter` class and execute whatever code it contains.
    Users are in complete liberty of implementing the object according to
-   his/her preferences, but they might benefit from the example code provided
+   their preferences, but they might benefit from the example code provided
    :download:`here <../misc/piva_dataloader_importer.py>`, that contains most
    basic solution.
 
@@ -156,20 +156,16 @@ Description below shows step by step how to achieve both.
     :align: center
     :alt: Image not found.
 
-
 .. note::
-    The advantage of such approach is that ``piva_dataloader_importer.py``
-    module and **CustomDataloaders** can be stored in arbitrary directory,
-    without `digging` into :mod:`piva` package. Moreover, once correctly
-    implemented, instead of loading it manually or reinstalling the whole
-    package, loader will be automatically imported at the beginning of each
-    :mod:`piva` session and available to a user right away.
+    The advantage of this approach is that the ``piva_dataloader_importer.py``
+    module and **CustomDataloaders** can be stored in any directory, without
+    modifying the :mod:`piva` package. Moreover, once correctly implemented,
+    the loader will be automatically imported at the beginning of each
+    :mod:`piva` session and available to the user immediately.
 
-
-Everyone is highly encouraged to share tested, self-written data loaders with
-the world by adding it to :mod:`piva`'s source code. This is ideally done
-`directly through github  <https://github.com/pudeIko/piva>`_ or
+We encourage everyone to share their tested, self-written data loaders with
+the community by adding them to :mod:`piva`'s source code. This can be done
+ideally `directly through GitHub <https://github.com/pudeIko/piva>`_ or
 alternatively by contacting the development team:
 
 .. include:: contact.rst
-

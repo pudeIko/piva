@@ -1,34 +1,31 @@
 .. _sec-dataset:
 
-Data format in :mod:`piva`
+
+Data Format in :mod:`piva`
 ==========================
 
+This section discusses what it means for a data file to be *recognizable* and
+*readable* by :mod:`piva`.
 
-This section discusses what it means for a datafile to be *recognizable* and
-thus *readable* by :mod:`piva`.
-
-
-Problem of multiple file formats
+Problem of Multiple File Formats
 --------------------------------
 
-Within ARPES community, the tendency seems to be that each beamline and each
-lab uses their own file formats and conventions.
-Therefore, in order to handle these different files there is really
-no other way than to have a dedicated script which converts these into a
-common form.
+Within the ARPES community, it is common for each beamline and lab to use
+their own file formats and conventions. Consequently, handling these different
+files requires a dedicated script that converts them into a common format.
 
-Within :mod:`piva`, this is taken care of by the :ref:`Dataloader module
-<sec-data-loaders-file>`, which implements specific Dataloaders for files from
-different sources and returns a standardized :class:`~data_loaders.Dataset`
-object.
+In :mod:`piva`, this task is managed by the
+:ref:`Dataloader module <sec-data-loaders-file>`, which implements specific
+Dataloaders for files from various sources and returns a standardized
+:class:`~data_loaders.Dataset` object.
 
-:class:`~data_loaders.Dataset` defines a data structure used consistently
-within :mod:`piva` and understandable by all other :mod:`piva` modules.
+The :class:`~data_loaders.Dataset` defines a data structure consistently used
+within :mod:`piva` and is understandable by all other :mod:`piva` modules.
 
 .. seealso::
-    In order to open a file formats **not** included originally in :mod:`piva`,
-    one needs to implement a loader returning :class:`~data_loaders.Dataset`.
-    Detailed guide on how to do it can be found :ref:`here <sec-custom-dl>`.
+    To open file formats **not** originally included in :mod:`piva`, you need
+    to implement a loader that returns a :class:`~data_loaders.Dataset`. A
+    detailed guide on how to do this can be found :ref:`here <sec-custom-dl>`.
 
 
 .. _sec-dataset-structure:
@@ -37,11 +34,10 @@ within :mod:`piva` and understandable by all other :mod:`piva` modules.
 :class:`~data_loaders.Dataset` structure
 ----------------------------------------
 
-The file format that is used by :mod:`piva` internally is a simple structured
-object inheriting from :class:`argparse.Namespace` object. [#namespace]_
+The file format used internally by :mod:`piva` is a simple structured object
+inheriting from the :class:`argparse.Namespace` object. [#namespace]_
 
-
-The following table gives an overview of the data structure definition:
+The following table provides an overview of the data structure definition:
 
 
     ===============  ===================  =====================================
@@ -130,12 +126,10 @@ The following table gives an overview of the data structure definition:
                                           called on the data.
     ===============  ===================  =====================================
 
-Not all attributes are present or even required for *piva* to display data.
-Attributes that are mandatory for functioning of the **DataViewers** are marked
-in above table with asterix (*).
-A lot of the other information, however, is needed for processing routines, 
-such as angle-to-`k`-space conversion.
-
+Not all attributes are present or required for :mod:`piva` to display data.
+Attributes that are mandatory for the functioning of the **DataViewers** are
+marked with an asterisk (*). However, much of the other information is needed
+for processing routines, such as angle-to-`k`-space conversion.
 
 
 .. [#namespace]
@@ -146,5 +140,7 @@ such as angle-to-`k`-space conversion.
     The advantage with respect to a dictionary is that its attributes can be 
     accessed simply through *dot notation*, i.e. `container.attribute` 
     instead of `container['attribute']`.
+
+
 
 

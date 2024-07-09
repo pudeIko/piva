@@ -3,30 +3,30 @@
 Installation
 ============
 
-The installation of :mod:`piva` has been tested on macOS, Windows and Linux.
+The installation of :mod:`piva` has been tested on macOS, Windows, and Linux.
 
-The easiest way to install the package is to use 
+The easiest way to install the package is to use
 `pip <https://pip.pypa.io/en/stable/>`_, by simply typing the following in the
 command line::
 
    pip install piva
 
-Alternatively, one can also install it directly from the git repo::
+Alternatively, you can also install it directly from the git repository::
 
     pip install git+https://github.com/pudeIko/piva.git
 
-
 .. note::
-    Cloning git repo using ``pip`` downloads only source files, skipping *i.a.*
-    example files used for :ref:`testing <sec-testing>`. To clone an entire
-    repository go to the directory in which you want to store the package and
-    run::
+    Cloning the git repository using ``pip`` downloads only the source files,
+    skipping *i.a.* example files used for :ref:`testing <sec-testing>`. To
+    clone the entire repository, go to the directory where you want to store
+    the package and run::
 
         git clone https://github.com/pudeIko/piva.git
         cd piva
         pip install -e ./
 
-    To download and install :mod:`piva` locally.
+    This will download and install :mod:`piva` locally.
+
 
 .. note::
     Setting up package through github might require installing ``git`` first::
@@ -78,10 +78,10 @@ Testing
 Once installed, correct configuration of the package can be verified by
 following methods:
 
-1) From the **Menu bar** of opened :ref:`DataBrowser <sec-db>` navigate to
-   **Open** -> **Example**. This will bring up an example dataset, which can
-   be used to test functionalities of the :mod:`piva` package and get a
-   feeling of the GUI.
+1) From the **Menu bar** of the opened :ref:`DataBrowser <sec-db>`, navigate
+   to **Open** -> **Example**. This will bring up an example dataset that can
+   be used to test the functionalities of the :mod:`piva` package and get a
+   feel for the GUI.
 
 2) Using implemented automated tests.
 
