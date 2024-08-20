@@ -49,7 +49,7 @@ R = 8.3144598
 eV_nm_conversion = h * c / eV * 1e9
 
 # Rydberg energy unit [eV]
-Ry = h * c * R_const
+Ry = 13.605703976
 
 
 # Utilities
@@ -82,4 +82,4 @@ def Ry2eV(erg: float) -> float:
              and vice versa.
     """
 
-    return erg / Ry
+    return erg * Ry

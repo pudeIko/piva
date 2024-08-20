@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to piva - Python Interactive Viewer for ARPES!
-======================================================
+Welcome to piva - Photoemission Interface for Visualization and Analysis!
+=========================================================================
 
 
 .. toctree::

@@ -16,9 +16,9 @@ from itertools import groupby
 from typing import Union, Callable, Any
 
 
-# +-------------------------------------+ #
-# | Data fitting functions and routines | # ===================================
-# +-------------------------------------+ #
+# +--------------------------------+ #
+# | Fitting functions and routines | # ========================================
+# +--------------------------------+ #
 
 
 def gaussian(x: np.ndarray, a: float = 1, mu: float = 0, sigma: float = 1) \
@@ -518,21 +518,6 @@ def find_vF_v2(omega: np.ndarray, km: np.ndarray, kF: float, gamma: np.ndarray,
     return res
 
 
-def get_A(omega: np.ndarray, ek: np.ndarray, eta: float = 0.075) -> np.ndarray:
-    """
-    Calculate spectral function A(k, omega) based on known dispersion.
-
-    :param omega: real frequencies (energies), must be the same shape as `ek`
-    :param ek: electronic dispersion obtained using, *e.g.*,
-               tight-binding model
-    :param eta: imaginary factor, responsible for broadening of the spectra
-    :return: spectral function A(k, omega)
-    """
-
-    G = (omega + eta * 1.j) - ek
-    return (-1 / np.pi) * np.imag(np.power(G, -1))
-
-
 def get_chi(ek: Callable, ek_kwargs: dict, kx: np.ndarray, qx: np.ndarray,
             ky: Union[np.ndarray, None] = None,
             kz: Union[np.ndarray, float] = 0.,
@@ -601,12 +586,117 @@ def get_chi(ek: Callable, ek_kwargs: dict, kx: np.ndarray, qx: np.ndarray,
     return chi / chi.size
 
 
-def get_fluctuating_DW(Q: tuple, K: tuple, ek: Callable,
-                       ek_kwargs: dict, omega: np.ndarray, Q_DW: np.ndarray,
-                       N: int, a: float = np.pi, eta: float = 0.1,
-                       crop: bool = False) -> np.ndarray:
+def single_q(qi: float, Qi: float) -> float:
     """
-    Calculate self-energy of the fluctuating density wave order.
+    Get a single vector scattered by a density wave ordering vector Q.
+
+    :param qi: q-vector axis
+    :param Qi: density wave Q vector along particular direction
+    :return: one-direction component of the Lorentzian-like density wave
+             modulation
+    """
+
+    return np.power((qi + Qi * np.pi), 2)
+
+
+def get_1D_modulation(qx: np.ndarray, permutations: list,
+                      Q: float = 0.5, N: float = 10,
+                      a: float = np.pi) -> np.ndarray:
+    """
+    1D Lorentzian modulation centered at the modulation vector Q.
+
+    :param qx: q-axis along the x direction, q-axis along the y direction
+               is assumed to be the same
+    :param permutations: all symmetry equivalent permutations of the
+                         considered scattering vector Q
+    :param Q: density wave vector
+    :param N: modulation span in a number of unit cells
+    :param a: lattice constant
+    :return: Lorentzian-like density wave modulation
+    """
+
+    res = np.zeros(qx.size)
+    gamma = np.power(N * a, -1)
+    fac = gamma / np.pi
+
+    for pi in permutations:
+        Qpi = pi * Q
+        res += fac * np.power(np.power(gamma, 2) + single_q(qx, Qpi), -1)
+
+    return np.array(res, dtype=complex)
+
+
+def get_2D_modulation(qx: np.ndarray, permutations: list,
+                      Q: np.ndarray = np.array([0.5, 0.5]),
+                      N: float = 10, a: float = np.pi) -> np.ndarray:
+    """
+    2D Lorentzian modulation centered at the modulation vector Q.
+
+    :param qx: q-axis along the x direction, q-axis along the y direction
+               is assumed to be the same
+    :param permutations: all symmetry equivalent permutations of the
+                         considered scattering vector Q
+    :param Q: density wave vector
+    :param N: modulation span in a number of unit cells
+    :param a: lattice constant
+    :return: Lorentzian-like density wave modulation
+    """
+
+    res = np.zeros((qx.size, qx.size))
+    gamma = np.power(N * a, -1)
+    fac = gamma / (2 * np.pi)
+
+    for i, qxi in enumerate(qx):
+        tmp_qx = np.ones_like(qx, dtype=float) * qxi
+        for pi in permutations:
+            Qpi = pi * Q
+            res[i, :] += fac * np.power(np.power(gamma, 2) +
+                                        single_q(tmp_qx,  Qpi[0]) +
+                                        single_q(qx,  Qpi[1]), -1.5)
+
+    return np.array(res, dtype=complex)
+
+
+def get_3D_modulation(qx: np.ndarray, qz: np.ndarray, permutations: list,
+                      Q: np.ndarray = np.array([0.5, 0.5, 0.5]),
+                      N: int = 10, a: float = np.pi) -> np.ndarray:
+    """
+    3D Lorentzian modulation centered at the modulation vector Q.
+
+    :param qx: q-axis along the x direction, q-axis along the y direction
+               is assumed to be the same
+    :param qz: q-axis along the z direction
+    :param permutations: all symmetry equivalent permutations of the
+                         considered scattering vector Q
+    :param Q: density wave vector
+    :param N: modulation span in a number of unit cells
+    :param a: lattice constant
+    :return: Lorentzian-like density wave modulation
+    """
+
+    res = np.zeros((qx.size, qx.size, qx.size))
+    gamma = np.power(N * a, -1)
+    fac = np.power(np.pi * gamma, -2)
+
+    for i, qxi in enumerate(qx):
+        for j, qyi in enumerate(qx):
+            tmp_qx, tmp_qy = np.ones_like(qx, dtype=float) * qxi, \
+                             np.ones_like(qx, dtype=float) * qyi
+            for pi in permutations:
+                Qpi = pi * Q
+                res[i, j, :] += fac * np.power(np.power(gamma, 2) +
+                                               single_q(tmp_qx, Qpi[0]) +
+                                               single_q(tmp_qy, Qpi[1]) +
+                                               single_q(qz, Qpi[2]), -2)
+
+    return np.array(res, dtype=complex)
+
+
+def get_self_energy_of_FDW(Q: tuple, K: tuple, ek: Callable,
+                              ek_kwargs: dict, omega: np.ndarray,
+                              Pq: np.ndarray, eta: float = 0.1) -> np.ndarray:
+    """
+    Calculate self-energy of the fluctuating density wave order in a 3D case.
 
     .. note::
         Algorithm based on the approach described by `Hashimoto et al.
@@ -620,83 +710,82 @@ def get_fluctuating_DW(Q: tuple, K: tuple, ek: Callable,
                tight-binding model
     :param ek_kwargs: keyword arguments for the dispersion function
     :param omega: real frequencies (energies), must be the same shape as `ek`
-    :param Q_DW: density wave vector
-    :param N: number of the density wave modulation unit cells
-    :param a: lattice constant in Angstroms
+    :param Pq: 3D Lorentzian describing the modulation
     :param eta: imaginary factor, responsible for broadening of the spectra
-    :param crop: if :py:obj:`True` - compute only one quarter of the map. Helps
-                 to save a lot of time taking advantage of the symmetry
-                 conditions.
     :return: self energy of the density wave modulation
     """
 
-    def single_q(qi: np.ndarray, Qi: float, gamma: float) -> np.ndarray:
-        """
-        Get a Lorentzian centered at the density wave ordering vector Q.
-
-        :param qi: q-vector axis
-        :param Qi: value of the density wave Q vector along particular
-                   direction
-        :param gamma: half-width of the underlying density wave modulation
-        :return: one-direction component of the Lorentzian-like density wave
-                 modulation
-        """
-
-        return 1 / np.pi * ((gamma / ((qi - Qi * np.pi) ** 2 + gamma ** 2)) +
-                            (gamma / ((qi + Qi * np.pi) ** 2 + gamma ** 2)))
-
-    def get_Pq(qx: np.ndarray, qz: np.ndarray,
-               Q: np.ndarray = np.array([0.5, 0.5, 0.5]),
-               gamma: float = 0.1) -> np.ndarray:
-        """
-
-        :param qx: q-axis along the x direction, q-axis along the y direction
-                   is assumed to be the same
-        :param qz: q-axis along the z direction
-        :param Q: density wave vector
-        :param gamma: Lorentzian-like half-width of the underlying density wave
-                      modulation
-        :return: Lorentzian-like density wave modulation
-        """
-
-        res_Pq = np.zeros((qx.size, qx.size, qx.size))
-        for i, qxi in enumerate(qx):
-            for j, qyi in enumerate(qx):
-                tmp_qx = np.ones_like(qx, dtype=float) * qxi,
-                tmp_qy = np.ones_like(qx, dtype=float) * qyi
-                res_Pq[i, j, :] = single_q(tmp_qx, Q[0], gamma) * \
-                                  single_q(tmp_qy, Q[1], gamma) * \
-                                  single_q(qz, Q[2], gamma)
-        return np.array(res_Pq, dtype=complex)
-
-    kx, ky, kz = K
-    qx, qy, qz = Q
-    QQ = np.meshgrid(qx, qy, qz)
-
-    gamma = np.power(N * a, -1)
-    Pq = get_Pq(qx, qz, Q_DW, gamma)
-
-    res = np.zeros_like(QQ, dtype=complex)
-    if crop:
-        x_range, y_range, z_range = range(res.shape[0]//2, res.shape[0]), \
-                                    range(res.shape[1]//2, res.shape[1]), \
-                                    range(res.shape[2]//2, res.shape[2])
-    else:
+    dim = len(Q)
+    if dim == 1:
+        kx = K
+        qx = Q
+        res = np.zeros_like(qx.size, dtype=complex)
+        x_range, y_range, z_range = range(res.shape[0]), range(1), range(1)
+    elif dim == 2:
+        kx, ky = K
+        qx, qy = Q
+        res = np.zeros_like((qx.size, qy.size), dtype=complex)
+        x_range, y_range, z_range = range(res.shape[0]), \
+                                    range(res.shape[1]), \
+                                    range(1)
+    elif dim == 3:
+        kx, ky, kz = K
+        qx, qy, qz = Q
+        res = np.zeros_like((qx.size, qy.size, qz.size), dtype=complex)
         x_range, y_range, z_range = range(res.shape[0]), \
                                     range(res.shape[1]), \
                                     range(res.shape[2])
+    else:
+        print("Wrong dimensions.")
+        return
+
     for xi in x_range:
         for yi in y_range:
             for zi in z_range:
-                qxi, qyi, qzi = qx[xi], qy[yi], qz[zi]
                 # the notation here is reversed: summation should go over all
                 # qs, for each k. But as long as these two are identical it
                 # doesn't matter
-                ek = ek(kx + qxi, ky=kx + qyi, kz=kz + qzi, **ek_kwargs)
-                ek = np.array(np.where(ek == 0, 1e-10, ek), dtype=complex)
-                res[xi, yi, zi] = np.sum(Pq / ((omega + eta * 1.j) - ek))
+                if dim == 1:
+                    qxi = qx[xi]
+                    ek = ek(kx + qxi, **ek_kwargs)
+                    ek = np.array(np.where(ek == 0, 1e-10, ek), dtype=complex)
+                    res = np.sum(Pq / ((omega + eta * 1.j) - ek))
+                elif dim == 2:
+                    qxi, qyi = qx[xi], qy[yi]
+                    ek = ek(kx + qxi, ky=kx + qyi, **ek_kwargs)
+                    ek = np.array(np.where(ek == 0, 1e-10, ek), dtype=complex)
+                    res[xi, yi] = np.sum(Pq / ((omega + eta * 1.j) - ek))
+                elif dim == 3:
+                    qxi, qyi, qzi = qx[xi], qy[yi], qz[zi]
+                    ek = ek(kx + qxi, ky=kx + qyi, kz=kz + qzi, **ek_kwargs)
+                    ek = np.array(np.where(ek == 0, 1e-10, ek), dtype=complex)
+                    res[xi, yi, zi] = np.sum(Pq / ((omega + eta * 1.j) - ek))
 
     return res / res.size
+
+
+def get_A(omega: np.ndarray, ek: np.ndarray, eta: float = 0.075,
+          sigma: Union[tuple, None] = None) -> np.ndarray:
+    """
+    Calculate spectral function A(k, omega) based on known dispersion.
+
+    :param omega: real frequencies (energies), must be the same shape as `ek`
+    :param ek: electronic dispersion obtained using, *e.g.*,
+               tight-binding model
+    :param eta: imaginary factor, responsible for broadening of the spectra
+    :param sigma: self-energy of electronic excitations. If provided, include
+                  contributions from various electronic excitations in the
+                  spectral function.
+    :return: spectral function A(k, omega)
+    """
+
+    Sigma = np.zeros_like(ek)
+    if type(sigma) == tuple:
+        for sigma_i in sigma:
+            Sigma += sigma_i
+
+    G = (omega + eta * 1.j) - ek - Sigma
+    return (-1 / np.pi) * np.imag(np.power(G, -1))
 
 
 # +--------------------------------------------------+ #
@@ -1688,8 +1777,9 @@ def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
     scan_ax, anal_ax, energy = np.array(scan_ax), \
                                np.array(anal_ax), \
                                np.array(energy)
-    scan_ax = np.deg2rad(scan_ax) - np.deg2rad(d_scan_ax)
-    anal_ax = np.deg2rad(anal_ax) - np.deg2rad(d_anal_ax)
+    d_scan_ax, d_anal_ax = np.deg2rad(d_scan_ax), np.deg2rad(d_anal_ax)
+    scan_ax = np.deg2rad(scan_ax) - d_scan_ax
+    anal_ax = np.deg2rad(anal_ax) - d_anal_ax
 
     nkx, nky, ne = scan_ax.size, anal_ax.size, energy.size
 
@@ -1699,9 +1789,11 @@ def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
         k0 = k_fac(energy, **kwargs)
         k0 *= (a / np.pi)
         if orientation == 'horizontal':
-            ky = np.cos(d_scan_ax) * np.sin(anal_ax)
-        elif orientation == 'vertical':
             ky = np.sin(anal_ax)
+        elif orientation == 'vertical':
+            ky = np.sin(anal_ax - d_anal_ax) * np.cos(d_anal_ax) + \
+                 np.cos(anal_ax - d_anal_ax) * np.cos(d_scan_ax) * \
+                 np.sin(d_anal_ax)
         return k0 * ky, 1
 
     # momentum vs energy, e.g. for band maps
@@ -1712,13 +1804,15 @@ def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
             for ei in range(ne):
                 k0i = k_fac(energy[ei], **kwargs)
                 k0i *= (a / np.pi)
-                ky[ei] = k0i * np.cos(d_scan_ax) * np.sin(anal_ax)
+                ky[ei] = k0i * np.sin(anal_ax)
                 erg[ei] = energy[ei] * np.ones(nky)
         elif orientation == 'vertical':
             for ei in range(ne):
                 k0i = k_fac(energy[ei], **kwargs)
                 k0i *= (a / np.pi)
-                ky[ei] = k0i * np.sin(anal_ax)
+                ky[ei] = k0i * np.sin(anal_ax - d_anal_ax) * \
+                         np.cos(d_anal_ax) + np.cos(anal_ax - d_anal_ax) * \
+                         np.cos(d_scan_ax) * np.sin(d_anal_ax)
                 erg[ei] = energy[ei] * np.ones(nky)
         return ky, erg
 
@@ -1730,12 +1824,18 @@ def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
         k0 *= (a / np.pi)
         if orientation == 'horizontal':
             for kxi in range(nkx):
-                kx[kxi] = np.ones(nky) * np.sin(scan_ax[kxi])
-                ky[kxi] = np.cos(scan_ax[kxi]) * np.sin(anal_ax)
+                # kx[kxi] = np.ones(nky) * np.sin(scan_ax[kxi])
+                # ky[kxi] = np.cos(scan_ax[kxi]) * np.sin(anal_ax)
+                kx[kxi] = np.sin(scan_ax[kxi]) * np.cos(anal_ax)
+                ky[kxi] = np.sin(anal_ax)
         elif orientation == 'vertical':
             for kxi in range(nkx):
-                kx[kxi] = np.cos(anal_ax) * np.sin(scan_ax[kxi])
-                ky[kxi] = np.sin(anal_ax)
+                # kx[kxi] = np.cos(anal_ax) * np.sin(scan_ax[kxi])
+                # ky[kxi] = np.sin(anal_ax)
+                kx[kxi] = np.cos(anal_ax - d_anal_ax) * np.sin(scan_ax[kxi])
+                ky[kxi] = np.sin(anal_ax - d_anal_ax) * np.cos(d_anal_ax) + \
+                          np.cos(anal_ax - d_anal_ax) * np.cos(d_scan_ax) * \
+                          np.sin(d_anal_ax)
         return k0 * kx, k0 * ky
 
     # 3D set of momentum vs momentum coordinates, for all given
@@ -1748,14 +1848,17 @@ def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
             k0i *= (a / np.pi)
             if orientation == 'horizontal':
                 for kxi in range(nkx):
-                    kx[ei, kxi, :] = k0i * np.ones(nky) * np.sin(scan_ax[kxi])
-                    ky[ei, kxi, :] = k0i * np.cos(scan_ax[kxi]) * \
-                                     np.sin(anal_ax)
+                    kx[ei, kxi, :] = k0i * np.sin(scan_ax[kxi]) * \
+                                     np.cos(anal_ax)
+                    ky[ei, kxi, :] = k0i * np.sin(anal_ax)
             elif orientation == 'vertical':
                 for kxi in range(nkx):
-                    kx[ei, kxi, :] = k0i * np.cos(anal_ax) * \
+                    kx[ei, kxi, :] = k0i * np.cos(anal_ax - d_anal_ax) * \
                                      np.sin(scan_ax[kxi])
-                    ky[ei, kxi, :] = k0i * np.sin(anal_ax)
+                    ky[ei, kxi, :] = k0i * np.sin(anal_ax - d_anal_ax) * \
+                                     np.cos(d_anal_ax) + \
+                                     np.cos(anal_ax - d_anal_ax) * \
+                                     np.cos(d_scan_ax) * np.sin(d_anal_ax)
         return kx, ky
 
 

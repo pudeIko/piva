@@ -15,7 +15,7 @@ their own file formats and conventions. Consequently, handling these different
 files requires a dedicated script that converts them into a common format.
 
 In :mod:`piva`, this task is managed by the
-:ref:`Dataloader module <sec-data-loaders-file>`, which implements specific
+:ref:`data_loaders module <sec-data-loaders-file>`, which implements specific
 Dataloaders for files from various sources and returns a standardized
 :class:`~data_loaders.Dataset` object.
 

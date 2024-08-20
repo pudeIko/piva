@@ -10,10 +10,10 @@ os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
 def db():
     version = pkg_resources.require('piva')[0].version
-    print(f'+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-    print(f'        PIVA - Python Interactive Viewer for Arpes         ')
-    print(f'                    Version {version}                      ')
-    print(f'+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    print(f'+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+    print(f'  PIVA - Photoemission Interface for Visualization and Analysis  ')
+    print(f'                        Version {version}                        ')
+    print(f'+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
     app = QApplication(sys.argv)
     window = DataBrowser()
     sys.exit(app.exec_())

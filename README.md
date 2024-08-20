@@ -1,4 +1,4 @@
-# PIVA - Python Interactive Viewer for Arpes
+# PIVA - Photoemission Interface for Visualization and Analysis
 
 PIVA is a graphical user interface (GUI) application built with `PyQt5` and 
 `pyqtgraph` toolkits, designed for the interactive and intuitive examination 

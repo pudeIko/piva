@@ -277,9 +277,10 @@ class UtilitiesPanel(QWidget):
             self.image_curvature_method.addItems(curvature_methods)
             self.image_curvature_a_lbl = QLabel('a:')
             self.image_curvature_a = QDoubleSpinBox()
-            self.image_curvature_a.setRange(-10e5, 10e10)
-            self.image_curvature_a.setSingleStep(0.001)
-            self.image_curvature_a.setValue(10.)
+            self.image_curvature_a.setRange(10e-15, 10e10)
+            self.image_curvature_a.setSingleStep(0.000001)
+            self.image_curvature_a.setValue(0.1)
+            self.image_curvature_a.setDecimals(6)
             self.image_curvature_a.setMaximumWidth(max_w)
             self.image_curvature_button = QPushButton('Do it')
 
@@ -1421,9 +1422,9 @@ class UtilitiesPanel(QWidget):
         .. note::
             While running longer acquisition scans for higher statistics,
             it's a good practise to split up measurement into few shorter
-            repetitions, to avoid possible crashes, beam dumps, sample damage,
-            *etc.*. This method allows for quick summation of such acquired
-            files.
+            repetitions, to avoid possible software crashes, beam dumps,
+            sample damage, *etc.*. This method allows for quick summation of
+            such acquired files.
         """
 
         file_path = self.mw.fname[:-len(self.mw.title)] + \

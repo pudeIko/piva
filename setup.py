@@ -11,7 +11,7 @@ setup(
     version='2.0.1',
     author='Wojtek Pudelko',
     author_email='wojciech.pudelko@psi.ch',
-    description='PIVA - Python Interactive Viewer for Arpes',
+    description='PIVA - Photoemission Interface for Visualization and Analysis',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/pudeIko/piva.git',

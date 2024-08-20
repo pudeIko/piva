@@ -68,8 +68,8 @@ recent dates when the **Dataloader** was tested.
 
 .. _sec-custom-dl:
 
-Writing custom **Dataloader**
------------------------------
+Writing a custom **Dataloader**
+-------------------------------
 
 In order to implement custom **Dataloader** one needs to:
 
