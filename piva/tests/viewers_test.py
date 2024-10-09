@@ -66,7 +66,7 @@ class TestViewers:
         qtbot.wait(LONG_WT)
         qtbot.keyClick(browser.file_explorer, Qt.Key_Down)
         qtbot.keyClick(browser.file_explorer, Qt.Key_Down)
-        assert browser.dp_anal_e0.text() is not '-'
+        assert browser.dp_ana_e0.text() is not '-'
         qtbot.wait(LONG_WT)
         self.browser = browser
         browser.open_dv(EXAMPLE_CUT)

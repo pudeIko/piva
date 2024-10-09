@@ -1744,8 +1744,8 @@ def k_fac(energy: Union[float, np.ndarray], Eb: float = 0, hv: float = 0,
     return np.sqrt(2 * me * (energy - Eb + hv - work_func)) / hbar
 
 
-def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
-                 d_scan_ax: float = 0, d_anal_ax: float = 0,
+def angle2kspace(scan_ax: np.ndarray, ana_ax: np.ndarray,
+                 d_scan_ax: float = 0, d_ana_ax: float = 0,
                  orientation: str = 'horizontal', a: float = np.pi,
                  energy: np.ndarray = np.array([0]),
                  **kwargs: dict) -> tuple:
@@ -1757,9 +1757,9 @@ def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
         `Ishida et al. <https://doi.org/10.1063/1.5007226>`_
 
     :param scan_ax: angle axis along the scanned direction
-    :param anal_ax: angle axis along the analyzer direction
+    :param ana_ax: angle axis along the analyzer direction
     :param d_scan_ax: angle offset along the scanned direction
-    :param d_anal_ax: angle offset along the analyzer direction
+    :param d_ana_ax: angle offset along the analyzer direction
     :param orientation: orientation of the analyzer slit. Can be '`horizontal`'
                         or '`vertical`'
     :param a: in-plane lattice constant [Angstrom]. When given, convert
@@ -1774,14 +1774,14 @@ def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
     """
 
     # Angle to radian conversion and setting offsets
-    scan_ax, anal_ax, energy = np.array(scan_ax), \
-                               np.array(anal_ax), \
+    scan_ax, ana_ax, energy = np.array(scan_ax), \
+                               np.array(ana_ax), \
                                np.array(energy)
-    d_scan_ax, d_anal_ax = np.deg2rad(d_scan_ax), np.deg2rad(d_anal_ax)
+    d_scan_ax, d_ana_ax = np.deg2rad(d_scan_ax), np.deg2rad(d_ana_ax)
     scan_ax = np.deg2rad(scan_ax) - d_scan_ax
-    anal_ax = np.deg2rad(anal_ax) - d_anal_ax
+    ana_ax = np.deg2rad(ana_ax) - d_ana_ax
 
-    nkx, nky, ne = scan_ax.size, anal_ax.size, energy.size
+    nkx, nky, ne = scan_ax.size, ana_ax.size, energy.size
 
     # single momentum axis for specified binding energy
     if (nkx == 1) and (ne == 1):
@@ -1789,11 +1789,11 @@ def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
         k0 = k_fac(energy, **kwargs)
         k0 *= (a / np.pi)
         if orientation == 'horizontal':
-            ky = np.sin(anal_ax)
+            ky = np.sin(ana_ax)
         elif orientation == 'vertical':
-            ky = np.sin(anal_ax - d_anal_ax) * np.cos(d_anal_ax) + \
-                 np.cos(anal_ax - d_anal_ax) * np.cos(d_scan_ax) * \
-                 np.sin(d_anal_ax)
+            ky = np.sin(ana_ax - d_ana_ax) * np.cos(d_ana_ax) + \
+                 np.cos(ana_ax - d_ana_ax) * np.cos(d_scan_ax) * \
+                 np.sin(d_ana_ax)
         return k0 * ky, 1
 
     # momentum vs energy, e.g. for band maps
@@ -1804,15 +1804,15 @@ def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
             for ei in range(ne):
                 k0i = k_fac(energy[ei], **kwargs)
                 k0i *= (a / np.pi)
-                ky[ei] = k0i * np.sin(anal_ax)
+                ky[ei] = k0i * np.sin(ana_ax)
                 erg[ei] = energy[ei] * np.ones(nky)
         elif orientation == 'vertical':
             for ei in range(ne):
                 k0i = k_fac(energy[ei], **kwargs)
                 k0i *= (a / np.pi)
-                ky[ei] = k0i * np.sin(anal_ax - d_anal_ax) * \
-                         np.cos(d_anal_ax) + np.cos(anal_ax - d_anal_ax) * \
-                         np.cos(d_scan_ax) * np.sin(d_anal_ax)
+                ky[ei] = k0i * np.sin(ana_ax - d_ana_ax) * \
+                         np.cos(d_ana_ax) + np.cos(ana_ax - d_ana_ax) * \
+                         np.cos(d_scan_ax) * np.sin(d_ana_ax)
                 erg[ei] = energy[ei] * np.ones(nky)
         return ky, erg
 
@@ -1825,17 +1825,17 @@ def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
         if orientation == 'horizontal':
             for kxi in range(nkx):
                 # kx[kxi] = np.ones(nky) * np.sin(scan_ax[kxi])
-                # ky[kxi] = np.cos(scan_ax[kxi]) * np.sin(anal_ax)
-                kx[kxi] = np.sin(scan_ax[kxi]) * np.cos(anal_ax)
-                ky[kxi] = np.sin(anal_ax)
+                # ky[kxi] = np.cos(scan_ax[kxi]) * np.sin(ana_ax)
+                kx[kxi] = np.sin(scan_ax[kxi]) * np.cos(ana_ax)
+                ky[kxi] = np.sin(ana_ax)
         elif orientation == 'vertical':
             for kxi in range(nkx):
-                # kx[kxi] = np.cos(anal_ax) * np.sin(scan_ax[kxi])
-                # ky[kxi] = np.sin(anal_ax)
-                kx[kxi] = np.cos(anal_ax - d_anal_ax) * np.sin(scan_ax[kxi])
-                ky[kxi] = np.sin(anal_ax - d_anal_ax) * np.cos(d_anal_ax) + \
-                          np.cos(anal_ax - d_anal_ax) * np.cos(d_scan_ax) * \
-                          np.sin(d_anal_ax)
+                # kx[kxi] = np.cos(ana_ax) * np.sin(scan_ax[kxi])
+                # ky[kxi] = np.sin(ana_ax)
+                kx[kxi] = np.cos(ana_ax - d_ana_ax) * np.sin(scan_ax[kxi])
+                ky[kxi] = np.sin(ana_ax - d_ana_ax) * np.cos(d_ana_ax) + \
+                          np.cos(ana_ax - d_ana_ax) * np.cos(d_scan_ax) * \
+                          np.sin(d_ana_ax)
         return k0 * kx, k0 * ky
 
     # 3D set of momentum vs momentum coordinates, for all given
@@ -1849,16 +1849,16 @@ def angle2kspace(scan_ax: np.ndarray, anal_ax: np.ndarray,
             if orientation == 'horizontal':
                 for kxi in range(nkx):
                     kx[ei, kxi, :] = k0i * np.sin(scan_ax[kxi]) * \
-                                     np.cos(anal_ax)
-                    ky[ei, kxi, :] = k0i * np.sin(anal_ax)
+                                     np.cos(ana_ax)
+                    ky[ei, kxi, :] = k0i * np.sin(ana_ax)
             elif orientation == 'vertical':
                 for kxi in range(nkx):
-                    kx[ei, kxi, :] = k0i * np.cos(anal_ax - d_anal_ax) * \
+                    kx[ei, kxi, :] = k0i * np.cos(ana_ax - d_ana_ax) * \
                                      np.sin(scan_ax[kxi])
-                    ky[ei, kxi, :] = k0i * np.sin(anal_ax - d_anal_ax) * \
-                                     np.cos(d_anal_ax) + \
-                                     np.cos(anal_ax - d_anal_ax) * \
-                                     np.cos(d_scan_ax) * np.sin(d_anal_ax)
+                    ky[ei, kxi, :] = k0i * np.sin(ana_ax - d_ana_ax) * \
+                                     np.cos(d_ana_ax) + \
+                                     np.cos(ana_ax - d_ana_ax) * \
+                                     np.cos(d_scan_ax) * np.sin(d_ana_ax)
         return kx, ky
 
 
@@ -1896,10 +1896,10 @@ def hv2kz(ang: np.ndarray, hvs: np.ndarray, work_func: float = 4.5,
                               **kwargs)
         ky.append(kyi)
 
-    if 'd_anal_ax' in kwargs.keys():
-        anal_ax_off = kwargs['d_anal_ax']
+    if 'd_ana_ax' in kwargs.keys():
+        ana_ax_off = kwargs['d_ana_ax']
     else:
-        anal_ax_off = 0
+        ana_ax_off = 0
 
     ky = np.array(ky)
     kz = np.zeros_like(ky)
@@ -1907,7 +1907,7 @@ def hv2kz(ang: np.ndarray, hvs: np.ndarray, work_func: float = 4.5,
     hbar = const.hbar_eV
     k0 = np.sqrt(2 * me) / hbar
     k0 *= (c / (1 * np.pi))
-    ang = ang - anal_ax_off
+    ang = ang - ana_ax_off
 
     if trans_kz:
         for kz_i in range(kz.shape[0]):

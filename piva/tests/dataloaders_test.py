@@ -69,7 +69,7 @@ def test_dataloaders() -> None:
         assert type(ds.scan_dim) is None or list
         assert type(ds.acq_mode) is None or str
         assert type(ds.lens_mode) is None or str
-        assert type(ds.anal_slit) is None or str
+        assert type(ds.ana_slit) is None or str
         assert type(ds.defl_angle) is None or float
         assert type(ds.n_sweeps) is None or int
         assert type(ds.DT) is None or int

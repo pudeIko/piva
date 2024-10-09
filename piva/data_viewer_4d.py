@@ -919,9 +919,9 @@ class DataViewer4D(QtWidgets.QMainWindow):
         """
 
         scan_ax = np.array([0])
-        anal_axis = self.data_handler.axes[1]
+        ana_axis = self.data_handler.axes[1]
         d_scan_ax = self.util_panel.axes_angle_off.value()
-        d_anal_ax = self.data_handler.axes[1][
+        d_ana_ax = self.data_handler.axes[1][
             self.util_panel.axes_gamma_x.value()]
         orientation = self.util_panel.axes_slit_orient.currentText()
         a = self.util_panel.axes_conv_lc.value()
@@ -944,8 +944,8 @@ class DataViewer4D(QtWidgets.QMainWindow):
             if warning_box.exec() == QMessageBox.Ok:
                 return
 
-        nma, erg = wp.angle2kspace(scan_ax, anal_axis, d_scan_ax=d_scan_ax,
-                                   d_anal_ax=d_anal_ax,
+        nma, erg = wp.angle2kspace(scan_ax, ana_axis, d_scan_ax=d_scan_ax,
+                                   d_ana_ax=d_ana_ax,
                                    orientation=orientation, a=a, energy=energy,
                                    hv=hv, work_func=wf)
         self.k_axis = nma[-1]

@@ -111,7 +111,7 @@ The following table provides an overview of the data structure definition:
                      :class:`None`
     lens_mode        :class:`str` |       Lens mode of the analyzer.
                      :class:`None`
-    anal_slit        :class:`str` |       Slit opening of the analyzer.
+    ana_slit         :class:`str` |       Slit opening of the analyzer.
                      :class:`None`
     defl_angle       :class:`float` |     Applied deflection angle.
                      :class:`None`
@@ -134,7 +134,7 @@ for processing routines, such as angle-to-`k`-space conversion.
 
 .. [#namespace]
 
-    The only thing you need to know about this, is that it accepts arbitrary 
+    The only thing one needs to know about this, is that it accepts arbitrary
     python objects to store as its attributes, making it function as a simple 
     *key* - *value* container, like a python dictionary.
     The advantage with respect to a dictionary is that its attributes can be 

@@ -1539,8 +1539,8 @@ class DataViewer3D(QtWidgets.QMainWindow):
         """
 
         scanned_ax = self.data_handler.axes[scan_ax]
-        anal_axis = self.data_handler.axes[slit_ax]
-        d_anal_ax = self.data_handler.axes[slit_ax][
+        ana_axis = self.data_handler.axes[slit_ax]
+        d_ana_ax = self.data_handler.axes[slit_ax][
             self.util_panel.axes_gamma_y.value()]
         d_scan_ax = self.data_handler.axes[scan_ax][
             self.util_panel.axes_gamma_x.value()]
@@ -1566,8 +1566,8 @@ class DataViewer3D(QtWidgets.QMainWindow):
             return
 
         if self.util_panel.axes_transform_kz.isChecked():
-            ky, _ = wp.hv2kz(anal_axis, scanned_ax, d_scan_ax=d_scan_ax,
-                             d_anal_ax=d_anal_ax, a=a, orientation=orientation)
+            ky, _ = wp.hv2kz(ana_axis, scanned_ax, d_scan_ax=d_scan_ax,
+                             d_ana_ax=d_ana_ax, a=a, orientation=orientation)
             y_min, y_max, min_step = ky[-1].min(), ky[-1].max(), \
                                      wp.get_step(ky[0])
             new_yscale = np.arange(y_min, y_max, min_step)
@@ -1591,8 +1591,8 @@ class DataViewer3D(QtWidgets.QMainWindow):
                 warning_box.setStandardButtons(QMessageBox.Ok)
                 if warning_box.exec() == QMessageBox.Ok:
                     return
-            kx, ky = wp.angle2kspace(scanned_ax, anal_axis,
-                                     d_scan_ax=d_scan_ax, d_anal_ax=d_anal_ax,
+            kx, ky = wp.angle2kspace(scanned_ax, ana_axis,
+                                     d_scan_ax=d_scan_ax, d_ana_ax=d_ana_ax,
                                      a=a, orientation=orientation, hv=hv,
                                      work_func=wf)
             kxx, kyy = np.meshgrid(kx[:, 0], ky[0, :])

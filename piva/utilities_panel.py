@@ -1709,12 +1709,12 @@ class UtilitiesPanel(QWidget):
             a = self.axes_conv_lc.value()
 
         if self.dim in (2, 4):
-            anal_off = self.axes_gamma_x.value()
+            ana_off = self.axes_gamma_x.value()
             scan_off = self.axes_angle_off.value()
             kz = '-'
             c = '-'
         else:
-            anal_off = self.axes_gamma_y.value()
+            ana_off = self.axes_gamma_y.value()
             scan_off = self.axes_gamma_x.value()
             if self.axes_transform_kz.isChecked():
                 kz = 'yes'
@@ -1728,7 +1728,7 @@ class UtilitiesPanel(QWidget):
 
         entry = {'index': len(dp['k_space_conv']),
                  'date_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                 'anal_ax_off': anal_off,
+                 'ana_ax_off': ana_off,
                  'scan_ax_off': scan_off,
                  'orient': orient,
                  'kz': kz,
@@ -1834,7 +1834,7 @@ class UtilitiesPanel(QWidget):
                 dpfi = dp['k_space_conv'][idx]
                 kspc_table.setItem(idx, 0, QTabItem(str(dpfi['index'])))
                 kspc_table.setItem(idx, 1, QTabItem(str(dpfi['date_time'])))
-                kspc_table.setItem(idx, 2, QTabItem(str(dpfi['anal_ax_off'])))
+                kspc_table.setItem(idx, 2, QTabItem(str(dpfi['ana_ax_off'])))
                 kspc_table.setItem(idx, 3, QTabItem(str(dpfi['scan_ax_off'])))
                 kspc_table.setItem(idx, 4, QTabItem(str(dpfi['orient'])))
                 kspc_table.setItem(idx, 5, QTabItem(str(dpfi['kz'])))

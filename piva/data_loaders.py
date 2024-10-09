@@ -109,7 +109,7 @@ class Dataset(Namespace):
                          :class:`None`
         lens_mode        :class:`str` |       Lens mode of the analyzer
                          :class:`None`
-        anal_slit        :class:`str` |       Slit opening of the analyzer
+        ana_slit         :class:`str` |       Slit opening of the analyzer
                          :class:`None`
         defl_angle       :class:`float` |     Applied deflection angle
                          :class:`None`
@@ -155,7 +155,7 @@ class Dataset(Namespace):
         self.scan_dim = []
         self.acq_mode = None
         self.lens_mode = None
-        self.anal_slit = None
+        self.ana_slit = None
         self.defl_angle = None
         self.n_sweeps = None
         self.DT = None
@@ -937,7 +937,7 @@ class DataloaderADRESS(Dataloader):
                         self.ds.__setattr__('defl_angle', None)
                     elif 'Slit' in tokens[0] and tokens[0][0] == 'A':
                         value = tokens[1].split()[0][:-2]
-                        self.ds.__setattr__('anal_slit', value)
+                        self.ds.__setattr__('ana_slit', value)
                     # Split off whitespace or garbage at the end
                     else:
                         value = tokens[1].split()[0]
@@ -1162,7 +1162,7 @@ class DataloaderI05(Dataloader):
         self.ds.scan_dim = scan_dim
         self.ds.acq_mode = acq_mode
         self.ds.lens_mode = lens_mode
-        self.ds.anal_slit = None
+        self.ds.ana_slit = None
         self.ds.n_sweeps = n_sweeps
         self.ds.DT = DT
 
