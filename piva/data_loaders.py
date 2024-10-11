@@ -128,7 +128,7 @@ class Dataset(Namespace):
               'k_space_conv': [],
               'edited_entries': []}
 
-        # Namespace object with all data and metadata
+        # Namespace object with all the data and metadata
         self.data = None
         self.xscale = None
         self.yscale = None

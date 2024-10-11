@@ -1633,7 +1633,7 @@ class UtilitiesPanel(QWidget):
         new_lines = []
         for line in templ_lines:
             if 'from piva.data_loader' in line:
-                line = '    "from piva.data_loader import Dataloader{} ' \
+                line = '    "from piva.data_loaders import Dataloader{} ' \
                        'as dl\\n",'.format(beamline)
             new_lines.append(line)
 
