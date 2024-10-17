@@ -1595,9 +1595,9 @@ class DataViewer3D(QtWidgets.QMainWindow):
                                      d_scan_ax=d_scan_ax, d_ana_ax=d_ana_ax,
                                      a=a, orientation=orientation, hv=hv,
                                      work_func=wf)
-            kxx, kyy = np.meshgrid(kx[:, 0], ky[0, :])
-            cut = self.main_plot.image_data
-            plt.pcolormesh(kxx, kyy, cut.T)
+            # kxx, kyy = np.meshgrid(kx[:, 0], ky[0, :])
+            # cut = self.main_plot.image_data
+            # plt.pcolormesh(kxx, kyy, cut.T)
             y_min, y_max, min_step = ky.min(), ky.max(), wp.get_step(ky[0, :])
             new_yscale = np.arange(y_min, y_max, min_step)
 

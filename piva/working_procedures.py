@@ -1384,7 +1384,7 @@ def normalize_to_sum(data: np.ndarray, axis: int = 0) -> np.ndarray:
     elif axis == 2:
         for i in range(data.shape[axis]):
             if np.sum(data[:, :, i]) == 0:
-                norm_data[:, :, i] = data[i, :, :]
+                norm_data[:, :, i] = data[:, :, i]
             else:
                 norm_data[:, :, i] = data[:, :, i] / np.sum(data[:, :, i])
     return norm_data

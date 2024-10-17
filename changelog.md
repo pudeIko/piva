@@ -9,10 +9,25 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- `CustomWidget`: a framework for importing new, user defined widgets, template 
-  and documentation on how to implement it
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+
+## [2.1.0]
+
+### Added
+
+- `CustomWidget`: a framework for importing custom, user-defined widgets, along 
+with templates and documentation on implementation
+- introduces a framework for implementing custom data loaders
 - `data_viewer_4D` class for visualization of *x-y* raster scans
-- high-level analysis methods
+- higher-level analysis methods
+- showcase and more extensive documentation
 
 ### Changed
 
@@ -22,7 +37,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- minor bugs
+- bugs in experimental logbooks and documentation
+- missing jupyter-lab templates in built version
 
 
 ## [2.0.1] = 2023-11-12

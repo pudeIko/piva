@@ -3,6 +3,8 @@ include LICENSE
 include piva/*
 include requirements.txt
 graft piva/tests/*
+include piva/ipynb_templates/template.ipynb
+include piva/ipynb_templates/template-metadata.ipynb
 
 exclude piva/misc/
 exclude piva/tests/data/pickle_map.p
