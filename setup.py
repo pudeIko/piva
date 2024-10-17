@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='piva',
-    version='2.1.0a3',
+    version='2.1.0',
     author='Wojtek Pudelko',
     author_email='wojciech.pudelko@psi.ch',
     description='PIVA - Photoemission Interface for Visualization and Analysis',

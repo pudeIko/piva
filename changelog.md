@@ -38,6 +38,7 @@ with templates and documentation on implementation
 ### Fixed
 
 - bugs in experimental logbooks and documentation
+- bugs in normalization and conversion methods 
 - missing jupyter-lab templates in built version
 
 
