@@ -585,7 +585,7 @@ class TestViewers:
         :param qtbot: object emulating a user
         """
 
-        # set first viewer to master and link with second
+        # set first viewer to parent and link with second
         up = self.up_2dv
         qtbot.mouseClick(up.link_windows_list, Qt.LeftButton)
         up.link_windows_list.setItemCheckState(0, Qt.Checked)

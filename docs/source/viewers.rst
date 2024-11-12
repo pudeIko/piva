@@ -148,12 +148,12 @@ binning options  Apply integration window by enabling the respective *binning*
 linking options  Link different **DataViewers** (of the same type) to control
                  their sliders simultaneously.
 
-                 Functionality operates in a `master`-`slave` system, where
-                 one (`master`) window controls all the others. `Master`
+                 Functionality operates in a `parent`-`child` system, where
+                 one (`parent`) window controls all the others. `Parent`
                  window is established as the window from which *Link*
                  button was clicked. All other windows receive status
-                 `slave`. Windows added to existing linked combination will
-                 also receive status `slave`.
+                 `child`. Windows added to existing linked combination will
+                 also receive status `child`.
 ===============  ==============================================================
 
 

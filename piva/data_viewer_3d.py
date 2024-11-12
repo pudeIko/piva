@@ -790,61 +790,61 @@ class DataViewer3D(QtWidgets.QMainWindow):
                         i_x, self.db.data_viewers[dvi])
                     var.set_value(matching_idx)
 
-    def get_matching_energy_idx(self, master_idx: int,
+    def get_matching_energy_idx(self, parent_idx: int,
                                 dv: DataViewer3D) -> int:
         """
         When option for linking multiple windows is enabled, find position in
-        coordinates of master's axis energy values.
+        coordinates of parent's axis energy values.
 
-        :param master_idx: index in master's energy axis
-        :param dv: enslaved :class:`DataViewer3D`
-        :return: index of energy for enslaved :class:`DataViewer3D`
+        :param parent_idx: index in parent's energy axis
+        :param dv: child :class:`DataViewer3D`
+        :return: index of energy for child :class:`DataViewer3D`
         """
 
         if self.new_energy_axis is None:
-            erg = self.data_handler.axes[1][master_idx]
+            erg = self.data_handler.axes[1][parent_idx]
         else:
-            erg = self.new_energy_axis[master_idx]
+            erg = self.new_energy_axis[parent_idx]
         if dv.new_energy_axis is None:
             erg_ax = dv.data_handler.axes[1]
         else:
             erg_ax = dv.new_energy_axis
         return wp.indexof(erg, erg_ax)
 
-    def get_matching_cut_x_idx(self, master_idx: int, dv: DataViewer3D) -> int:
+    def get_matching_cut_x_idx(self, parent_idx: int, dv: DataViewer3D) -> int:
         """
         When option for linking multiple windows is enabled, find position in
-        coordinates of master's horizontal momentum axis.
+        coordinates of parent's horizontal momentum axis.
 
-        :param master_idx: index in master's energy axis
-        :param dv: enslaved :class:`DataViewer3D`
-        :return: index of energy for enslaved :class:`DataViewer3D`
+        :param parent_idx: index in parent's energy axis
+        :param dv: child :class:`DataViewer3D`
+        :return: index of energy for child :class:`DataViewer3D`
         """
 
         if self.ky_axis is None:
-            k = self.data_handler.axes[slit_ax][master_idx]
+            k = self.data_handler.axes[slit_ax][parent_idx]
         else:
-            k = self.ky_axis[master_idx]
+            k = self.ky_axis[parent_idx]
         if dv.ky_axis is None:
             k_ax = dv.data_handler.axes[slit_ax]
         else:
             k_ax = dv.ky_axis
         return wp.indexof(k, k_ax)
 
-    def get_matching_cut_y_idx(self, master_idx: int, dv: DataViewer3D) -> int:
+    def get_matching_cut_y_idx(self, parent_idx: int, dv: DataViewer3D) -> int:
         """
         When option for linking multiple windows is enabled, find position in
-        coordinates of master's vertical momentum axis.
+        coordinates of parent's vertical momentum axis.
 
-        :param master_idx: index in master's energy axis
-        :param dv: enslaved :class:`DataViewer3D`
-        :return: index of energy for enslaved :class:`DataViewer3D`
+        :param parent_idx: index in parent's energy axis
+        :param dv: child :class:`DataViewer3D`
+        :return: index of energy for child :class:`DataViewer3D`
         """
 
         if self.kx_axis is None:
-            k = self.data_handler.axes[scan_ax][master_idx]
+            k = self.data_handler.axes[scan_ax][parent_idx]
         else:
-            k = self.kx_axis[master_idx]
+            k = self.kx_axis[parent_idx]
         if dv.kx_axis is None:
             k_ax = dv.data_handler.axes[scan_ax]
         else:
@@ -1601,7 +1601,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
             y_min, y_max, min_step = ky.min(), ky.max(), wp.get_step(ky[0, :])
             new_yscale = np.arange(y_min, y_max, min_step)
 
-            print('rescaling data: ', end='')
+            print('rescaling data done in: ', end='')
             start_time = time.time()
             dataset_rescaled = wp.rescale_data(ds.data, ky, new_yscale)
             print('{:.4} s'.format(time.time() - start_time))

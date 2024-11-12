@@ -517,42 +517,42 @@ class DataViewer2D(QtWidgets.QMainWindow):
                         i_y, self.db.data_viewers[dvi])
                     pos_variable.set_value(matching_idx)
 
-    def get_matching_energy_idx(self, master_idx: int,
+    def get_matching_energy_idx(self, parent_idx: int,
                                 dv: DataViewer2D) -> int:
         """
         When option for linking multiple windows is enabled, find position in
-        coordinates of master's energy axis.
+        coordinates of parent's energy axis.
 
-        :param master_idx: index in master's energy axis
-        :param dv: enslaved :class:`DataViewer2D`
-        :return: index of energy for enslaved :class:`DataViewer2D`
+        :param parent_idx: index in parent's energy axis
+        :param dv: child :class:`DataViewer2D`
+        :return: index of energy for child :class:`DataViewer2D`
         """
 
         if self.new_energy_axis is None:
-            erg = self.data_handler.axes[1][master_idx]
+            erg = self.data_handler.axes[1][parent_idx]
         else:
-            erg = self.new_energy_axis[master_idx]
+            erg = self.new_energy_axis[parent_idx]
         if dv.new_energy_axis is None:
             erg_ax = dv.data_handler.axes[1]
         else:
             erg_ax = dv.new_energy_axis
         return wp.indexof(erg, erg_ax)
 
-    def get_matching_momentum_idx(self, master_idx: int,
+    def get_matching_momentum_idx(self, parent_idx: int,
                                   dv: DataViewer2D) -> int:
         """
         When option for linking multiple windows is enabled, find position in
-        coordinates of master's momentum axis.
+        coordinates of parent's momentum axis.
 
-        :param master_idx: index in master's momentum axis
+        :param parent_idx: index in parent's momentum axis
         :param dv: concerned :class:`DataViewer2D`
-        :return: index of momentum for enslaved :class:`DataViewer2D`
+        :return: index of momentum for child :class:`DataViewer2D`
         """
 
         if self.k_axis is None:
-            k = self.data_handler.axes[0][master_idx]
+            k = self.data_handler.axes[0][parent_idx]
         else:
-            k = self.k_axis[master_idx]
+            k = self.k_axis[parent_idx]
         if dv.k_axis is None:
             k_ax = dv.data_handler.axes[0]
         else:

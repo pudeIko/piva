@@ -420,7 +420,7 @@ class UtilitiesPanel(QWidget):
             placeholderText='--select file--')
         self.set_opened_viewers_list()
         self.link_windows_status = QComboBox()
-        self.link_windows_status.addItems(['free', 'master', 'slave'])
+        self.link_windows_status.addItems(['free', 'parent', 'child'])
         self.link_windows_status.setDisabled(True)
         self.link_windows_status.blockSignals(True)
         self.link_windows = QPushButton('Link')
@@ -918,20 +918,20 @@ class UtilitiesPanel(QWidget):
     def link_selected_windows(self) -> None:
         """
         Link selected windows, to allow for simultaneous change of their
-        sliders. Linking functionality operates in a *master-slave* system,
-        where one (master) window controls all the others. *Master* window is
+        sliders. Linking functionality operates in a *parent-child* system,
+        where one (parent) window controls all the others. *parent* window is
         established as the window from which **Link button** was clicked. All
-        other windows receive status *slave*. Windows added to existing
-        *linked* combination will also receive status *slave*.
+        other windows receive status *child*. Windows added to existing
+        *linked* combination will also receive status *child*.
         """
 
-        # Status indices [0, 1, 2] => ['free', 'master', 'slave']
+        # Status indices [0, 1, 2] => ['free', 'parent', 'child']
         # set status in linking hierarchy
         if self.link_windows_status.currentIndex() == 0:
             self.set_linking_status(self.get_linked_windows())
             if self.link_windows_status.currentIndex() == 2:
                 self.link_windows.setText('Unlink')
-                self.update_lists_in_other_viewers('free to slave')
+                self.update_lists_in_other_viewers('free to child')
                 # disable all list items and uncheck them
                 for idx in range(self.link_windows_list.count()):
                     self.link_windows_list.model().item(idx).setEnabled(False)
@@ -940,21 +940,21 @@ class UtilitiesPanel(QWidget):
         if self.link_windows_status.currentIndex() == 1:
             if 1 in self.set_linking_status(self.get_linked_windows(),
                                             get_statuses=True):
-                two_master_box = QMessageBox()
-                two_master_box.setIcon(QMessageBox.Information)
-                two_master_box.setText('Cannot link two master viewers.')
-                two_master_box.setStandardButtons(QMessageBox.Ok)
-                if two_master_box.exec() == QMessageBox.Ok:
+                two_parent_box = QMessageBox()
+                two_parent_box.setIcon(QMessageBox.Information)
+                two_parent_box.setText('Cannot link two parent viewers.')
+                two_parent_box.setStandardButtons(QMessageBox.Ok)
+                if two_parent_box.exec() == QMessageBox.Ok:
                     return
             if self.get_linked_windows():
                 self.link_windows.setText('Update')
             else:
                 self.link_windows.setText('Link')
                 self.link_windows_status.setCurrentIndex(0)
-            self.update_lists_in_other_viewers('as master')
+            self.update_lists_in_other_viewers('as parent')
         else:
             self.link_windows.setText('Link')
-            self.update_lists_in_other_viewers('as slave')
+            self.update_lists_in_other_viewers('as child')
             # enable all list items and uncheck them
             for idx in range(self.link_windows_list.count()):
                 self.link_windows_list.model().item(idx).setEnabled(True)
@@ -991,7 +991,7 @@ class UtilitiesPanel(QWidget):
                            get_statuses: bool = False) -> Union[list, None]:
         """
         Check statuses of all the **DataViewers** that are about to be linked
-        together. If no *master* is found, make this **DataViewer** a *master*.
+        together. If no *parent* is found, make this **DataViewer** a *parent*.
 
         :param windows_to_link: list of **DataViewer** to link
         :param get_statuses: if :py:obj:`True`, just return list of
@@ -1021,31 +1021,31 @@ class UtilitiesPanel(QWidget):
         established relationships.
 
         :param action: determines established status, takes values:
-                       `as master`, `as slave` and `free to slave`
+                       `as parent`, `as child` and `free to child`
         """
 
         dv = self.mw.db.data_viewers
         linked_list = self.get_linked_windows()
         for dvi in dv.keys():
             dv_up = dv[dvi].util_panel
-            if (action == 'free to slave') and (dv[dvi].title in linked_list):
+            if (action == 'free to child') and (dv[dvi].title in linked_list):
                 if dv_up.link_windows_status.currentIndex() == 1:
-                    master = dv_up
+                    parent = dv_up
                 else:
                     linked2 = dv_up.get_linked_windows()
                     for dvj in dv.keys():
                         dvj_up = dv[dvj].util_panel
                         if (dvj_up.link_windows_status.currentIndex() == 1) \
                                 and (dv[dvj].title in linked2):
-                            master = dvj_up
-                idx = self.get_index_in_windows_list(master.link_windows_list)
-                master.link_windows_list.setItemCheckState(idx, 2)
-                master.link_selected_windows()
+                            parent = dvj_up
+                idx = self.get_index_in_windows_list(parent.link_windows_list)
+                parent.link_windows_list.setItemCheckState(idx, 2)
+                parent.link_selected_windows()
                 break
-            elif (action == 'as master') and (dv[dvi].title in linked_list):
+            elif (action == 'as parent') and (dv[dvi].title in linked_list):
                 dv_up.link_windows.setText('Unlink')
                 viewer_linked_list = dv_up.link_windows_list
-                # "enslave" checked viewers
+                # "enchild" checked viewers
                 idx = self.get_index_in_windows_list(viewer_linked_list)
                 viewer_linked_list.setItemCheckState(idx, 2)
                 dv_up.link_windows_status.setCurrentIndex(2)
@@ -1053,7 +1053,7 @@ class UtilitiesPanel(QWidget):
                     viewer_linked_list.model().item(idx).setEnabled(False)
                     if viewer_linked_list.itemText(idx) in linked_list:
                         viewer_linked_list.setItemCheckState(idx, 2)
-            elif (action == 'as master') and \
+            elif (action == 'as parent') and \
                     not (dv[dvi].title in linked_list):
                 if self.mw.title in dv[dvi].util_panel.get_linked_windows():
                     dv_up.link_windows_status.setCurrentIndex(0)
@@ -1062,10 +1062,10 @@ class UtilitiesPanel(QWidget):
                         dv_up.link_windows_list.model().item(
                             idx).setEnabled(True)
                         dv_up.link_windows_list.setItemCheckState(idx, 0)
-            elif (action == 'as slave') and (dv[dvi].title in linked_list):
+            elif (action == 'as child') and (dv[dvi].title in linked_list):
                 idx = self.get_index_in_windows_list(dv_up.link_windows_list)
                 dv_up.link_windows_list.setItemCheckState(idx, 0)
-                # make free if master and has no more linked windows
+                # make free if parent and has no more linked windows
                 if (dv_up.link_windows_status.currentIndex() == 1) and \
                         not dv_up.get_linked_windows():
                     dv_up.link_windows_status.setCurrentIndex(0)

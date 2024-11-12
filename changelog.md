@@ -11,6 +11,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- notation used in the linking functionality
+
 ### Deprecated
 
 ### Removed
