@@ -19,6 +19,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- dependency issues (occurring mainly on Windows) due to reliance on outdated 
+library versions
+
 
 ## [2.1.0]
 
