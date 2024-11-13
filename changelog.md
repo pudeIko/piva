@@ -11,16 +11,24 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- notation used in the linking functionality
-
 ### Deprecated
 
 ### Removed
 
 ### Fixed
 
-- dependency issues (occurring mainly on Windows) due to reliance on outdated 
-library versions
+
+## [2.2.0]
+
+### Changed
+
+- notation used in the linking functionality
+
+### Fixed
+
+- dependency issues due to reliance on outdated library versions
+
+- appearance issues on Windows
 
 
 ## [2.1.0]
