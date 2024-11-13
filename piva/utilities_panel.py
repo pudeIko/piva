@@ -1078,7 +1078,7 @@ class UtilitiesPanel(QWidget):
         """
 
         to_change = ['QPushButton', 'QLineEdit', 'QSpinBox', 'QDoubleSpinBox',
-                     'QComboBox']
+                     'QComboBox', 'CheckComboBox']
         for i in range(self.tabs.count()):
             tab_i = self.tabs.widget(i)
             tab_i.setStyleSheet("QWidget {background-color: rgb(64, 64, 64);}")
