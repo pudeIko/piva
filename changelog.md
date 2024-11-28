@@ -17,6 +17,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- bugs in normalization methods for 3D datasets
+- data dimensionality issues (in unfinished scans) in DataloaderI05
+
 
 ## [2.2.0]
 

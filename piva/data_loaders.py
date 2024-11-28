@@ -1092,6 +1092,13 @@ class DataloaderI05(Dataloader):
                 start, stop, step = [float(s) for s in start_stop_step]
                 xscale = np.arange(start, stop + 0.5 * step, step)
 
+        if not (xscale.size == data.shape[0]):
+            x_done = data.shape[0]
+            data_tmp = np.zeros((xscale.size, data.shape[1], data.shape[2]))
+            data_tmp[:x_done, :, :] = data
+            data = data_tmp
+            xscale = xscale[:data.shape[0]]
+
         # read metadata
         x = float(infile['entry1/instrument/manipulator/sax'][0])
         y = float(infile['entry1/instrument/manipulator/say'][0])
@@ -1109,6 +1116,7 @@ class DataloaderI05(Dataloader):
                               'acquisition_mode'][0])[2:-1]
         DT = int(infile['entry1/instrument/analyser/'
                         'time_for_frames'][0] * 1000)
+        defl_ang = float(infile['entry1/instrument/analyser/deflector_x'][0])
 
         hv = float(infile['entry1/instrument/monochromator/energy'][0])
         exit_slit = float(infile['entry1/instrument/monochromator/'
@@ -1163,6 +1171,7 @@ class DataloaderI05(Dataloader):
         self.ds.acq_mode = acq_mode
         self.ds.lens_mode = lens_mode
         self.ds.ana_slit = None
+        self.ds.defl_angle = defl_ang
         self.ds.n_sweeps = n_sweeps
         self.ds.DT = DT
 

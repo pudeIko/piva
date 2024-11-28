@@ -1,5 +1,12 @@
 # PIVA - Photoemission Interface for Visualization and Analysis
 
+![PyPI - Version](https://img.shields.io/pypi/v/piva)
+[![Documentation Status](https://readthedocs.org/projects/piva/badge/?version=latest)](https://piva.readthedocs.io/en/latest/?badge=latest)
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![GitHub license](https://img.shields.io/github/license/pudeIko/piva)](https://github.com/ekiefl/pooltool/blob/master/LICENSE.txt)
+
+
+
 PIVA is a graphical user interface (GUI) application built with `PyQt5` and 
 `pyqtgraph` toolkits, designed for the interactive and intuitive examination 
 of large image-like datasets. While it can display any multidimensional data, 
@@ -26,11 +33,14 @@ The installation of PIVA has been tested on macOS, Windows and Linux.
 The easiest way to install the package is to use `pip`. Just type the following 
 on a command line:
 
+   ```bash
     pip install piva
+   ```
 
 or directly from this repo:
-
-    pip install git+https://github.com/pudeIko/piva.git
+   ```bash
+   pip install git+https://github.com/pudeIko/piva.git
+   ```
 
 
 ## Documentation 

@@ -1339,7 +1339,7 @@ def normalize(data: np.ndarray, axis: int = 2) -> np.ndarray:
             for i in range(data.shape[axis]):
                 normalized[:, i] = normalize(data[:, i])
     elif len(data.shape) == 3:
-        normalized = np.zeros_like(data)
+        normalized = np.zeros_like(data, dtype=float)
         if axis == 2:
             for i in range(data.shape[0]):
                 for j in range(data.shape[1]):
@@ -1368,7 +1368,7 @@ def normalize_to_sum(data: np.ndarray, axis: int = 0) -> np.ndarray:
     :return: normalized data set
     """
 
-    norm_data = np.zeros_like(data)
+    norm_data = np.zeros_like(data, dtype=float)
     if axis == 0:
         for i in range(data.shape[axis]):
             if np.sum(data[i, :, :]) == 0:
@@ -1542,15 +1542,20 @@ def curvature_1d(data: np.ndarray, dx: float, a0: float = 0.0005,
         ef = indexof(0, xaxis)
         C_x[ef:] = 0
 
-    # return -C_x
-    # return -normalize(C_x)
-    return -normalize(C_x).clip(max=clip_co)
-    # return -np.where(C_x <= clip_co, clip_co, C_x)
+    # return -normalize(C_x).clip(max=clip_co)
+
+    if C_x.min() < 0:
+        C_x -= C_x.min()
+    else:
+        C_x += C_x.min()
+    C_x = 1 / C_x
+    C_x[C_x == np.inf] = np.max(C_x[np.isfinite(C_x)])
+    return normalize(C_x).clip(min=clip_co)
 
 
 def curvature_2d(data: np.ndarray, dx: float, dy: float, a0: float = 100,
-                 nb: int = None, rl: int = None, eaxis: np.ndarray = None) \
-        -> np.ndarray:
+                 nb: int = None, rl: int = None, eaxis: np.ndarray = None,
+                 clip_co: float = 0.0) -> np.ndarray:
     """
     Calculate 2D curvature profile, similar to second derivative. Procedure is
     an image enhancement method to highlight small variations in a measured
@@ -1568,6 +1573,8 @@ def curvature_2d(data: np.ndarray, dx: float, dy: float, a0: float = 100,
                calculating curvature profile
     :param rl: the number of times the smoothing is applied
     :param eaxis: energy axis. If given, zero values above the Fermi level
+    :param clip_co: cutoff value of the curvature profile; useful to improve
+                    clarity of the image
     :return: curvature image
     """
 
@@ -1597,7 +1604,14 @@ def curvature_2d(data: np.ndarray, dx: float, dy: float, a0: float = 100,
         ef = indexof(0, eaxis)
         C_xy[ef:, :] = 0
 
-    return np.abs(C_xy)
+    if C_xy.min() < 0:
+        C_xy -= C_xy.min()
+    else:
+        C_xy += C_xy.min()
+    C_xy = 1 / C_xy
+    C_xy[C_xy == np.inf] = np.max(C_xy[np.isfinite(C_xy)])
+
+    return np.array((C_xy / C_xy.max())).clip(min=clip_co)
 
 
 def find_gamma(FS: np.ndarray, x0: int, y0: int, method: str = 'Nelder-Mead',
