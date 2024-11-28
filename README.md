@@ -33,7 +33,6 @@ The installation of PIVA has been tested on macOS, Windows and Linux.
 
 The easiest way to install the package is to use `pip`. Just type the following 
 on a command line:
-
    ```bash
     pip install piva
    ```

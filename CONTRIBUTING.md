@@ -101,7 +101,7 @@ To report issues:
 
 ## Code of Conduct
 
-This project is governed by a [Code of Conduct](CONTRIBUTING.md). By 
+This project is governed by a [Code of Conduct](CODE_OF_CONDUCT.md). By 
 participating, you agree to uphold its principles of respect and collaboration.
 
 ---
@@ -116,5 +116,5 @@ By contributing, you agree that your contributions will be licensed under this
 ## Communication
 
 For discussions, questions, or suggestions, feel free to 
-[email](piva-project@proton.me) us.
+[email](mailto:piva-project@proton.me) us.
 
