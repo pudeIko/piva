@@ -50,7 +50,8 @@ class DataBrowser(QMainWindow):
         self.model = None
         self.jl_session_running = False
         self.sb_timeout = 2500
-        self.working_dir = self.add_slash(os.getcwd())
+        # self.working_dir = self.add_slash(os.getcwd())
+        self.working_dir = os.getcwd()
         self.set_file_explorer()
         self.set_menu_bar()
         self.set_status_bar()
@@ -62,7 +63,7 @@ class DataBrowser(QMainWindow):
         self.load_custom_widgets()
 
         # set window
-        self.setWindowTitle('piva data browser - ' + self.working_dir)
+        self.setWindowTitle('piva data browser - ' + self.working_dir + '/')
         self.show()
         time_init = time.time()
         print("initializing piva browser: {:.3f} s".format(time_init -
@@ -117,12 +118,11 @@ class DataBrowser(QMainWindow):
 
     def launch_example(self) -> None:
         """
-        Open **DataViewer** with axample data.
+        Open **DataViewer** with an example data.
         """
 
-        fname = os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__))) + \
-                       '/piva/tests/data/test_map.p'
+        fname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             'tests', 'data', 'test_map.p')
         self.open_dv(fname)
 
     def mb_open_dir(self) -> None:
@@ -134,9 +134,11 @@ class DataBrowser(QMainWindow):
         chosen_dir = str(QtWidgets.QFileDialog.getExistingDirectory(
             self, 'Select Directory', self.working_dir))
         try:
-            self.working_dir = self.add_slash(chosen_dir)
+            # self.working_dir = self.add_slash(chosen_dir)
+            self.working_dir = chosen_dir
             self.change_working_dir(self.working_dir)
-            self.setWindowTitle('piva data browser - ' + self.working_dir)
+            self.setWindowTitle('piva data browser - ' + self.working_dir +
+                                '/')
         except IndexError:
             pass
 
@@ -161,7 +163,6 @@ class DataBrowser(QMainWindow):
 
         if isinstance(data_set, np.ndarray):
             try:
-                # self.add_viewer_to_linked_list(fname, 3)
                 self.data_viewers[fname] = \
                     p4d.DataViewer4D(self, data_set=data_set, index=fname)
             except (Exception, AttributeError) as e:
@@ -791,7 +792,7 @@ class DataBrowser(QMainWindow):
         for dvi in self.data_viewers.keys():
             if dim == self.data_viewers[dvi].util_panel.dim:
                 win_list = self.data_viewers[dvi].util_panel.link_windows_list
-                win_list.addItem(fname.split('/')[-1])
+                win_list.addItem(os.path.split(fname)[1])
                 win_list.model().item(win_list.count() - 1).setCheckable(True)
 
     def delete_viewer_from_linked_lists(self, fname: str) -> None:

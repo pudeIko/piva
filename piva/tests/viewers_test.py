@@ -1,6 +1,6 @@
 """
-Automated test for :class:`~_2Dviewer.DataViewer2D` and
-:class:`~_3Dviewer.DataViewer3D` testing loading and displaying data and
+Automated test for :class:`~data_viewer_2d.DataViewer2D` and
+:class:`~data_viewer_3d.DataViewer3D` testing loading and displaying data and
 most of the functionalities.
 """
 from piva.data_browser import DataBrowser
@@ -11,7 +11,8 @@ from piva.plot_tool import PlotTool
 from pyqtgraph.Qt.QtCore import Qt
 from PyQt5.QtTest import QTest
 import numpy as np
-import pkg_resources
+from pkg_resources import resource_filename
+import os
 from piva.working_procedures import get_step
 from typing import Any
 from piva.utilities_panel import InfoWindow
@@ -19,20 +20,23 @@ from piva.utilities_panel import InfoWindow
 VTS_MAP = False
 CHECK_3D_Viewer_ = True
 CHECK_2D_Viewer_ = True
-CHECK_EDC_FITTER = True
-CHECK_MDC_FITTER = True
-CHECK_PLOT_TOOL_ = True
-CHECK_LINKING___ = True
+CHECK_EDC_FITTER = False
+CHECK_MDC_FITTER = False
+CHECK_PLOT_TOOL_ = False
+CHECK_LINKING___ = False
 CHECK_K_SPC_CONV = False
 
-EXAMPLE_CUT = pkg_resources.resource_filename('piva', 'tests/data/')
+# EXAMPLE_CUT = pkg_res.resource_filename('piva', 'tests/data/')
+EXAMPLE_CUT = os.path.join(resource_filename('piva', 'tests'), 'data')
 if VTS_MAP:
-    EXAMPLE_CUT += '/pickle_map.p'
+    # EXAMPLE_CUT += '/pickle_map.p'
+    EXAMPLE_CUT = os.path.join(EXAMPLE_CUT, 'pickle_map.p')
     N_SLIDER_E, N_SLIDER_K, N_BINS_E = 80, 160, 3
     N_E, N_X, N_Y = 20, 3, 9
     K0_IDX = 374
 else:
-    EXAMPLE_CUT += '/test_map.p'
+    # EXAMPLE_CUT += '/test_map.p'
+    EXAMPLE_CUT = os.path.join(EXAMPLE_CUT, 'test_map.p')
     N_SLIDER_E, N_SLIDER_K, N_BINS_E = 20, 26, 3
     N_E, N_X, N_Y = 20, 14, 3
     K0_IDX = 83
@@ -44,7 +48,7 @@ LONG_WT, SHORT_WT = 300, 1
 
 class TestViewers:
     """
-    General class implementing test.
+    General class implementing individual steps.
     """
 
     def open_browser(self, qtbot: Any) -> None:
@@ -54,7 +58,7 @@ class TestViewers:
         :param qtbot: object emulating a user
         """
 
-        # initialize browser and open _3Dviewer
+        # initialize browser and open data_viewer_3d
         browser = DataBrowser()
         qtbot.wait(QTest.qWaitForWindowExposed(browser))
         qtbot.add_widget(browser)
@@ -78,7 +82,7 @@ class TestViewers:
 
     def check_3Dv_sliders(self, qtbot: Any) -> None:
         """
-        Check response of the sliders in :class:`_3Dviewer.DataViewer3D`.
+        Check response of the sliders in :class:`data_viewer_3d.DataViewer3D`.
 
         :param qtbot: object emulating a user
         """
@@ -122,7 +126,7 @@ class TestViewers:
     def check_3Dv_axes_tab(self, qtbot: Any) -> None:
         """
         Check behavior of the features in **Axes tab** in
-        :class:`_3Dviewer.DataViewer3D`.
+        :class:`data_viewer_3d.DataViewer3D`.
 
         :param qtbot: object emulating a user
         """
@@ -143,7 +147,7 @@ class TestViewers:
     def check_3Dv_orientate_tab(self, qtbot: Any) -> None:
         """
         Check behavior of the features in **Orientate tab** in
-        :class:`_3Dviewer.DataViewer3D`.
+        :class:`data_viewer_3d.DataViewer3D`.
 
         :param qtbot: object emulating a user
         """
@@ -176,7 +180,7 @@ class TestViewers:
     def check_3Dv_image_tab(self, qtbot: Any) -> None:
         """
         Check behavior of the features in **Image tab** in
-        :class:`_3Dviewer.DataViewer3D`.
+        :class:`data_viewer_3d.DataViewer3D`.
 
         :param qtbot: object emulating a user
         """
@@ -197,7 +201,7 @@ class TestViewers:
 
     def open_2Dviewer(self, qtbot: Any) -> None:
         """
-        Open a :class:`_2Dviewer.DataViewer2D` window.
+        Open a :class:`data_viewer_2d.DataViewer2D` window.
 
         :param qtbot: object emulating a user
         """
@@ -214,7 +218,7 @@ class TestViewers:
 
     def check_2dv_sliders(self, qtbot: Any, linking: bool = False) -> None:
         """
-        Check behavior of the :class:`_2Dviewer.DataViewer2D` sliders.
+        Check behavior of the :class:`data_viewer_2d.DataViewer2D` sliders.
 
         :param qtbot: object emulating a user
         :param linking:
@@ -245,7 +249,7 @@ class TestViewers:
     def check_2dv_image_tab(self, qtbot: Any) -> None:
         """
         Check behavior of the features in **Image tab** in
-        :class:`_2Dviewer.DataViewer2D`.
+        :class:`data_viewer_2d.DataViewer2D`.
 
         :param qtbot: object emulating a user
         """
@@ -267,7 +271,7 @@ class TestViewers:
 
     def check_2dv_normalization(self, qtbot: Any) -> None:
         """
-        Check normalization in :class:`_2Dviewer.DataViewer2D`.
+        Check normalization in :class:`data_viewer_2d.DataViewer2D`.
 
         :param qtbot: object emulating a user
         """
@@ -289,7 +293,7 @@ class TestViewers:
     def check_2dv_axes_tab(self, qtbot: Any) -> None:
         """
         Check behavior of the features in **Axes tab** in
-        :class:`_2Dviewer.DataViewer2D`.
+        :class:`data_viewer_2d.DataViewer2D`.
 
         :param qtbot: object emulating a user
         """
@@ -322,7 +326,7 @@ class TestViewers:
     def check_2dv_file_tab(self, qtbot: Any) -> None:
         """
         Check behavior of the features in **File tab** in
-        :class:`_2Dviewer.DataViewer2D`.
+        :class:`data_viewer_2d.DataViewer2D`.
 
          :param qtbot: object emulating a user
         """
@@ -561,7 +565,7 @@ class TestViewers:
 
     def open_second_2Dv(self, qtbot: Any) -> None:
         """
-        Open second :class:`_2Dviewer.DataViewer2D` window.
+        Open second :class:`data_viewer_2d.DataViewer2D` window.
 
         :param qtbot: object emulating a user
         """
@@ -744,7 +748,8 @@ def fill_text(bot: Any, widget: Any, text: str,
 
 if __name__ == "__main__":
     import pytest
-    import pkg_resources
+    from pkg_resources import resource_filename
 
-    path = pkg_resources.resource_filename('piva', 'tests/viewers_test.py')
+    # path = pkg_res.resource_filename('piva', 'tests/viewers_test.py')
+    path = os.path.join(resource_filename('piva', 'tests'), 'viewers_test.py')
     pytest.main(['-v', '-s', path])

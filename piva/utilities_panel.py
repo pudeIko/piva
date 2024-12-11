@@ -910,7 +910,8 @@ class UtilitiesPanel(QWidget):
         list = self.link_windows_list
         dv = self.mw.db.data_viewers
         for dvi in dv.keys():
-            lbl = dv[dvi].index.split('/')[-1]
+            # lbl = dv[dvi].index.split('/')[-1]
+            lbl = os.path.split(dv[dvi].index)[1]
             if self.dim == dv[dvi].util_panel.dim:
                 list.addItem(lbl)
                 list.model().item(list.count() - 1).setCheckable(True)
@@ -1509,7 +1510,8 @@ class UtilitiesPanel(QWidget):
         else:
             return
 
-    def open_jl_session(self) -> None:
+    def open_jl_session(self, dir: Union[str, None] = None,
+                        port: Union[str, None] = None) -> None:
         """
         Start new ``jupyter-lab`` session.
         """
@@ -1524,25 +1526,32 @@ class UtilitiesPanel(QWidget):
             if jl_running_box.exec() == QMessageBox.Cancel:
                 return
 
-        directory = str(QtWidgets.QFileDialog.getExistingDirectory(
-            self, 'Select Directory', self.mw.fname[:-len(self.mw.title)]))
+        if dir is None:
+            dir = str(QtWidgets.QFileDialog.getExistingDirectory(
+                self, 'Select Directory', self.mw.fname[:-len(self.mw.title)]))
 
         # Open jupyter notebook as a subprocess
-        openJupyter = "jupyter lab"
-        subprocess.Popen(openJupyter, shell=True, cwd=directory)
+        openJupyter = 'jupyter-lab'
+        if port:
+            openJupyter = openJupyter + ' --port=' + port
+        process = subprocess.Popen(openJupyter, shell=True, cwd=dir)
 
         self.mw.db.jl_session_running = True
+        if port is not None:
+            return process.pid
 
-    def create_jl_file(self):
+    def create_jl_file(self, dir: Union[str, None] = None) -> None:
         """
         Create new ``jupyter`` notebook file  containing imported data and
         currently displayed images and curves.
         """
 
-        directory = str(QtWidgets.QFileDialog.getExistingDirectory(
-            self, 'Select Directory', self.mw.fname[:-len(self.mw.title)]))
+        if dir is None:
+            dir = str(QtWidgets.QFileDialog.getExistingDirectory(
+                self, 'Select Directory', self.mw.fname[:-len(self.mw.title)]))
 
-        fname = directory + '/' + self.file_jl_fname.text()
+        # fname = directory + '/' + self.file_jl_fname.text()
+        fname = os.path.join(dir, self.file_jl_fname.text())
 
         if os.path.isfile(fname):
             file_exists_box = QMessageBox()
@@ -1555,7 +1564,8 @@ class UtilitiesPanel(QWidget):
         os.system('touch ' + fname)
 
         root_dir = os.path.dirname(os.path.abspath(__file__))
-        template = root_dir + '/ipynb_templates/template.ipynb'
+        # template = root_dir + '/ipynb_templates/template.ipynb'
+        template = os.path.join(root_dir, 'ipynb_templates', 'template.ipynb')
         templ_file = open(template, 'r')
         templ_lines = templ_file.readlines()
         templ_file.close()
@@ -1594,7 +1604,8 @@ class UtilitiesPanel(QWidget):
         new_file.writelines(new_lines)
         new_file.close()
 
-    def create_experimental_logbook_file(self) -> None:
+    def create_experimental_logbook_file(self,
+                                         dir: Union[str, None] = None) -> None:
         """
         Create new ``jupyter`` notebook file allowing for generating
         experimental logbook for selected beamline.
@@ -1609,9 +1620,12 @@ class UtilitiesPanel(QWidget):
             if no_bealine_box.exec() == QMessageBox.Ok:
                 return
         else:
-            directory = str(QtWidgets.QFileDialog.getExistingDirectory(
-                self, 'Select Directory', self.mw.fname[:-len(self.mw.title)]))
-            fname = '{}/metadata-{}.ipynb'.format(directory, beamline)
+            if dir is None:
+                dir = str(QtWidgets.QFileDialog.getExistingDirectory(
+                    self, 'Select Directory',
+                    self.mw.fname[:-len(self.mw.title)]))
+            fname = os.path.join(dir, 'metadata-{}.ipynb'.format(beamline))
+            # fname = '{}/metadata-{}.ipynb'.format(directory, beamline)
 
         if os.path.isfile(fname):
             file_exists_box = QMessageBox()
@@ -1624,7 +1638,9 @@ class UtilitiesPanel(QWidget):
         os.system('touch ' + fname)
 
         root_dir = os.path.dirname(os.path.abspath(__file__))
-        template = root_dir + '/ipynb_templates/template-metadata.ipynb'
+        # template = root_dir + '/ipynb_templates/template-metadata.ipynb'
+        template = os.path.join(root_dir, 'ipynb_templates',
+                                'template-metadata.ipynb')
         templ_file = open(template, 'r')
         templ_lines = templ_file.readlines()
         templ_file.close()
