@@ -104,6 +104,14 @@ Successful execution of the tests should give a message like::
     -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
     =============== 2 passed, 1 warning in 81.50s (0:01:21) ===============
 
+.. note::
+   Running on Linux with wayland.
+   If you are faced with an error of the form 
+   Warning: Ignoring XDG_SESSION_TYPE=wayland on Gnome. Use QT_QPA_PLATFORM=wayland to run on Wayland anyway.`
+   you can work around this by setting `XDG_SESSION_TYPE=xcb` (as opposed 
+   to `wayland` as the error message would suggest).
+   Do this either by running `export XDG_SESSION_TYPE=xcb` in the shell you
+   are working with, or directly at the `db` command: `XDG_SESSION_TYPE=xcb; db`.
 
 Dependencies
 ------------
