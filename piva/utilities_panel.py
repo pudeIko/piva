@@ -133,10 +133,12 @@ class UtilitiesPanel(QWidget):
         self.file_sum_datasets_sum_button.clicked.connect(self.sum_datasets)
         self.file_sum_datasets_reset_button.clicked.connect(
             self.reset_summation)
-        self.file_jl_fname_button.clicked.connect(self.create_jl_file)
-        self.file_jl_session_button.clicked.connect(self.open_jl_session)
+        self.file_jl_fname_button.clicked.connect(
+            lambda: self.create_jl_file(directory=None))
+        self.file_jl_session_button.clicked.connect(
+            lambda: self.open_jl_session(directory=None, port=None))
         self.file_jl_explog_button.clicked.connect(
-            self.create_experimental_logbook_file)
+            lambda: self.create_experimental_logbook_file(directory=None))
 
         self.setup_cmaps()
         # self.setup_gamma()
@@ -1510,7 +1512,7 @@ class UtilitiesPanel(QWidget):
         else:
             return
 
-    def open_jl_session(self, dir: Union[str, None] = None,
+    def open_jl_session(self, directory: Union[str, None] = None,
                         port: Union[str, None] = None) -> None:
         """
         Start new ``jupyter-lab`` session.
@@ -1526,32 +1528,32 @@ class UtilitiesPanel(QWidget):
             if jl_running_box.exec() == QMessageBox.Cancel:
                 return
 
-        if dir is None:
-            dir = str(QtWidgets.QFileDialog.getExistingDirectory(
+        if directory is None:
+            directory = str(QtWidgets.QFileDialog.getExistingDirectory(
                 self, 'Select Directory', self.mw.fname[:-len(self.mw.title)]))
 
         # Open jupyter notebook as a subprocess
         openJupyter = 'jupyter-lab'
         if port:
             openJupyter = openJupyter + ' --port=' + port
-        process = subprocess.Popen(openJupyter, shell=True, cwd=dir)
+        process = subprocess.Popen(openJupyter, shell=True, cwd=directory)
 
         self.mw.db.jl_session_running = True
         if port is not None:
             return process.pid
 
-    def create_jl_file(self, dir: Union[str, None] = None) -> None:
+    def create_jl_file(self, directory: Union[str, None] = None) -> None:
         """
         Create new ``jupyter`` notebook file  containing imported data and
         currently displayed images and curves.
         """
 
-        if dir is None:
-            dir = str(QtWidgets.QFileDialog.getExistingDirectory(
+        if directory is None:
+            directory = str(QtWidgets.QFileDialog.getExistingDirectory(
                 self, 'Select Directory', self.mw.fname[:-len(self.mw.title)]))
 
         # fname = directory + '/' + self.file_jl_fname.text()
-        fname = os.path.join(dir, self.file_jl_fname.text())
+        fname = os.path.join(directory, self.file_jl_fname.text())
 
         if os.path.isfile(fname):
             file_exists_box = QMessageBox()
@@ -1604,8 +1606,8 @@ class UtilitiesPanel(QWidget):
         new_file.writelines(new_lines)
         new_file.close()
 
-    def create_experimental_logbook_file(self,
-                                         dir: Union[str, None] = None) -> None:
+    def create_experimental_logbook_file(
+            self, directory: Union[str, None] = None) -> None:
         """
         Create new ``jupyter`` notebook file allowing for generating
         experimental logbook for selected beamline.
@@ -1620,11 +1622,11 @@ class UtilitiesPanel(QWidget):
             if no_bealine_box.exec() == QMessageBox.Ok:
                 return
         else:
-            if dir is None:
-                dir = str(QtWidgets.QFileDialog.getExistingDirectory(
+            if directory is None:
+                directory = str(QtWidgets.QFileDialog.getExistingDirectory(
                     self, 'Select Directory',
                     self.mw.fname[:-len(self.mw.title)]))
-            fname = os.path.join(dir, 'metadata-{}.ipynb'.format(beamline))
+            fname = os.path.join(directory, 'metadata-{}.ipynb'.format(beamline))
             # fname = '{}/metadata-{}.ipynb'.format(directory, beamline)
 
         if os.path.isfile(fname):
