@@ -1572,35 +1572,35 @@ class UtilitiesPanel(QWidget):
         templ_lines = templ_file.readlines()
         templ_file.close()
 
-        # writing to file
-        new_lines = []
-        for line in templ_lines:
-            if 'path = ' in line:
-                line = '    "path = \'{}\'\\n",'.format(
-                    self.mw.fname[:-len(self.mw.title)])
-            if 'fname = ' in line:
-                line = '    "fname = \'{}\'\\n",'.format(self.mw.title)
-            if 'slit_idx, e_idx =' in line:
-                if self.dim == 2:
-                    line = '    "slit_idx, e_idx = {}, {}\\n",'.format(
-                        self.momentum_hor.value(), self.energy_vert.value())
-                    line = line + '    "bm = data[0, :, :]\\n",\n'
-                    line = line + '    "plot_x = ' \
-                                  'data[0, slit_idx, e_idx]\\n",\n'
-                    line = line + '    "plot_y = data[0, :, e_idx]"\n'
-                elif self.dim == 3:
-                    line = '    "scan_idx, slit_idx, e_idx = ' \
-                           '{}, {}, {}\\n",'.format(
-                        self.momentum_vert.value(),
-                        self.momentum_hor.value(),
-                        self.energy_vert.value())
-                    line = line + '    "main_cut = data[:, :, e_idx]\\n",\n'
-                    line = line + '    "cut_x = data[:, slit_idx, :]\\n",\n'
-                    line = line + '    "cut_y = data[scan_idx, :, :]\\n",\n'
-                    line = line + '    "plot_x = ' \
-                                  'data[:, slit_idx, e_idx]\\n",\n'
-                    line = line + '    "plot_y = data[scan_idx, :, e_idx]"\n'
-            new_lines.append(line)
+        # # writing to file
+        # new_lines = []
+        # for line in templ_lines:
+        #     if 'path = ' in line:
+        #         line = '    "path = \'{}\'\\n",'.format(
+        #             self.mw.fname[:-len(self.mw.title)])
+        #     if 'fname = ' in line:
+        #         line = '    "fname = \'{}\'\\n",'.format(self.mw.title)
+        #     if 'slit_idx, e_idx =' in line:
+        #         if self.dim == 2:
+        #             line = '    "slit_idx, e_idx = {}, {}\\n",'.format(
+        #                 self.momentum_hor.value(), self.energy_vert.value())
+        #             line = line + '    "bm = data[0, :, :]\\n",\n'
+        #             line = line + '    "plot_x = ' \
+        #                           'data[0, slit_idx, e_idx]\\n",\n'
+        #             line = line + '    "plot_y = data[0, :, e_idx]"\n'
+        #         elif self.dim == 3:
+        #             line = '    "scan_idx, slit_idx, e_idx = ' \
+        #                    '{}, {}, {}\\n",'.format(
+        #                 self.momentum_vert.value(),
+        #                 self.momentum_hor.value(),
+        #                 self.energy_vert.value())
+        #             line = line + '    "main_cut = data[:, :, e_idx]\\n",\n'
+        #             line = line + '    "cut_x = data[:, slit_idx, :]\\n",\n'
+        #             line = line + '    "cut_y = data[scan_idx, :, :]\\n",\n'
+        #             line = line + '    "plot_x = ' \
+        #                           'data[:, slit_idx, e_idx]\\n",\n'
+        #             line = line + '    "plot_y = data[scan_idx, :, e_idx]"\n'
+        #     new_lines.append(line)
 
         new_file = open(fname, 'w')
         new_file.writelines(new_lines)

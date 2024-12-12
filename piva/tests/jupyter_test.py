@@ -62,7 +62,7 @@ class TestJupyterUtilities:
         if USER:
             qtbot.mouseClick(self.up.file_jl_explog_button, Qt.LeftButton)
         else:
-            self.up.create_experimental_logbook_file(dir=PATH)
+            self.up.create_experimental_logbook_file(directory=PATH)
 
     def create_jupyter_notebook(self, qtbot: Any) -> None:
         """
@@ -75,7 +75,7 @@ class TestJupyterUtilities:
         if USER:
             qtbot.mouseClick(self.up.file_jl_fname_button, Qt.LeftButton)
         else:
-            self.up.create_jl_file(dir=PATH)
+            self.up.create_jl_file(directory=PATH)
 
     def start_jupyter_session(self, qtbot: Any) -> None:
         """
@@ -87,9 +87,8 @@ class TestJupyterUtilities:
         if USER:
             qtbot.mouseClick(self.up.file_jl_session_button, Qt.LeftButton)
         else:
-            self.jl_server_pid = self.up.open_jl_session(dir=PATH, port=PORT)
-            print(self.jl_server_pid)
-            # self.up.open_jl_session(dir=PATH)
+            self.jl_server_pid = self.up.open_jl_session(directory=PATH,
+                                                         port=PORT)
 
     def test_jupyter_utilities(self, qtbot: Any) -> None:
         """
@@ -126,6 +125,10 @@ class TestJupyterUtilities:
 
         os.remove(os.path.join(PATH, 'metadata-SIS.ipynb'))
         os.remove(os.path.join(PATH, 'test_map.ipynb'))
+        try:
+            os.remove(os.path.join(PATH, 'Untitled.ipynb'))
+        except FileNotFoundError:
+            pass
 
         qtbot.wait(LONG_WT * 2)
         self._3dv.close()
