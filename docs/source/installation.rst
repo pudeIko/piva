@@ -99,6 +99,21 @@ following methods:
       This will start new :mod:`piva` session, execute sequence of actions
       emulating a physical user and test basic functionalities of the GUI.
 
+    - Functinalities using JupyterLab can be checked with a semi-automated
+      test by running::
+
+        (piva-env) % python -m piva.tests.jupyter_test
+
+      This will create example Jupyter notebooks, start a JupyterLab server,
+      stop the server, and remove the created files.
+
+      .. note::
+         When running on Windows, users might need to stop the server (started
+         on port 56789) manually. To do so, after executing the test, run::
+
+           (piva-env) % jupyter-lab stop 56789
+
+
 Successful execution of the tests should give a message like::
 
     -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html

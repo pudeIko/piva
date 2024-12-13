@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 import argparse
 import datetime
 from copy import deepcopy
@@ -526,7 +527,8 @@ class PlotTool(QtWidgets.QMainWindow):
         dv = self.data_browser.data_viewers
         for dvi in dv.keys():
             self.dv_list.append(dvi)
-            dvi_lbl = dvi.split('/')[-1]
+            # dvi_lbl = dvi.split('/')[-1]
+            dvi_lbl = os.path.split(dvi)[-1]
             self.ds_dv.addItem(dvi_lbl)
             if isinstance(self.data_browser.data_viewers[dvi],
                           p3d.DataViewer3D):

@@ -206,7 +206,8 @@ class DataViewer4D(QtWidgets.QMainWindow):
         """
 
         super(DataViewer4D, self).__init__()
-        self.title = index.split('/')[-1]
+        # self.title = index.split('/')[-1]
+        self.title = os.path.split(index)[1]
         self.fname = index
         self.central_widget = QtWidgets.QWidget()
         self.layout = QtWidgets.QGridLayout()

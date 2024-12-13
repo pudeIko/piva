@@ -7,7 +7,8 @@ import argparse
 import os
 import pkg_resources
 
-PATH = pkg_resources.resource_filename('piva', 'tests/data/')
+# PATH = pkg_resources.resource_filename('piva', 'tests/data/')
+PATH = os.path.join(pkg_resources.resource_filename('piva', 'tests'), 'data')
 
 
 def test_dataloaders() -> None:
@@ -36,7 +37,7 @@ def test_dataloaders() -> None:
         else:
             continue
         print(f'{fname:{30}}{dli}')
-        ds = dli.load_data(PATH + fname)
+        ds = dli.load_data(os.path.join(PATH, fname))
         # check if the mandatory attributes are loaded correctly
         assert isinstance(ds, argparse.Namespace)
         assert type(ds.data) is np.ndarray
@@ -80,5 +81,7 @@ def test_dataloaders() -> None:
 if __name__ == "__main__":
     import pytest
 
-    path = pkg_resources.resource_filename('piva', 'tests/dataloaders_test.py')
+    # path = pkg_resources.resource_filename('piva', 'tests/dataloaders_test.py')
+    path = os.path.join(pkg_resources.resource_filename('piva', 'tests'),
+                        'dataloaders_test.py')
     pytest.main(['-v', '-s', path])
