@@ -1,0 +1,12 @@
+name: piva
+
+channels:
+  - conda-forge
+  - defaults
+  -
+dependencies:
+  - python=3.10.8
+  - pip  # Ensure pip is installed in the environment
+
+  - pip:
+      - -r requirements.txt
