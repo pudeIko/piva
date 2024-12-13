@@ -139,9 +139,6 @@ class UtilitiesPanel(QWidget):
             self.create_experimental_logbook_file)
 
         self.setup_cmaps()
-        # self.setup_gamma()
-        # self.setup_colorscale()
-        # self.setup_bin_z()
         if platform == 'win32':
             self.set_tabs_color()
 
