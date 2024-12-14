@@ -4,76 +4,72 @@ Installation
 ============
 
 The installation of :mod:`piva` has been tested on macOS, Windows, and Linux.
+You can install it either from source or using a package
+manager. The following guidelines are designed to help you avoid most common
+installation issues.
 
-The easiest way to install the package is to use
-`pip <https://pip.pypa.io/en/stable/>`_, by simply typing the following in the
-command line::
+To begin, regardless of the installation method you choose, download and
+install `Conda <https://www.anaconda.com/download>`_ to set up a virtual
+environment for the installation.
 
-   pip install piva
 
-Alternatively, you can also install it directly from the git repository::
+Installation from Sources
+-------------------------
 
-    pip install git+https://github.com/pudeIko/piva.git
+To ensure all dependencies are properly handled, it is recommended to install
+the package from source by cloning the GitHub repository::
 
-.. note::
-    Cloning the git repository using ``pip`` downloads only the source files,
-    skipping *i.a.* example files used for :ref:`testing <sec-testing>`. To
-    clone the entire repository, go to the directory where you want to store
-    the package and run::
-
-        git clone https://github.com/pudeIko/piva.git
-        cd piva
-        pip install -e ./
-
-    This will download and install :mod:`piva` locally.
-
+    git clone https://github.com/pudeIko/piva.git
 
 .. note::
-    Setting up package through github might require installing ``git`` first::
+    Installing the package from GitHub may require git. If it's not already
+    installed, you can add it using::
 
         conda install git
 
-Virtual environment
--------------------
 
-In order to avoid conflicts with some system dependencies, good practice
-suggests to create a virtual environment. As in the example below, it is
-recommended to use ``python`` version 3.10.8.
+Next, navigate to the downloaded directory and run the following command::
 
-Detailed instructions for Anaconda users follow:
+    cd piva
+    conda env create -f environment.yml
 
-1) Open "Anaconda Prompt" 
+This will create a virtual environment named `piva-env` and install
+:mod:`piva` in editable mode, allowing for easier modifications and
+enhancements to the code.
 
-2) Create an environment with a custom name (here ``piva-env``), specified
-   ``python`` version and activate it::
+To start the software and launch the :ref:`DataBrowser <sec-db>`, simply run::
 
-      % conda create --name piva-env python==3.10.8
+    db
+
+
+Installation via PyPi
+---------------------
+Alternatively, :mod:`piva` can be installed using the PyPI package manager.
+
+This approach requires creating a virtual environment manually first. As in
+the example below, it is recommended to use Python version 3.10.8::
+
+      conda create --name piva-env python==3.10.8
       [some output]
-      % conda activate piva-env
-      (piva-env) %
+      conda activate piva-env
 
-3) Enter your virtual environment and make sure latest version of ``pip``
-   is installed::
+Inside the activated virtual environment, upgrade ``pip`` and install
+:mod:`piva`::
 
-      (piva-env) % pip install --upgrade pip
+    pip install --upgrade pip
+    pip install piva
 
-4) Run the following commands to download and install piva with all its
-   dependencies::
+To start the software and open the :ref:`DataBrowser <sec-db>` window, simply
+run::
 
-      (piva-env) % pip install piva
+    db
 
-
-4) Now you can run :mod:`piva` by simply typing ::
-
-      (piva-env) % db
-   
-Which should bring up a :ref:`DataBrowser <sec-db>` window.
 
 
 .. _sec-testing:
 
 Testing
--------
+=======
 
 Once installed, correct configuration of the package can be verified by
 following methods:
@@ -87,14 +83,14 @@ following methods:
 
     - To check proper behavior of implemented Dataloaders run::
 
-        (piva-env) % python -m piva.tests.dataloaders_test
+        python -m piva.tests.dataloaders_test
 
       Which will print to the terminal list of correctly loaded files.
 
 
     - DataViewers can be tested with::
 
-        (piva-env) % python -m piva.tests.viewers_test
+        python -m piva.tests.viewers_test
 
       This will start new :mod:`piva` session, execute sequence of actions
       emulating a physical user and test basic functionalities of the GUI.
@@ -102,7 +98,7 @@ following methods:
     - Functinalities using JupyterLab can be checked with a semi-automated
       test by running::
 
-        (piva-env) % python -m piva.tests.jupyter_test
+        python -m piva.tests.jupyter_test
 
       This will create example Jupyter notebooks, start a JupyterLab server,
       stop the server, and remove the created files.
@@ -111,7 +107,7 @@ following methods:
          When running on Windows, users might need to stop the server (started
          on port 56789) manually. To do so, after executing the test, run::
 
-           (piva-env) % jupyter-lab stop 56789
+           jupyter-lab stop 56789
 
 
 Successful execution of the tests should give a message like::
@@ -126,10 +122,13 @@ Successful execution of the tests should give a message like::
    you can work around this by setting `XDG_SESSION_TYPE=xcb` (as opposed 
    to `wayland` as the error message would suggest).
    Do this either by running `export XDG_SESSION_TYPE=xcb` in the shell you
-   are working with, or directly at the `db` command: `XDG_SESSION_TYPE=xcb; db`.
+   are working with, or directly at the `db` command:
+   `XDG_SESSION_TYPE=xcb; db`.
+
+
 
 Dependencies
-------------
+============
 
 This software is built upon on a number of other open-source frameworks.
 The complete list of packages is:
