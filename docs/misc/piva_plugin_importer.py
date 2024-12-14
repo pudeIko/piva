@@ -3,20 +3,20 @@ import custom_widget1 as cw1
 from PyQt5.QtWidgets import QAction
 
 
-class WidgetImporter:
+class PluginImporter:
     """
-    Widget importer for setting up custom :class:`QtWidgets` written for PIVA.
+    Plugin importer for setting up custom plugins written for PIVA.
     """
 
     def __init__(self, data_browser: DataBrowser) -> None:
         """
-        Initialize WidgetImporter.
+        Initialize PluginImporter.
 
         :param data_browser: `DataBrowser` of the current session
         """
 
         self.db = data_browser
-        self.db.user_menu = self.db.menu_bar.addMenu('&User widgets')
+        self.db.user_menu = self.db.menu_bar.addMenu('&User plugins')
 
         self.import_widget1()
 
@@ -38,7 +38,7 @@ class WidgetImporter:
         """
 
         idx = 'tmp'
-        self.db.custom_widgets[idx] = \
+        self.db.custom_plugins[idx] = \
             cw1.CustomWidget(data_browser=self.db, index=idx)
-
+        print('\t', 'CustomWidget')
 

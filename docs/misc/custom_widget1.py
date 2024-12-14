@@ -65,6 +65,6 @@ class CustomWidget(QtWidgets.QMainWindow):
         :class:`~data_browser.DataBrowser`.
         """
 
-        del (self.db.custom_widgets[self.index])
+        del (self.db.custom_plugins[self.index])
 
 

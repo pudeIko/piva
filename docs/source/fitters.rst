@@ -127,7 +127,7 @@ Development
 At the moment only basic methods are implemented within :mod:`piva`
 **Fitters**, leaving a large playground for improvement. Users are highly
 encouraged to contribute and extend their capabilities or implement
-:ref:`entirely new widgets <sec-custom_widgets>`. This can be done directly
+:ref:`entirely new plugins <sec-custom_plugins>`. This can be done directly
 through `github  <https://github.com/pudeIko/piva>`_ or alternatively by
 contacting the development team:
 

@@ -1572,6 +1572,7 @@ class UtilitiesPanel(QWidget):
         # writing to file
         new_lines = []
         for line in templ_lines:
+            new_lines.append(line)
         #     if 'path = ' in line:
         #         line = '    "path = \'{}\'\\n",'.format(
         #             self.mw.fname[:-len(self.mw.title)])
@@ -1597,7 +1598,7 @@ class UtilitiesPanel(QWidget):
         #             line = line + '    "plot_x = ' \
         #                           'data[:, slit_idx, e_idx]\\n",\n'
         #             line = line + '    "plot_y = data[scan_idx, :, e_idx]"\n'
-            new_lines.append(line)
+        #     new_lines.append(line)
 
         new_file = open(fname, 'w')
         new_file.writelines(new_lines)

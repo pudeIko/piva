@@ -23,7 +23,7 @@ Welcome to piva - Photoemission Interface for Visualization and Analysis!
    viewers
    fitters
    plottool
-   custom_widgets
+   custom_plugins
 
 
 .. toctree::

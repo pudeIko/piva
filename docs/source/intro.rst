@@ -48,7 +48,7 @@ personalized representation of acquired results.
 
 The architecture of the :mod:`piva` package is designed with modularity in
 mind, providing users with a convenient platform for implementing custom data
-loaders and interactive widgets/apps. Detailed descriptions and examples of
+loaders and other plugins. Detailed descriptions and examples of
 configuring new modules can be found in this documentation.
 
 Unlike other experimental techniques, discrepancies in ARPES results between
