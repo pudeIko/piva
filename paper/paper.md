@@ -78,8 +78,8 @@ during an ongoing, dynamic experiment, as well as to perform deeper data
 exploration and analysis later on. PIVA is a package specifically designed to 
 meet these needs. In comparison 
 to other available solutions 
-[@stansbury2020; @arpes_gui_antares; @rotenberg2021], its primary objective is 
-to enhance the efficiency of ARPES 
+[@stansbury2020; @arpes_python_tools; @rotenberg2021], its primary objective 
+is to enhance the efficiency of ARPES 
 data inspection and analysis by offering interactive and intuitive tools 
 tailored to manage large amounts of multidimensional datasets 
 simultaneously—all without relying on proprietary environments. While the 
@@ -139,7 +139,7 @@ constant energy map (red), and manipulator raster scan (magenta).
 The utilities panel, displayed only in the case of the 2D viewer 
 (panel **a**), is highlighted with a solid light-blue box.
   \label{viewers}
-](2-viewers.pdf){ width=74% }
+](2-viewers.pdf){ width=67.5% }
 
 
 ## Interactive tools
