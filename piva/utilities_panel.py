@@ -813,7 +813,7 @@ class UtilitiesPanel(QWidget):
 
         self.orientate_tab.layout = otl
         self.orientate_tab.setLayout(otl)
-        self.tabs.addTab(self.orientate_tab, 'Orientate')
+        self.tabs.addTab(self.orientate_tab, 'Orient')
 
         self.set_orientation_info_window()
 

@@ -33,14 +33,16 @@ Next, navigate to the downloaded directory and run the following command::
     cd piva
     conda env create -f environment.yml
 
-This will create a virtual environment named `piva-env` and install
-:mod:`piva` in editable mode, allowing for easier modifications and
+This will create and activate a virtual environment named `piva-env` and
+install :mod:`piva` in editable mode, allowing for easier modifications and
 enhancements to the code.
 
-To start the software and launch the :ref:`DataBrowser <sec-db>`, simply run::
+To activate the environment and start the software, simply run::
 
+    conda activate piva-env
     db
 
+This will open the :ref:`DataBrowser <sec-db>` window.
 
 Installation via PyPi
 ---------------------
@@ -59,8 +61,7 @@ Inside the activated virtual environment, upgrade ``pip`` and install
     pip install --upgrade pip
     pip install piva
 
-To start the software and open the :ref:`DataBrowser <sec-db>` window, simply
-run::
+To start the software and open the :ref:`DataBrowser <sec-db>` window, run::
 
     db
 
