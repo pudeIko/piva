@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic 
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [Unreleased]
 
 ### Added
@@ -17,8 +18,25 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+
+## [2.3.0]
+
+### Added
+
+- jupyter tests, to test functionalities using jupyter-lab notebooks
+- environment.yml file, to ensure proper set up of the virtual environment 
+and piva's installation
+
+### Changed
+
+- handling of the paths, to use dedicated libraries and provide 
+seamless functioning across different platforms
+
+### Fixed
+
 - bugs in normalization methods for 3D datasets
 - data dimensionality issues (in unfinished scans) in DataloaderI05
+- other bugs and typos
 
 
 ## [2.2.0]
@@ -30,7 +48,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - dependency issues due to reliance on outdated library versions
-
 - appearance issues on Windows
 
 
