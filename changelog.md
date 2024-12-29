@@ -12,6 +12,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- setup.py to pyproject.toml
+
 ### Deprecated
 
 ### Removed

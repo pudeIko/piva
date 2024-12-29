@@ -1,8 +1,16 @@
 # PIVA - Photoemission Interface for Visualization and Analysis
 
-![PyPI - Version](https://img.shields.io/pypi/v/piva)
+[CI]
+# My Project
+
+[![Build Status](https://github.com/pudeIko/piva/actions/workflows/tests.yml/badge.svg)](https://github.com/pudeIko/piva/actions)
+[![codecov](https://codecov.io/gh/pudeIko/piva/branch/main/graph/badge.svg?token=abc123)](https://codecov.io/gh/pudeIko/piva)
+
 [![Documentation Status](https://readthedocs.org/projects/piva/badge/?version=latest)](https://piva.readthedocs.io/en/latest/?badge=latest)
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![Python Versions](https://img.shields.io/badge/python-3.10%20|%203.11-blue)](https://www.python.org/)
+![PyPI - Version](https://img.shields.io/pypi/v/piva)
+
 [![GitHub license](https://img.shields.io/github/license/pudeIko/piva)](https://github.com/ekiefl/pooltool/blob/master/LICENSE.txt)
 
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
@@ -37,13 +45,23 @@ on a command line:
     pip install piva
    ```
 
-or directly from this repo:
+Alternatively, you can install the package directly from the source:
    ```bash
-   pip install git+https://github.com/pudeIko/piva.git
+   git clone https://github.com/pudeIko/piva.git
+   cd piva
+   conda env create -f environment.yml
    ```
+
+This will automatically set up the virtual environment and install the package in 
+editable mode.
 
 
 ## Documentation 
 
 More details on the installation and full description of the package can be 
 found on the [documentation](https://piva.readthedocs.io/en/latest/) site.
+
+
+## Citing
+
+TBD
