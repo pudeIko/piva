@@ -1,8 +1,6 @@
 # PIVA - Photoemission Interface for Visualization and Analysis
 
 [CI]
-# My Project
-
 [![Build Status](https://github.com/pudeIko/piva/actions/workflows/tests.yml/badge.svg)](https://github.com/pudeIko/piva/actions)
 [![codecov](https://codecov.io/gh/pudeIko/piva/branch/main/graph/badge.svg?token=abc123)](https://codecov.io/gh/pudeIko/piva)
 
@@ -12,7 +10,6 @@
 ![PyPI - Version](https://img.shields.io/pypi/v/piva)
 
 [![GitHub license](https://img.shields.io/github/license/pudeIko/piva)](https://github.com/ekiefl/pooltool/blob/master/LICENSE.txt)
-
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
 
 
