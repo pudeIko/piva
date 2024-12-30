@@ -55,7 +55,8 @@ jobs:
 
       - name: Test dataloaders
         run: >
-          pytest piva/tests/dataloaders_test.py
+          pytest --cov=$GITHUB_WORKSPACE --cov-report=xml
+          piva/tests/dataloaders_test.py
 #          python -m piva.tests.dataloaders_test
 #          pytest --cov=$GITHUB_WORKSPACE --cov-report=xml
 
