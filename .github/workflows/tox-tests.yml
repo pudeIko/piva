@@ -42,16 +42,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-#          conda env create --quiet --file environment.yml
-#          python -m pip install tox tox-gh-actions
 
-      - name: Run tests
+      - name: Test dataloaders
         run: |
-          pip list
           python -m piva.tests.dataloaders_test
-#          python -m pytest piva/tests/dataloaders_test.py
-#          tox -e py${{ matrix.python-version.replace('.', '') }}
-#          -- piva/tests/dataloaders_test.py
+
+      - name: Test viewers
+        run: |
+          python -m piva.tests.viewers_test
 
 #      - name: Upload coverage to Codecov
 #        if: >
