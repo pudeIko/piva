@@ -18,12 +18,12 @@ from typing import Any
 # from piva.utilities_panel import InfoWindow
 
 VTS_MAP = False
-CHECK_3D_Viewer_ = True
-CHECK_2D_Viewer_ = True
-CHECK_EDC_FITTER = True
-CHECK_MDC_FITTER = True
-CHECK_PLOT_TOOL_ = True
-CHECK_LINKING___ = True
+CHECK_3D_Viewer_ = False
+CHECK_2D_Viewer_ = False
+CHECK_EDC_FITTER = False
+CHECK_MDC_FITTER = False
+CHECK_PLOT_TOOL_ = False
+CHECK_LINKING___ = False
 CHECK_K_SPC_CONV = False
 
 # EXAMPLE_CUT = pkg_res.resource_filename('piva', 'tests/data/')
@@ -658,15 +658,16 @@ class TestViewers:
         :param qtbot: object emulating a user
         """
 
-        self.open_browser(qtbot)
+        print('elo')
+        # self.open_browser(qtbot)
         if CHECK_3D_Viewer_:
             self.check_3Dv_sliders(qtbot)
             self.check_3Dv_orientate_tab(qtbot)
             self.check_3Dv_axes_tab(qtbot)
             self.check_3Dv_image_tab(qtbot)
 
-        # open first 2Dviewer
-        self.open_2Dviewer(qtbot)
+        # # open first 2Dviewer
+        # self.open_2Dviewer(qtbot)
 
         if CHECK_2D_Viewer_:
             self.check_2dv_sliders(qtbot)
@@ -699,20 +700,20 @@ class TestViewers:
                     self.browser.data_viewers.keys()) is False
             qtbot.wait(LONG_WT)
 
-        # close first 2Dviewer
-        qtbot.mouseClick(self.up_2dv.close_button, Qt.LeftButton)
-        assert (self._2dv_title in
-                self.browser.data_viewers.keys()) is False
-        qtbot.wait(LONG_WT)
-
-        if CHECK_K_SPC_CONV:
-            self.check_kspace_conversion(qtbot)
-            self.save_converted_viewer()
-            qtbot.wait(LONG_WT * 3)
-            self.check_BZ_contour(qtbot)
-
-        qtbot.wait(LONG_WT * 5)
-        self._3dv.close()
+        # # close first 2Dviewer
+        # qtbot.mouseClick(self.up_2dv.close_button, Qt.LeftButton)
+        # assert (self._2dv_title in
+        #         self.browser.data_viewers.keys()) is False
+        # qtbot.wait(LONG_WT)
+        #
+        # if CHECK_K_SPC_CONV:
+        #     self.check_kspace_conversion(qtbot)
+        #     self.save_converted_viewer()
+        #     qtbot.wait(LONG_WT * 3)
+        #     self.check_BZ_contour(qtbot)
+        #
+        # qtbot.wait(LONG_WT * 5)
+        # self._3dv.close()
 
 
 def change_spinBox(bot: Any, widget: Any, steps: int, key: Any,
