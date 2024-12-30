@@ -14,13 +14,12 @@ defaults:
 jobs:
   build-test:
     name: Test Run (${ { matrix.python-version } }, ${ { matrix.os } })
-#    name: Test Run (${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
-        python-version: ["3.10", "3.11"]
+        python-version: ["3.10"]
 
     steps:
       - name: Check out repository
@@ -39,8 +38,8 @@ jobs:
 
       - name: Run tests
         run: >
-          echo "test"
-#          python -m pytest piva/tests/dataloaders_test.py
+#          echo "test"
+          python -m pytest piva/tests/dataloaders_test.py
 #          tox -e py${{ matrix.python-version.replace('.', '') }}
 #          -- piva/tests/dataloaders_test.py
 
