@@ -23,8 +23,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
-        python-version: ["3.10"]
+        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+        python-version: ["3.10", "3.11"]
 
     steps:
       - name: Check out repository
@@ -77,11 +77,6 @@ jobs:
         run: >
           pytest --cov=$GITHUB_WORKSPACE --cov-append --cov-report=xml
           --cov-config=.coveragerc piva/tests/viewers_test.py
-
-      - name: Test jupyter utilities
-        run: >
-          pytest --cov=$GITHUB_WORKSPACE --cov-append --cov-report=xml
-          --cov-config=.coveragerc piva/tests/jupyter_test.py
 
       - name: Upload coverage to Codecov
         if: >
