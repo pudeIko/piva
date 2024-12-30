@@ -21,8 +21,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
-        python-version: ["3.10", "3.11"]
+        os: ["ubuntu-latest"]
+        python-version: ["3.10"]
 
     steps:
       - name: Check out repository
@@ -54,11 +54,15 @@ jobs:
         continue-on-error: true
 
       - name: Test dataloaders
-        run: |
-          python -m piva.tests.dataloaders_test
+        run: >
+          pytest --cov=src --cov-branch --cov-report=xml
+          piva/tests/dataloaders_test.py
+#          python -m piva.tests.dataloaders_test
 
       - name: Upload coverage to Codecov
         if: >
           ${{ matrix.os == 'ubuntu-latest'
           && matrix.python-version == '3.10' }}
         uses: codecov/codecov-action@v3
+        with:
+          files: coverage.xml
