@@ -1,6 +1,5 @@
 from __future__ import annotations
 import os
-import time
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 import numpy as np
@@ -382,30 +381,30 @@ class DataViewer4D(QtWidgets.QMainWindow):
         # subdivision
         sd = 1
         # Get a short handle
-        l = self.layout
+        layout = self.layout
         # utilities bar
-        l.addWidget(self.util_panel,    0, 0, 2, 5)
+        layout.addWidget(self.util_panel,    0, 0, 2, 5)
         # raster plot
-        l.addWidget(self.raster_plot,    3, 0, 3, 2)
+        layout.addWidget(self.raster_plot,    3, 0, 3, 2)
         # Main plot
-        l.addWidget(self.bm_plot,     3, 2, 3, 2)
+        layout.addWidget(self.bm_plot,     3, 2, 3, 2)
         # EDC
-        l.addWidget(self.plot_x,        2, 2, 1, 2)
+        layout.addWidget(self.plot_x,        2, 2, 1, 2)
         # MDC
-        l.addWidget(self.plot_y,        3, 4, 3, 1)
+        layout.addWidget(self.plot_y,        3, 4, 3, 1)
 
         dummy_lbl = QLabel('')
-        l.addWidget(dummy_lbl,          2, 0, 1, 2)
+        layout.addWidget(dummy_lbl,          2, 0, 1, 2)
 
         nrows = 6 * sd
         ncols = 5 * sd
         # Need to manually set all row- and columnspans as well as min-sizes
         for i in range(nrows):
-            l.setRowMinimumHeight(i, 50)
-            l.setRowStretch(i, 1)
+            layout.setRowMinimumHeight(i, 50)
+            layout.setRowStretch(i, 1)
         for i in range(ncols):
-            l.setColumnMinimumWidth(i, 50)
-            l.setColumnStretch(i, 1)
+            layout.setColumnMinimumWidth(i, 50)
+            layout.setColumnStretch(i, 1)
 
     def set_sliders_initial_positions(self) -> None:
         """
@@ -447,14 +446,14 @@ class DataViewer4D(QtWidgets.QMainWindow):
         :param data_set: object containing data and available metadata.
         """
 
-        if not (data_set.Ef is None):
+        if data_set.Ef is not None:
             self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
-        if not (data_set.hv is None):
+        if data_set.hv is not None:
             self.util_panel.axes_energy_hv.setValue(data_set.hv)
-        if not (data_set.wf is None):
+        if data_set.wf is not None:
             self.util_panel.axes_energy_scale.setCurrentIndex(0)
             self.util_panel.axes_energy_wf.setValue(data_set.wf)
-        if not (data_set.kyscale is None):
+        if data_set.kyscale is not None:
             self.k_axis = data_set.kyscale
             new_range = [self.k_axis[0], self.k_axis[-1]]
             self.bm_plot.plotItem.getAxis(

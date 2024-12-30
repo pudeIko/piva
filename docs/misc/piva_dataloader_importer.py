@@ -26,7 +26,7 @@ class DataloaderImporter:
         """
 
         loader = CustomDataloader
-        dl_label = 'Custom Dataloader'.format(loader.name)
+        dl_label = 'Custom Dataloader - {}'.format(loader.name)
 
         self.db.dp_dl_picker.addItem(dl_label)
         self.db.add_dataloader_to_record(dl_label, loader)

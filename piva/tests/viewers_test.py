@@ -15,7 +15,7 @@ from pkg_resources import resource_filename
 import os
 from piva.working_procedures import get_step
 from typing import Any
-from piva.utilities_panel import InfoWindow
+# from piva.utilities_panel import InfoWindow
 
 VTS_MAP = False
 CHECK_3D_Viewer_ = True

@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QColorDialog, QFileDialog, QWidget, \
 
 import piva.data_browser as db
 import piva.working_procedures as wp
-import piva.data_loaders as dl
+# import piva.data_loaders as dl
 import piva.data_viewer_2d as p2d
 import piva.data_viewer_3d as p3d
 from piva.image_panels import bold_font
@@ -357,7 +357,7 @@ class PlotTool(QtWidgets.QMainWindow):
         self.ep_bgr_color.setFixedSize(25, 15)
         self.ep_axes_color_lbl = QLabel("axes color:")
         self.ep_axes_color = QPushButton('')
-        self.ep_axes_color.setStyleSheet(f'background-color: rgb(150,150,150)')
+        self.ep_axes_color.setStyleSheet('background-color: rgb(150,150,150)')
         self.ep_axes_color.setFixedSize(25, 15)
         self.ep_ticks_size_lbl = QLabel('ticks font size:')
         self.ep_ticks_size = QSpinBox()
@@ -1115,7 +1115,7 @@ class PlotTool(QtWidgets.QMainWindow):
         """
 
         name = self.ann_name.text()
-        if not (name in self.annotations.keys()):
+        if name not in self.annotations.keys():
             no_annotation_box = QMessageBox()
             no_annotation_box.setIcon(QMessageBox.Information)
             no_annotation_box.setWindowTitle('Doh.')

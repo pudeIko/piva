@@ -15,7 +15,7 @@ from piva.cmaps import cmaps
 from piva.fitters import MDCFitter, EDCFitter
 if TYPE_CHECKING:
     from piva.data_browser import DataBrowser
-    from piva.data_viewer_3d import DataViewer3D
+    # from piva.data_viewer_3d import DataViewer3D
 
 app_style = """
 QMainWindow{background-color: rgb(64,64,64);}
@@ -284,25 +284,25 @@ class DataViewer2D(QtWidgets.QMainWindow):
         # subdivision
         sd = 1
         # Get a short handle
-        l = self.layout
+        layout = self.layout
         # utilities bar
-        l.addWidget(self.util_panel, 0, 0, 2 * sd, 6 * sd)
+        layout.addWidget(self.util_panel, 0, 0, 2 * sd, 6 * sd)
         # EDC
-        l.addWidget(self.plot_x, 2 * sd, 0, 3 * sd, 4 * sd)
+        layout.addWidget(self.plot_x, 2 * sd, 0, 3 * sd, 4 * sd)
         # Main plot
-        l.addWidget(self.main_plot, 5 * sd, 0, 6 * sd, 4 * sd)
+        layout.addWidget(self.main_plot, 5 * sd, 0, 6 * sd, 4 * sd)
         # MDC
-        l.addWidget(self.plot_y, 5 * sd, 4 * sd, 6 * sd, 2 * sd)
+        layout.addWidget(self.plot_y, 5 * sd, 4 * sd, 6 * sd, 2 * sd)
 
         nrows = 12 * sd
         ncols = 6 * sd
         # Need to manually set all row- and columnspans as well as min-sizes
         for i in range(nrows):
-            l.setRowMinimumHeight(i, 50)
-            l.setRowStretch(i, 1)
+            layout.setRowMinimumHeight(i, 50)
+            layout.setRowStretch(i, 1)
         for i in range(ncols):
-            l.setColumnMinimumWidth(i, 50)
-            l.setColumnStretch(i, 1)
+            layout.setColumnMinimumWidth(i, 50)
+            layout.setColumnStretch(i, 1)
 
     def set_sliders_initial_positions(self) -> None:
         """
@@ -339,14 +339,14 @@ class DataViewer2D(QtWidgets.QMainWindow):
 
         if hasattr(data_set, 'saved'):
             raise AttributeError
-        if not (data_set.Ef is None):
+        if data_set.Ef is not None:
             self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
-        if not (data_set.hv is None):
+        if data_set.hv is not None:
             self.util_panel.axes_energy_hv.setValue(data_set.hv)
-        if not (data_set.wf is None):
+        if data_set.wf is not None:
             self.util_panel.axes_energy_scale.setCurrentIndex(0)
             self.util_panel.axes_energy_wf.setValue(data_set.wf)
-        if not (data_set.kyscale is None):
+        if data_set.kyscale is not None:
             self.k_axis = data_set.kyscale
             new_range = [self.k_axis[0], self.k_axis[-1]]
             self.main_plot.plotItem.getAxis(
@@ -1048,7 +1048,7 @@ class DataViewer2D(QtWidgets.QMainWindow):
                     dataset.hv = up.axes_energy_hv.value()
                 if up.axes_energy_wf.value() != 0:
                     dataset.wf = up.axes_energy_wf.value()
-                if not (self.k_axis is None):
+                if self.k_axis is not None:
                     dataset.kyscale = self.k_axis
             elif box_return_value == QMessageBox.No:
                 pass

@@ -836,11 +836,12 @@ class MDCFitter(Fitter):
             self.fitting_message_cell.setText(message)
             return
 
-        a, mu, gamma, alpha, beta = self.fitting_a.value(), \
-                                    self.fitting_mu.value(), \
-                                    self.fitting_gamma.value(), \
-                                    self.fitting_alpha.value(), \
-                                    self.fitting_beta.value()
+        # a = self.fitting_a.value()
+        # mu = self.fitting_mu.value()
+        # gamma = self.fitting_gamma.value()
+        alpha = self.fitting_alpha.value()
+        beta = self.fitting_beta.value()
+
         if alpha == 1:
             fit_alpha = False
         else:
@@ -865,7 +866,11 @@ class MDCFitter(Fitter):
             return
 
         self.prepare_fitting_results(fit_alpha, fit_beta)
+
         res_func = lambda x: self.fit_fun(x, *self.p)
+        # def res_func(x):
+        #     return self.fit_fun(x, *self.p)
+
         fit = res_func(k_fit) + self.bgr_fit
 
         self.fit = PlotDataItem(k_fit, fit, pen=mkPen('m', width=2))

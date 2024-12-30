@@ -113,7 +113,7 @@ class TestJupyterUtilities:
         if kill_server_box.exec() == QMessageBox.Ok:
             try:
                 os.kill(self.jl_server_pid, signal.SIGKILL)
-            except Exception as e:
+            except Exception:
                 pass
 
         del_files_box = QMessageBox()

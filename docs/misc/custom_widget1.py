@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from pyqtgraph.Qt import QtWidgets
-from PyQt5.QtWidgets import QAction, QLabel, QPushButton
+# from PyQt5.QtWidgets import QAction
+from PyQt5.QtWidgets import QLabel, QPushButton
 if TYPE_CHECKING:
     from piva.data_browser import DataBrowser
 
