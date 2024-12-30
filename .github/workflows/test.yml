@@ -1,5 +1,5 @@
 ---
-name: Lint and Dataloaders Test
+name: Build & Lint
 
 on:
   pull_request:
@@ -62,5 +62,3 @@ jobs:
           ${{ matrix.os == 'ubuntu-latest'
           && matrix.python-version == '3.10' }}
         uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
