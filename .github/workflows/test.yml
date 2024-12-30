@@ -56,7 +56,7 @@ jobs:
 
       - name: Test dataloaders
         run: >
-          pytest --cov=branch --cov-report=xml
+          pytest --cov=$GITHUB_WORKSPACE --cov-report=xml
           piva/tests/dataloaders_test.py
 #          python -m piva.tests.dataloaders_test
 #          pytest --cov=$GITHUB_WORKSPACE --cov-report=xml
@@ -67,5 +67,6 @@ jobs:
           && matrix.python-version == '3.10' }}
         uses: codecov/codecov-action@v3
         with:
+          files: ./coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: pudeIko/piva
