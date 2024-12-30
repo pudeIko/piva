@@ -47,6 +47,11 @@ jobs:
         run: |
           python -m piva.tests.dataloaders_test
 
+      - name: Configure Headless Mode
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: echo "Qt set to headless mode."
+
       - name: Test viewers
         run: |
           python -m piva.tests.viewers_test
