@@ -58,10 +58,10 @@ jobs:
 
       - name: Test dataloaders
         run: >
+          pytest --cov=$GITHUB_WORKSPACE --cov-append --cov-report=xml
+          --cov-config=.coveragerc piva/tests/dataloaders_test.py
 #          pytest --cov=$GITHUB_WORKSPACE --cov-report=xml
 #          piva/tests/dataloaders_test.py
-          pytest --cov=$GITHUB_WORKSPACE --cov-append --cov-report=
-          --cov-config=.coveragerc piva/tests/dataloaders_test.py
 
       - name: Test viewers - install prerequisites
         run: >
@@ -79,7 +79,7 @@ jobs:
         run: >
 #          pytest --cov=$GITHUB_WORKSPACE --cov-report=xml
 #          piva/tests/viewers_test.py
-          pytest --cov=$GITHUB_WORKSPACE --cov-append --cov-report=
+          pytest --cov=$GITHUB_WORKSPACE --cov-append --cov-report=xml
           --cov-config=.coveragerc piva/tests/viewers_test.py
 
       - name: Upload coverage to Codecov
