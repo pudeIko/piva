@@ -54,12 +54,10 @@ jobs:
           ruff format --diff --target-version=py310
         continue-on-error: true
 
-      - name: Test dataloaders
+      - name: Run tests
         run: >
           pytest --cov=$GITHUB_WORKSPACE --cov-report=xml
-          piva/tests/dataloaders_test.py
-#          python -m piva.tests.dataloaders_test
-#          pytest --cov=$GITHUB_WORKSPACE --cov-report=xml
+          piva/tests/dataloaders_test.py piva/tests/viewers_test.py
 
       - name: Upload coverage to Codecov
         if: >
