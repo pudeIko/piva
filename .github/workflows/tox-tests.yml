@@ -41,11 +41,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          conda env create --quiet --file environment.yml
-          python -m pip install tox tox-gh-actions
+          pip install -r requirements.txt
+#          conda env create --quiet --file environment.yml
+#          python -m pip install tox tox-gh-actions
 
       - name: Run tests
         run: >
+          pip list
           python -m piva.tests.dataloaders_test
 #          python -m pytest piva/tests/dataloaders_test.py
 #          tox -e py${{ matrix.python-version.replace('.', '') }}
