@@ -46,7 +46,7 @@ jobs:
 #          python -m pip install tox tox-gh-actions
 
       - name: Run tests
-        run: >
+        run: |
           pip list
           python -m piva.tests.dataloaders_test
 #          python -m pytest piva/tests/dataloaders_test.py
