@@ -1,7 +1,7 @@
 # PIVA - Photoemission Interface for Visualization and Analysis
 
 [![Build Status](https://github.com/pudeIko/piva/actions/workflows/test_with_coverage.yml/badge.svg)](https://github.com/pudeIko/piva/actions/workflows/test_with_coverage.yml)
-[![codecov](https://codecov.io/gh/pudeIko/piva/branch/test-ci/graph/badge.svg)](https://codecov.io/gh/pudeIko/piva)
+[![codecov](https://codecov.io/gh/pudeIko/piva/branch/main/graph/badge.svg)](https://codecov.io/gh/pudeIko/piva)
 [![Documentation Status](https://readthedocs.org/projects/piva/badge/?version=latest)](https://piva.readthedocs.io/en/latest/?badge=latest)
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![Python Versions](https://img.shields.io/badge/python-3.10%20|%203.11-blue)](https://www.python.org/)
