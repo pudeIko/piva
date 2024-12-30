@@ -46,18 +46,18 @@ jobs:
       - name: Lint and check code formatting
         run: |
           pipx install ruff
-          ruff check --output-format=github --target-version=py39
-          ruff format --diff --target-version=py39
+          ruff check --output-format=github --target-version=py310
+          ruff format --diff --target-version=py310
         continue-on-error: true
 
       - name: Test dataloaders
         run: |
           python -m piva.tests.dataloaders_test
 
-#      - name: Upload coverage to Codecov
-#        if: >
-#          ${{ matrix.os == 'ubuntu-latest'
-#          && matrix.python-version == '3.10' }}
-#        uses: codecov/codecov-action@v3
-#        with:
-#          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload coverage to Codecov
+        if: >
+          ${{ matrix.os == 'ubuntu-latest'
+          && matrix.python-version == '3.10' }}
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
