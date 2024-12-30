@@ -77,10 +77,10 @@ jobs:
 
       - name: Test viewers - run tests
         run: >
-#          pytest --cov=$GITHUB_WORKSPACE --cov-report=xml
-#          piva/tests/viewers_test.py
           pytest --cov=$GITHUB_WORKSPACE --cov-append --cov-report=xml
           --cov-config=.coveragerc piva/tests/viewers_test.py
+#          pytest --cov=$GITHUB_WORKSPACE --cov-report=xml
+#          piva/tests/viewers_test.py
 
       - name: Upload coverage to Codecov
         if: >
