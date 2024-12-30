@@ -38,7 +38,6 @@ jobs:
 
       - name: Run tests
         run: >
-#          echo "test"
           python -m pytest piva/tests/dataloaders_test.py
 #          tox -e py${{ matrix.python-version.replace('.', '') }}
 #          -- piva/tests/dataloaders_test.py
