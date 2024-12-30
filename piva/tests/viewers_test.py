@@ -18,12 +18,12 @@ from typing import Any
 # from piva.utilities_panel import InfoWindow
 
 VTS_MAP = False
-CHECK_3D_Viewer_ = False
-CHECK_2D_Viewer_ = False
-CHECK_EDC_FITTER = False
-CHECK_MDC_FITTER = False
-CHECK_PLOT_TOOL_ = False
-CHECK_LINKING___ = False
+CHECK_3D_Viewer_ = True
+CHECK_2D_Viewer_ = True
+CHECK_EDC_FITTER = True
+CHECK_MDC_FITTER = True
+CHECK_PLOT_TOOL_ = True
+CHECK_LINKING___ = True
 CHECK_K_SPC_CONV = False
 
 # EXAMPLE_CUT = pkg_res.resource_filename('piva', 'tests/data/')
