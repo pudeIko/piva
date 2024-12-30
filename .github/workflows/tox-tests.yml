@@ -25,13 +25,21 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Cache pip dependencies
+#      - name: Cache pip dependencies
+#        uses: actions/cache@v3
+#        with:
+#          path: ~/.cache/pip
+#          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+#          restore-keys: |
+#            ${{ runner.os }}-pip-
+
+      - name: Cache Conda environment
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          path: ~/conda_pkgs_dir
+          key: ${{ runner.os }}-conda-${{ hashFiles('environment.yml') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ runner.os }}-conda-
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
