@@ -4,7 +4,7 @@ import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 from data_slicer import pit
 from PyQt5.QtWidgets import QMessageBox, QLineEdit
@@ -491,30 +491,30 @@ class DataViewer3D(QtWidgets.QMainWindow):
         # subdivision
         sd = 1
         # Get a short handle
-        l = self.layout
+        layout = self.layout
         # addWidget(row, column, rowSpan, columnSpan)
         # utilities bar
-        l.addWidget(self.util_panel,    0,      0,          2 * sd, 5 * sd)
+        layout.addWidget(self.util_panel,  0,      0,          2 * sd, 5 * sd)
         # X cut and mdc
-        l.addWidget(self.plot_x,        2 * sd, 0,          1 * sd, 2 * sd)
-        l.addWidget(self.cut_x,         3 * sd, 0,          1 * sd, 2 * sd)
+        layout.addWidget(self.plot_x,      2 * sd, 0,          1 * sd, 2 * sd)
+        layout.addWidget(self.cut_x,       3 * sd, 0,          1 * sd, 2 * sd)
         # Main plot
-        l.addWidget(self.main_plot,     4 * sd, 0,          2 * sd, 2 * sd)
+        layout.addWidget(self.main_plot,   4 * sd, 0,          2 * sd, 2 * sd)
         # Y cut and mdc
-        l.addWidget(self.cut_y,         4 * sd, 2,          2 * sd, 1 * sd)
-        l.addWidget(self.plot_y,        4 * sd, 3 * sd,     2 * sd, 1 * sd)
+        layout.addWidget(self.cut_y,       4 * sd, 2,          2 * sd, 1 * sd)
+        layout.addWidget(self.plot_y,      4 * sd, 3 * sd,     2 * sd, 1 * sd)
         # EDC (integrated)
-        l.addWidget(self.plot_z,        2 * sd, 2 * sd,     2 * sd, 2 * sd)
+        layout.addWidget(self.plot_z,      2 * sd, 2 * sd,     2 * sd, 2 * sd)
 
         nrows = 6 * sd
         ncols = 4 * sd
         # Need to manually set all row- and columnspans as well as min-sizes
         for i in range(nrows):
-            l.setRowMinimumHeight(i, 50)
-            l.setRowStretch(i, 1)
+            layout.setRowMinimumHeight(i, 50)
+            layout.setRowStretch(i, 1)
         for i in range(ncols):
-            l.setColumnMinimumWidth(i, 50)
-            l.setColumnStretch(i, 1)
+            layout.setColumnMinimumWidth(i, 50)
+            layout.setColumnStretch(i, 1)
 
     def update_main_plot(self, **image_kwargs: dict) -> None:
         """
@@ -1931,7 +1931,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
                     dataset.hv = up.axes_energy_hv.value()
                 if up.axes_energy_wf.value() != 0:
                     dataset.wf = up.axes_energy_wf.value()
-                if not (self.kx_axis is None) and not (self.ky_axis is None):
+                if (self.kx_axis is not None) and (self.ky_axis is not None):
                     dataset.kxscale = self.kx_axis
                     dataset.kyscale = self.ky_axis
             elif box_return_value == QMessageBox.No:
@@ -1950,12 +1950,12 @@ class DataViewer3D(QtWidgets.QMainWindow):
         :param data_set: object containing data and available metadata.
         """
 
-        if not (data_set.hv is None):
+        if data_set.hv is not None:
             self.util_panel.axes_energy_hv.setValue(data_set.hv)
-        if not (data_set.wf is None):
+        if data_set.wf is not None:
             self.util_panel.axes_energy_scale.setCurrentIndex(0)
             self.util_panel.axes_energy_wf.setValue(data_set.wf)
-        if not (data_set.Ef is None):
+        if data_set.Ef is not None:
             self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
         if hasattr(data_set, 'kxscale'):
             self.kx_axis = data_set.kxscale

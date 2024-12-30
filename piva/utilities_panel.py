@@ -1054,7 +1054,7 @@ class UtilitiesPanel(QWidget):
                     if viewer_linked_list.itemText(idx) in linked_list:
                         viewer_linked_list.setItemCheckState(idx, 2)
             elif (action == 'as parent') and \
-                    not (dv[dvi].title in linked_list):
+                    (dv[dvi].title not in linked_list):
                 if self.mw.title in dv[dvi].util_panel.get_linked_windows():
                     dv_up.link_windows_status.setCurrentIndex(0)
                     for idx in range(dv_up.link_windows_list.count()):
@@ -1224,7 +1224,7 @@ class UtilitiesPanel(QWidget):
                 entries[str(row)]['value'] = QLabel(str(value))
                 entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
             elif key == 'kxscale':
-                if not (dataset[key] is None):
+                if dataset[key] is not None:
                     value = '({:.3f}  :  {:.3f})'.format(dataset[key][0],
                                                          dataset[key][-1])
                     entries[str(row)] = {}
@@ -1239,7 +1239,7 @@ class UtilitiesPanel(QWidget):
                     entries[str(row)]['value'].setAlignment(
                         QtCore.Qt.AlignCenter)
             elif key == 'kyscale':
-                if not (dataset[key] is None):
+                if dataset[key] is not None:
                     value = '({:.3f}  :  {:.3f})'.format(dataset[key][0],
                                                          dataset[key][-1])
                     entries[str(row)] = {}
@@ -1390,8 +1390,8 @@ class UtilitiesPanel(QWidget):
         if name in ['data', 'xscale', 'yscale', 'zscale']:
             essential_md_box = QMessageBox()
             essential_md_box.setIcon(QMessageBox.Information)
-            essential_md_box.setText(f'Sorry, no can do.  '
-                                     f'Data and axes cannot be removed.')
+            essential_md_box.setText('Sorry, no can do.  '
+                                     'Data and axes cannot be removed.')
             essential_md_box.setStandardButtons(QMessageBox.Ok)
             if essential_md_box.exec() == QMessageBox.Ok:
                 return

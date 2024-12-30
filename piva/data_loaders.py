@@ -239,10 +239,10 @@ class Dataloader:
             # Get the created filename from the viewer
             with z.open('viewer.ini') as viewer:
                 for line in viewer.readlines():
-                    l = line.decode('UTF-8')
-                    if l.startswith('name'):
+                    ln = line.decode('UTF-8')
+                    if ln.startswith('name'):
                         # Make sure to split off unwanted whitespace
-                        file_id = l.split('=')[1].split()[0]
+                        file_id = ln.split('=')[1].split()[0]
 
             # Get most metadata from a metadata file
             with z.open('Spectrum_' + file_id + '.ini') as md_file1:
@@ -941,7 +941,7 @@ class DataloaderADRESS(Dataloader):
                     # Split off whitespace or garbage at the end
                     else:
                         value = tokens[1].split()[0]
-                        if dtype == float:
+                        if dtype is float:
                             self.ds.__setattr__(name, float(value))
                         else:
                             self.ds.__setattr__(name, value)

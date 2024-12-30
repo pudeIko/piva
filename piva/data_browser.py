@@ -1,7 +1,7 @@
 import os
 import time
-import importlib.util
-import inspect
+# import importlib.util
+# import inspect
 
 import numpy as np
 from PyQt5.QtWidgets import QAction, QHBoxLayout, QLabel, QVBoxLayout, \
@@ -711,9 +711,9 @@ class DataBrowser(QMainWindow):
 
         try:
             # scan
-            if not (data.scan_type is None):
+            if data.scan_type is not None:
                 self.dp_scan_type.setText('{}'.format(data.scan_type))
-            if not (data.scan_dim is None):
+            if data.scan_dim is not None:
                 sd = data.scan_dim
                 if len(sd) == 0:
                     pass
@@ -728,55 +728,55 @@ class DataBrowser(QMainWindow):
                         self.dp_scan_step.setText('{:.2f}'.format(
                             float(data.scan_dim[2])))
             # manipulator
-            if not (data.x is None):
+            if data.x is not None:
                 self.dp_manip_x.setText('{:.2f}'.format(float(data.x)))
-            if not (data.y is None):
+            if data.y is not None:
                 self.dp_manip_y.setText('{:.2f}'.format(float(data.y)))
-            if not (data.z is None):
+            if data.z is not None:
                 self.dp_manip_z.setText('{:.2f}'.format(float(data.z)))
-            if not (data.theta is None):
+            if data.theta is not None:
                 self.dp_manip_theta.setText('{:.2f}'.format(float(data.theta)))
-            if not (data.phi is None):
+            if data.phi is not None:
                 self.dp_manip_phi.setText('{:.2f}'.format(float(data.phi)))
-            if not (data.tilt is None):
+            if data.tilt is not None:
                 self.dp_manip_tilt.setText('{:.2f}'.format(float(data.tilt)))
-            if not (data.temp is None):
+            if data.temp is not None:
                 self.dp_manip_temp.setText('{:.1f}'.format(float(data.temp)))
-            if not (data.pressure is None):
+            if data.pressure is not None:
                 self.dp_manip_press.setText('{:.2e}'.format(
                     float(data.pressure)))
 
             # analyzer
-            if not (data.zscale is None):
+            if data.zscale is not None:
                 self.dp_ana_e0.setText('{:.4f}'.format(data.zscale[0]))
-            if not (data.zscale is None):
+            if data.zscale is not None:
                 self.dp_ana_e1.setText('{:.4f}'.format(data.zscale[-1]))
-            if not (data.zscale is None):
+            if data.zscale is not None:
                 self.dp_ana_de.setText('{:.2e}'.format(
                     wp.get_step(data.zscale)))
-            if not (data.PE is None):
+            if data.PE is not None:
                 self.dp_ana_pe.setText('{}'.format(int(data.PE)))
-            if not (data.DT is None):
+            if data.DT is not None:
                 self.dp_ana_dt.setText('{}'.format(int(data.DT)))
-            if not (data.lens_mode is None):
+            if data.lens_mode is not None:
                 self.dp_ana_lm.setText('{}'.format(data.lens_mode))
-            if not (data.acq_mode is None):
+            if data.acq_mode is not None:
                 self.dp_ana_am.setText('{}'.format(data.acq_mode))
-            if not (data.ana_slit is None):
+            if data.ana_slit is not None:
                 self.dp_ana_ana_slit.setText('{}'.format(data.ana_slit))
-            if not (data.defl_angle is None):
+            if data.defl_angle is not None:
                 self.dp_ana_defl_ang.setText('{}'.format(data.defl_angle))
-            if not (data.n_sweeps is None):
+            if data.n_sweeps is not None:
                 self.dp_ana_n_sweeps.setText('{}'.format(int(data.n_sweeps)))
 
             # beamline
-            if not (data.hv is None):
+            if data.hv is not None:
                 self.dp_bl_hv.setText('{:.1f}'.format(float(data.hv)))
-            if not (data.polarization is None):
+            if data.polarization is not None:
                 self.dp_bl_polar.setText(data.polarization)
-            if not (data.exit_slit is None):
+            if data.exit_slit is not None:
                 self.dp_bl_exit.setText('{}'.format(float(data.exit_slit)))
-            if not (data.FE is None):
+            if data.FE is not None:
                 self.dp_bl_fe.setText('{}'.format(float(data.FE)))
         except AttributeError:
             self.reset_detail_panel()

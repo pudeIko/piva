@@ -245,7 +245,7 @@ def fit_n_dublets(data: np.ndarray, x: np.ndarray,
     dmus = []
     dgammas = []
     as0 = []
-    as1 = []
+    # as1 = []
     if len(pars[0]) == 3:
         for i in range(len(pars)):
             mus.append(pars[i][1])
@@ -323,9 +323,9 @@ def shirley_calculate(x: np.ndarray, y: np.ndarray, tol: float = 1e-5,
     # Locate the minima either side of maxidx.
     lmidx = abs(y[0:maxidx] - np.amin(y[0:maxidx])).argmin()
     rmidx = abs(y[maxidx:] - np.amin(y[maxidx:])).argmin() + maxidx
-    xl = x[lmidx]
+    # xl = x[lmidx]
+    # xr = x[rmidx]
     yl = y[lmidx]
-    xr = x[rmidx]
     yr = y[rmidx]
 
     # Max integration index
@@ -382,7 +382,11 @@ def get_linear(points: list) -> Callable:
     y = points[1]
 
     pars = np.polyfit(x, y, 1)
-    fun = lambda arg: pars[0] * arg + pars[1]
+    # fun = lambda arg: pars[0] * arg + pars[1]
+
+    def fun(arg):
+        return pars[0] * arg + pars[1]
+
     return fun
 
 
@@ -780,7 +784,7 @@ def get_A(omega: np.ndarray, ek: np.ndarray, eta: float = 0.075,
     """
 
     Sigma = np.zeros_like(ek)
-    if type(sigma) == tuple:
+    if isinstance(sigma, tuple):
         for sigma_i in sigma:
             Sigma += sigma_i
 
@@ -1065,7 +1069,10 @@ def fit_fermi_dirac(energies: np.ndarray, edc: np.ndarray, e_0: float,
     resolution_err = 2 * np.sqrt(2 * np.log(2)) * np.sqrt(cov[1][1]) * \
                      np.abs(energies[1] - energies[0])
 
-    res_func = lambda x: fit_func(x, *p)
+    # res_func = lambda x: fit_func(x, *p)
+    def res_func(x):
+        return fit_func(x, *p)
+
     return p, res_func, cov, resolution, resolution_err
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 import pyqtgraph as pg
 from typing import Any, Iterable
-from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
+from pyqtgraph.Qt import QtCore, QtGui #, QtWidgets
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
 from data_slicer.imageplot import TracedVariable
 
