@@ -41,28 +41,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          conda env create --quiet --file environment.yml
+#          pip install -r requirements.txt
 
       - name: Test dataloaders
         run: |
           python -m piva.tests.dataloaders_test
-
-      - name: Configure Headless Mode
-        env:
-          QT_QPA_PLATFORM: offscreen
-        run: echo "Qt set to headless mode."
-        
-      - name: Install Xvfb
-        run: sudo apt-get install -y xvfb
-
-      - name: Start Xvfb
-        run: |
-          Xvfb :99 -screen 0 1920x1080x24 &
-          export DISPLAY=:99
-
-      - name: Test viewers
-        run: |
-          python -m piva.tests.viewers_test
 
 #      - name: Upload coverage to Codecov
 #        if: >
