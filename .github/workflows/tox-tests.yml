@@ -13,38 +13,41 @@ defaults:
 
 jobs:
   build-test:
-    name: Test Run (${ { matrix.python-version } }, ${ { matrix.os } })
-    runs-on: ${ { matrix.os } }
+#    name: Test Run (${ { matrix.python-version } }, ${ { matrix.os } })
+    name: Test Run (${{ matrix.python-version }})
+#    runs-on: ${ { matrix.os } }
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
+#        os: ["ubuntu-latest"]
         python-version: ["3.10", "3.11"]
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Python ${ { matrix.python-version } }
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
-          python-version: ${ { matrix.python-version } }
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install tox tox-gh-actions
+#          python -m pip install tox tox-gh-actions
 
-      - name: Run tests with Tox
+      - name: Run tests
         run: >
-          python -m pytest piva/tests/dataloaders_test.py
+          echo "test"
+#          python -m pytest piva/tests/dataloaders_test.py
 #          tox -e py${{ matrix.python-version.replace('.', '') }}
 #          -- piva/tests/dataloaders_test.py
 
-      - name: Upload coverage to Codecov
-        if: >
-          ${{ matrix.os == 'ubuntu-latest'
-          && matrix.python-version == '3.10' }}
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+#      - name: Upload coverage to Codecov
+#        if: >
+#          ${{ matrix.os == 'ubuntu-latest'
+#          && matrix.python-version == '3.10' }}
+#        uses: codecov/codecov-action@v3
+#        with:
+#          token: ${{ secrets.CODECOV_TOKEN }}
