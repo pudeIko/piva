@@ -55,9 +55,9 @@ jobs:
 
       - name: Test dataloaders
         run: >
-          pytest --cov=src --cov-branch --cov-report=xml
-          piva/tests/dataloaders_test.py
+          pytest piva/tests/dataloaders_test.py
 #          python -m piva.tests.dataloaders_test
+#          pytest --cov=$GITHUB_WORKSPACE --cov-report=xml
 
       - name: Upload coverage to Codecov
         if: >
