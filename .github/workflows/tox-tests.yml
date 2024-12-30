@@ -1,7 +1,7 @@
+---
 name: Pytest unit/integration
 
 on:
-  pull_request:
   push:
     branches:
       - main
@@ -20,8 +20,8 @@ jobs:
       matrix:
         os: ["ubuntu-latest"]
         python-version: ["3.10", "3.11"]
-#        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
-#        python-version: ["3.10", "3.11"]
+        # os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+        # python-version: ["3.10", "3.11"]
 
     steps:
       - name: Check out repository
@@ -38,12 +38,14 @@ jobs:
           python -m pip install tox tox-gh-actions
 
       - name: Run tests with Tox
-        run: |
-          tox -e py${{ matrix.python-version | replace('.', '') }} -- piva/tests/dl_tests.py
-#          tox
+        run: >
+          tox -e py${{ matrix.python-version | replace('.', '') }}
+          -- piva/tests/dl_tests.py
 
       - name: Upload coverage to Codecov
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10' }}
+        if: >
+          ${{ matrix.os == 'ubuntu-latest'
+          && matrix.python-version == '3.10' }}
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
