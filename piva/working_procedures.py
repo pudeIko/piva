@@ -1026,7 +1026,7 @@ def find_mid_old(xdata: np.ndarray, ydata: np.ndarray, xrange: list = None) \
 
 
 def fit_fermi_dirac(energies: np.ndarray, edc: np.ndarray, e_0: float,
-                    T: float = 5, sigma0: float = 10, a0: float = 0,
+                    T: float = 5, sigma0: float = 10, a0: float = -0.5,
                     b0: float = -0.1, a1: float = 0, b1: float = -0.1) \
         -> tuple:
     """
@@ -1054,9 +1054,9 @@ def fit_fermi_dirac(energies: np.ndarray, edc: np.ndarray, e_0: float,
 
     # Initial guess and bounds for parameters
     p0 = [e_0, sigma0, a0, b0, a1, b1]
-    de = 1
-    lower = [e_0 - de, 0, -100, -10, -10, -20]
-    upper = [e_0 + de, 100, 100, 10, 10, 20]
+    de = 0.01
+    lower = [e_0 - de,   0, -10, -10, -10, -10]
+    upper = [e_0 + de,  20,  10,  10,  10,  10]
 
     def fit_func(E, E_F, sigma, a0, b0, a1, b1):
         """ Wrapper around fermi_fit_func that fixes T. """
