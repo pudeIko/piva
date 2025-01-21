@@ -146,8 +146,8 @@ class DataBrowser(QMainWindow):
         """
         Open selected file in a **DataViewer**.
 
-        :type example: if :py:obj:`True` open example dataset
         :param fname: absolute path to selected file
+        :param example: if :py:obj:`True` open example dataset
         """
 
         if example:
@@ -785,6 +785,7 @@ class DataBrowser(QMainWindow):
         """
         Add a newly opened viewer to linking lists of other with matching
         dimensionality, enabling it for linking.
+        
         :param fname: viewer's name/index
         :param dim: dataset's dimensionality
         """
