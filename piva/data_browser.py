@@ -785,7 +785,7 @@ class DataBrowser(QMainWindow):
         """
         Add a newly opened viewer to linking lists of other with matching
         dimensionality, enabling it for linking.
-        
+
         :param fname: viewer's name/index
         :param dim: dataset's dimensionality
         """
