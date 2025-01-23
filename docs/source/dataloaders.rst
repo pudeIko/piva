@@ -17,7 +17,7 @@ specific **Dataloader** dedicated to various ARPES beamlines around the world
 Principles of the data import in :mod:`piva` are presented on a simple scheme
 below.
 
-.. figure:: ../img/dl-scheme.png
+.. figure:: ../img/dl/dl-scheme.png
     :alt: Image not found.
 
 If the file format is not yet supported, one needs to implement a custom
@@ -145,7 +145,7 @@ Description below shows step by step how to achieve both.
    Correctly loaded **CustomDataloader** should appear in **DataBrowser's**
    drop-down menu:
 
-.. figure:: ../img/dl-cdl.png
+.. figure:: ../img/dl/dl-cdl.png
     :width: 276
     :height: 256
     :align: center
@@ -174,7 +174,7 @@ Additionally, the template can be used to test the configuration with an
 example :download:`spectrum file <../misc/simulated_spectrum.h5>`, which
 contains a simulated 2D spectrum:
 
-.. figure:: ../img/dl-test_spectrum.png
+.. figure:: ../img/dl/dl-test_spectrum.png
     :width: 414
     :height: 440
     :align: center

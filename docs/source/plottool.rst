@@ -13,7 +13,7 @@ access it from menu bar of the :ref:`DataBrowser <sec-db>`.
 
 Its overall layout is shown below.
 
-.. figure:: ../img/plottool-main.png
+.. figure:: ../img/fitters_plottool/plottool-main.png
    :alt: Image not found.
 
 =====   =======================================================================
@@ -47,7 +47,7 @@ Add/Remove data tab
 
 Allows for general management over imported data.
 
-.. figure:: ../img/plottool-up-add_remove.png
+.. figure:: ../img/fitters_plottool/plottool-up-add_remove.png
    :alt: Image not found.
 
 ===================     =======================================================
@@ -87,7 +87,7 @@ Helps to adjust and personalize appearance of the imported curves. All changes
 made in this tab are performed on a curve currently selected in the **Curves**
 list.
 
-.. figure:: ../img/plottool-up-edit_curves.png
+.. figure:: ../img/fitters_plottool/plottool-up-edit_curves.png
    :alt: Image not found.
 
 ===============     ===========================================================
@@ -103,7 +103,7 @@ Edit plot tab
 
 Helps to adjust and personalize overall appearance of the plot.
 
-.. figure:: ../img/plottool-up-edit_plot.png
+.. figure:: ../img/fitters_plottool/plottool-up-edit_plot.png
    :alt: Image not found.
 
 ===============     ===========================================================
@@ -129,7 +129,7 @@ Sliding markers across the curve helps to read exact position (*x* and *y*) of
 fine features on the plot and display differences between their positions
 (*dx* and *dy*) along the corresponding direction.
 
-.. figure:: ../img/plottool-up-markers.png
+.. figure:: ../img/fitters_plottool/plottool-up-markers.png
    :alt: Image not found.
 
 
@@ -139,7 +139,7 @@ Annotate tab
 Allows to append text annotations on the plot to include some useful
 information.
 
-.. figure:: ../img/plottool-up-annotate.png
+.. figure:: ../img/fitters_plottool/plottool-up-annotate.png
    :alt: Image not found.
 
 =====================   =======================================================

@@ -33,7 +33,7 @@ The most basic implementation of the :class:`PluginImporter` and an example
 This example creates a simple window (shown below) that can be opened
 from the menu bar.
 
-.. figure:: ../img/custom_widget.png
+.. figure:: ../img/custom/custom_widget.png
     :alt: Image not found.
 
 

@@ -17,6 +17,14 @@ Welcome to piva - Photoemission Interface for Visualization and Analysis!
 
 .. toctree::
    :maxdepth: 2
+   :caption: Data formats
+
+   dataset
+   dataloaders
+
+
+.. toctree::
+   :maxdepth: 2
    :caption: GUI
 
    db
@@ -28,10 +36,9 @@ Welcome to piva - Photoemission Interface for Visualization and Analysis!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Data formats
+   :caption: Analysis
 
-   dataset
-   dataloaders
+   Data Ingestion and Analysis <notebooks/analysis>
 
 
 .. toctree::
