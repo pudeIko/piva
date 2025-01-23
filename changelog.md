@@ -6,19 +6,21 @@ and this project adheres to [Semantic
 Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [2.3.2]
 
 ### Added
+
+- the showcase video to the documentation
+- comprehensive examples on custom dataloader implementation and guide on data
+ingestion and analysis
 
 ### Changed
 
 - setup.py to pyproject.toml
 
-### Deprecated
-
-### Removed
-
 ### Fixed
+
+- typos in docstrings
 
 
 ## [2.3.0]
