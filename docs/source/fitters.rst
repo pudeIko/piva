@@ -25,7 +25,7 @@ selected fitting range.
 
 Its layout is shown and described below.
 
-.. figure:: ../img/fitters-mdc-main.png
+.. figure:: ../img/fitters_plottool/fitters-mdc-main.png
    :alt: Image not found.
 
 =====   =======================================================================
@@ -58,7 +58,7 @@ Fitting tab
 
 Contains all widgets useful for interactive fitting of MDCs.
 
-.. figure:: ../img/fitters-mdc-fitting_tab.png
+.. figure:: ../img/fitters_plottool/fitters-mdc-fitting_tab.png
    :alt: Image not found.
 
 =======================     ===================================================
@@ -97,7 +97,7 @@ perform gap analysis.
 
 Its layout is shown and described below.
 
-.. figure:: ../img/fitters-edc-main.png
+.. figure:: ../img/fitters_plottool/fitters-edc-main.png
    :alt: Image not found.
 
 =====   =======================================================================

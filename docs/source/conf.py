@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath(os.path.join('../../piva')))
 # -- Project information -----------------------------------------------------
 
 project = 'piva'
-copyright = '2024, Wojtek Pudelko'
+copyright = '2025, Wojtek Pudelko'
 author = 'Wojtek Pudelko'
 
 
@@ -30,6 +30,9 @@ author = 'Wojtek Pudelko'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
+    'nbsphinx',
+    'myst_nb',
+    'sphinx.ext.mathjax',  # Optional, for LaTeX rendering
     'sphinx_rtd_theme',
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
@@ -89,3 +92,12 @@ autodoc_member_order = 'bysource'
 
 # Don't show class signature with the class' name.
 autodoc_class_signature = "separated"
+
+
+# including jupyter notebook
+nbsphinx_allow_errors = True  # Allow notebooks with errors to render
+nbsphinx_execute = 'never'  # Always execute notebooks during the build
+nb_execution_mode = 'off'
+nb_render_text_lexer = 'python'  # Syntax highlighting for code cells
+# nb_ipywidgets_js = True          # Support for Jupyter widgets (optional)
+

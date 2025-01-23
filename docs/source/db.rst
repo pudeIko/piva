@@ -12,7 +12,7 @@ simply run::
 in the terminal. This will start a :mod:`piva` session and open the following
 window:
 
-.. figure:: ../img/db-labels.png
+.. figure:: ../img/db/db-labels.png
     :alt: Image not found.
 
 - The left-hand side of the window provides a **tree-view** of the filesystem,

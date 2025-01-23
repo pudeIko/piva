@@ -22,6 +22,21 @@ exploration of large image-like datasets. While it can generally display any
 multidimensional data, most of its functionalities are tailored for users
 performing Angle-Resolved Photoemission Spectroscopy (ARPES) experiments.
 
+The showcase video presented below offers a demonstration of the GUI's layout
+and overall user experience, while also highlighting its core functionalities
+and key features in action.
+
+.. raw:: html
+
+   <div style="text-align: center;">
+       <video width="600" controls>
+           <source src="_static/showcase.mp4" type="video/mp4">
+           Your browser does not support the video tag.
+       </video>
+   </div>
+   <br><br><br>
+
+
 The package allows for live investigation of various datasets individually, as
 well as linking separate datasets for simultaneous browsing. Interactive
 sliders enable the display of multidimensional data across all available

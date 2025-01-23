@@ -17,7 +17,7 @@ specific **Dataloader** dedicated to various ARPES beamlines around the world
 Principles of the data import in :mod:`piva` are presented on a simple scheme
 below.
 
-.. figure:: ../img/dl-scheme.png
+.. figure:: ../img/dl/dl-scheme.png
     :alt: Image not found.
 
 If the file format is not yet supported, one needs to implement a custom
@@ -89,8 +89,8 @@ Description below shows step by step how to achieve both.
 
    The :class:`~data_loaders.Dataloader` class offers an interface for that.
    In order to write a custom dataloader, let's call it
-   :class:`CustomDataloader` for the sake of the following example, one needs
-   to start by creating a subclass of :class:`~data_loader.Dataloader`::
+   :class:`CustomDataloader`, one needs to start by creating a subclass of
+   :class:`~data_loader.Dataloader`::
 
     from piva.data_loaders import Dataloader
 
@@ -116,14 +116,18 @@ Description below shows step by step how to achieve both.
            - ``metadata``, :obj:`bool`, determine whether method should load
              entire dataset or just its metadata
 
-        have to be arguments of the ``load_data()`` method. See *e.g*
+        have to be arguments of the ``load_data()`` method. See
         :meth:`~data_loaders.DataloaderPickle.load_data` for more details.
 
 
    .. note::
-        Above example describes most basic implementation necessary to work.
-        It is recommended to use prepared template, which can be downloaded
-        from :download:`here <../misc/custom_data_loaders.py>`.
+        The above example describes the most basic implementation necessary to
+        work. It is recommended to use prepared template, which can be
+        downloaded from :download:`here <../misc/custom_data_loaders.py>`.
+
+   .. seealso::
+      See :meth:`~data_browser.DataBrowser.load_custom_data_loaders` for more
+      details.
 
 2. Making **CustomDataloader** visible for :mod:`piva` is accomplished through
    :class:`DataloaderImporter` object. Its proper configuration requires
@@ -136,21 +140,12 @@ Description below shows step by step how to achieve both.
       it on any operating system can be found `here <https://stackoverflow.com/
       questions/10738919/how-do-i-add-a-path-to-pythonpath-in-virtualenv>`_.
 
-   At the beginning of the session :mod:`piva` will search for the
+   At the beginning of the session, :mod:`piva` will search for the
    :class:`DataloaderImporter` class and execute whatever code it contains.
-   Users are in complete liberty of implementing the object according to
-   their preferences, but they might benefit from the example code provided
-   :download:`here <../misc/piva_dataloader_importer.py>`, that contains most
-   basic solution.
-
-   .. seealso::
-      See :meth:`~data_browser.DataBrowser.load_custom_data_loaders` for more
-      details.
-
-   Correctly loaded **CustomDataloader** should appear in **DataBrowser**
+   Correctly loaded **CustomDataloader** should appear in **DataBrowser's**
    drop-down menu:
 
-.. figure:: ../img/dl-cdl.png
+.. figure:: ../img/dl/dl-cdl.png
     :width: 276
     :height: 256
     :align: center
@@ -162,6 +157,33 @@ Description below shows step by step how to achieve both.
     modifying the :mod:`piva` package. Moreover, once correctly implemented,
     the loader will be automatically imported at the beginning of each
     :mod:`piva` session and available to the user immediately.
+
+
+
+.. _sec-custom-dl-example:
+
+Example
+-------
+Users are free to implement custom data loaders according to their
+preferences. However, they may find the provided template
+:download:`here <../misc/piva_dataloader_importer.py>` helpful.
+The template offers a basic implementation of the :class:`DataloaderImporter`
+and :class:`CustomDataloader` classes.
+
+Additionally, the template can be used to test the configuration with an
+example :download:`spectrum file <../misc/simulated_spectrum.h5>`, which
+contains a simulated 2D spectrum:
+
+.. figure:: ../img/dl/dl-test_spectrum.png
+    :width: 414
+    :height: 440
+    :align: center
+    :alt: Image not found.
+
+
+
+Contributing
+------------
 
 We encourage everyone to share their tested, self-written data loaders with
 the community by adding them to :mod:`piva`'s source code. This can be done

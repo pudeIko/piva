@@ -16,7 +16,7 @@ and :class:`~utilities_panel.UtilitiesPanel`, responsible for
 slicing/displaying updated plots and manipulation on the data, respectively.
 Its layout and components are described below:
 
-.. figure:: ../img/dv-2d-main.png
+.. figure:: ../img/dv/dv-2d-main.png
    :alt: Image not found.
 
 .. _sec-2d-viewer-table:
@@ -58,7 +58,7 @@ as a function of a third parameter, *e.g.* rotation angle or photon energy.
 Window's layout helps to simultaneously and intuitively present slices across
 all three perpendicular directions.
 
-.. figure:: ../img/dv-3d-main.png
+.. figure:: ../img/dv/dv-3d-main.png
    :alt: Image not found.
 
 =====   =======================================================================
@@ -92,7 +92,7 @@ for visualizing such datasets, acquired by rastering the beam over the sample's
 surface and spatially resolving electronic dispersion.
 
 
-.. figure:: ../img/dv-4d-main.png
+.. figure:: ../img/dv/dv-4d-main.png
    :alt: Image not found.
 
 =====   =======================================================================
@@ -131,10 +131,10 @@ Volume tab
 ^^^^^^^^^^
 
 Gives additional control over the sliders and allows to integrate data.
-Helps to better orientate on both levels: data matrix and experimental
+Helps to better orient on both levels: data matrix and experimental
 coordinates.
 
-.. figure:: ../img/dv-up-volume.png
+.. figure:: ../img/dv/dv-up-volume.png
    :alt: Image not found.
 
 ===============  ==============================================================
@@ -165,7 +165,7 @@ Image tab
 Controls visual aspects of displayed images, from simple colormap
 selection and color scaling to more advanced processing methods.
 
-.. figure:: ../img/dv-up-image.png
+.. figure:: ../img/dv/dv-up-image.png
    :alt: Image not found.
 
 ======================  =======================================================
@@ -199,7 +199,7 @@ Axes tab
 Allows to apply corrections, change scale of the energy axis and perform
 transformation to momentum space.
 
-.. figure:: ../img/dv-up-axes.png
+.. figure:: ../img/dv/dv-up-axes.png
    :alt: Image not found.
 
 ======================  =======================================================
@@ -220,9 +220,9 @@ Energy correction       Apply manually energy corrections for Fermi level and
                            lattice constants. Conversion with default values
                            (:math:`\pi`) gives axes in units of inverse
                            angstroms.
-                         - *Copy from 'Orientate'* button allows to use the
+                         - *Copy from 'Orient'* button allows to use the
                            values for the location of :math:`\Gamma` found in
-                           the *Orientate* tab.
+                           the *Orient* tab.
 
                         Conversion algorithm follows procedure described by
                         `Ishida et al. <https://doi.org/10.1063/1.5007226>`_
@@ -239,15 +239,15 @@ Energy correction       Apply manually energy corrections for Fermi level and
 
     See :func:`~working_procedures.rescale_data` for more details.
 
-.. _sec-utilities-panel-orientate:
+.. _sec-utilities-panel-orient:
 
-Orientate tab
-^^^^^^^^^^^^^
+Orient tab
+^^^^^^^^^^
 
 Contains tools useful for sample alignment at the beginning of the
 experiment.
 
-.. figure:: ../img/dv-up-orientate.png
+.. figure:: ../img/dv/dv-up-orientate.png
    :alt: Image not found.
 
 =======================  ======================================================
@@ -274,7 +274,7 @@ File related options. Allows to edit and browse through metadata. Gives a
 quick, *one-click* solution for jumping to the JupyterLab to perform more
 sophisticated analysis.
 
-.. figure:: ../img/dv-up-file.png
+.. figure:: ../img/dv/dv-up-file.png
    :alt: Image not found.
 
 ============================  =================================================
@@ -291,9 +291,12 @@ summing options               Sum current data with a given data file. Method
                               :meth:`sum_datasets
                               <utilities_panel.UtilitiesPanel.sum_datasets>`
                               for more details.
-open in JupyterLab            Create (*touch* button) new ``notebook`` file
-                              with exported details for plotting currently
-                              displayed image. *start JL session* opens new
+open in JupyterLab            Create a new ``notebook`` file (*touch* button)
+                              with exported details for easier plotting and
+                              analysis of the currently displayed image.
+                              (See :ref:`analysis-notebook` for more
+                              information.)
+                              *start JL session* opens new
                               ``jupyter-lab`` server.
 open experimental logbook     Create new ``notebook`` file with an automated
                               experimental logbook for selected beamline.
