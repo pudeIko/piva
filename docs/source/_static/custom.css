@@ -1,8 +1,8 @@
 
 :root {
-    --custom_theme_color: rgba(255, 164, 42, 0.90);
-    --custom_boxes_color: rgba(255, 164, 42, 0.90);
-    --custom_light_color: rgba(255, 164, 42, 0.15);
+    --custom_theme_color: rgba(232, 139, 39, 1.00);
+    --custom_boxes_color: rgba(232, 139, 39, 0.90);
+    --custom_light_color: rgba(232, 139, 39, 0.15);
 }
 
 /* Don't put a scrollbar in tables */

@@ -46,6 +46,7 @@ This will open the :ref:`DataBrowser <sec-db>` window.
 
 Installation via PyPi
 ---------------------
+
 Alternatively, :mod:`piva` can be installed using the PyPI package manager.
 
 This approach requires creating a virtual environment manually first. As in
