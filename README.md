@@ -60,8 +60,8 @@ For more detailed information and examples, visit the project's
 [documentation](https://piva.readthedocs.io/en/latest/) website, including:
 
 - [Getting Started](https://piva.readthedocs.io/en/latest/installation.html),
-to learn more about installation, opening example datasets, and running automated 
-tests,
+to learn more about installation, opening example datasets, and running 
+automated tests,
 - [GUI Applications](https://piva.readthedocs.io/en/latest/db.html),
 to explore the layout and functionalities of the interactive viewers, and
 - [Data Handling](https://piva.readthedocs.io/en/latest/dataloaders.html),
