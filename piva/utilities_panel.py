@@ -1536,6 +1536,7 @@ class UtilitiesPanel(QWidget):
         if port:
             openJupyter = openJupyter + ' --port=' + port
         process = subprocess.Popen(openJupyter, shell=True, cwd=directory)
+        self.mw.db.jupyter_servers.append(process)
 
         self.mw.db.jl_session_running = True
         if port is not None:

@@ -994,14 +994,17 @@ class DataViewer2D(QtWidgets.QMainWindow):
 
         # energy axis
         dataset = self.data_set
-        # print(dataset)
-        savedir = str(QtWidgets.QFileDialog.getExistingDirectory(
-            self, 'Select Directory', self.fname[:-len(self.title)]))
-        # savedir = self.fname[:-len(self.title)]
         up = self.util_panel
         file_selection = True
         # Prepare a filename with the .p suffix
         init_fname = '.'.join(self.title.split('.')[:-1] + ['p'])
+
+        # Choose directory
+        savedir = str(QtWidgets.QFileDialog.getExistingDirectory(
+            self, 'Select Directory', self.fname[:-len(self.title)]))
+        # savedir = self.fname[:-len(self.title)]
+        if not savedir:
+            return
 
         while file_selection:
             fname, fname_return_value = \

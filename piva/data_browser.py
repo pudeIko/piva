@@ -1,5 +1,7 @@
 import os
 import time
+import atexit
+import subprocess
 # import importlib.util
 # import inspect
 
@@ -46,6 +48,7 @@ class DataBrowser(QMainWindow):
         # self.thread = {}
         self.data_viewers = {}
         self.plotting_tools = {}
+        self.jupyter_servers = []
         self.file_explorer = None
         self.model = None
         self.jl_session_running = False
@@ -854,3 +857,25 @@ class DataBrowser(QMainWindow):
 
         except ModuleNotFoundError:
             pass
+
+    def cleanup_notebooks(self):
+        """
+        Stop all started ``jupyter-lab`` session.
+        """
+        
+        for p in self.jupyter_servers:
+            if p.poll() is None:  # Still running
+                p.terminate()
+                try:
+                    p.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    p.kill()
+        self.jupyter_servers.clear()
+
+    def closeEvent(self, event):
+        """
+        Actions called when the window is closed.
+        """
+
+        self.cleanup_notebooks()
+        event.accept()
