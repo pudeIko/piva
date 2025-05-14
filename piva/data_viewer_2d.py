@@ -995,7 +995,9 @@ class DataViewer2D(QtWidgets.QMainWindow):
         # energy axis
         dataset = self.data_set
         # print(dataset)
-        savedir = self.fname[:-len(self.title)]
+        savedir = str(QtWidgets.QFileDialog.getExistingDirectory(
+            self, 'Select Directory', self.fname[:-len(self.title)]))
+        # savedir = self.fname[:-len(self.title)]
         up = self.util_panel
         file_selection = True
         # Prepare a filename with the .p suffix
@@ -1057,7 +1059,6 @@ class DataViewer2D(QtWidgets.QMainWindow):
         else:
             pass
 
-        # dl.dump(dataset, (savedir + fname), force=True)
         dl.dump(dataset, os.path.join(savedir, fname), force=True)
 
     def open_pit(self) -> None:

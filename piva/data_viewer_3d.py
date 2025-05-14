@@ -1744,6 +1744,20 @@ class DataViewer3D(QtWidgets.QMainWindow):
         which has the benefit of providing a free-slicing ROI.
         """
 
+        info_box = QMessageBox()
+        info_box.setIcon(QMessageBox.Information)
+        info_box.setWindowTitle('K-space conversion.')
+        msg = 'Note:\n' \
+        'PIT is a third-party package and may not work ' \
+        'properly with Python versions above 3.8.'
+        info_box.setText(msg)
+        info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+        choice = info_box.exec()
+        if choice == QMessageBox.Ok:
+            pass
+        elif choice == QMessageBox.Cancel:
+            return
+        
         mw = pit.MainWindow()
         mw.data_handler.set_data(self.data_set.data,
                                  axes=self.data_handler.axes)
@@ -1880,7 +1894,10 @@ class DataViewer3D(QtWidgets.QMainWindow):
         """
 
         dataset = self.data_set
-        savedir = self.fname[:-len(self.title)]
+
+        savedir = str(QtWidgets.QFileDialog.getExistingDirectory(
+            self, 'Select Directory', self.fname[:-len(self.title)]))
+        # savedir = self.fname[:-len(self.title)]
         up = self.util_panel
         file_selection = True
         # Prepare a filename with the .p suffix
@@ -1941,7 +1958,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
         else:
             pass
 
-        # dl.dump(dataset, (savedir + fname), force=True)
         dl.dump(dataset, os.path.join(savedir, fname), force=True)
 
     def load_corrections(self, data_set: Dataset) -> None:
