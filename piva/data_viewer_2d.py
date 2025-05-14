@@ -1057,7 +1057,8 @@ class DataViewer2D(QtWidgets.QMainWindow):
         else:
             pass
 
-        dl.dump(dataset, (savedir + fname), force=True)
+        # dl.dump(dataset, (savedir + fname), force=True)
+        dl.dump(dataset, os.path.join(savedir, fname), force=True)
 
     def open_pit(self) -> None:
         """

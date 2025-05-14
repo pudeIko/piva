@@ -1129,7 +1129,8 @@ class DataViewer4D(QtWidgets.QMainWindow):
             else:
                 file_selection = False
 
-        dl.dump(dataset, (savedir + fname), force=True)
+        # dl.dump(dataset, (savedir + fname), force=True)
+        dl.dump(dataset, os.path.join(savedir, fname), force=True)
 
     def closeEvent(self, event: Any) -> None:
         """
