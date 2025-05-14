@@ -41,10 +41,11 @@ dependencies = [
 test = ["pytest", "tox"]
 
 [project.scripts]
-db = "piva.main:db"
+piva = "piva.main:db"
 
 [project.urls]
 Homepage = "https://github.com/pudeIko/piva.git"
+Documentation = "https://piva.readthedocs.io/en/latest/intro.html"
 
 [tool.hatch.version]
 path = "piva/__init__.py"
