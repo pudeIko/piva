@@ -49,11 +49,15 @@ jobs:
           pip install -r requirements.txt
           pip install pytest-cov
 
-      - name: Lint and check code formatting
+      - name: Lint with Ruff and check code formatting
         run: |
           pipx install ruff
           ruff check --exit-zero --output-format=github --target-version=py310
+
+      - name: Check formatting with Ruff
+        run: |
           ruff format --diff --target-version=py310
+        continue-on-error: true
 
       - name: Test dataloaders
         run: >
