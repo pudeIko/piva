@@ -1,9 +1,6 @@
 import os
 import time
-import atexit
 import subprocess
-# import importlib.util
-# import inspect
 
 import numpy as np
 from PyQt5.QtWidgets import QAction, QHBoxLayout, QLabel, QVBoxLayout, \

@@ -1978,7 +1978,7 @@ class UtilitiesPanel(QWidget):
             message = 'Everything match! We\'re good to go!'
         else:
             message = 'Some stuff doesn\'t match...\n\n'
-            dont_match = np.where(np.array(check_result) == False)
+            dont_match = np.where(~np.array(check_result))
             for idx in dont_match[0]:
                 try:
                     message += '{}\t{:.3f}\t {:.3f}\n'.format(
