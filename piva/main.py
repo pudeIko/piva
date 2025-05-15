@@ -15,7 +15,7 @@ def db():
     print(f'                        Version {version}                        ')
     print( '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
     app = QApplication(sys.argv)
-    window = DataBrowser()
+    DataBrowser()
     sys.exit(app.exec_())
 
 

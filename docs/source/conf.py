@@ -12,6 +12,7 @@
 
 import os
 import sys
+import shutil
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath(os.path.join('../../piva')))
 # sys.path.insert(0, os.path.abspath(os.path.join('../../')))
@@ -64,9 +65,17 @@ html_theme_options = {
 }
 
 
+def copy_extra_files(app, exception):
+    if exception is None:
+        src_path = os.path.join(app.srcdir, 'notebooks', 'Au-test_spectrum.p')
+        target_dir = os.path.join(app.outdir, 'notebooks')
+        os.makedirs(target_dir, exist_ok=True)
+        shutil.copy(src_path, target_dir)
+
 # Load cutsom stylesheet
 def setup(app):
     app.add_css_file('custom.css')
+    app.connect('build-finished', copy_extra_files)
 
 
 # Intersphinx config

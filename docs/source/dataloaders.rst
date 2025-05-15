@@ -35,35 +35,58 @@ Table below shows list of **Dataloader** corresponding to light sources and
 data formats currently implemented within :mod:`piva`, along with the most
 recent dates when the **Dataloader** was tested.
 
-.. table::
-   :widths: auto
+.. list-table::
+   :header-rows: 1
+   :widths: 15 10 10 30 25
 
-   ===========  ========  ========  =======================  ==================
-   Dataloader   Facility  Date      File formats             Comments
-   ===========  ========  ========  =======================  ==================
-   Pickle       --        Oct 2023  - :mod:`pickle` files    files saved with
-                                                             :mod:`piva`
-   SIS          SLS       Oct 2023  - Scienta SES files      --
-                                      (**.zip**, **.ibw**,
-                                      **.pxt**)
-                                    - HDF file (**.h5**)
-   ADRESS       SLS       Aug 2023  - HDF file (**.h5**)     --
-   Bloch        MAX IV    Oct 2023  - Scienta SES files      --
-                                      (**.zip**, **.ibw**,
-                                      **.pxt**)
-   MERLIN       ALS       Apr 2023  - Scienta SES files      --
-                                      (**.zip**, **.ibw**,
-                                      **.pxt**)
-                                    - HDF file (**.h5**)
-   i05          Diamond   Nov 2022  - NeXus (**.nxs***)      --
-   URANOS       Solaris   Apr 2023  - Scienta SES files      --
-                                      (**.zip**, **.ibw**,
-                                      **.pxt**)
-   CASSIOPEE    Soleil    Oct 2023  - Scienta SES files      --
-                                      (**.zip**, **.ibw**,
-                                      **.pxt**)
-                                    - Text files (**.txt**)
-   ===========  ========  ========  =======================  ==================
+   * - Dataloader
+     - Facility
+     - Date
+     - File formats
+     - Comments
+   * - :class:`Pickle <data_loaders.DataloaderPickle>`
+     - --
+     - Oct 2023
+     - - :mod:`pickle` files
+     - files saved with :mod:`piva`
+   * - :class:`SIS <data_loaders.DataloaderSIS>`
+     - SLS
+     - Oct 2023
+     - - Scienta SES files (**.zip**, **.ibw**, **.pxt**)  
+       - HDF file (**.h5**)
+     - --
+   * - :class:`ADRESS <data_loaders.DataloaderADRESS>`
+     - SLS
+     - Aug 2023
+     - - HDF file (**.h5**)
+     - --
+   * - :class:`Bloch <data_loaders.DataloaderBloch>`
+     - MAX IV
+     - Oct 2023
+     - - Scienta SES files (**.zip**, **.ibw**, **.pxt**)
+     - --
+   * - :class:`MERLIN <data_loaders.DataloaderMERLIN>`
+     - ALS
+     - Apr 2023
+     - - Scienta SES files (**.zip**, **.ibw**, **.pxt**)  
+       - HDF file (**.h5**)
+     - --
+   * - :class:`I05 <data_loaders.DataloaderI05>`
+     - Diamond
+     - Nov 2022
+     - - NeXus (**.nxs**)
+     - --
+   * - :class:`URANOS <data_loaders.DataloaderURANOS>`
+     - Solaris
+     - Apr 2023
+     - - Scienta SES files (**.zip**, **.ibw**, **.pxt**)
+     - --
+   * - :class:`CASSIOPEE <data_loaders.DataloaderCASSIOPEE>`
+     - Soleil
+     - Oct 2023
+     - - Scienta SES files (**.zip**, **.ibw**, **.pxt**)  
+       - Text files (**.txt**)
+     - --
 
 
 .. _sec-custom-dl:

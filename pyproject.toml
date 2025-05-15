@@ -18,7 +18,6 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-    "astropy>=4.2",
     "data_slicer>=1.0.2",
     "h5py>=3.11.0",
     "igor2>=0.5",
@@ -38,11 +37,15 @@ dependencies = [
     "typing>=3.7",
 ]
 
+[project.optional-dependencies]
+test = ["pytest", "tox"]
+
 [project.scripts]
-db = "piva.main:db"
+piva = "piva.main:db"
 
 [project.urls]
 Homepage = "https://github.com/pudeIko/piva.git"
+Documentation = "https://piva.readthedocs.io/en/latest/intro.html"
 
 [tool.hatch.version]
 path = "piva/__init__.py"

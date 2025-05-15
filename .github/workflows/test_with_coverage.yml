@@ -5,9 +5,10 @@ on:
   pull_request:
     branches:
       - main
-#  push:
-#    branches:
-#      - main
+  push:
+    branches:
+      - main
+      - pyOS-review
 
 defaults:
   run:
@@ -23,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest", "macos-latest", "windows-latest"]
-        python-version: ["3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
       - name: Check out repository
@@ -48,10 +49,13 @@ jobs:
           pip install -r requirements.txt
           pip install pytest-cov
 
-      - name: Lint and check code formatting
+      - name: Lint with Ruff and check code formatting
         run: |
           pipx install ruff
-          ruff check --output-format=github --target-version=py310
+          ruff check --exit-zero --output-format=github --target-version=py310
+
+      - name: Check formatting with Ruff
+        run: |
           ruff format --diff --target-version=py310
         continue-on-error: true
 

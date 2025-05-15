@@ -1549,15 +1549,15 @@ def curvature_1d(data: np.ndarray, dx: float, a0: float = 0.0005,
         ef = indexof(0, xaxis)
         C_x[ef:] = 0
 
-    # return -normalize(C_x).clip(max=clip_co)
+    return -normalize(C_x).clip(max=clip_co)
 
-    if C_x.min() < 0:
-        C_x -= C_x.min()
-    else:
-        C_x += C_x.min()
-    C_x = 1 / C_x
-    C_x[C_x == np.inf] = np.max(C_x[np.isfinite(C_x)])
-    return normalize(C_x).clip(min=clip_co)
+    # if C_x.min() < 0:
+    #     C_x -= C_x.min()
+    # else:
+    #     C_x += C_x.min()
+    # C_x = 1 / C_x
+    # C_x[C_x == np.inf] = np.max(C_x[np.isfinite(C_x)])
+    # return normalize(C_x).clip(min=clip_co)
 
 
 def curvature_2d(data: np.ndarray, dx: float, dy: float, a0: float = 100,
@@ -1600,12 +1600,12 @@ def curvature_2d(data: np.ndarray, dx: float, dy: float, a0: float = 100,
     # cy = (dy / dx) * (mdfdx ** 2 + mdfdy ** 2) * a0
     # cx = (dx / dy) * (mdfdx ** 2 + mdfdy ** 2) * a0
 
-    nom = (1 + cx * np.power(dfdx, 2)) * cy * d2fdy2 - \
+    num = (1 + cx * np.power(dfdx, 2)) * cy * d2fdy2 - \
           2 * cx * cy * dfdx * dfdy * d2fdxdy + \
           (1 + cy * np.power(dfdy, 2)) * cx * d2fdx2
     den = (1 + cx * np.power(dfdx, 2) + cy * np.power(dfdy, 2)) ** 1.5
 
-    C_xy = nom / den
+    C_xy = num / den
 
     if eaxis is not None:
         ef = indexof(0, eaxis)
@@ -1921,6 +1921,11 @@ def hv2kz(ang: np.ndarray, hvs: np.ndarray, work_func: float = 4.5,
         ana_ax_off = kwargs['d_ana_ax']
     else:
         ana_ax_off = 0
+    if 'd_scan_ax' in kwargs.keys():
+        scan_ax_off = kwargs['d_scan_ax']
+    else:
+        scan_ax_off = 0
+    scan_ax_off = np.deg2rad(scan_ax_off)
 
     ky = np.array(ky)
     kz = np.zeros_like(ky)
@@ -1935,7 +1940,8 @@ def hv2kz(ang: np.ndarray, hvs: np.ndarray, work_func: float = 4.5,
             Ek = hvs[kz_i] + work_func
             for kz_j in range(kz.shape[1]):
                 theta = np.deg2rad(ang[kz_j])
-                k_ij = k0 * np.sqrt(Ek * (np.cos(theta) ** 2) + V0)
+                k_ij = k0 * np.sqrt(Ek * np.power(np.cos(theta), 2) * \
+                                    np.power(np.cos(scan_ax_off), 2) + V0)
                 kz[kz_i][kz_j] = k_ij
     else:
         for kzi, hv in enumerate(hvs):

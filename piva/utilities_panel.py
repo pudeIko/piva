@@ -1427,8 +1427,10 @@ class UtilitiesPanel(QWidget):
             such acquired files.
         """
 
-        file_path = self.mw.fname[:-len(self.mw.title)] + \
-                    self.file_sum_datasets_fname.text()
+        file_path = os.path.join(os.path.dirname(self.mw.fname), 
+                                 self.file_sum_datasets_fname.text())
+        # file_path = self.mw.fname[:-len(self.mw.title)] + \
+        #             self.file_sum_datasets_fname.text()
         org_dataset = dl.load_data(self.mw.fname)
         new_dataset, check_result = None, None
 
@@ -1534,6 +1536,7 @@ class UtilitiesPanel(QWidget):
         if port:
             openJupyter = openJupyter + ' --port=' + port
         process = subprocess.Popen(openJupyter, shell=True, cwd=directory)
+        self.mw.db.jupyter_servers.append(process)
 
         self.mw.db.jl_session_running = True
         if port is not None:
@@ -1549,7 +1552,6 @@ class UtilitiesPanel(QWidget):
             directory = str(QtWidgets.QFileDialog.getExistingDirectory(
                 self, 'Select Directory', self.mw.fname[:-len(self.mw.title)]))
 
-        # fname = directory + '/' + self.file_jl_fname.text()
         fname = os.path.join(directory, self.file_jl_fname.text())
 
         if os.path.isfile(fname):
@@ -1563,7 +1565,6 @@ class UtilitiesPanel(QWidget):
         os.system('touch ' + fname)
 
         root_dir = os.path.dirname(os.path.abspath(__file__))
-        # template = root_dir + '/ipynb_templates/template.ipynb'
         template = os.path.join(root_dir, 'ipynb_templates', 'template.ipynb')
         templ_file = open(template, 'r')
         templ_lines = templ_file.readlines()
@@ -1573,32 +1574,6 @@ class UtilitiesPanel(QWidget):
         new_lines = []
         for line in templ_lines:
             new_lines.append(line)
-        #     if 'path = ' in line:
-        #         line = '    "path = \'{}\'\\n",'.format(
-        #             self.mw.fname[:-len(self.mw.title)])
-        #     if 'fname = ' in line:
-        #         line = '    "fname = \'{}\'\\n",'.format(self.mw.title)
-        #     if 'slit_idx, e_idx =' in line:
-        #         if self.dim == 2:
-        #             line = '    "slit_idx, e_idx = {}, {}\\n",'.format(
-        #                 self.momentum_hor.value(), self.energy_vert.value())
-        #             line = line + '    "bm = data[0, :, :]\\n",\n'
-        #             line = line + '    "plot_x = ' \
-        #                           'data[0, slit_idx, e_idx]\\n",\n'
-        #             line = line + '    "plot_y = data[0, :, e_idx]"\n'
-        #         elif self.dim == 3:
-        #             line = '    "scan_idx, slit_idx, e_idx = ' \
-        #                    '{}, {}, {}\\n",'.format(
-        #                 self.momentum_vert.value(),
-        #                 self.momentum_hor.value(),
-        #                 self.energy_vert.value())
-        #             line = line + '    "main_cut = data[:, :, e_idx]\\n",\n'
-        #             line = line + '    "cut_x = data[:, slit_idx, :]\\n",\n'
-        #             line = line + '    "cut_y = data[scan_idx, :, :]\\n",\n'
-        #             line = line + '    "plot_x = ' \
-        #                           'data[:, slit_idx, e_idx]\\n",\n'
-        #             line = line + '    "plot_y = data[scan_idx, :, e_idx]"\n'
-        #     new_lines.append(line)
 
         new_file = open(fname, 'w')
         new_file.writelines(new_lines)
@@ -1638,7 +1613,6 @@ class UtilitiesPanel(QWidget):
         os.system('touch ' + fname)
 
         root_dir = os.path.dirname(os.path.abspath(__file__))
-        # template = root_dir + '/ipynb_templates/template-metadata.ipynb'
         template = os.path.join(root_dir, 'ipynb_templates',
                                 'template-metadata.ipynb')
         templ_file = open(template, 'r')
@@ -2004,7 +1978,7 @@ class UtilitiesPanel(QWidget):
             message = 'Everything match! We\'re good to go!'
         else:
             message = 'Some stuff doesn\'t match...\n\n'
-            dont_match = np.where(np.array(check_result) == False)
+            dont_match = np.where(~np.array(check_result))
             for idx in dont_match[0]:
                 try:
                     message += '{}\t{:.3f}\t {:.3f}\n'.format(

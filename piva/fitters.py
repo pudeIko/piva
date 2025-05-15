@@ -867,9 +867,9 @@ class MDCFitter(Fitter):
 
         self.prepare_fitting_results(fit_alpha, fit_beta)
 
-        res_func = lambda x: self.fit_fun(x, *self.p)
-        # def res_func(x):
-        #     return self.fit_fun(x, *self.p)
+        # res_func = lambda x: self.fit_fun(x, *self.p)
+        def res_func(x):
+            return self.fit_fun(x, *self.p)
 
         fit = res_func(k_fit) + self.bgr_fit
 
