@@ -40,7 +40,7 @@ enhancements to the code.
 To activate the environment and start the software, simply run::
 
     conda activate piva-env
-    db
+    piva
 
 This will open the :ref:`DataBrowser <sec-db>` window.
 
@@ -64,7 +64,7 @@ Inside the activated virtual environment, upgrade ``pip`` and install
 
 To start the software and open the :ref:`DataBrowser <sec-db>` window, run::
 
-    db
+    piva
 
 
 
@@ -82,6 +82,12 @@ following methods:
    feel for the GUI.
 
 2) Using implemented automated tests.
+
+    One can simply navigate to the project root and run::
+        
+        pytest
+
+    Alternatively, specific tests can be executed separately:
 
     - To check proper behavior of implemented Dataloaders run::
 
