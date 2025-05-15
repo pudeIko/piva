@@ -52,9 +52,8 @@ jobs:
       - name: Lint and check code formatting
         run: |
           pipx install ruff
-          ruff check --output-format=github --target-version=py310 --exit-zero
+          ruff check --exit-zero --output-format=github --target-version=py310
           ruff format --diff --target-version=py310
-        # continue-on-error: true
 
       - name: Test dataloaders
         run: >
