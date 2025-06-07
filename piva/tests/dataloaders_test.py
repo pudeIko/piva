@@ -4,6 +4,7 @@ Automated test for all Dataloaders from implemented beamlines.
 import numpy as np
 import piva.data_loaders as dl
 import argparse
+from pydantic import BaseModel
 import os
 import pkg_resources
 
@@ -39,7 +40,8 @@ def test_dataloaders() -> None:
         print(f'{fname:{30}}{dli}')
         ds = dli.load_data(os.path.join(PATH, fname))
         # check if the mandatory attributes are loaded correctly
-        assert isinstance(ds, argparse.Namespace)
+        assert (isinstance(ds, BaseModel) or 
+                isinstance(ds, argparse.Namespace))
         assert type(ds.data) is np.ndarray
         assert len(ds.data.shape) == 3
         assert type(ds.xscale) is np.ndarray

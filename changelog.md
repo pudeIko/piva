@@ -5,6 +5,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic 
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0]
+
+### Added
+
+- testing extras to `toml` file
+- example spectrum for testing
+- directory selection when saving to pickle
+- method that stops all started `jupyter` sessions
+
+### Changed
+
+- `Dataset` base calss to `pydantic.BaseModel`
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
 
 ## [2.3.2]
 
@@ -65,12 +84,6 @@ with templates and documentation on implementation
 - `data_viewer_4D` class for visualization of *x-y* raster scans
 - higher-level analysis methods
 - showcase and more extensive documentation
-
-### Changed
-
-### Deprecated
-
-### Removed
 
 ### Fixed
 
