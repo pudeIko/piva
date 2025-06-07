@@ -16,7 +16,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- `Dataset` base calss to `pydantic.BaseModel`
+- `Dataset` base calss `argparse.Namespace` to `pydantic.BaseModel`
 
 ### Deprecated
 

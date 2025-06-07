@@ -35,7 +35,7 @@ within :mod:`piva` and is understandable by all other :mod:`piva` modules.
 ----------------------------------------
 
 The file format used internally by :mod:`piva` is a simple structured object
-inheriting from the :class:`argparse.Namespace` object. [#namespace]_
+inheriting from the :class:`pydantic.BaseModel` object. [#basemodel]_
 
 The following table provides an overview of the data structure definition:
 
@@ -132,7 +132,7 @@ marked with an asterisk (*). However, much of the other information is needed
 for processing routines, such as angle-to-`k`-space conversion.
 
 
-.. [#namespace]
+.. [#basemodel]
 
     The only thing one needs to know about this, is that it accepts arbitrary
     python objects to store as its attributes, making it function as a simple 
