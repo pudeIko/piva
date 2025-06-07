@@ -2,6 +2,8 @@ import numpy as np
 from piva.data_loaders import Dataloader, Dataset
 from piva.data_browser import DataBrowser
 import h5py
+from abc import ABC, abstractmethod
+from typing import final
 
 
 class DataloaderImporter:
@@ -11,22 +13,34 @@ class DataloaderImporter:
 
     def __init__(self, data_browser: DataBrowser) -> None:
         """
-        Initialize DataloaderImporter.
+        Initialize DataloaderImporter and export custom written loaders to the 
+        record of available **Dataloaders**.
 
         :param data_browser: `DataBrowser` of the current session
         """
 
+        # assign a reference to the DataBrowser
         self.db = data_browser
         self.db.dp_dl_picker.insertSeparator(self.db.dp_dl_picker.count())
 
-        self.add_dataloader1()
-
-    def add_dataloader1(self) -> None:
-        """
-        Example method for importing custom Dataloader.
-        """
-
+        # create a new instance of your CustomDataloader
         loader = CustomDataloader
+
+        # use this method to add the loader to the DataBrowser's record!
+        self.add_dataloader(loader)
+
+    @final
+    def add_dataloader(self, loader: Dataloader) -> None:
+        """
+        Method for exporting implemented custom Dataloader to the 
+        DataBrowser's list of available dataloaders. 
+        
+        Should not be overridden!
+
+        :param loader: the implemented CustomDataloader that needs to be 
+               imported
+        """
+
         dl_label = '{}'.format(loader.name)
 
         self.db.dp_dl_picker.addItem(dl_label)
@@ -119,6 +133,7 @@ class CustomDataloader(Dataloader):
         polarization = meta['polar']
         DT = meta['DT']
 
+        # feed Dataset object with loaded data
         self.ds.data = data
         self.ds.xscale = xscale
         self.ds.yscale = yscale

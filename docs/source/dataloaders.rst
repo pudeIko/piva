@@ -123,8 +123,10 @@ Description below shows step by step how to achieve both.
         def __init__(self):
             super(CustomDataloader1, self).__init__()
 
-   Such defined subclass **has to** contain a ``load_data()`` method, returning
-   :class:`~data_loaders.Dataset` object under ``self.ds`` attribute::
+   As an `abstract base class <https://docs.python.org/3/library/abc.html>`_, 
+   :class:`~data_loaders.Dataloader` requires a ``load_data()`` method. Any 
+   custom subclass **must** therefore implement this method and assign a 
+   :class:`~data_loaders.Dataset` object to the ``self.ds`` attribute::
 
         def load_data(self, filename, metadata=False):
             # <Your code here>
@@ -142,11 +144,6 @@ Description below shows step by step how to achieve both.
         have to be arguments of the ``load_data()`` method. See
         :meth:`~data_loaders.DataloaderPickle.load_data` for more details.
 
-
-   .. note::
-        The above example describes the most basic implementation necessary to
-        work. It is recommended to use prepared template, which can be
-        downloaded from :download:`here <../misc/custom_data_loaders.py>`.
 
    .. seealso::
       See :meth:`~data_browser.DataBrowser.load_custom_data_loaders` for more
@@ -181,6 +178,12 @@ Description below shows step by step how to achieve both.
     the loader will be automatically imported at the beginning of each
     :mod:`piva` session and available to the user immediately.
 
+
+.. note::
+    It is highly recommended to use the prepared templates for both 
+    :class:`DataloaderImporter` and :class:`CustomDataloader`, which can be 
+    found 
+    `here <https://github.com/pudeIko/piva/blob/main/docs/misc/piva_dataloader_importer.py>`_.
 
 
 .. _sec-custom-dl-example:
