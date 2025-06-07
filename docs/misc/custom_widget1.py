@@ -20,7 +20,7 @@ class CustomWidget(QtWidgets.QMainWindow):
 
     def __init__(self, data_browser: DataBrowser, index: str = None) -> None:
         """
-        Initialize main window.
+        Initialize main window with some basic parameters.
 
         :param data_browser: `DataBrowser` of the current session
         :param index: title of the window and its index in the record of opened
@@ -36,6 +36,7 @@ class CustomWidget(QtWidgets.QMainWindow):
         self.central_widget.setLayout(self.layout)
         self.setCentralWidget(self.central_widget)
 
+        # create a reference to the DataBrowser
         self.db = data_browser
         self.index = index
 
@@ -48,16 +49,19 @@ class CustomWidget(QtWidgets.QMainWindow):
         Example method for setting up the window, inserting widgets, *etc*.
         """
 
+        # initiate basic widgets
         labell = QLabel('Here you can place your stuff.')
         button = QPushButton('Close')
         dummy1 = QLabel('')
         dummy2 = QLabel('')
 
+        # add the widgets to the layout
         self.layout.addWidget(dummy1, 0, 0)
         self.layout.addWidget(labell, 1, 1)
         self.layout.addWidget(button, 2, 1)
         self.layout.addWidget(dummy2, 3, 3)
 
+        # connect some actions/methods
         button.clicked.connect(self.closeEvent)
 
     def closeEvent(self, event: Any) -> None:

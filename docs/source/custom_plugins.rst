@@ -25,7 +25,8 @@ This may include new visualization tools, data transformation routines, and
 more.
 
 The most basic implementation of the :class:`PluginImporter` and an example
-:class:`CustomWidget` can be downloaded from the links below:
+:class:`CustomWidget`, with tips and comments on the implementation, can be 
+downloaded from the links below:
 
 - :download:`PluginImporter <../misc/piva_plugin_importer.py>`
 - :download:`CustomWidget <../misc/custom_widget1.py>`

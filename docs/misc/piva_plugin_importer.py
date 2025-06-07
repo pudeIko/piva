@@ -15,6 +15,7 @@ class PluginImporter:
         :param data_browser: `DataBrowser` of the current session
         """
 
+        # create a reference to the DataBrowser and a "User plugins" menu 
         self.db = data_browser
         self.db.user_menu = self.db.menu_bar.addMenu('&User plugins')
 
@@ -23,6 +24,10 @@ class PluginImporter:
     def import_widget1(self) -> None:
         """
         Example method for importing and setting up custom widget.
+        
+        The example creates a menu action (and a shortcut) that triggers 
+        the opening of the custom widget (i.e., executes the method that 
+        initializes it), and adds it to the DataBrowser.
         """
 
         open_widget = QAction('Custom widget', self.db)

@@ -210,7 +210,7 @@ class Dataloader(ABC):
         self.scan = None
 
     @abstractmethod
-    def load_data(self) -> Dataset:
+    def load_data(self, filename: str, metadata: bool) -> Dataset:
         """
         Must be implemented in subclasses.
         """

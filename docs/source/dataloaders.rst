@@ -145,11 +145,6 @@ Description below shows step by step how to achieve both.
         :meth:`~data_loaders.DataloaderPickle.load_data` for more details.
 
 
-   .. note::
-        The above example describes the most basic implementation necessary to
-        work. It is recommended to use prepared template, which can be
-        downloaded from :download:`here <../misc/custom_data_loaders.py>`.
-
    .. seealso::
       See :meth:`~data_browser.DataBrowser.load_custom_data_loaders` for more
       details.
@@ -183,6 +178,12 @@ Description below shows step by step how to achieve both.
     the loader will be automatically imported at the beginning of each
     :mod:`piva` session and available to the user immediately.
 
+
+.. note::
+    It is highly recommended to use the prepared templates for both 
+    :class:`DataloaderImporter` and :class:`CustomDataloader`, which can be 
+    found 
+    `here <https://github.com/pudeIko/piva/blob/main/docs/misc/piva_dataloader_importer.py>`_.
 
 
 .. _sec-custom-dl-example:
