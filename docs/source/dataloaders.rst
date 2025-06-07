@@ -123,8 +123,10 @@ Description below shows step by step how to achieve both.
         def __init__(self):
             super(CustomDataloader1, self).__init__()
 
-   Such defined subclass **has to** contain a ``load_data()`` method, returning
-   :class:`~data_loaders.Dataset` object under ``self.ds`` attribute::
+   As an `abstract base class <https://docs.python.org/3/library/abc.html>`_, 
+   :class:`~data_loaders.Dataloader` requires a ``load_data()`` method. Any 
+   custom subclass **must** therefore implement this method and assign a 
+   :class:`~data_loaders.Dataset` object to the ``self.ds`` attribute::
 
         def load_data(self, filename, metadata=False):
             # <Your code here>

@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import QDialog, QLabel, QComboBox, QDialogButtonBox, \
 from datetime import datetime
 from typing import Union, Any, Optional, List, Dict
 from pydantic import BaseModel, Field
+from abc import ABC, abstractmethod
 
 
 class Dataset(BaseModel):
@@ -192,7 +193,7 @@ class Dataset(BaseModel):
         self.data_provenance['file'].append(file_entry)
 
 
-class Dataloader:
+class Dataloader(ABC):
     """
     Parent class (interface) from which other **DataLoaders** inherit some
     methods. Even while using same software, files can differ from beamline to
@@ -207,6 +208,14 @@ class Dataloader:
         self.ds = Dataset()
         self.raster = False
         self.scan = None
+
+    @abstractmethod
+    def load_data(self) -> Dataset:
+        """
+        Must be implemented in subclasses.
+        """
+
+        pass
 
     def load_ses_zip(self, filename: str, bl_md: list = None,
                      metadata: bool = False) -> None:
