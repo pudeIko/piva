@@ -4,7 +4,7 @@ Automated test for :class:`~data_viewer_2d.DataViewer2D` and
 most of the functionalities.
 """
 from piva.data_browser import DataBrowser
-from main import db
+from piva.main import db
 from piva.data_viewer_3d import DataViewer3D
 from piva.data_viewer_2d import DataViewer2D
 from piva.fitters import MDCFitter, EDCFitter
