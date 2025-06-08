@@ -13,6 +13,7 @@ import piva.data_viewer_2d as p2d
 import piva.data_viewer_3d as p3d
 import piva.data_viewer_4d as p4d
 import piva.plot_tool as pt
+from typing import Union
 
 
 START_TIME = time.time()
@@ -125,14 +126,17 @@ class DataBrowser(QMainWindow):
                              'tests', 'data', 'test_map.p')
         self.open_dv(fname)
 
-    def mb_open_dir(self) -> None:
+    def mb_open_dir(self, chosen_dir: Union[str, None]) -> None:
         """
         Open file dialog to select different working directory and change
         the highest directory of the :class:`DataBrowser` file explorer to it.
         """
 
-        chosen_dir = str(QtWidgets.QFileDialog.getExistingDirectory(
-            self, 'Select Directory', self.working_dir))
+        if chosen_dir is None:
+            chosen_dir = str(QtWidgets.QFileDialog.getExistingDirectory(
+                self, 'Select Directory', self.working_dir))
+        else:
+            pass
         try:
             # self.working_dir = self.add_slash(chosen_dir)
             self.working_dir = chosen_dir

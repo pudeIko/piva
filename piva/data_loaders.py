@@ -460,75 +460,75 @@ class Dataloader(ABC):
                     ns.__setattr__('scan_step',
                                    float(tokens[1].split()[0]))
 
-    def _load_ses_pxt(self, filename: str, bl_md: list = None,
-                      metadata: bool = False) -> None:
-        """
-        This is a deprecated, equivalent to original :meth:`load_ses_pxt`
-        method, but based on not maintained anymore :mod:`igor` package.
-        Kept, because old version provided better API, but had dependencies
-        conflicts.
+    # def _load_ses_pxt(self, filename: str, bl_md: list = None,
+    #                   metadata: bool = False) -> None:
+    #     """
+    #     This is a deprecated, equivalent to original :meth:`load_ses_pxt`
+    #     method, but based on not maintained anymore :mod:`igor` package.
+    #     Kept, because old version provided better API, but had dependencies
+    #     conflicts.
 
-        :param filename: absolute path to the file
-        :param bl_md: beamline specific metadata. Not used here, but required
-                      to mach format of other **Dataloaders**. See
-                      :meth:`load_ses_zip` for more info.
-        :param metadata: if :py:obj:`True`, read only metadata and size of the
-                         dataset. See :meth:`load_ses_zip` for more info.
-        """
+    #     :param filename: absolute path to the file
+    #     :param bl_md: beamline specific metadata. Not used here, but required
+    #                   to mach format of other **Dataloaders**. See
+    #                   :meth:`load_ses_zip` for more info.
+    #     :param metadata: if :py:obj:`True`, read only metadata and size of the
+    #                      dataset. See :meth:`load_ses_zip` for more info.
+    #     """
 
-        ds = self.ds
-        pxt = 0#igorpy.load(filename)[0]
+    #     ds = self.ds
+    #     pxt = 0#igorpy.load(filename)[0]
 
-        data = pxt.data.T
-        shape = data.shape
+    #     data = pxt.data.T
+    #     shape = data.shape
 
-        # if file contains single cut
-        if len(shape) == 2:
-            x = 1
-            y = pxt.axis[1].size
-            N_E = pxt.axis[0].size
-            # Make data 3D
-            data = data.reshape((1, y, N_E))
-            # Extract the limits
-            xlims = [1, 1]
-            xscale = start_step_n(*xlims, x)
-            yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
-            zscale = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
-        # if it contains multiple cuts, choose which one to load
-        else:
-            multiple_cuts_box = PXT_Dialog(shape[0])
-            box_return_value = multiple_cuts_box.exec()
-            selection = multiple_cuts_box.selection_box.currentIndex()
-            if box_return_value == 0:
-                return
-            data = data[selection, :, :]
-            x = 1
-            y = pxt.axis[1].size
-            N_E = pxt.axis[0].size
-            # Make data 3D
-            data = data.reshape((1, y, N_E))
-            # Extract the limits
-            xlims = [1, 1]
-            xscale = start_step_n(*xlims, x)
-            yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
-            zscale = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
+    #     # if file contains single cut
+    #     if len(shape) == 2:
+    #         x = 1
+    #         y = pxt.axis[1].size
+    #         N_E = pxt.axis[0].size
+    #         # Make data 3D
+    #         data = data.reshape((1, y, N_E))
+    #         # Extract the limits
+    #         xlims = [1, 1]
+    #         xscale = start_step_n(*xlims, x)
+    #         yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
+    #         zscale = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
+    #     # if it contains multiple cuts, choose which one to load
+    #     else:
+    #         multiple_cuts_box = PXT_Dialog(shape[0])
+    #         box_return_value = multiple_cuts_box.exec()
+    #         selection = multiple_cuts_box.selection_box.currentIndex()
+    #         if box_return_value == 0:
+    #             return
+    #         data = data[selection, :, :]
+    #         x = 1
+    #         y = pxt.axis[1].size
+    #         N_E = pxt.axis[0].size
+    #         # Make data 3D
+    #         data = data.reshape((1, y, N_E))
+    #         # Extract the limits
+    #         xlims = [1, 1]
+    #         xscale = start_step_n(*xlims, x)
+    #         yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
+    #         zscale = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
 
-        # set data and axes
-        ds.data = data
-        ds.xscale = xscale
-        ds.yscale = yscale
-        ds.zscale = zscale
+    #     # set data and axes
+    #     ds.data = data
+    #     ds.xscale = xscale
+    #     ds.yscale = yscale
+    #     ds.zscale = zscale
 
-        # Convert `note`, which is a bytestring of ASCII characters that
-        # contains some metadata, to a list of strings
-        meta = pxt.notes.decode('ASCII').split('\r')
-        self.read_ses_metadata(ds, meta, bl_md=bl_md)
+    #     # Convert `note`, which is a bytestring of ASCII characters that
+    #     # contains some metadata, to a list of strings
+    #     meta = pxt.notes.decode('ASCII').split('\r')
+    #     self.read_ses_metadata(ds, meta, bl_md=bl_md)
 
-        if ds.xscale.size == 1:
-            ds.scan_type = 'cut'
-        else:
-            ds.scan_dim = [ds.xscale[0], ds.xscale[-1],
-                           np.abs(ds.xscale[0] - ds.xscale[1])]
+    #     if ds.xscale.size == 1:
+    #         ds.scan_type = 'cut'
+    #     else:
+    #         ds.scan_dim = [ds.xscale[0], ds.xscale[-1],
+    #                        np.abs(ds.xscale[0] - ds.xscale[1])]
 
     @staticmethod
     def load_raster_scan(wave: Any, bl_md: list = None,
@@ -561,7 +561,7 @@ class Dataloader(ABC):
         for xi in range(nDim[2]):
             for yi in range(nDim[3]):
                 scan[xi, yi] = Dataset()
-                tmp_dl = Dataloader()
+                tmp_dl = DataloaderBloch()
                 meta = wave['note'].decode('ASCII').split('\r')
                 tmp_dl.read_ses_metadata(scan[xi, yi], meta, bl_md)
                 scan[xi, yi].x = x_axis[xi]
@@ -1769,32 +1769,32 @@ class DataloaderCASSIOPEE(Dataloader):
         return metadata
 
 
-class PXT_Dialog(QDialog):
-    """
-    Dialog window for choosing a specific cut from **\ *.pxt** files.
-    """
+# class PXT_Dialog(QDialog):
+#     """
+#     Dialog window for choosing a specific cut from **\ *.pxt** files.
+#     """
 
-    def __init__(self, n_cuts: int) -> None:
-        super(PXT_Dialog, self).__init__()
+#     def __init__(self, n_cuts: int) -> None:
+#         super(PXT_Dialog, self).__init__()
 
-        label = QLabel(f"Data file contains {n_cuts} slices.\n"
-                       f"Choose the one to open.")
-        combo = QComboBox()
-        opts = [str(x + 1) for x in np.arange(n_cuts)]
-        combo.addItems(opts)
+#         label = QLabel(f"Data file contains {n_cuts} slices.\n"
+#                        f"Choose the one to open.")
+#         combo = QComboBox()
+#         opts = [str(x + 1) for x in np.arange(n_cuts)]
+#         combo.addItems(opts)
 
-        box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
-                               centerButtons=True)
-        box.accepted.connect(self.accept)
-        box.rejected.connect(self.reject)
-        self.buttons_box = box
-        self.selection_box = combo
+#         box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+#                                centerButtons=True)
+#         box.accepted.connect(self.accept)
+#         box.rejected.connect(self.reject)
+#         self.buttons_box = box
+#         self.selection_box = combo
 
-        lay = QGridLayout(self)
-        lay.addWidget(label, 0, 0, 1, 2)
-        lay.addWidget(self.selection_box, 1, 0, 1, 2)
-        lay.addWidget(self.buttons_box, 2, 0, 1, 2)
-        self.resize(240, 140)
+#         lay = QGridLayout(self)
+#         lay.addWidget(label, 0, 0, 1, 2)
+#         lay.addWidget(self.selection_box, 1, 0, 1, 2)
+#         lay.addWidget(self.buttons_box, 2, 0, 1, 2)
+#         self.resize(240, 140)
 
 
 # +-------+ #
