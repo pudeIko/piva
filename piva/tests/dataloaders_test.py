@@ -35,7 +35,7 @@ def test_dataloaders() -> None:
             dli = dl.DataloaderMERLIN()
         elif 'uranos' in fname:
             dli = dl.DataloaderURANOS()
-        elif 'test' in fname:
+        elif 'test_map' in fname:
             pass
         else:
             continue

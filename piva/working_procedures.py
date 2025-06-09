@@ -9,6 +9,7 @@ from scipy import ndimage
 from scipy.optimize import curve_fit, minimize
 from scipy.signal import convolve2d
 from scipy.fft import fft, ifft, ifftshift
+from piva.data_loaders import Dataset
 
 import piva.constants as const
 
@@ -382,7 +383,6 @@ def get_linear(points: list) -> Callable:
     y = points[1]
 
     pars = np.polyfit(x, y, 1)
-    # fun = lambda arg: pars[0] * arg + pars[1]
 
     def fun(arg):
         return pars[0] * arg + pars[1]
@@ -696,9 +696,9 @@ def get_3D_modulation(qx: np.ndarray, qz: np.ndarray, permutations: list,
     return np.array(res, dtype=complex)
 
 
-def get_self_energy_of_FDW(Q: tuple, K: tuple, ek: Callable,
-                              ek_kwargs: dict, omega: np.ndarray,
-                              Pq: np.ndarray, eta: float = 0.1) -> np.ndarray:
+def get_self_energy_of_FDW(Q: tuple, K: tuple, ek_tb: Callable,
+                           ek_kwargs: dict, omega: np.ndarray,
+                           Pq: np.ndarray, eta: float = 0.1) -> np.ndarray:
     """
     Calculate self-energy of the fluctuating density wave order in a 3D case.
 
@@ -723,19 +723,19 @@ def get_self_energy_of_FDW(Q: tuple, K: tuple, ek: Callable,
     if dim == 1:
         kx = K
         qx = Q
-        res = np.zeros_like(qx.size, dtype=complex)
+        res = np.zeros(qx.size, dtype=complex)
         x_range, y_range, z_range = range(res.shape[0]), range(1), range(1)
     elif dim == 2:
         kx, ky = K
         qx, qy = Q
-        res = np.zeros_like((qx.size, qy.size), dtype=complex)
+        res = np.zeros((qx.size, qy.size), dtype=complex)
         x_range, y_range, z_range = range(res.shape[0]), \
                                     range(res.shape[1]), \
                                     range(1)
     elif dim == 3:
         kx, ky, kz = K
         qx, qy, qz = Q
-        res = np.zeros_like((qx.size, qy.size, qz.size), dtype=complex)
+        res = np.zeros((qx.size, qy.size, qz.size), dtype=complex)
         x_range, y_range, z_range = range(res.shape[0]), \
                                     range(res.shape[1]), \
                                     range(res.shape[2])
@@ -751,17 +751,17 @@ def get_self_energy_of_FDW(Q: tuple, K: tuple, ek: Callable,
                 # doesn't matter
                 if dim == 1:
                     qxi = qx[xi]
-                    ek = ek(kx + qxi, **ek_kwargs)
+                    ek = ek_tb(kx + qxi, **ek_kwargs)
                     ek = np.array(np.where(ek == 0, 1e-10, ek), dtype=complex)
                     res = np.sum(Pq / ((omega + eta * 1.j) - ek))
                 elif dim == 2:
                     qxi, qyi = qx[xi], qy[yi]
-                    ek = ek(kx + qxi, ky=kx + qyi, **ek_kwargs)
+                    ek = ek_tb(kx + qxi, ky=kx + qyi, **ek_kwargs)
                     ek = np.array(np.where(ek == 0, 1e-10, ek), dtype=complex)
                     res[xi, yi] = np.sum(Pq / ((omega + eta * 1.j) - ek))
                 elif dim == 3:
                     qxi, qyi, qzi = qx[xi], qy[yi], qz[zi]
-                    ek = ek(kx + qxi, ky=kx + qyi, kz=kz + qzi, **ek_kwargs)
+                    ek = ek_tb(kx + qxi, ky=kx + qyi, kz=kz + qzi, **ek_kwargs)
                     ek = np.array(np.where(ek == 0, 1e-10, ek), dtype=complex)
                     res[xi, yi, zi] = np.sum(Pq / ((omega + eta * 1.j) - ek))
 
@@ -925,7 +925,7 @@ def deconvolve_resolution(edc: np.ndarray, energy: np.ndarray,
     
     sigma = resolution / (2 * np.sqrt(2 * np.log(2)))
     de = get_step(energy)
-    res_mask = sig.gaussian(edc.size, sigma / de)
+    res_mask = sig.windows.gaussian(edc.size, sigma / de)
     deconv = np.abs(ifftshift(ifft(fft(edc) / fft(res_mask))))
     # move first element at the end. stupid, but works
     tmp = deconv[0]
@@ -1169,7 +1169,7 @@ def symmetrize_edc_around_Ef(data: np.ndarray, energies: np.ndarray) -> tuple:
     return sym_edc, sym_energies
 
 
-def sum_edcs_around_k(data: np.ndarray, kx: np.ndarray, ky: np.ndarray,
+def sum_edcs_around_k(data: Dataset, kx: np.ndarray, ky: np.ndarray,
                       ik: int = 0) -> np.ndarray:
     """
     Sum EDCs around a given k-point, in a box specified by ``ik``.
@@ -1471,13 +1471,19 @@ def sum_XPS(data: list, crop: list = None, plot: bool = False) -> tuple:
     """
 
     n = len(data)
-    spectra = [np.sum(data_i.data[0, :, :], axis=0) for data_i in data]
+    try:
+        spectra = [np.sum(data_i.data[0, :, :], axis=0) for data_i in data]
+    except IndexError:
+        spectra = [data_i.data for data_i in data]
 
     size_check = np.array([spectra_i.size for spectra_i in spectra])
 
     if all_equal(size_check):
         spectrum = np.sum(np.array(spectra), axis=0)
-        energy = data[0].zscale
+        try:
+            energy = data[0].zscale
+        except AttributeError:
+            energy = data[0].x
     else:
         spectrum = np.zeros((size_check.min()))
         narrow = np.where(size_check == min(size_check))[0][0]
@@ -1547,6 +1553,7 @@ def curvature_1d(data: np.ndarray, dx: float, a0: float = 0.0005,
     C_x = d2f / (np.sqrt(a0 + ((df / df_max) ** 2)) ** 3)
     if xaxis is not None:
         ef = indexof(0, xaxis)
+        print(ef, xaxis)
         C_x[ef:] = 0
 
     return -normalize(C_x).clip(max=clip_co)

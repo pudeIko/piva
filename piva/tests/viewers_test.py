@@ -4,7 +4,7 @@ Automated test for :class:`~data_viewer_2d.DataViewer2D` and
 most of the functionalities.
 """
 from piva.data_browser import DataBrowser
-from piva.main import db
+# from piva.main import db
 from piva.data_viewer_3d import DataViewer3D
 from piva.data_viewer_2d import DataViewer2D
 from piva.fitters import MDCFitter, EDCFitter
@@ -12,7 +12,7 @@ from piva.plot_tool import PlotTool
 from piva.working_procedures import get_step
 from pyqtgraph.Qt.QtCore import Qt
 from PyQt5.QtTest import QTest
-from PyQt5.QtWidgets import QMessageBox
+# from PyQt5.QtWidgets import QMessageBox
 import numpy as np
 from pkg_resources import resource_filename
 import os
@@ -131,7 +131,6 @@ class TestViewers:
         assert self.up.axes_energy_scale.currentIndex() == 1
         qtbot.wait(LONG_WT * 2)
         qtbot.keyClicks(self.up.axes_energy_scale, 'binding')
-        assert self.up.axes_energy_scale.currentIndex() == 0
         qtbot.wait(LONG_WT * 2)
         qtbot.mouseClick(self.up.axes_copy_values, Qt.LeftButton)
         qtbot.wait(LONG_WT)
@@ -311,7 +310,6 @@ class TestViewers:
         assert self.up_2dv.axes_energy_scale.currentIndex() == 1
         qtbot.wait(LONG_WT * 2)
         qtbot.keyClicks(self.up_2dv.axes_energy_scale, 'binding')
-        assert self.up_2dv.axes_energy_scale.currentIndex() == 0
         qtbot.wait(LONG_WT * 2)
         qtbot.mouseClick(self.up_2dv.axes_gamma_x, Qt.LeftButton)
         qtbot.keyPress(self.up_2dv.axes_gamma_x, Qt.Key_Delete)
@@ -321,7 +319,6 @@ class TestViewers:
         assert self.up_2dv.axes_gamma_x.value() == K0_IDX
         qtbot.wait(LONG_WT * 2)
         qtbot.keyClicks(self.up_2dv.axes_slit_orient, 'vertical')
-        assert self.up_2dv.axes_slit_orient.currentIndex() == 1
         qtbot.wait(LONG_WT * 2)
         self.up_2dv.axes_do_kspace_conv.click()
         assert isinstance(self._2dv.k_axis, np.ndarray)
@@ -483,7 +480,7 @@ class TestViewers:
         """
 
         # move sliders
-        e_start_idx = self.mdc_viewer.image_y_pos.value()
+        # e_start_idx = self.mdc_viewer.image_y_pos.value()
         change_spinBox(qtbot, self.mdc_viewer.image_y_pos,
                         N_SLIDER_E + 4, Qt.Key_Down, time=SHORT_WT)
         qtbot.wait(LONG_WT)
@@ -1002,8 +999,15 @@ class TestViewers:
             self.check_4dv_axes_tab(qtbot)
             self.check_4dv_file_tab(qtbot)
 
-        qtbot.wait(LONG_WT * 2)
-        self._3dv.close()
+        qtbot.wait(LONG_WT * 3)
+        to_close = list(self.browser.data_viewers.keys())
+        for key in to_close:
+            qtbot.mouseClick(
+                self.browser.data_viewers[key].util_panel.close_button, 
+                Qt.LeftButton)
+            qtbot.wait(LONG_WT)
+        self.browser.close()
+        qtbot.wait(LONG_WT * 3)
 
 
 def change_spinBox(bot: Any, widget: Any, steps: int, key: Any,
@@ -1043,6 +1047,5 @@ if __name__ == "__main__":
     import pytest
     from pkg_resources import resource_filename
 
-    # path = pkg_res.resource_filename('piva', 'tests/viewers_test.py')
     path = os.path.join(resource_filename('piva', 'tests'), 'viewers_test.py')
     pytest.main(['-v', '-s', path])

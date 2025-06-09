@@ -126,7 +126,7 @@ class DataBrowser(QMainWindow):
                              'tests', 'data', 'test_map.p')
         self.open_dv(fname)
 
-    def mb_open_dir(self, chosen_dir: Union[str, None]) -> None:
+    def mb_open_dir(self, chosen_dir: Union[str, None] = None) -> None:
         """
         Open file dialog to select different working directory and change
         the highest directory of the :class:`DataBrowser` file explorer to it.
@@ -579,7 +579,7 @@ class DataBrowser(QMainWindow):
         open_dir = QAction('Open directory', self)
         open_dir.setShortcut('Ctrl+O')
         open_dir.setStatusTip('Open directory')
-        open_dir.triggered.connect(self.mb_open_dir)
+        open_dir.triggered.connect(lambda: self.mb_open_dir(chosen_dir=None))
         file_menu.addAction(open_dir)
 
         open_file = QAction('Launch piva', self)
