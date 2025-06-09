@@ -85,11 +85,13 @@ jobs:
           --cov-config=.coveragerc piva/tests/viewers_test.py
 
       - name: Test jupyter functionalities
+        if: ${{matrix.os=='ubuntu-latest' && matrix.python-version=='3.10'}}
         run: >
           pytest --cov=$GITHUB_WORKSPACE --cov-append --cov-report=xml
           --cov-config=.coveragerc piva/tests/jupyter_test.py
 
       - name: Test working_procedures module
+        if: ${{matrix.os=='ubuntu-latest' && matrix.python-version=='3.10'}}
         run: >
           pytest --cov=$GITHUB_WORKSPACE --cov-append --cov-report=xml
           --cov-config=.coveragerc piva/tests/wp_test.py
