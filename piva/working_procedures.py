@@ -1611,10 +1611,11 @@ def curvature_2d(data: np.ndarray, dx: float, dy: float, a0: float = 100,
         ef = indexof(0, eaxis)
         C_xy[ef:, :] = 0
 
-    if C_xy.min() < 0:
-        C_xy -= C_xy.min()
-    else:
-        C_xy += C_xy.min()
+    # if C_xy.min() < 0:
+    #     C_xy -= C_xy.min()
+    # else:
+    #     C_xy += C_xy.min()
+    C_xy += 1e-20
     C_xy = 1 / C_xy
     C_xy[C_xy == np.inf] = np.max(C_xy[np.isfinite(C_xy)])
 

@@ -84,6 +84,11 @@ jobs:
           pytest --cov=$GITHUB_WORKSPACE --cov-append --cov-report=xml
           --cov-config=.coveragerc piva/tests/viewers_test.py
 
+      - name: Test jupyter functionalities
+        run: >
+          pytest --cov=$GITHUB_WORKSPACE --cov-append --cov-report=xml
+          --cov-config=.coveragerc piva/tests/jupyter_test.py
+
       - name: Upload coverage to Codecov
         if: ${{matrix.os=='ubuntu-latest' && matrix.python-version=='3.10'}}
         uses: codecov/codecov-action@v3
