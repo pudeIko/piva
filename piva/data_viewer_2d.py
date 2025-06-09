@@ -4,7 +4,9 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 import numpy as np
 from pyqtgraph.Qt import QtWidgets
+# from pyqtgraph.Qt.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox
+# from PyQt5.QtCore import QTimer
 
 import piva.working_procedures as wp
 import piva.data_loaders as dl
@@ -13,6 +15,7 @@ from piva.utilities_panel import UtilitiesPanel
 from data_slicer import pit
 from piva.cmaps import cmaps
 from piva.fitters import MDCFitter, EDCFitter
+from piva.config import settings
 if TYPE_CHECKING:
     from piva.data_browser import DataBrowser
     # from piva.data_viewer_3d import DataViewer3D
@@ -1000,22 +1003,35 @@ class DataViewer2D(QtWidgets.QMainWindow):
         init_fname = '.'.join(self.title.split('.')[:-1] + ['p'])
 
         # Choose directory
-        savedir = str(QtWidgets.QFileDialog.getExistingDirectory(
-            self, 'Select Directory', self.fname[:-len(self.title)]))
+        if settings.IS_TESTING:
+            savedir = os.getcwd()
+            # pass
+        else:
+            savedir = str(QtWidgets.QFileDialog.getExistingDirectory(
+                self, 'Select Directory', self.fname[:-len(self.title)]))
         # savedir = self.fname[:-len(self.title)]
         if not savedir:
             return
 
         while file_selection:
-            fname, fname_return_value = \
-                    QtWidgets.QInputDialog.getText(self, '', 'File name:',
-                                                   QtWidgets.QLineEdit.Normal,
-                                                   init_fname)
+            if settings.IS_TESTING:
+                fname, fname_return_value = 'x', True
+            else:
+                fname, fname_return_value = QtWidgets.QInputDialog.getText(
+                    self, '', 'File name:', QtWidgets.QLineEdit.Normal, 
+                    init_fname)
             if not fname_return_value:
                 return
+            # fname, fname_return_value = \
+            #         QtWidgets.QInputDialog.getText(self, '', 'File name:',
+            #                                        QtWidgets.QLineEdit.Normal,
+            #                                        init_fname)
+            # if not fname_return_value:
+            #     return
 
             # check if there is no fname colosions
-            if fname in os.listdir(savedir):
+            # if fname in os.listdir(savedir):
+            if (fname in os.listdir(savedir) and (not settings.IS_TESTING)):
                 fname_colision_box = QMessageBox()
                 fname_colision_box.setIcon(QMessageBox.Question)
                 fname_colision_box.setWindowTitle('File name already used.')
@@ -1024,6 +1040,10 @@ class DataViewer2D(QtWidgets.QMainWindow):
                                            'it?'.format(fname))
                 fname_colision_box.setStandardButtons(QMessageBox.Ok |
                                                       QMessageBox.Cancel)
+                # if settings.IS_TESTING:
+                #     QTimer.singleShot(100, lambda: qtbot.mouseClick(
+                #         fname_colision_box.button(QMessageBox.Ok), 
+                #         Qt.LeftButton))
                 if fname_colision_box.exec() == QMessageBox.Ok:
                     file_selection = False
                 else:
@@ -1037,7 +1057,8 @@ class DataViewer2D(QtWidgets.QMainWindow):
                       up.axes_angle_off.value() != 0,
                       up.axes_gamma_x.value() != 0]
 
-        if np.any(conditions):
+        # if np.any(conditions):
+        if (np.any(conditions) and (not settings.IS_TESTING)):
             save_cor_box = QMessageBox()
             save_cor_box.setIcon(QMessageBox.Question)
             save_cor_box.setWindowTitle('Save data')
@@ -1061,7 +1082,10 @@ class DataViewer2D(QtWidgets.QMainWindow):
                 return
         else:
             pass
-
+        
+        if settings.IS_TESTING:
+            return
+        
         dl.dump(dataset, os.path.join(savedir, fname), force=True)
 
     def open_pit(self) -> None:

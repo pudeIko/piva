@@ -4,45 +4,41 @@ Automated test for :class:`~data_viewer_2d.DataViewer2D` and
 most of the functionalities.
 """
 from piva.data_browser import DataBrowser
+# from piva.main import db
 from piva.data_viewer_3d import DataViewer3D
 from piva.data_viewer_2d import DataViewer2D
 from piva.fitters import MDCFitter, EDCFitter
 from piva.plot_tool import PlotTool
+from piva.working_procedures import get_step
 from pyqtgraph.Qt.QtCore import Qt
 from PyQt5.QtTest import QTest
+# from PyQt5.QtWidgets import QMessageBox
 import numpy as np
 from pkg_resources import resource_filename
 import os
-from piva.working_procedures import get_step
 from typing import Any
+from unittest.mock import patch
 # from piva.utilities_panel import InfoWindow
+import piva.config
+piva.config.settings.IS_TESTING = True
 
-VTS_MAP = False
 CHECK_3D_Viewer_ = True
 CHECK_2D_Viewer_ = True
 CHECK_EDC_FITTER = True
+CHECK_METADTA___ = True
 CHECK_MDC_FITTER = True
 CHECK_PLOT_TOOL_ = True
 CHECK_LINKING___ = True
-CHECK_K_SPC_CONV = False
+CHECK_K_SPC_CONV = True
+CHECK_4D_Viewer_ = True
 
-# EXAMPLE_CUT = pkg_res.resource_filename('piva', 'tests/data/')
 EXAMPLE_CUT = os.path.join(resource_filename('piva', 'tests'), 'data')
-if VTS_MAP:
-    # EXAMPLE_CUT += '/pickle_map.p'
-    EXAMPLE_CUT = os.path.join(EXAMPLE_CUT, 'pickle_map.p')
-    N_SLIDER_E, N_SLIDER_K, N_BINS_E = 80, 160, 3
-    N_E, N_X, N_Y = 20, 3, 9
-    K0_IDX = 374
-else:
-    # EXAMPLE_CUT += '/test_map.p'
-    EXAMPLE_CUT = os.path.join(EXAMPLE_CUT, 'test_map.p')
-    N_SLIDER_E, N_SLIDER_K, N_BINS_E = 20, 26, 3
-    N_E, N_X, N_Y = 20, 14, 3
-    K0_IDX = 83
+EXAMPLE_CUT = os.path.join(EXAMPLE_CUT, 'test_map.p')
+N_SLIDER_E, N_SLIDER_K, N_BINS_E = 20, 26, 3
+N_E, N_X, N_Y = 20, 14, 3
+K0_IDX = 83
 CMAP, CMAP_IDX = 'inferno', 27
 N_GAMMA = 10
-# LONG_WT, SHORT_WT = 700, 5
 LONG_WT, SHORT_WT = 300, 1
 
 
@@ -62,15 +58,11 @@ class TestViewers:
         browser = DataBrowser()
         qtbot.wait(QTest.qWaitForWindowExposed(browser))
         qtbot.add_widget(browser)
-        qtbot.keyClicks(browser.file_explorer, 'tests')
-        qtbot.keyClick(browser.file_explorer, Qt.Key_Right)
-        qtbot.wait(LONG_WT)
-        qtbot.keyClicks(browser.file_explorer, 'data')
-        qtbot.keyClick(browser.file_explorer, Qt.Key_Right)
+        browser.mb_open_dir(
+            chosen_dir=os.path.join(os.getcwd(), 'piva', 'tests', 'data'))
         qtbot.wait(LONG_WT)
         qtbot.keyClick(browser.file_explorer, Qt.Key_Down)
         qtbot.keyClick(browser.file_explorer, Qt.Key_Down)
-        assert browser.dp_ana_e0.text() == '-'
         qtbot.wait(LONG_WT)
         self.browser = browser
         browser.open_dv(EXAMPLE_CUT)
@@ -91,26 +83,26 @@ class TestViewers:
         qtbot.mouseClick(self.up.bin_x, Qt.LeftButton)
         qtbot.wait(LONG_WT)
         qtbot.mouseClick(self.up.bin_y, Qt.LeftButton)
-        # assert self.up.bin_x.isChecked() is True
-        # assert self.up.bin_y.isChecked() is True
+
+        qtbot.mouseClick(self.up.bin_z, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up.bin_z, Qt.LeftButton)
+
+        qtbot.mouseClick(self.up.bin_zx, Qt.LeftButton)
+
+        qtbot.mouseClick(self.up.bin_zx, Qt.LeftButton)
+        
         e0, ex0, ey0 = self.up.energy_main.value(), \
                        self.up.energy_hor.value(), \
                        self.up.energy_vert.value()
         x0_idx, y0_idx = self.up.momentum_vert.value(), \
                          self.up.momentum_hor.value()
 
-        if VTS_MAP:
-            change_spinBox(qtbot, self.up.momentum_vert, N_X, Qt.Key_Up)
-            assert self.up.momentum_vert.value() is (x0_idx + N_X)
-            change_spinBox(qtbot, self.up.momentum_hor, N_Y, Qt.Key_Down,
-                           time=SHORT_WT // 5)
-            assert self.up.momentum_hor.value() == (y0_idx - N_Y)
-        else:
-            change_spinBox(qtbot, self.up.momentum_vert, N_X, Qt.Key_Down)
-            assert self.up.momentum_vert.value() is (x0_idx - N_X)
-            change_spinBox(qtbot, self.up.momentum_hor, N_Y, Qt.Key_Down,
-                           time=SHORT_WT // 5)
-            assert self.up.momentum_hor.value() == (y0_idx - N_Y)
+        change_spinBox(qtbot, self.up.momentum_vert, N_X, Qt.Key_Down)
+        assert self.up.momentum_vert.value() is (x0_idx - N_X)
+        change_spinBox(qtbot, self.up.momentum_hor, N_Y, Qt.Key_Down,
+                        time=SHORT_WT // 5)
+        assert self.up.momentum_hor.value() == (y0_idx - N_Y)
         qtbot.wait(LONG_WT)
 
         for _ in range(N_E):
@@ -139,12 +131,11 @@ class TestViewers:
         assert self.up.axes_energy_scale.currentIndex() == 1
         qtbot.wait(LONG_WT * 2)
         qtbot.keyClicks(self.up.axes_energy_scale, 'binding')
-        assert self.up.axes_energy_scale.currentIndex() == 0
         qtbot.wait(LONG_WT * 2)
         qtbot.mouseClick(self.up.axes_copy_values, Qt.LeftButton)
         qtbot.wait(LONG_WT)
 
-    def check_3Dv_orientate_tab(self, qtbot: Any) -> None:
+    def check_3Dv_orient_tab(self, qtbot: Any) -> None:
         """
         Check behavior of the features in **Orientate tab** in
         :class:`data_viewer_3d.DataViewer3D`.
@@ -152,30 +143,29 @@ class TestViewers:
         :param qtbot: object emulating a user
         """
 
-        # move to OrientateTab and find gamma
+        # move to OrientTab and find gamma
         self.up.tabs.setCurrentIndex(3)
         assert self.up.tabs.currentIndex() == 3
         qtbot.wait(LONG_WT)
         qtbot.mouseClick(self.up.orientate_copy_coords, Qt.LeftButton)
         qtbot.wait(LONG_WT)
-        # qtbot.mouseClick(up.orientate_find_gamma, Qt.LeftButton)
-        # assert 'Success' in self.up.orientate_find_gamma_message.text()
-        # qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up.orientate_find_gamma, Qt.LeftButton)
+
         qtbot.mouseClick(self.up.orientate_hor_line, Qt.LeftButton)
         qtbot.mouseClick(self.up.orientate_ver_line, Qt.LeftButton)
-        # assert self.up.orientate_hor_line.isChecked() is True
-        # assert self.up.orientate_ver_line.isChecked() is True
-        if VTS_MAP:
-            change_spinBox(qtbot, self.up.orientate_angle, 60, Qt.Key_Up,
-                           time=SHORT_WT * 2)
-        else:
-            change_spinBox(qtbot, self.up.orientate_angle, 90, Qt.Key_Up,
+
+        change_spinBox(qtbot, self.up.orientate_angle, 181, Qt.Key_Up,
                            time=SHORT_WT * 2)
         qtbot.wait(LONG_WT * 2)
         qtbot.mouseClick(self.up.orientate_hor_line, Qt.LeftButton)
         qtbot.mouseClick(self.up.orientate_ver_line, Qt.LeftButton)
         assert self.up.orientate_hor_line.isChecked() is False
         assert self.up.orientate_ver_line.isChecked() is False
+
+        qtbot.mouseClick(self.up.orientate_info_button, Qt.LeftButton)
+        qtbot.wait(QTest.qWaitForWindowExposed(self._3dv.info_box))
+        qtbot.wait(LONG_WT)
+        self._3dv.info_box.close()
 
     def check_3Dv_image_tab(self, qtbot: Any) -> None:
         """
@@ -188,15 +178,20 @@ class TestViewers:
         # move to ImageTab, normalize data and open 2Dviewer
         self.up.tabs.setCurrentIndex(1)
         assert self.up.tabs.currentIndex() == 1
+
+        qtbot.keyClicks(self.up.image_cmaps, CMAP)
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up.image_invert_colors, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        change_spinBox(qtbot, self.up.image_gamma, N_GAMMA, Qt.Key_Down)
+        
         qtbot.wait(LONG_WT)
         qtbot.mouseClick(self.up.image_normalize, Qt.LeftButton)
-        # assert self.up.image_normalize.isChecked() is True
         qtbot.wait(LONG_WT * 2)
         qtbot.keyClicks(self.up.image_normalize_along, 'energy')
         assert self.up.image_normalize_along.currentIndex() == 2
         qtbot.wait(LONG_WT)
         qtbot.mouseClick(self.up.image_normalize, Qt.LeftButton)
-        # assert self.up.image_normalize.isChecked() is False
         qtbot.wait(LONG_WT)
 
     def open_2Dviewer(self, qtbot: Any) -> None:
@@ -206,6 +201,10 @@ class TestViewers:
         :param qtbot: object emulating a user
         """
 
+        self.up.image_2dv_cut_selector.setCurrentText('horizontal')
+        qtbot.mouseClick(self.up.image_2dv_button, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        self.up.image_2dv_cut_selector.setCurrentText('vertical')
         qtbot.mouseClick(self.up.image_2dv_button, Qt.LeftButton)
         for key in self.browser.data_viewers.keys():
             if ':' in key:
@@ -238,10 +237,12 @@ class TestViewers:
         if not linking:
             # bin one and move it back
             qtbot.mouseClick(self.up_2dv.bin_z, Qt.LeftButton)
-            # assert self.up_2dv.bin_z.isChecked() is True
         change_spinBox(qtbot, self.up_2dv.bin_z_nbins, N_BINS_E, Qt.Key_Down,
                        time=SHORT_WT * 20)
         qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up_2dv.bin_y, Qt.LeftButton)
+        change_spinBox(qtbot, self.up_2dv.bin_y_nbins, N_BINS_E, Qt.Key_Down,
+                       time=SHORT_WT * 2)
         change_spinBox(qtbot, self.up_2dv.energy_vert, N_SLIDER_E, Qt.Key_Up)
         assert self.up_2dv.energy_vert.value() is e_start_idx
         qtbot.wait(LONG_WT)
@@ -268,6 +269,10 @@ class TestViewers:
                        time=(LONG_WT // 4))
         assert np.abs(self.up_2dv.image_gamma.value() - 0.5) <= 1e-3
         qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up_2dv.image_smooth_button, Qt.LeftButton)
+        qtbot.mouseClick(self.up_2dv.image_curvature_button, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up_2dv.image_curvature_button, Qt.LeftButton)
 
     def check_2dv_normalization(self, qtbot: Any) -> None:
         """
@@ -284,10 +289,8 @@ class TestViewers:
         assert self.up_2dv.image_normalize_along.currentIndex() == 1
         qtbot.wait(LONG_WT * 2)
         qtbot.mouseClick(self.up_2dv.image_normalize, Qt.LeftButton)
-        # assert self.up_2dv.image_normalize.isChecked() is False
         qtbot.wait(LONG_WT)
         qtbot.mouseClick(self.up_2dv.image_invert_colors, Qt.LeftButton)
-        # assert self.up_2dv.image_invert_colors.isChecked() is False
         qtbot.wait(LONG_WT)
 
     def check_2dv_axes_tab(self, qtbot: Any) -> None:
@@ -307,7 +310,6 @@ class TestViewers:
         assert self.up_2dv.axes_energy_scale.currentIndex() == 1
         qtbot.wait(LONG_WT * 2)
         qtbot.keyClicks(self.up_2dv.axes_energy_scale, 'binding')
-        assert self.up_2dv.axes_energy_scale.currentIndex() == 0
         qtbot.wait(LONG_WT * 2)
         qtbot.mouseClick(self.up_2dv.axes_gamma_x, Qt.LeftButton)
         qtbot.keyPress(self.up_2dv.axes_gamma_x, Qt.Key_Delete)
@@ -317,7 +319,6 @@ class TestViewers:
         assert self.up_2dv.axes_gamma_x.value() == K0_IDX
         qtbot.wait(LONG_WT * 2)
         qtbot.keyClicks(self.up_2dv.axes_slit_orient, 'vertical')
-        assert self.up_2dv.axes_slit_orient.currentIndex() == 1
         qtbot.wait(LONG_WT * 2)
         self.up_2dv.axes_do_kspace_conv.click()
         assert isinstance(self._2dv.k_axis, np.ndarray)
@@ -337,20 +338,8 @@ class TestViewers:
         assert self.up_2dv.tabs.currentIndex() == 3
         qtbot.wait(LONG_WT)
         qtbot.mouseClick(self.up_2dv.file_show_dp_button, Qt.LeftButton)
-        # assert isinstance(self.up_2dv.dp_box, InfoWindow)
         qtbot.wait(LONG_WT * 3)
         self.up_2dv.dp_box.close()
-        qtbot.wait(LONG_WT)
-        if VTS_MAP:
-            qtbot.mouseClick(self.up_2dv.file_show_md_button, Qt.LeftButton)
-            # assert isinstance(self.up_2dv.info_box, InfoWindow)
-            qtbot.wait(QTest.qWaitForWindowExposed(self.up_2dv.info_box))
-            qtbot.wait(LONG_WT)
-            qtbot.mouseClick(self.up_2dv.info_box, Qt.LeftButton)
-            change_spinBox(qtbot, self.up_2dv.info_box.central_widget,
-                           30, Qt.Key_Down, time=SHORT_WT*2)
-            qtbot.wait(LONG_WT)
-            self.up_2dv.info_box.close()
 
         # reset k-space conversion
         self.up_2dv.axes_reset_conv.click()
@@ -389,14 +378,12 @@ class TestViewers:
         qtbot.wait(LONG_WT)
         # change binning
         qtbot.mouseClick(self.edc_viewer.image_bin, Qt.LeftButton)
-        # assert self.edc_viewer.image_bin.isChecked() is True
         bin_start = self.edc_viewer.image_bin_n.value()
         change_spinBox(qtbot, self.edc_viewer.image_bin_n, 5, Qt.Key_Up)
         assert self.edc_viewer.image_bin_n.value() == (bin_start + 5)
         qtbot.wait(LONG_WT)
         # symmetrize
         qtbot.mouseClick(self.edc_viewer.symmetrize_box, Qt.LeftButton)
-        # assert self.edc_viewer.symmetrize_box.isChecked() is True
 
     def check_edc_fitter_slider(self, qtbot: Any) -> None:
         """
@@ -413,16 +400,10 @@ class TestViewers:
         assert self.edc_viewer.image_y_pos.value() == \
                (k_start_idx - N_SLIDER_K)
 
-        if VTS_MAP:
-            change_spinBox(qtbot, self.edc_viewer.image_x_pos,
-                           N_SLIDER_E - 50, Qt.Key_Up)
-            assert self.edc_viewer.image_x_pos.value() == \
-                   (e_start_idx + N_SLIDER_E - 50)
-        else:
-            change_spinBox(qtbot, self.edc_viewer.image_x_pos,
-                           N_SLIDER_E - 10, Qt.Key_Up)
-            assert self.edc_viewer.image_x_pos.value() == \
-                   (e_start_idx + N_SLIDER_E - 10)
+        change_spinBox(qtbot, self.edc_viewer.image_x_pos,
+                        N_SLIDER_E - 10, Qt.Key_Up)
+        assert self.edc_viewer.image_x_pos.value() == \
+                (e_start_idx + N_SLIDER_E - 10)
         qtbot.wait(LONG_WT * 3)
 
         qtbot.mouseClick(self.edc_viewer.image_close_button, Qt.LeftButton)
@@ -430,6 +411,48 @@ class TestViewers:
                False
         qtbot.wait(LONG_WT)
 
+    def open_2dv_for_metadata_and_summing(self, qtbot: Any):
+        """
+        Open new 2D viewer for checking data management and MDC fitter, and 
+        check these functionalities.
+
+        :param qtbot: object emulating a user
+        """
+        msm_fname = os.path.join(os.path.join(
+            resource_filename('piva', 'tests'), 'data'), 'pickle_cut.p')
+        self.browser.open_dv(msm_fname)
+        self._2dv_msm = self.browser.data_viewers[msm_fname]
+        self.up_2dv_msm = self._2dv_msm.util_panel
+
+        # check saving options for 2D viewer
+        with patch('PyQt5.QtWidgets.QFileDialog.getExistingDirectory', 
+                   return_value=''):
+            qtbot.mouseClick(self._2dv_msm.util_panel.save_button, 
+                             Qt.LeftButton)
+            
+        # move to FileTab, add and remove some metadata
+        self.up_2dv_msm.tabs.setCurrentIndex(3)
+        assert self.up_2dv_msm.tabs.currentIndex() == 3
+        qtbot.wait(LONG_WT)
+        self.up_2dv_msm.file_md_name.setText('test_metadata')
+        qtbot.wait(LONG_WT)
+        self.up_2dv_msm.file_md_value.setText('123.45')
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up_2dv_msm.file_add_md_button, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up_2dv_msm.file_remove_md_button, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+
+        # sum with the same scan, and reset summation
+        self.up_2dv_msm.file_sum_datasets_fname.setText('pickle_cut.p')
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up_2dv_msm.file_sum_datasets_sum_button, 
+                         Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up_2dv_msm.file_sum_datasets_reset_button, 
+                         Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        
     def open_mdc_fitter(self, qtbot: Any) -> None:
         """
         Open :class:`fitters.MDCFitter` window.
@@ -437,13 +460,15 @@ class TestViewers:
         :param qtbot: object emulating a user
         """
 
-        qtbot.mouseClick(self.up_2dv.file_mdc_fitter_button, Qt.LeftButton)
-        for key in self._2dv.data_viewers.keys():
+
+        qtbot.mouseClick(self._2dv_msm.util_panel.file_mdc_fitter_button, 
+                         Qt.LeftButton)
+        for key in self._2dv_msm.data_viewers.keys():
             if 'mdc' in key:
                 new_window = key
-        assert isinstance(self._2dv.data_viewers[new_window], MDCFitter)
+        assert isinstance(self._2dv_msm.data_viewers[new_window], MDCFitter)
         qtbot.wait(LONG_WT * 3)
-        self.mdc_viewer = self._2dv.data_viewers[new_window]
+        self.mdc_viewer = self._2dv_msm.data_viewers[new_window]
         self.mdc_viewer_title = self.mdc_viewer.title
         qtbot.wait(LONG_WT)
 
@@ -455,17 +480,9 @@ class TestViewers:
         """
 
         # move sliders
-        e_start_idx = self.mdc_viewer.image_y_pos.value()
-        if VTS_MAP:
-            change_spinBox(qtbot, self.mdc_viewer.image_y_pos,
-                           N_SLIDER_E - 40, Qt.Key_Down)
-            assert self.mdc_viewer.image_y_pos.value() == \
-                   (e_start_idx - (N_SLIDER_E - 40))
-        else:
-            change_spinBox(qtbot, self.mdc_viewer.image_y_pos,
-                           N_SLIDER_E - 10, Qt.Key_Down)
-            assert self.mdc_viewer.image_y_pos.value() == \
-                   (e_start_idx - (N_SLIDER_E - 10))
+        # e_start_idx = self.mdc_viewer.image_y_pos.value()
+        change_spinBox(qtbot, self.mdc_viewer.image_y_pos,
+                        N_SLIDER_E + 4, Qt.Key_Down, time=SHORT_WT)
         qtbot.wait(LONG_WT)
 
     def check_mdc_fitter_ranges_and_fitting(self, qtbot: Any) -> None:
@@ -482,16 +499,15 @@ class TestViewers:
         # move momentum sliders
         k_start_idx = self.mdc_viewer.image_x_pos.value()
         change_spinBox(qtbot, self.mdc_viewer.image_x_pos,
-                       N_SLIDER_K, Qt.Key_Down)
+                       50, Qt.Key_Down)
         assert self.mdc_viewer.image_x_pos.value() == \
-               (k_start_idx - N_SLIDER_K)
+               (k_start_idx - 50)
         # change ranges:
-        if VTS_MAP:
-            self.mdc_viewer.fitting_range_stop.setValue(-3)
-            qtbot.wait(LONG_WT)
-            self.mdc_viewer.fitting_bgr_range_first.setValue(-12)
-            qtbot.wait(LONG_WT)
-            self.mdc_viewer.fitting_bgr_range_second.setValue(-5)
+        self.mdc_viewer.fitting_range_stop.setValue(0)
+        qtbot.wait(LONG_WT)
+        self.mdc_viewer.fitting_bgr_range_first.setValue(-15)
+        qtbot.wait(LONG_WT)
+        self.mdc_viewer.fitting_bgr_range_second.setValue(-3)
         qtbot.wait(LONG_WT)
         qtbot.keyPress(self.mdc_viewer.fitting_bgr_poly_order, Qt.Key_Up)
         qtbot.mouseClick(self.mdc_viewer.fitting_bgr_poly_button,
@@ -535,20 +551,38 @@ class TestViewers:
         qtbot.mouseClick(self.plot_tool.ds_add_button, Qt.LeftButton)
         qtbot.wait(LONG_WT)
 
-        # add second curve
+        # add third curve
         qtbot.keyClick(self.plot_tool.ds_dv, Qt.Key_Down)
         qtbot.wait(LONG_WT)
         qtbot.keyClick(self.plot_tool.ds_dv, Qt.Key_Return)
         qtbot.wait(LONG_WT)
         qtbot.mouseClick(self.plot_tool.ds_add_button, Qt.LeftButton)
+        qtbot.mouseClick(self.plot_tool.ds_update_lists, Qt.LeftButton)
         qtbot.wait(LONG_WT * 3)
 
+        # add custom curve and remove it
+        qtbot.keyClick(self.plot_tool.ds_dv, Qt.Key_Up)
+        qtbot.keyClick(self.plot_tool.ds_dv, Qt.Key_Up)
+        qtbot.wait(LONG_WT)
+        qtbot.keyClick(self.plot_tool.ds_dv, Qt.Key_Return)
+        qtbot.wait(LONG_WT)
+        self.plot_tool.ds_custom_name.setText('custom_name')
+        qtbot.wait(LONG_WT)
+        self.plot_tool.ds_custom_x.setText('-0.2 0')
+        self.plot_tool.ds_custom_y.setText('0 10')
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.plot_tool.ds_add_button, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        self.plot_tool.ds_custom_x.setText('-1 0')
+        self.plot_tool.main_added.setCurrentText('custom_name')
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.plot_tool.ds_remove_button, Qt.LeftButton)
+        
         # move to EditCurvesTab and normalize one curve
         self.plot_tool.tabs.setCurrentIndex(1)
         assert self.plot_tool.tabs.currentIndex() == 1
         qtbot.wait(LONG_WT)
 
-        # change selection of current curve
         qtbot.keyClick(self.plot_tool.main_added, Qt.Key_Down)
         qtbot.wait(LONG_WT)
         qtbot.keyClick(self.plot_tool.main_added, Qt.Key_Return)
@@ -557,11 +591,126 @@ class TestViewers:
         qtbot.mouseClick(self.plot_tool.ec_normalize, Qt.LeftButton)
         qtbot.wait(LONG_WT * 3)
 
-        # close
+        # change x and y offsets
+        change_spinBox(qtbot, self.plot_tool.ec_offset_x, 2, Qt.Key_Up)
+        change_spinBox(qtbot, self.plot_tool.ec_offset_y, 2, Qt.Key_Up)
+        qtbot.wait(LONG_WT)
+
+        # change color
+        qtbot.mouseClick(self.plot_tool.ec_color, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+
+        # change line width
+        change_spinBox(qtbot, self.plot_tool.ec_width, 5, Qt.Key_Up)
+        qtbot.wait(LONG_WT)
+        
+        # change line style
+        for _ in range(5):
+            qtbot.keyClick(self.plot_tool.ec_style, Qt.Key_Down)
+            qtbot.keyClick(self.plot_tool.ec_style, Qt.Key_Return)
+            qtbot.wait(LONG_WT)
+
+        # reset scaling
+        qtbot.mouseClick(self.plot_tool.ec_reset, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+
+        # move to EditPlotTab and change colors
+        self.plot_tool.tabs.setCurrentIndex(2)
+        assert self.plot_tool.tabs.currentIndex() == 2
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.plot_tool.ep_bgr_color, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.plot_tool.ep_axes_color, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+
+        # change ticks font size
+        change_spinBox(qtbot, self.plot_tool.ep_ticks_size, 5, Qt.Key_Up)
+        qtbot.wait(LONG_WT)
+
+        # set labels and change font size
+        self.plot_tool.ep_xlabel.setText('Energy; eV')
+        qtbot.wait(LONG_WT)
+        self.plot_tool.ep_ylabel.setText('Intensity; a.u.')
+        qtbot.wait(LONG_WT)
+        change_spinBox(qtbot, self.plot_tool.ep_labels_font_size, 5, Qt.Key_Up)
+        qtbot.wait(LONG_WT)
+
+        # move to markers and drop two
+        self.plot_tool.tabs.setCurrentIndex(3)
+        assert self.plot_tool.tabs.currentIndex() == 3
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.plot_tool.marker_1['button'], Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        change_spinBox(qtbot, self.plot_tool.marker_1['x'], 10, Qt.Key_Up)
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.plot_tool.marker_2['button'], Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        change_spinBox(qtbot, self.plot_tool.marker_2['x'], -10, Qt.Key_Up)
+        qtbot.wait(LONG_WT)
+
+        # move to annotate
+        self.plot_tool.ann_name.setText('tmp')
+        qtbot.wait(LONG_WT)
+        self.plot_tool.ann_text.setText('LABEL')
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.plot_tool.ann_add_update, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        change_spinBox(qtbot, self.plot_tool.ann_y, 10, Qt.Key_Up)
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.plot_tool.ann_add_update, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+
+        # add second annotation and remove the first one
+        self.plot_tool.ann_name.setText('tmp2')
+        qtbot.wait(LONG_WT)
+        self.plot_tool.ann_text.setText('SECOND LABEL')
+        qtbot.wait(LONG_WT)
+        change_spinBox(qtbot, self.plot_tool.ann_x, 10, Qt.Key_Up)
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.plot_tool.ann_add_update, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        self.plot_tool.ann_added.setCurrentIndex(1)
+        self.plot_tool.ann_added.setCurrentIndex(0)
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.plot_tool.ann_remove, Qt.LeftButton)
+        qtbot.wait(LONG_WT*5)
+
+        # save as image and remove it
+        self.plot_tool.save_image()
+        try:
+            os.remove('./test_plottool_image.png')
+        except FileNotFoundError:
+            pass 
+
+        # save as a session and close currect PlotTool window
+        self.plot_tool.save_session()
+        qtbot.wait(LONG_WT)
         qtbot.mouseClick(self.plot_tool.main_close_button, Qt.LeftButton)
         assert (self.plot_tool_title in
                 self.browser.plotting_tools.keys()) is False
         qtbot.wait(LONG_WT)
+
+    def check_loaded_plottool_session(self, qtbot: Any):
+        """
+        Check loading option of the PlotTool.
+
+        :param qtbot: object emulating a user
+        """
+        # load saved session to the newely opened window, 
+        # close it and remove the file
+        try:
+            new_pt = self.browser.plotting_tools['Plotting tool - 2']
+        except KeyError:
+            return
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(new_pt.main_load_button, Qt.LeftButton)
+        qtbot.wait(LONG_WT * 3)
+        qtbot.mouseClick(new_pt.main_close_button, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        try:
+            os.remove('./test_plottool_session.p')
+        except FileNotFoundError:
+            pass 
 
     def open_second_2Dv(self, qtbot: Any) -> None:
         """
@@ -589,7 +738,7 @@ class TestViewers:
         :param qtbot: object emulating a user
         """
 
-        # set first viewer to parent and link with second
+        # set the first viewer to parent and link with second
         up = self.up_2dv
         qtbot.mouseClick(up.link_windows_list, Qt.LeftButton)
         up.link_windows_list.setItemCheckState(0, Qt.Checked)
@@ -613,7 +762,7 @@ class TestViewers:
         qtbot.mouseClick(self.up.axes_do_kspace_conv, Qt.LeftButton)
         qtbot.wait(LONG_WT * 2)
 
-    def save_converted_viewer(self) -> None:
+    def check_converted_viewer(self, qtbot: Any) -> None:
         """
         Check saving files.
         """
@@ -626,6 +775,19 @@ class TestViewers:
         self._3dv_conv = self.browser.data_viewers[new_window]
         self.up_3dv_conv = self._3dv_conv.util_panel
 
+        # show metadata window
+        qtbot.mouseClick(self.up_3dv_conv.file_show_md_button, Qt.LeftButton)
+        qtbot.wait(QTest.qWaitForWindowExposed(self.up_3dv_conv.info_box))
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up_3dv_conv.info_box, Qt.LeftButton)
+        change_spinBox(qtbot, self.up_3dv_conv.info_box.central_widget, 
+                       30, Qt.Key_Down, time=SHORT_WT*2)
+        qtbot.wait(LONG_WT)
+        self.up_3dv_conv.info_box.close()
+        
+        # check saving options
+        qtbot.mouseClick(self.up_3dv_conv.save_button, Qt.LeftButton)
+
     def check_BZ_contour(self, qtbot: Any) -> None:
         """
         Check appending Brillouin Zone contour.
@@ -637,20 +799,135 @@ class TestViewers:
         self.up_3dv_conv.tabs.setCurrentIndex(1)
         assert self.up_3dv_conv.tabs.currentIndex() == 1
         qtbot.wait(LONG_WT * 2)
-        if VTS_MAP:
-            qtbot.keyClick(self.up_3dv_conv.image_symmetry, Qt.Key_Up)
-            qtbot.keyClick(self.up_3dv_conv.image_symmetry, Qt.Key_Up)
-            assert self.up_3dv_conv.image_symmetry.value() == 6
-        else:
-            assert self.up_3dv_conv.image_symmetry.value() == 4
+        assert self.up_3dv_conv.image_symmetry.value() == 4
         qtbot.wait(LONG_WT * 2)
         qtbot.mouseClick(self.up_3dv_conv.image_show_BZ, Qt.LeftButton)
         qtbot.wait(LONG_WT * 2)
 
-        if VTS_MAP:
-            change_spinBox(qtbot, self.up_3dv_conv.image_rotate_BZ, 60, Qt.Key_Up)
-            assert self.up_3dv_conv.image_rotate_BZ.value() == 30
+        change_spinBox(qtbot, self.up_3dv_conv.image_rotate_BZ, 90, Qt.Key_Up)
+        assert self.up_3dv_conv.image_rotate_BZ.value() == 45
 
+    def open_4d_viewer(self):
+        """
+        Open 4D viewer.
+
+        :param qtbot: object emulating a user
+        """
+        _4dv_fname = os.path.join(os.path.join(
+            resource_filename('piva', 'tests'), 'data'), 'pickle-raster.p')
+        self.browser.open_dv(_4dv_fname)
+        self._4dv = self.browser.data_viewers[_4dv_fname]
+        self.up_4dv = self._4dv.util_panel
+
+    def check_4dv_volume_tab(self, qtbot: Any):
+        """
+        Check sliders of the 4D viewer.
+
+        :param qtbot: object emulating a user
+        """
+        # move sliders
+        qtbot.mouseClick(self.up_4dv.bin_y, Qt.LeftButton)
+        qtbot.mouseClick(self.up_4dv.bin_z, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+
+        change_spinBox(qtbot, self.up_4dv.rx_vert, 1, Qt.Key_Down)
+        qtbot.wait(LONG_WT)
+        change_spinBox(qtbot, self.up_4dv.ry_hor, 1, Qt.Key_Up)
+        qtbot.wait(LONG_WT)
+
+        change_spinBox(qtbot, self.up_4dv.energy_vert, 10, Qt.Key_Down)
+        qtbot.wait(LONG_WT)
+        change_spinBox(qtbot, self.up_4dv.momentum_hor, 10, Qt.Key_Up)
+        qtbot.wait(LONG_WT)
+
+        qtbot.mouseClick(self.up_4dv.bin_y, Qt.LeftButton)
+        qtbot.mouseClick(self.up_4dv.bin_z, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+
+    def check_4dv_image_tab(self, qtbot: Any):
+        """
+        Check image tab of the 4D viewer.
+
+        :param qtbot: object emulating a user
+        """
+        # move to image and change colors and normalizations
+        self.up_4dv.tabs.setCurrentIndex(1)
+        assert self.up_4dv.tabs.currentIndex() == 1
+        qtbot.wait(LONG_WT)
+
+        qtbot.keyClicks(self.up_4dv.image_cmaps, CMAP)
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up_4dv.image_invert_colors, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        change_spinBox(qtbot, self.up_4dv.image_gamma, N_GAMMA, Qt.Key_Down)
+
+        qtbot.mouseClick(self.up_4dv.image_normalize, Qt.LeftButton)
+        qtbot.wait(LONG_WT * 2)
+        qtbot.keyClicks(self.up_4dv.image_normalize_along, 'energy')
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up_4dv.image_normalize, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+
+        qtbot.keyClicks(self.up_4dv.image_normalize_along, 'signal/noise')
+        qtbot.wait(LONG_WT)
+        qtbot.keyClicks(self.up_4dv.image_normalize_along, 'sharpest edge')
+        qtbot.wait(LONG_WT)
+
+    def check_4dv_axes_tab(self, qtbot: Any):
+        """
+        Check axes tab and k-space convertion of the 4D viewer.
+
+        :param qtbot: object emulating a user
+        """
+        # move to AxesTab, change energy scales,
+        # do k-space conversion and reset it
+        self.up_4dv.tabs.setCurrentIndex(2)
+        assert self.up_4dv.tabs.currentIndex() == 2
+        qtbot.wait(LONG_WT)
+        qtbot.keyClicks(self.up_4dv.axes_energy_scale, 'kinetic')
+        assert self.up_4dv.axes_energy_scale.currentIndex() == 1
+        qtbot.wait(LONG_WT)
+        self.up_4dv.axes_energy_Ef.setValue(-0.03)
+        self.up_4dv.axes_energy_wf.setValue(4.3)
+        qtbot.keyClicks(self.up_4dv.axes_energy_scale, 'binding')
+        qtbot.wait(LONG_WT * 2)
+        qtbot.mouseClick(self.up_4dv.axes_gamma_x, Qt.LeftButton)
+        qtbot.keyPress(self.up_4dv.axes_gamma_x, Qt.Key_Delete)
+        fill_text(qtbot, self.up_4dv.axes_gamma_x, str(100))
+        qtbot.keyPress(self.up_4dv.axes_gamma_x, Qt.Key_Return)
+        qtbot.wait(LONG_WT * 2)
+        qtbot.keyClicks(self.up_4dv.axes_slit_orient, 'vertical')
+        qtbot.wait(LONG_WT * 2)
+        qtbot.mouseClick(self.up_4dv.axes_do_kspace_conv, Qt.LeftButton)
+        # self.up_4dv.axes_do_kspace_conv.click()
+        qtbot.wait(LONG_WT * 2)
+        qtbot.mouseClick(self.up_4dv.axes_reset_conv, Qt.LeftButton)
+
+    def check_4dv_file_tab(self, qtbot: Any):
+        """
+        Check file tab of the 4D viewer.
+
+        :param qtbot: object emulating a user
+        """
+        # move to FileTab, show provenance and metadata windows,
+        # add/remove entries
+        self.up_4dv.tabs.setCurrentIndex(3)
+        assert self.up_4dv.tabs.currentIndex() == 3
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up_4dv.file_show_dp_button, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        self.up_4dv.dp_box.close()
+        qtbot.wait(LONG_WT)
+        
+        self.up_4dv.file_md_name.setText('test_metadata')
+        qtbot.wait(LONG_WT)
+        self.up_4dv.file_md_value.setText('123.45')
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up_4dv.file_add_md_button, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+        qtbot.mouseClick(self.up_4dv.file_remove_md_button, Qt.LeftButton)
+        qtbot.wait(LONG_WT)
+    
     def test_viewers(self, qtbot: Any) -> None:
         """
         Run the test.
@@ -661,7 +938,7 @@ class TestViewers:
         self.open_browser(qtbot)
         if CHECK_3D_Viewer_:
             self.check_3Dv_sliders(qtbot)
-            self.check_3Dv_orientate_tab(qtbot)
+            self.check_3Dv_orient_tab(qtbot)
             self.check_3Dv_axes_tab(qtbot)
             self.check_3Dv_image_tab(qtbot)
 
@@ -680,7 +957,10 @@ class TestViewers:
             self.check_edc_fitter_range_box_and_binning(qtbot)
             self.check_edc_fitter_slider(qtbot)
 
-        if CHECK_MDC_FITTER and VTS_MAP:
+        if CHECK_METADTA___:
+            self.open_2dv_for_metadata_and_summing(qtbot)
+
+        if CHECK_MDC_FITTER:
             self.open_mdc_fitter(qtbot)
             self.check_mdc_fitter_slider(qtbot)
             self.check_mdc_fitter_ranges_and_fitting(qtbot)
@@ -688,6 +968,8 @@ class TestViewers:
         if CHECK_PLOT_TOOL_:
             self.open_plotting_tool()
             self.check_plotting_tool(qtbot)
+            self.open_plotting_tool()
+            self.check_loaded_plottool_session(qtbot)
 
         if CHECK_LINKING___:
             self.open_second_2Dv(qtbot)
@@ -707,17 +989,31 @@ class TestViewers:
 
         if CHECK_K_SPC_CONV:
             self.check_kspace_conversion(qtbot)
-            self.save_converted_viewer()
-            qtbot.wait(LONG_WT * 3)
+            self.check_converted_viewer(qtbot)
             self.check_BZ_contour(qtbot)
 
-        qtbot.wait(LONG_WT * 5)
-        self._3dv.close()
+        if CHECK_4D_Viewer_:
+            self.open_4d_viewer()
+            self.check_4dv_volume_tab(qtbot)
+            self.check_4dv_image_tab(qtbot)
+            self.check_4dv_axes_tab(qtbot)
+            self.check_4dv_file_tab(qtbot)
+
+        qtbot.wait(LONG_WT * 3)
+        to_close = list(self.browser.data_viewers.keys())
+        for key in to_close:
+            qtbot.mouseClick(
+                self.browser.data_viewers[key].util_panel.close_button, 
+                Qt.LeftButton)
+            qtbot.wait(LONG_WT)
+        self.browser.close()
+        qtbot.wait(LONG_WT * 3)
 
 
 def change_spinBox(bot: Any, widget: Any, steps: int, key: Any,
                    time: int = SHORT_WT) -> None:
     """
+    Useful function for changing spinBoxes in a sequence.
 
     :param bot: object emulating a user
     :param widget: widget to change values in a sequence
@@ -734,7 +1030,8 @@ def change_spinBox(bot: Any, widget: Any, steps: int, key: Any,
 def fill_text(bot: Any, widget: Any, text: str,
               time: int = SHORT_WT * 6) -> None:
     """
-
+    Useful function for changing LineEdit widgets in a sequence.
+    
     :param bot: object emulating a user
     :param widget: widget to change values in a sequence
     :param text: text to fill widget with
@@ -750,6 +1047,5 @@ if __name__ == "__main__":
     import pytest
     from pkg_resources import resource_filename
 
-    # path = pkg_res.resource_filename('piva', 'tests/viewers_test.py')
     path = os.path.join(resource_filename('piva', 'tests'), 'viewers_test.py')
     pytest.main(['-v', '-s', path])

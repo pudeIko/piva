@@ -19,6 +19,7 @@ import piva.data_loaders as dl
 from piva.data_loaders import Dataset
 from piva.cmaps import cmaps, my_cmaps
 from piva.qcheckcombobox import CheckComboBox
+from piva.config import settings
 
 BASE_LINECOLOR = (255, 255, 0, 255)
 BINLINES_LINECOLOR = (168, 168, 104, 255)
@@ -175,9 +176,6 @@ class UtilitiesPanel(QWidget):
         self.image_gamma.setRange(0.05, 10)
         self.image_gamma.setValue(1)
         self.image_gamma.setSingleStep(0.05)
-        # self.image_colorscale_label = QLabel('color scale:')
-        # self.image_colorscale = QDoubleSpinBox()
-        # self.image_colorscale.setRange(0., 10.)
 
         self.image_normalize_lbl = QLabel('Normalize')
         self.image_normalize_lbl.setFont(bold_font)
@@ -187,17 +185,6 @@ class UtilitiesPanel(QWidget):
         self.image_normalize_along = QComboBox()
         self.image_normalize = QCheckBox('normalize')
 
-        # self.image_BZ_contour_lbl = QLabel('BZ contour')
-        # self.image_BZ_contour_lbl.setFont(bold_font)
-        # self.image_show_BZ = QCheckBox('show')
-        # self.image_symmetry_label = QLabel('symmetry:')
-        # self.image_symmetry = QSpinBox()
-        # self.image_symmetry.setRange(4, 6)
-        # self.image_rotate_BZ_label = QLabel('rotate:')
-        # self.image_rotate_BZ = QDoubleSpinBox()
-        # self.image_rotate_BZ.setRange(-90, 90)
-        # self.image_rotate_BZ.setSingleStep(0.5)
-
         if self.dim in (3, 4):
             self.image_2dv_lbl = QLabel('Open in 2D viewer')
             self.image_2dv_lbl.setFont(bold_font)
@@ -205,35 +192,6 @@ class UtilitiesPanel(QWidget):
             self.image_2dv_cut_selector = QComboBox()
             self.image_2dv_cut_selector.addItems(['vertical', 'horizontal'])
             self.image_2dv_button = QPushButton('Open')
-
-        # self.image_smooth_lbl = QLabel('Smooth')
-        # self.image_smooth_lbl.setFont(bold_font)
-        # self.image_smooth_n_lbl = QLabel('box size:')
-        # self.image_smooth_n = QSpinBox()
-        # self.image_smooth_n.setValue(3)
-        # self.image_smooth_n.setRange(3, 50)
-        # self.image_smooth_n.setMaximumWidth(max_w)
-        # self.image_smooth_rl_lbl = QLabel('recursion:')
-        # self.image_smooth_rl = QSpinBox()
-        # self.image_smooth_rl.setValue(3)
-        # self.image_smooth_rl.setRange(1, 20)
-        # self.image_smooth_button = QPushButton('Smooth')
-        #
-        # self.image_curvature_lbl = QLabel('Curvature')
-        # self.image_curvature_lbl.setFont(bold_font)
-        # self.image_curvature_method_lbl = QLabel('method:')
-        # self.image_curvature_method = QComboBox()
-        # curvature_methods = ['2D', '1D (EDC)', '1D (MDC)']
-        # self.image_curvature_method.addItems(curvature_methods)
-        # self.image_curvature_a_lbl = QLabel('a:')
-        # self.image_curvature_a = QDoubleSpinBox()
-        # self.image_curvature_a.setRange(-10e5, 10e10)
-        # self.image_curvature_a.setSingleStep(0.001)
-        # self.image_curvature_a.setValue(10.)
-        # self.image_curvature_a.setMaximumWidth(max_w)
-        # self.image_curvature_button = QPushButton('Do it')
-
-        # addWidget(widget, row, column, rowSpan, columnSpan)
 
         if self.dim in (2, 3):
             row = 0
@@ -380,22 +338,6 @@ class UtilitiesPanel(QWidget):
             itl.addWidget(self.image_2dv_cut_selector,      row, 3)
             itl.addWidget(self.image_2dv_button,            row, 4)
 
-            # row = 3
-            # itl.addWidget(self.image_smooth_lbl,        row, 0)
-            # itl.addWidget(self.image_smooth_n_lbl,      row, 1)
-            # itl.addWidget(self.image_smooth_n,          row, 2)
-            # itl.addWidget(self.image_smooth_rl_lbl,     row, 3)
-            # itl.addWidget(self.image_smooth_rl,         row, 4)
-            # itl.addWidget(self.image_smooth_button,     row, 5, 1, 2)
-            #
-            # row = 4
-            # itl.addWidget(self.image_curvature_lbl,         row, 0)
-            # itl.addWidget(self.image_curvature_method_lbl,  row, 1)
-            # itl.addWidget(self.image_curvature_method,      row, 2)
-            # itl.addWidget(self.image_curvature_a_lbl,       row, 3)
-            # itl.addWidget(self.image_curvature_a,           row, 4)
-            # itl.addWidget(self.image_curvature_button,      row, 5, 1, 2)
-
         self.image_tab.layout = itl
         self.image_tab.setLayout(itl)
         self.tabs.addTab(self.image_tab, 'Image')
@@ -411,8 +353,6 @@ class UtilitiesPanel(QWidget):
         bin_box_w = 50
         coords_box_w = 70
 
-        # if self.dim in (2, 3):
-        #     print('elo')
         self.link_windows_lbl = QLabel('Link windows')
         self.link_windows_lbl.setFont(bold_font)
         self.link_windows_list = CheckComboBox(
@@ -571,16 +511,6 @@ class UtilitiesPanel(QWidget):
             self.ry_hor_value = QLabel('deg')
             self.bin_y.setText('bin E')
             self.bin_z.setText('bin k')
-
-            # # binning option
-            # self.bins_r_label = QLabel('Integrate')
-            # self.bins_r_label.setFont(bold_font)
-            # self.bin_ry = QCheckBox('bin EDCs')
-            # self.bin_ry_nbins = QSpinBox()
-            # self.bin_rz = QCheckBox('bin MDCs')
-            # self.bin_rz_nbins = QSpinBox()
-            # self.bin_rz_nbins.setRange(0, 1000)
-            # self.bin_rz_nbins.setValue(0)
 
             col = 0
             vtl.addWidget(self.raster_label,    0, col, 1, 3)
@@ -1338,39 +1268,41 @@ class UtilitiesPanel(QWidget):
         except ValueError:
             pass
 
-        if name == '':
-            empty_name_box = QMessageBox()
-            empty_name_box.setIcon(QMessageBox.Information)
-            empty_name_box.setText('Attribute\'s name not given.')
-            empty_name_box.setStandardButtons(QMessageBox.Ok)
-            if empty_name_box.exec() == QMessageBox.Ok:
-                return
+        if not settings.IS_TESTING:
+            if name == '':
+                empty_name_box = QMessageBox()
+                empty_name_box.setIcon(QMessageBox.Information)
+                empty_name_box.setText('Attribute\'s name not given.')
+                empty_name_box.setStandardButtons(QMessageBox.Ok)
+                if empty_name_box.exec() == QMessageBox.Ok:
+                    return
 
         message = 'Sure to add attribute \'{}\' with value <{}> (type: {}) ' \
                   'to the file?'.format(name, value, type(value))
-        sanity_check_box = QMessageBox()
-        sanity_check_box.setIcon(QMessageBox.Question)
-        sanity_check_box.setText(message)
-        sanity_check_box.setStandardButtons(QMessageBox.Ok |
-                                            QMessageBox.Cancel)
-        if sanity_check_box.exec() == QMessageBox.Ok:
-            if hasattr(self.mw.data_set, name):
-                old = vars(self.mw.data_set)[name]
-                attr_conflict_box = QMessageBox()
-                attr_conflict_box.setIcon(QMessageBox.Question)
-                attr_conflict_box.setText(f'Data set already has attribute '
-                                          f'\'{name}\'.  Overwrite?')
-                attr_conflict_box.setStandardButtons(QMessageBox.Ok |
-                                                     QMessageBox.Cancel)
-                if attr_conflict_box.exec() == QMessageBox.Ok:
-                    setattr(self.mw.data_set, name, value)
-                    self.dp_add_edited_metadata_entry('updated', name,
-                                                      old, value)
-            else:
-                dl.update_namespace(self.mw.data_set, [name, value])
-                self.dp_add_edited_metadata_entry('added', name, '-', value)
+        if not settings.IS_TESTING:
+            sanity_check_box = QMessageBox()
+            sanity_check_box.setIcon(QMessageBox.Question)
+            sanity_check_box.setText(message)
+            sanity_check_box.setStandardButtons(QMessageBox.Ok |
+                                                QMessageBox.Cancel)
+            if sanity_check_box.exec() == QMessageBox.Cancel:
+                return
+        
+        if (hasattr(self.mw.data_set, name) and (not settings.IS_TESTING)):
+            old = vars(self.mw.data_set)[name]
+            attr_conflict_box = QMessageBox()
+            attr_conflict_box.setIcon(QMessageBox.Question)
+            attr_conflict_box.setText(f'Data set already has attribute '
+                                        f'\'{name}\'.  Overwrite?')
+            attr_conflict_box.setStandardButtons(QMessageBox.Ok |
+                                                    QMessageBox.Cancel)
+            if attr_conflict_box.exec() == QMessageBox.Ok:
+                setattr(self.mw.data_set, name, value)
+                self.dp_add_edited_metadata_entry('updated', name,
+                                                    old, value)
         else:
-            return
+            dl.update_namespace(self.mw.data_set, [name, value])
+            self.dp_add_edited_metadata_entry('added', name, '-', value)
 
     def remove_metadata(self) -> None:
         """
@@ -1398,17 +1330,18 @@ class UtilitiesPanel(QWidget):
 
         message = 'Sure to remove attribute \'{}\' from the data set?'.format(
             name)
-        sanity_check_box = QMessageBox()
-        sanity_check_box.setIcon(QMessageBox.Question)
-        sanity_check_box.setText(message)
-        sanity_check_box.setStandardButtons(QMessageBox.Ok |
-                                            QMessageBox.Cancel)
-        if sanity_check_box.exec() == QMessageBox.Ok:
-            value = vars(self.mw.data_set)[name]
-            delattr(self.mw.data_set, name)
-            self.dp_add_edited_metadata_entry('removed', name, value, '-')
-        else:
-            return
+        if not settings.IS_TESTING:
+            sanity_check_box = QMessageBox()
+            sanity_check_box.setIcon(QMessageBox.Question)
+            sanity_check_box.setText(message)
+            sanity_check_box.setStandardButtons(QMessageBox.Ok |
+                                                QMessageBox.Cancel)
+            if sanity_check_box.exec() == QMessageBox.Calcel:
+                return
+        
+        value = vars(self.mw.data_set)[name]
+        delattr(self.mw.data_set, name)
+        self.dp_add_edited_metadata_entry('removed', name, value, '-')
 
     def sum_datasets(self) -> None:
         """
@@ -1429,8 +1362,6 @@ class UtilitiesPanel(QWidget):
 
         file_path = os.path.join(os.path.dirname(self.mw.fname), 
                                  self.file_sum_datasets_fname.text())
-        # file_path = self.mw.fname[:-len(self.mw.title)] + \
-        #             self.file_sum_datasets_fname.text()
         org_dataset = dl.load_data(self.mw.fname)
         new_dataset, check_result = None, None
 
@@ -1463,23 +1394,24 @@ class UtilitiesPanel(QWidget):
             if data_mismatch_box.exec() == QMessageBox.Ok:
                 return
 
-        check_result_box = QMessageBox()
-        check_result_box.setMinimumWidth(600)
-        check_result_box.setMaximumWidth(1000)
-        check_result_box.setIcon(QMessageBox.Information)
-        check_result_box.setText(check_result)
-        check_result_box.setStandardButtons(QMessageBox.Ok |
-                                            QMessageBox.Cancel)
-        if check_result_box.exec() == QMessageBox.Ok:
-            self.mw.org_dataset = org_dataset
-            self.mw.data_set.data += new_dataset.data
-            self.mw.data_set.n_sweeps += new_dataset.n_sweeps
-            d = np.swapaxes(self.mw.data_set.data, 1, 2)
-            self.mw.data_handler.set_data(d)
-            self.mw.set_image(self.mw.data_handler.get_data())
-            self.dp_add_file_sum_entry(file_path)
-        else:
-            return
+        if not settings.IS_TESTING:
+            check_result_box = QMessageBox()
+            check_result_box.setMinimumWidth(600)
+            check_result_box.setMaximumWidth(1000)
+            check_result_box.setIcon(QMessageBox.Information)
+            check_result_box.setText(check_result)
+            check_result_box.setStandardButtons(QMessageBox.Ok |
+                                                QMessageBox.Cancel)
+            if check_result_box.exec() == QMessageBox.Cancel:
+                return
+        
+        self.mw.org_dataset = org_dataset
+        self.mw.data_set.data += new_dataset.data
+        self.mw.data_set.n_sweeps += new_dataset.n_sweeps
+        d = np.swapaxes(self.mw.data_set.data, 1, 2)
+        self.mw.data_handler.set_data(d)
+        self.mw.set_image(self.mw.data_handler.get_data())
+        self.dp_add_file_sum_entry(file_path)
 
     def reset_summation(self) -> None:
         """
@@ -1495,21 +1427,22 @@ class UtilitiesPanel(QWidget):
             if no_summing_yet_box.exec() == QMessageBox.Ok:
                 return
 
-        reset_summation_box = QMessageBox()
-        reset_summation_box.setMinimumWidth(600)
-        reset_summation_box.setMaximumWidth(1000)
-        reset_summation_box.setIcon(QMessageBox.Question)
-        reset_summation_box.setText('Want to reset summation?')
-        reset_summation_box.setStandardButtons(QMessageBox.Ok |
-                                               QMessageBox.Cancel)
-        if reset_summation_box.exec() == QMessageBox.Ok:
-            self.mw.data_set.data = self.mw.org_dataset.data
-            self.mw.data_set.n_sweeps = self.mw.org_dataset.n_sweeps
-            d = np.swapaxes(self.mw.data_set.data, 1, 2)
-            self.mw.data_handler.set_data(d)
-            self.mw.set_image(self.mw.data_handler.get_data())
-        else:
-            return
+        if not settings.IS_TESTING:
+            reset_summation_box = QMessageBox()
+            reset_summation_box.setMinimumWidth(600)
+            reset_summation_box.setMaximumWidth(1000)
+            reset_summation_box.setIcon(QMessageBox.Question)
+            reset_summation_box.setText('Want to reset summation?')
+            reset_summation_box.setStandardButtons(QMessageBox.Ok | 
+                                                   QMessageBox.Cancel)
+            if reset_summation_box.exec() == QMessageBox.Cancel:
+                return
+        
+        self.mw.data_set.data = self.mw.org_dataset.data
+        self.mw.data_set.n_sweeps = self.mw.org_dataset.n_sweeps
+        d = np.swapaxes(self.mw.data_set.data, 1, 2)
+        self.mw.data_handler.set_data(d)
+        self.mw.set_image(self.mw.data_handler.get_data())
 
     def open_jl_session(self, directory: Union[str, None] = None,
                         port: Union[str, None] = None) -> None:

@@ -1,0 +1,1 @@
+rough map, Theta from 0 to 40 degree, step = 1 degree, slit = 400

@@ -5,6 +5,7 @@ from piva.data_browser import DataBrowser
 from piva.data_viewer_3d import DataViewer3D
 from pyqtgraph.Qt.QtCore import Qt
 from PyQt5.QtTest import QTest
+from PyQt5.QtCore import QTimer
 from pkg_resources import resource_filename
 from PyQt5.QtWidgets import QMessageBox
 import os
@@ -110,7 +111,10 @@ class TestJupyterUtilities:
         kill_server_box.setIcon(QMessageBox.Information)
         kill_server_box.setText('Shut down Jupyter server?')
         kill_server_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        QTimer.singleShot(300, lambda: qtbot.mouseClick(
+            kill_server_box.button(QMessageBox.Ok), Qt.LeftButton))
         if kill_server_box.exec() == QMessageBox.Ok:
+            qtbot.wait(LONG_WT * 5)
             try:
                 os.kill(self.jl_server_pid, signal.SIGKILL)
             except Exception:
@@ -120,6 +124,8 @@ class TestJupyterUtilities:
         del_files_box.setIcon(QMessageBox.Information)
         del_files_box.setText('Delete created notebooks?')
         del_files_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        QTimer.singleShot(300, lambda: qtbot.mouseClick(
+            del_files_box.button(QMessageBox.Ok), Qt.LeftButton))
         if del_files_box.exec() == QMessageBox.Cancel:
             return
 

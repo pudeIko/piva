@@ -6,6 +6,7 @@ from copy import deepcopy
 
 import numpy as np
 import pyqtgraph as pg
+from pyqtgraph.exporters import ImageExporter
 from pyqtgraph.Qt import QtWidgets, QtCore
 from PyQt5.QtGui import QFont, QColor
 from PyQt5.QtWidgets import QColorDialog, QFileDialog, QWidget, \
@@ -18,6 +19,7 @@ import piva.working_procedures as wp
 import piva.data_viewer_2d as p2d
 import piva.data_viewer_3d as p3d
 from piva.image_panels import bold_font
+from piva.config import settings
 from typing import Union, Any
 import pickle
 
@@ -552,7 +554,10 @@ class PlotTool(QtWidgets.QMainWindow):
         except IndexError:
             return
 
-        dv = self.data_browser.data_viewers[dv_lbl]
+        try:
+            dv = self.data_browser.data_viewers[dv_lbl]
+        except KeyError:
+            return
 
         if isinstance(dv, p2d.DataViewer2D):
             self.ds_dv_plot.addItem('edc')
@@ -779,7 +784,10 @@ class PlotTool(QtWidgets.QMainWindow):
         and change its value in curve's parameters.
         """
 
-        cd = QColorDialog.getColor()
+        if settings.IS_TESTING:
+            cd = QColor('red')
+        else:
+            cd = QColorDialog.getColor()
         cd_str = 'rgb' + str(cd.getRgb()[:3])
         self.ec_color.setStyleSheet(f'background-color: {cd_str}')
         data_item_lbl = self.main_added.currentText()
@@ -908,7 +916,10 @@ class PlotTool(QtWidgets.QMainWindow):
             cd_str = 'rgb' + \
                      str(self.plot_panel_design['bgr_color'].getRgb()[:3])
         else:
-            cd = QColorDialog.getColor()
+            if settings.IS_TESTING:
+                cd = QColor('gray')
+            else:
+                cd = QColorDialog.getColor()
             cd_str = 'rgb' + str(cd.getRgb()[:3])
             self.plot_panel_design['bgr_color'] = cd
         self.ep_bgr_color.setStyleSheet(f'background-color: {cd_str}')
@@ -927,7 +938,10 @@ class PlotTool(QtWidgets.QMainWindow):
             cd_str = 'rgb' + \
                      str(self.plot_panel_design['axes_color'].getRgb()[:3])
         else:
-            cd = QColorDialog.getColor()
+            if settings.IS_TESTING:
+                cd = QColor('green')
+            else:
+                cd = QColorDialog.getColor()
             cd_str = 'rgb' + str(cd.getRgb()[:3])
             self.plot_panel_design['axes_color'] = cd
         self.ep_axes_color.setStyleSheet(f'background-color: {cd_str}')
@@ -1305,9 +1319,14 @@ class PlotTool(QtWidgets.QMainWindow):
             annotations=annotations_to_save
         )
 
-        full_path, types = QFileDialog.getSaveFileName(self, 'Save Session')
+        if settings.IS_TESTING:
+            full_path = './test_plottool_session.p'
+        else:
+            full_path, types = QFileDialog.getSaveFileName(
+                self, 'Save Session')
 
-        pickle.dump(res, full_path, force=True)
+        with open(full_path, 'wb') as f:
+            pickle.dump(res, f)
 
     def get_data_items_to_save(self) -> dict:
         """
@@ -1389,6 +1408,7 @@ class PlotTool(QtWidgets.QMainWindow):
 
         annotations_to_save = {}
         for key in self.annotations.keys():
+            print(key)
             annotations_to_save[key] = {}
             for keyy in self.annotations[key].keys():
                 if keyy == 'text_item':
@@ -1424,19 +1444,23 @@ class PlotTool(QtWidgets.QMainWindow):
         Load a :mod:`pickle` file with saved plotting session.
         """
 
-        warning_box = QMessageBox()
-        warning_box.setIcon(QMessageBox.Information)
-        warning_box.setWindowTitle('Load')
-        warning_box.setText('Current progress will be lost.  '
-                            'Sure to continue?')
-        warning_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
-        choice = warning_box.exec_()
-        if choice == QMessageBox.Ok:
-            pass
-        else:
-            return
+        if not settings.IS_TESTING:
+            warning_box = QMessageBox()
+            warning_box.setIcon(QMessageBox.Information)
+            warning_box.setWindowTitle('Load')
+            warning_box.setText('Current progress will be lost.  '
+                                'Sure to continue?')
+            warning_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+            choice = warning_box.exec_()
+            if choice == QMessageBox.Ok:
+                pass
+            else:
+                return
 
-        full_path, types = QFileDialog.getOpenFileName(self, 'Load Session')
+        if settings.IS_TESTING:
+            full_path = './test_plottool_session.p'
+        else:
+            full_path, type = QFileDialog.getOpenFileName(self, 'Load Session')
         with open(full_path, 'rb') as f:
             session = pickle.load(f)
 
@@ -1465,6 +1489,7 @@ class PlotTool(QtWidgets.QMainWindow):
 
         for idx in range(self.ann_added.count()):
             self.ann_added.setCurrentIndex(idx)
+            self.ann_name.setText(self.ann_added.itemText(idx))
             self.add_update_annotation()
 
     def save_image(self) -> None:
@@ -1472,12 +1497,15 @@ class PlotTool(QtWidgets.QMainWindow):
         Save current plot into an image file.
         """
 
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        full_path, types = QFileDialog.getSaveFileName(
-            self, 'Save Image', filter='Images (*.png *.jpg *.jpeg *.bmp)',
-            options=options)
-        to_save = pg.exporters.ImageExporter(self.plot_panel.plotItem)
+        if settings.IS_TESTING:
+            full_path = './test_plottool_image.png'
+        else:
+            options = QFileDialog.Options()
+            options |= QFileDialog.DontUseNativeDialog
+            full_path, types = QFileDialog.getSaveFileName(
+                self, 'Save Image', filter='Images (*.png *.jpg *.jpeg *.bmp)',
+                options=options)
+        to_save = ImageExporter(self.plot_panel.plotItem)
 
         to_save.export(full_path)
 

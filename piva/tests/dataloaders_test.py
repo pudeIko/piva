@@ -35,13 +35,21 @@ def test_dataloaders() -> None:
             dli = dl.DataloaderMERLIN()
         elif 'uranos' in fname:
             dli = dl.DataloaderURANOS()
+        elif 'test_map' in fname:
+            pass
         else:
             continue
         print(f'{fname:{30}}{dli}')
-        ds = dli.load_data(os.path.join(PATH, fname))
-        # check if the mandatory attributes are loaded correctly
+        try:
+            ds = dli.load_data(os.path.join(PATH, fname))
+        except NotImplementedError:
+            ds = dl.load_data(os.path.join(PATH, fname))
+        # if 4D dataset, extract just one spectrum
+        if isinstance(ds, np.ndarray):
+            ds = ds[0, 0]
         assert (isinstance(ds, BaseModel) or 
                 isinstance(ds, argparse.Namespace))
+        # check if the mandatory attributes are loaded correctly
         assert type(ds.data) is np.ndarray
         assert len(ds.data.shape) == 3
         assert type(ds.xscale) is np.ndarray

@@ -19,6 +19,7 @@ import piva.image_panels as ip
 from piva.utilities_panel import UtilitiesPanel, InfoWindow
 from piva.data_viewer_2d import ORIENTLINES_LINECOLOR
 from piva.cmaps import cmaps
+from piva.config import settings
 if TYPE_CHECKING:
     from piva.data_browser import DataBrowser
 
@@ -458,8 +459,8 @@ class DataViewer3D(QtWidgets.QMainWindow):
             self.copy_values_orientate_to_axes)
         self.util_panel.axes_do_kspace_conv.clicked.connect(
             self.convert_to_kspace)
-        self.util_panel.axes_reset_conv.clicked.connect(
-            self.reset_kspace_conversion)
+        # self.util_panel.axes_reset_conv.clicked.connect(
+        #     self.reset_kspace_conversion)
 
         # orientating options
         self.util_panel.orientate_init_x.valueChanged.connect(
@@ -1552,19 +1553,20 @@ class DataViewer3D(QtWidgets.QMainWindow):
         ds = self.data_set
         new_dataset = deepcopy(ds)
 
-        info_box = QMessageBox()
-        info_box.setIcon(QMessageBox.Information)
-        info_box.setWindowTitle('K-space conversion.')
-        msg = 'Conversion might take a while,  ' \
-              'depending on the dataset\'s size.\n' \
-              'Make sure all parameters are correct and be patient.'.format()
-        info_box.setText(msg)
-        info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
-        choice = info_box.exec()
-        if choice == QMessageBox.Ok:
-            pass
-        elif choice == QMessageBox.Cancel:
-            return
+        if not settings.IS_TESTING:
+            info_box = QMessageBox()
+            info_box.setIcon(QMessageBox.Information)
+            info_box.setWindowTitle('K-space conversion.')
+            msg = 'Conversion might take a while,  ' \
+                'depending on the dataset\'s size.\n' \
+                'Make sure all parameters are correct and be patient.'.format()
+            info_box.setText(msg)
+            info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+            choice = info_box.exec()
+            if choice == QMessageBox.Ok:
+                pass
+            elif choice == QMessageBox.Cancel:
+                return
 
         if self.util_panel.axes_transform_kz.isChecked():
             ky, _ = wp.hv2kz(ana_axis, scanned_ax, d_scan_ax=d_scan_ax,
@@ -1628,45 +1630,47 @@ class DataViewer3D(QtWidgets.QMainWindow):
             if fail_box.exec() == QMessageBox.Ok:
                 return
 
-        success_box = QMessageBox()
-        success_box.setIcon(QMessageBox.Information)
-        success_box.setWindowTitle('Conversion succeed.')
-        msg = 'K-space conversion succeed!<br>' \
-              'Make sure to save results.'
-        success_box.setText(msg)
-        success_box.setStandardButtons(QMessageBox.Ok)
-        if success_box.exec() == QMessageBox.Ok:
-            return
+        if not settings.IS_TESTING:
+            success_box = QMessageBox()
+            success_box.setIcon(QMessageBox.Information)
+            success_box.setWindowTitle('Conversion succeed.')
+            msg = 'K-space conversion succeed!<br>' \
+                'Make sure to save results.'
+            success_box.setText(msg)
+            success_box.setStandardButtons(QMessageBox.Ok)
+            if success_box.exec() == QMessageBox.Ok:
+                return
+        return
 
-    def reset_kspace_conversion(self) -> None:
-        """
-        Reset *k*-space conversion and bring analyzer axis back to [deg].
-        """
+    # def reset_kspace_conversion(self) -> None:
+    #     """
+    #     Reset *k*-space conversion and bring analyzer axis back to [deg].
+    #     """
 
-        self.kx_axis = None
-        self.ky_axis = None
-        org_hor_range = [self.data_handler.axes[0][0],
-                         self.data_handler.axes[0][-1]]
-        org_ver_range = [self.data_handler.axes[1][0],
-                         self.data_handler.axes[1][-1]]
-        self.main_plot.plotItem.getAxis(
-            self.main_plot.main_xaxis).setRange(*org_hor_range)
-        self.main_plot.plotItem.getAxis(
-            self.main_plot.main_yaxis).setRange(*org_ver_range)
-        self.cut_x.plotItem.getAxis(
-            self.cut_x.main_xaxis).setRange(*org_hor_range)
-        self.cut_y.plotItem.getAxis(
-            self.cut_y.main_xaxis).setRange(*org_ver_range)
-        self.plot_x.plotItem.getAxis(
-            self.plot_x.main_xaxis).setRange(*org_hor_range)
-        self.plot_y.plotItem.getAxis(
-            self.plot_y.main_xaxis).setRange(*org_ver_range)
-        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-            self.data_handler.axes[slit_ax][
-                self.main_plot.pos[1].get_value()]))
-        self.util_panel.momentum_vert_value.setText('({:.4f})'.format(
-            self.data_handler.axes[scan_ax][
-                self.main_plot.pos[0].get_value()]))
+    #     self.kx_axis = None
+    #     self.ky_axis = None
+    #     org_hor_range = [self.data_handler.axes[0][0],
+    #                      self.data_handler.axes[0][-1]]
+    #     org_ver_range = [self.data_handler.axes[1][0],
+    #                      self.data_handler.axes[1][-1]]
+    #     self.main_plot.plotItem.getAxis(
+    #         self.main_plot.main_xaxis).setRange(*org_hor_range)
+    #     self.main_plot.plotItem.getAxis(
+    #         self.main_plot.main_yaxis).setRange(*org_ver_range)
+    #     self.cut_x.plotItem.getAxis(
+    #         self.cut_x.main_xaxis).setRange(*org_hor_range)
+    #     self.cut_y.plotItem.getAxis(
+    #         self.cut_y.main_xaxis).setRange(*org_ver_range)
+    #     self.plot_x.plotItem.getAxis(
+    #         self.plot_x.main_xaxis).setRange(*org_hor_range)
+    #     self.plot_y.plotItem.getAxis(
+    #         self.plot_y.main_xaxis).setRange(*org_ver_range)
+    #     self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
+    #         self.data_handler.axes[slit_ax][
+    #             self.main_plot.pos[1].get_value()]))
+    #     self.util_panel.momentum_vert_value.setText('({:.4f})'.format(
+    #         self.data_handler.axes[scan_ax][
+    #             self.main_plot.pos[0].get_value()]))
 
     def show_BZ_contour(self) -> None:
         """
@@ -1900,20 +1904,27 @@ class DataViewer3D(QtWidgets.QMainWindow):
         init_fname = '.'.join(self.title.split('.')[:-1] + ['p'])
         
         # Choose directory
-        savedir = str(QtWidgets.QFileDialog.getExistingDirectory(
-            self, 'Select Directory', self.fname[:-len(self.title)]))
-        # savedir = self.fname[:-len(self.title)]
-        if not savedir:
-            return
+        if settings.IS_TESTING:
+            savedir = os.getcwd()
+            # pass
+        else:
+            savedir = str(QtWidgets.QFileDialog.getExistingDirectory(
+                self, 'Select Directory', self.fname[:-len(self.title)]))
+            # savedir = self.fname[:-len(self.title)]
+            if not savedir:
+                return
 
         while file_selection:
-            fname, fname_return_value = QtWidgets.QInputDialog.getText(
-                self, '', 'File name:', QLineEdit.Normal, init_fname)
+            if settings.IS_TESTING:
+                fname, fname_return_value = 'x', True
+            else:
+                fname, fname_return_value = QtWidgets.QInputDialog.getText(
+                    self, '', 'File name:', QLineEdit.Normal, init_fname)
             if not fname_return_value:
                 return
 
             # check if there is no fname colosions
-            if fname in os.listdir(savedir):
+            if (fname in os.listdir(savedir) and (not settings.IS_TESTING)):
                 fname_colision_box = QMessageBox()
                 fname_colision_box.setIcon(QMessageBox.Question)
                 fname_colision_box.setWindowTitle('File name already used.')
@@ -1935,7 +1946,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
                       up.axes_gamma_y.value() != 0,
                       up.axes_gamma_x.value() != 0]
 
-        if np.any(conditions):
+        if (np.any(conditions) and (not settings.IS_TESTING)):
             save_cor_box = QMessageBox()
             save_cor_box.setIcon(QMessageBox.Question)
             save_cor_box.setWindowTitle('Save data')
@@ -1960,7 +1971,10 @@ class DataViewer3D(QtWidgets.QMainWindow):
                 return
         else:
             pass
-
+        
+        if settings.IS_TESTING:
+            return
+        
         dl.dump(dataset, os.path.join(savedir, fname), force=True)
 
     def load_corrections(self, data_set: Dataset) -> None:
