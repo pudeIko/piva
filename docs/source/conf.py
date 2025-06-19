@@ -13,17 +13,18 @@
 import os
 import sys
 import shutil
-sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath(os.path.join('../../piva')))
+
+sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.abspath(os.path.join("../../piva")))
 # sys.path.insert(0, os.path.abspath(os.path.join('../../')))
 # sys.path.insert(0, os.path.abspath('_ext/'))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'piva'
-copyright = '2025, Wojtek Pudelko'
-author = 'Wojtek Pudelko'
+project = "piva"
+copyright = "2025, Wojtek Pudelko"
+author = "Wojtek Pudelko"
 
 
 # -- General configuration ---------------------------------------------------
@@ -31,17 +32,17 @@ author = 'Wojtek Pudelko'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
-    'nbsphinx',
-    'myst_nb',
-    'sphinx.ext.mathjax',  # Optional, for LaTeX rendering
-    'sphinx_rtd_theme',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.autodoc'
+    "nbsphinx",
+    "myst_nb",
+    "sphinx.ext.mathjax",  # Optional, for LaTeX rendering
+    "sphinx_rtd_theme",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.autodoc",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -53,13 +54,13 @@ exclude_patterns = []
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
-html_logo = '../img/logo-docs.png'
+html_static_path = ["_static"]
+html_logo = "../img/logo-docs.png"
 html_theme_options = {
     "logo_only": True,
 }
@@ -67,29 +68,25 @@ html_theme_options = {
 
 def copy_extra_files(app, exception):
     if exception is None:
-        src_path = os.path.join(app.srcdir, 'notebooks', 'Au-test_spectrum.p')
-        target_dir = os.path.join(app.outdir, 'notebooks')
+        src_path = os.path.join(app.srcdir, "notebooks", "Au-test_spectrum.p")
+        target_dir = os.path.join(app.outdir, "notebooks")
         os.makedirs(target_dir, exist_ok=True)
         shutil.copy(src_path, target_dir)
 
+
 # Load cutsom stylesheet
 def setup(app):
-    app.add_css_file('custom.css')
-    app.connect('build-finished', copy_extra_files)
+    app.add_css_file("custom.css")
+    app.connect("build-finished", copy_extra_files)
 
 
 # Intersphinx config
 intersphinx_mapping = {
-    'pyqtgraph': 
-    ('https://pyqtgraph.readthedocs.io/en/latest/', None),
-    'python':
-    ('https://docs.python.org/3', None),
-    'numpy':
-    ('https://numpy.org/doc/stable/', None),
-    'matplotlib':
-    ('https://matplotlib.org/', None),
-    'data-slicer':
-    ('https://data-slicer.readthedocs.io/en/latest/', None),
+    "pyqtgraph": ("https://pyqtgraph.readthedocs.io/en/latest/", None),
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "matplotlib": ("https://matplotlib.org/", None),
+    "data-slicer": ("https://data-slicer.readthedocs.io/en/latest/", None),
 }
 
 # -- Options for autodoc ----------------------------------------------------
@@ -97,7 +94,7 @@ intersphinx_mapping = {
 # Automatically extract typehints when specified and place them in
 # descriptions of the relevant function/method.
 autodoc_typehints = "description"
-autodoc_member_order = 'bysource'
+autodoc_member_order = "bysource"
 
 # Don't show class signature with the class' name.
 autodoc_class_signature = "separated"
@@ -105,8 +102,7 @@ autodoc_class_signature = "separated"
 
 # including jupyter notebook
 nbsphinx_allow_errors = True  # Allow notebooks with errors to render
-nbsphinx_execute = 'never'  # Always execute notebooks during the build
-nb_execution_mode = 'off'
-nb_render_text_lexer = 'python'  # Syntax highlighting for code cells
+nbsphinx_execute = "never"  # Always execute notebooks during the build
+nb_execution_mode = "off"
+nb_render_text_lexer = "python"  # Syntax highlighting for code cells
 # nb_ipywidgets_js = True          # Support for Jupyter widgets (optional)
-

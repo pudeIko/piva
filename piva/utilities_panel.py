@@ -5,11 +5,25 @@ from sys import platform
 from datetime import datetime
 from typing import Union, Any, TYPE_CHECKING
 import numpy as np
-from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QComboBox, \
-    QDoubleSpinBox, QSpinBox, QPushButton, QLineEdit, QMainWindow, \
-    QDialogButtonBox, QMessageBox, QScrollArea, QTableWidget, QVBoxLayout
+from PyQt5.QtWidgets import (
+    QWidget,
+    QLabel,
+    QCheckBox,
+    QComboBox,
+    QDoubleSpinBox,
+    QSpinBox,
+    QPushButton,
+    QLineEdit,
+    QMainWindow,
+    QDialogButtonBox,
+    QMessageBox,
+    QScrollArea,
+    QTableWidget,
+    QVBoxLayout,
+)
 from PyQt5.QtWidgets import QTableWidgetItem as QTabItem, QSizePolicy
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
+
 if TYPE_CHECKING:
     from piva.data_viewer_2d import DataViewer2D
     from piva.data_viewer_3d import DataViewer3D
@@ -34,7 +48,7 @@ QTabWidget{background-color: rgb(64, 64, 64);}
 """
 SIGNALS = 5
 MY_CMAPS = True
-DEFAULT_CMAP = 'coolwarm'
+DEFAULT_CMAP = "coolwarm"
 
 bold_font = QtGui.QFont()
 bold_font.setBold(True)
@@ -46,8 +60,12 @@ class UtilitiesPanel(QWidget):
     visualization and basic analysis utilities.
     """
 
-    def __init__(self, main_window: Union[DataViewer2D, DataViewer3D],
-                 name: str = None, dim: int = 3) -> None:
+    def __init__(
+        self,
+        main_window: Union[DataViewer2D, DataViewer3D],
+        name: str = None,
+        dim: int = 3,
+    ) -> None:
         """
         Initialize Utilities panel window
 
@@ -66,30 +84,30 @@ class UtilitiesPanel(QWidget):
         self.dim = dim
         self.jl_session_running = False
 
-        self.close_button = QPushButton('close')
-        self.save_button = QPushButton('save')
-        self.hide_button = QPushButton('hide tabs')
-        self.pit_button = QPushButton('open in PIT')
+        self.close_button = QPushButton("close")
+        self.save_button = QPushButton("save")
+        self.hide_button = QPushButton("hide tabs")
+        self.pit_button = QPushButton("open in PIT")
 
         self.buttons = QWidget()
         self.buttons_layout = QtWidgets.QGridLayout()
-        self.buttons_layout.addWidget(self.close_button,    1, 0)
-        self.buttons_layout.addWidget(self.save_button,     2, 0)
+        self.buttons_layout.addWidget(self.close_button, 1, 0)
+        self.buttons_layout.addWidget(self.save_button, 2, 0)
         if self.dim in (2, 4):
-            self.file_mdc_fitter_button = QPushButton('MDC fitter')
-            self.file_edc_fitter_button = QPushButton('EDC fitter')
+            self.file_mdc_fitter_button = QPushButton("MDC fitter")
+            self.file_edc_fitter_button = QPushButton("EDC fitter")
             self.buttons_layout.addWidget(self.file_mdc_fitter_button, 3, 0)
             self.buttons_layout.addWidget(self.file_edc_fitter_button, 4, 0)
         if self.dim == 2:
-            self.buttons_layout.addWidget(self.pit_button,      5, 0)
+            self.buttons_layout.addWidget(self.pit_button, 5, 0)
         elif self.dim == 3:
-            self.buttons_layout.addWidget(self.pit_button,      3, 0)
+            self.buttons_layout.addWidget(self.pit_button, 3, 0)
         self.buttons.setLayout(self.buttons_layout)
 
         if name is not None:
             self.name = name
         else:
-            self.name = 'Unnamed'
+            self.name = "Unnamed"
 
         self.initUI()
 
@@ -116,8 +134,7 @@ class UtilitiesPanel(QWidget):
             self.momentum_hor_value.setFixedWidth(momentum_labels_width)
             self.momentum_vert_value.setFixedWidth(momentum_labels_width)
 
-        self.layout.addWidget(self.tabs,
-                              0, 0, self.tabs_rows_span, self.tabs_cols_span)
+        self.layout.addWidget(self.tabs, 0, 0, self.tabs_rows_span, self.tabs_cols_span)
         self.layout.addWidget(self.buttons, 0, self.tabs_cols_span + 1)
         self.setLayout(self.layout)
 
@@ -126,23 +143,24 @@ class UtilitiesPanel(QWidget):
             self.link_windows.clicked.connect(self.link_selected_windows)
 
         # file options
-        self.file_show_dp_button.clicked.connect(
-            self.show_data_provenance_window)
+        self.file_show_dp_button.clicked.connect(self.show_data_provenance_window)
         self.file_show_md_button.clicked.connect(self.show_metadata_window)
         self.file_add_md_button.clicked.connect(self.add_metadata)
         self.file_remove_md_button.clicked.connect(self.remove_metadata)
         self.file_sum_datasets_sum_button.clicked.connect(self.sum_datasets)
-        self.file_sum_datasets_reset_button.clicked.connect(
-            self.reset_summation)
+        self.file_sum_datasets_reset_button.clicked.connect(self.reset_summation)
         self.file_jl_fname_button.clicked.connect(
-            lambda: self.create_jl_file(directory=None))
+            lambda: self.create_jl_file(directory=None)
+        )
         self.file_jl_session_button.clicked.connect(
-            lambda: self.open_jl_session(directory=None, port=None))
+            lambda: self.open_jl_session(directory=None, port=None)
+        )
         self.file_jl_explog_button.clicked.connect(
-            lambda: self.create_experimental_logbook_file(directory=None))
+            lambda: self.create_experimental_logbook_file(directory=None)
+        )
 
         self.setup_cmaps()
-        if platform == 'win32':
+        if platform == "win32":
             self.set_tabs_color()
 
     def align(self) -> None:
@@ -166,181 +184,178 @@ class UtilitiesPanel(QWidget):
         # create elements
         self.image_tab = QWidget()
         itl = QtWidgets.QGridLayout()
-        self.image_colors_label = QLabel('Colors')
+        self.image_colors_label = QLabel("Colors")
         self.image_colors_label.setFont(bold_font)
-        self.image_cmaps_label = QLabel('cmaps:')
+        self.image_cmaps_label = QLabel("cmaps:")
         self.image_cmaps = QComboBox()
-        self.image_invert_colors = QCheckBox('invert colors')
-        self.image_gamma_label = QLabel('gamma:')
+        self.image_invert_colors = QCheckBox("invert colors")
+        self.image_gamma_label = QLabel("gamma:")
         self.image_gamma = QDoubleSpinBox()
         self.image_gamma.setRange(0.05, 10)
         self.image_gamma.setValue(1)
         self.image_gamma.setSingleStep(0.05)
 
-        self.image_normalize_lbl = QLabel('Normalize')
+        self.image_normalize_lbl = QLabel("Normalize")
         self.image_normalize_lbl.setFont(bold_font)
-        self.image_normalize_to_lbl = QLabel('to:')
+        self.image_normalize_to_lbl = QLabel("to:")
         self.image_normalize_to = QComboBox()
-        self.image_normalize_along_lbl = QLabel('along axis:')
+        self.image_normalize_along_lbl = QLabel("along axis:")
         self.image_normalize_along = QComboBox()
-        self.image_normalize = QCheckBox('normalize')
+        self.image_normalize = QCheckBox("normalize")
 
         if self.dim in (3, 4):
-            self.image_2dv_lbl = QLabel('Open in 2D viewer')
+            self.image_2dv_lbl = QLabel("Open in 2D viewer")
             self.image_2dv_lbl.setFont(bold_font)
-            self.image_2dv_cut_selector_lbl = QLabel('select cut')
+            self.image_2dv_cut_selector_lbl = QLabel("select cut")
             self.image_2dv_cut_selector = QComboBox()
-            self.image_2dv_cut_selector.addItems(['vertical', 'horizontal'])
-            self.image_2dv_button = QPushButton('Open')
+            self.image_2dv_cut_selector.addItems(["vertical", "horizontal"])
+            self.image_2dv_button = QPushButton("Open")
 
         if self.dim in (2, 3):
             row = 0
-            itl.addWidget(self.image_colors_label,          row, 0)
-            itl.addWidget(self.image_cmaps_label,           row, 1)
-            itl.addWidget(self.image_cmaps,                 row, 2)
-            itl.addWidget(self.image_invert_colors,         row, 3, 1, 2)
+            itl.addWidget(self.image_colors_label, row, 0)
+            itl.addWidget(self.image_cmaps_label, row, 1)
+            itl.addWidget(self.image_cmaps, row, 2)
+            itl.addWidget(self.image_invert_colors, row, 3, 1, 2)
 
             row = 1
-            itl.addWidget(self.image_gamma_label,           row, 1)
-            itl.addWidget(self.image_gamma,                 row, 2)
+            itl.addWidget(self.image_gamma_label, row, 1)
+            itl.addWidget(self.image_gamma, row, 2)
 
             row = 2
-            itl.addWidget(self.image_normalize_lbl,         row, 0)
-            itl.addWidget(self.image_normalize_to_lbl,      row, 1)
-            itl.addWidget(self.image_normalize_to,          row, 2)
-            itl.addWidget(self.image_normalize_along_lbl,   row, 3)
-            itl.addWidget(self.image_normalize_along,       row, 4)
-            itl.addWidget(self.image_normalize,             row, 5)
+            itl.addWidget(self.image_normalize_lbl, row, 0)
+            itl.addWidget(self.image_normalize_to_lbl, row, 1)
+            itl.addWidget(self.image_normalize_to, row, 2)
+            itl.addWidget(self.image_normalize_along_lbl, row, 3)
+            itl.addWidget(self.image_normalize_along, row, 4)
+            itl.addWidget(self.image_normalize, row, 5)
 
         if self.dim == 2:
-            self.image_smooth_lbl = QLabel('Smooth')
+            self.image_smooth_lbl = QLabel("Smooth")
             self.image_smooth_lbl.setFont(bold_font)
-            self.image_smooth_n_lbl = QLabel('box size:')
+            self.image_smooth_n_lbl = QLabel("box size:")
             self.image_smooth_n = QSpinBox()
             self.image_smooth_n.setValue(3)
             self.image_smooth_n.setRange(3, 50)
             self.image_smooth_n.setMaximumWidth(max_w)
-            self.image_smooth_rl_lbl = QLabel('recursion:')
+            self.image_smooth_rl_lbl = QLabel("recursion:")
             self.image_smooth_rl = QSpinBox()
             self.image_smooth_rl.setValue(3)
             self.image_smooth_rl.setRange(1, 20)
-            self.image_smooth_button = QPushButton('Smooth')
+            self.image_smooth_button = QPushButton("Smooth")
 
-            self.image_curvature_lbl = QLabel('Curvature')
+            self.image_curvature_lbl = QLabel("Curvature")
             self.image_curvature_lbl.setFont(bold_font)
-            self.image_curvature_method_lbl = QLabel('method:')
+            self.image_curvature_method_lbl = QLabel("method:")
             self.image_curvature_method = QComboBox()
-            curvature_methods = ['2D', '1D (EDC)', '1D (MDC)']
+            curvature_methods = ["2D", "1D (EDC)", "1D (MDC)"]
             self.image_curvature_method.addItems(curvature_methods)
-            self.image_curvature_a_lbl = QLabel('a:')
+            self.image_curvature_a_lbl = QLabel("a:")
             self.image_curvature_a = QDoubleSpinBox()
             self.image_curvature_a.setRange(10e-15, 10e10)
             self.image_curvature_a.setSingleStep(0.000001)
             self.image_curvature_a.setValue(0.1)
             self.image_curvature_a.setDecimals(6)
             self.image_curvature_a.setMaximumWidth(max_w)
-            self.image_curvature_button = QPushButton('Do it')
+            self.image_curvature_button = QPushButton("Do it")
 
-            self.image_normalize_to.addItems(['maximum', 'intensity sum'])
-            self.image_normalize_along.addItems(['slit', 'energy'])
+            self.image_normalize_to.addItems(["maximum", "intensity sum"])
+            self.image_normalize_along.addItems(["slit", "energy"])
 
             row = 3
-            itl.addWidget(self.image_smooth_lbl,        row, 0)
-            itl.addWidget(self.image_smooth_n_lbl,      row, 1)
-            itl.addWidget(self.image_smooth_n,          row, 2)
-            itl.addWidget(self.image_smooth_rl_lbl,     row, 3)
-            itl.addWidget(self.image_smooth_rl,         row, 4)
-            itl.addWidget(self.image_smooth_button,     row, 5, 1, 2)
+            itl.addWidget(self.image_smooth_lbl, row, 0)
+            itl.addWidget(self.image_smooth_n_lbl, row, 1)
+            itl.addWidget(self.image_smooth_n, row, 2)
+            itl.addWidget(self.image_smooth_rl_lbl, row, 3)
+            itl.addWidget(self.image_smooth_rl, row, 4)
+            itl.addWidget(self.image_smooth_button, row, 5, 1, 2)
 
             row = 4
-            itl.addWidget(self.image_curvature_lbl,         row, 0)
-            itl.addWidget(self.image_curvature_method_lbl,  row, 1)
-            itl.addWidget(self.image_curvature_method,      row, 2)
-            itl.addWidget(self.image_curvature_a_lbl,       row, 3)
-            itl.addWidget(self.image_curvature_a,           row, 4)
-            itl.addWidget(self.image_curvature_button,      row, 5, 1, 2)
+            itl.addWidget(self.image_curvature_lbl, row, 0)
+            itl.addWidget(self.image_curvature_method_lbl, row, 1)
+            itl.addWidget(self.image_curvature_method, row, 2)
+            itl.addWidget(self.image_curvature_a_lbl, row, 3)
+            itl.addWidget(self.image_curvature_a, row, 4)
+            itl.addWidget(self.image_curvature_button, row, 5, 1, 2)
 
         elif self.dim == 3:
-
-            self.image_BZ_contour_lbl = QLabel('BZ contour')
+            self.image_BZ_contour_lbl = QLabel("BZ contour")
             self.image_BZ_contour_lbl.setFont(bold_font)
-            self.image_show_BZ = QCheckBox('show')
-            self.image_symmetry_label = QLabel('symmetry:')
+            self.image_show_BZ = QCheckBox("show")
+            self.image_symmetry_label = QLabel("symmetry:")
             self.image_symmetry = QSpinBox()
             self.image_symmetry.setRange(4, 6)
-            self.image_rotate_BZ_label = QLabel('rotate:')
+            self.image_rotate_BZ_label = QLabel("rotate:")
             self.image_rotate_BZ = QDoubleSpinBox()
             self.image_rotate_BZ.setRange(-90, 90)
             self.image_rotate_BZ.setSingleStep(0.5)
 
-            self.image_normalize_to.addItems(['maximum', 'intensity sum'])
-            self.image_normalize_along.addItems(['scanned', 'slit', 'energy'])
+            self.image_normalize_to.addItems(["maximum", "intensity sum"])
+            self.image_normalize_along.addItems(["scanned", "slit", "energy"])
 
             row = 3
-            itl.addWidget(self.image_BZ_contour_lbl,    row, 0)
-            itl.addWidget(self.image_symmetry_label,    row, 1)
-            itl.addWidget(self.image_symmetry,          row, 2)
-            itl.addWidget(self.image_rotate_BZ_label,   row, 3)
-            itl.addWidget(self.image_rotate_BZ,         row, 4)
-            itl.addWidget(self.image_show_BZ,           row, 5)
+            itl.addWidget(self.image_BZ_contour_lbl, row, 0)
+            itl.addWidget(self.image_symmetry_label, row, 1)
+            itl.addWidget(self.image_symmetry, row, 2)
+            itl.addWidget(self.image_rotate_BZ_label, row, 3)
+            itl.addWidget(self.image_rotate_BZ, row, 4)
+            itl.addWidget(self.image_show_BZ, row, 5)
 
             row = 4
-            itl.addWidget(self.image_2dv_lbl,               row, 0, 1, 2)
-            itl.addWidget(self.image_2dv_cut_selector_lbl,  row, 2)
-            itl.addWidget(self.image_2dv_cut_selector,      row, 3)
-            itl.addWidget(self.image_2dv_button,            row, 4)
+            itl.addWidget(self.image_2dv_lbl, row, 0, 1, 2)
+            itl.addWidget(self.image_2dv_cut_selector_lbl, row, 2)
+            itl.addWidget(self.image_2dv_cut_selector, row, 3)
+            itl.addWidget(self.image_2dv_button, row, 4)
 
             # dummy item
-            dummy_lbl = QLabel('')
+            dummy_lbl = QLabel("")
             itl.addWidget(dummy_lbl, 5, 0, 1, 7)
 
         elif self.dim == 4:
-
-            self.image_normalize_lbl.setText('Normalize spectrum')
-            self.image_only_spectrum = QCheckBox('only spectrum')
-            self.image_raster_label = QLabel('Spectra in raster image')
+            self.image_normalize_lbl.setText("Normalize spectrum")
+            self.image_only_spectrum = QCheckBox("only spectrum")
+            self.image_raster_label = QLabel("Spectra in raster image")
             self.image_raster_label.setFont(bold_font)
             self.image_raster_options = QComboBox()
-            self.image_raster_options.addItems(
-                ['sum', 'signal/noise', 'sharpest edge'])
+            self.image_raster_options.addItems(["sum", "signal/noise", "sharpest edge"])
             # self.image_raster_button = QPushButton('Do it')
 
-            self.image_normalize_to.addItems(['maximum', 'intensity sum'])
-            self.image_normalize_along.addItems(['slit', 'energy'])
+            self.image_normalize_to.addItems(["maximum", "intensity sum"])
+            self.image_normalize_along.addItems(["slit", "energy"])
 
             row = 0
-            itl.addWidget(self.image_colors_label,          row, 0)
-            itl.addWidget(self.image_cmaps_label,           row, 1)
-            itl.addWidget(self.image_cmaps,                 row, 2)
-            itl.addWidget(self.image_invert_colors,         row, 3)
+            itl.addWidget(self.image_colors_label, row, 0)
+            itl.addWidget(self.image_cmaps_label, row, 1)
+            itl.addWidget(self.image_cmaps, row, 2)
+            itl.addWidget(self.image_invert_colors, row, 3)
 
             row = 1
-            itl.addWidget(self.image_gamma_label,           row, 1)
-            itl.addWidget(self.image_gamma,                 row, 2)
-            itl.addWidget(self.image_only_spectrum,         row, 3)
+            itl.addWidget(self.image_gamma_label, row, 1)
+            itl.addWidget(self.image_gamma, row, 2)
+            itl.addWidget(self.image_only_spectrum, row, 3)
 
             row = 2
-            itl.addWidget(self.image_normalize_lbl,         row, 0)
-            itl.addWidget(self.image_normalize_to_lbl,      row, 1)
-            itl.addWidget(self.image_normalize_to,          row, 2)
-            itl.addWidget(self.image_normalize_along_lbl,   row, 3)
-            itl.addWidget(self.image_normalize_along,       row, 4)
-            itl.addWidget(self.image_normalize,             row, 5)
+            itl.addWidget(self.image_normalize_lbl, row, 0)
+            itl.addWidget(self.image_normalize_to_lbl, row, 1)
+            itl.addWidget(self.image_normalize_to, row, 2)
+            itl.addWidget(self.image_normalize_along_lbl, row, 3)
+            itl.addWidget(self.image_normalize_along, row, 4)
+            itl.addWidget(self.image_normalize, row, 5)
 
             row = 3
-            itl.addWidget(self.image_raster_label,          row, 0)
-            itl.addWidget(self.image_raster_options,        row, 1, 1, 2)
+            itl.addWidget(self.image_raster_label, row, 0)
+            itl.addWidget(self.image_raster_options, row, 1, 1, 2)
             # itl.addWidget(self.image_raster_button,         row, 3)
 
             row = 4
-            itl.addWidget(self.image_2dv_lbl,               row, 0)
-            itl.addWidget(self.image_2dv_cut_selector_lbl,  row, 2)
-            itl.addWidget(self.image_2dv_cut_selector,      row, 3)
-            itl.addWidget(self.image_2dv_button,            row, 4)
+            itl.addWidget(self.image_2dv_lbl, row, 0)
+            itl.addWidget(self.image_2dv_cut_selector_lbl, row, 2)
+            itl.addWidget(self.image_2dv_cut_selector, row, 3)
+            itl.addWidget(self.image_2dv_button, row, 4)
 
         self.image_tab.layout = itl
         self.image_tab.setLayout(itl)
-        self.tabs.addTab(self.image_tab, 'Image')
+        self.tabs.addTab(self.image_tab, "Image")
 
     def set_volume_tab(self) -> None:
         """
@@ -353,196 +368,195 @@ class UtilitiesPanel(QWidget):
         bin_box_w = 50
         coords_box_w = 70
 
-        self.link_windows_lbl = QLabel('Link windows')
+        self.link_windows_lbl = QLabel("Link windows")
         self.link_windows_lbl.setFont(bold_font)
-        self.link_windows_list = CheckComboBox(
-            placeholderText='--select file--')
+        self.link_windows_list = CheckComboBox(placeholderText="--select file--")
         self.set_opened_viewers_list()
         self.link_windows_status = QComboBox()
-        self.link_windows_status.addItems(['free', 'parent', 'child'])
+        self.link_windows_status.addItems(["free", "parent", "child"])
         self.link_windows_status.setDisabled(True)
         self.link_windows_status.blockSignals(True)
-        self.link_windows = QPushButton('Link')
+        self.link_windows = QPushButton("Link")
 
         if self.dim in (2, 4):
             # binning option
-            self.bins_label = QLabel('Integrate')
+            self.bins_label = QLabel("Integrate")
             self.bins_label.setFont(bold_font)
-            self.bin_y = QCheckBox('bin EDCs')
+            self.bin_y = QCheckBox("bin EDCs")
             self.bin_y_nbins = QSpinBox()
-            self.bin_z = QCheckBox('bin MDCs')
+            self.bin_z = QCheckBox("bin MDCs")
             self.bin_z_nbins = QSpinBox()
             self.bin_z_nbins.setRange(0, 1000)
             self.bin_z_nbins.setValue(0)
 
             # cross' hairs positions
-            self.positions_momentum_label = QLabel('Momentum sliders')
+            self.positions_momentum_label = QLabel("Momentum sliders")
             self.positions_momentum_label.setFont(bold_font)
-            self.energy_vert_label = QLabel('E:')
+            self.energy_vert_label = QLabel("E:")
             self.energy_vert = QSpinBox()
-            self.energy_vert_value = QLabel('eV')
-            self.momentum_hor_label = QLabel('kx:')
+            self.energy_vert_value = QLabel("eV")
+            self.momentum_hor_label = QLabel("kx:")
             self.momentum_hor = QSpinBox()
-            self.momentum_hor_value = QLabel('deg')
+            self.momentum_hor_value = QLabel("deg")
 
         if self.dim == 2:
             col = 0
-            vtl.addWidget(self.positions_momentum_label,    0, col, 1, 3)
-            vtl.addWidget(self.energy_vert_label,           1, col)
-            vtl.addWidget(self.energy_vert,                 1, col + 1)
-            vtl.addWidget(self.energy_vert_value,           1, col + 2)
-            vtl.addWidget(self.momentum_hor_label,          2, col)
-            vtl.addWidget(self.momentum_hor,                2, col + 1)
-            vtl.addWidget(self.momentum_hor_value,          2, col + 2)
+            vtl.addWidget(self.positions_momentum_label, 0, col, 1, 3)
+            vtl.addWidget(self.energy_vert_label, 1, col)
+            vtl.addWidget(self.energy_vert, 1, col + 1)
+            vtl.addWidget(self.energy_vert_value, 1, col + 2)
+            vtl.addWidget(self.momentum_hor_label, 2, col)
+            vtl.addWidget(self.momentum_hor, 2, col + 1)
+            vtl.addWidget(self.momentum_hor_value, 2, col + 2)
 
             col = 4
-            vtl.addWidget(self.bins_label,                  0, col, 1, 2)
-            vtl.addWidget(self.bin_y,                       1, col)
-            vtl.addWidget(self.bin_y_nbins,                 1, col + 1)
-            vtl.addWidget(self.bin_z,                       2, col)
-            vtl.addWidget(self.bin_z_nbins,                 2, col + 1)
+            vtl.addWidget(self.bins_label, 0, col, 1, 2)
+            vtl.addWidget(self.bin_y, 1, col)
+            vtl.addWidget(self.bin_y_nbins, 1, col + 1)
+            vtl.addWidget(self.bin_z, 2, col)
+            vtl.addWidget(self.bin_z_nbins, 2, col + 1)
 
-            vtl.addWidget(self.link_windows_lbl,            4, 0)
-            vtl.addWidget(self.link_windows_list,           4, 1, 1, 3)
-            vtl.addWidget(self.link_windows_status,         4, 4)
-            vtl.addWidget(self.link_windows,                4, 5)
+            vtl.addWidget(self.link_windows_lbl, 4, 0)
+            vtl.addWidget(self.link_windows_list, 4, 1, 1, 3)
+            vtl.addWidget(self.link_windows_status, 4, 4)
+            vtl.addWidget(self.link_windows, 4, 5)
 
             # dummy lbl
-            dummy_lbl = QLabel('')
+            dummy_lbl = QLabel("")
             vtl.addWidget(dummy_lbl, 3, 0, 1, 6)
 
         elif self.dim == 3:
             # binning option
-            self.bin_z = QCheckBox('bin E')
+            self.bin_z = QCheckBox("bin E")
             self.bin_z_nbins = QSpinBox()
             self.bin_z_nbins.setMaximumWidth(bin_box_w)
-            self.bin_x = QCheckBox('bin kx')
+            self.bin_x = QCheckBox("bin kx")
             self.bin_x_nbins = QSpinBox()
             self.bin_x_nbins.setMaximumWidth(bin_box_w)
-            self.bin_y = QCheckBox('bin ky')
+            self.bin_y = QCheckBox("bin ky")
             self.bin_y_nbins = QSpinBox()
             self.bin_y_nbins.setMaximumWidth(bin_box_w)
-            self.bin_zx = QCheckBox('bin E (kx)')
+            self.bin_zx = QCheckBox("bin E (kx)")
             self.bin_zx_nbins = QSpinBox()
             self.bin_zx_nbins.setMaximumWidth(bin_box_w)
-            self.bin_zy = QCheckBox('bin E (ky)')
+            self.bin_zy = QCheckBox("bin E (ky)")
             self.bin_zy_nbins = QSpinBox()
             self.bin_zy_nbins.setMaximumWidth(bin_box_w)
 
             # cross' hairs positions
-            self.positions_energies_label = QLabel('Energy sliders')
+            self.positions_energies_label = QLabel("Energy sliders")
             self.positions_energies_label.setFont(bold_font)
-            self.energy_main_label = QLabel('main:')
+            self.energy_main_label = QLabel("main:")
             self.energy_main_label.setMaximumWidth(50)
             self.energy_main = QSpinBox()
             self.energy_main.setMaximumWidth(coords_box_w)
-            self.energy_main_value = QLabel('eV')
-            self.energy_hor_label = QLabel('kx:')
+            self.energy_main_value = QLabel("eV")
+            self.energy_hor_label = QLabel("kx:")
             self.energy_hor_label.setMaximumWidth(max_lbl_w)
             self.energy_hor = QSpinBox()
             self.energy_hor.setMaximumWidth(coords_box_w)
-            self.energy_hor_value = QLabel('eV')
-            self.energy_vert_label = QLabel('ky:')
+            self.energy_hor_value = QLabel("eV")
+            self.energy_vert_label = QLabel("ky:")
             self.energy_vert_label.setMaximumWidth(max_lbl_w)
             self.energy_vert = QSpinBox()
             self.energy_vert.setMaximumWidth(coords_box_w)
-            self.energy_vert_value = QLabel('eV')
+            self.energy_vert_value = QLabel("eV")
 
-            self.positions_momentum_label = QLabel('Momentum sliders')
+            self.positions_momentum_label = QLabel("Momentum sliders")
             self.positions_momentum_label.setFont(bold_font)
-            self.momentum_hor_label = QLabel('ky:')
+            self.momentum_hor_label = QLabel("ky:")
             self.momentum_hor_label.setMaximumWidth(max_lbl_w)
             self.momentum_hor = QSpinBox()
             self.momentum_hor.setMaximumWidth(coords_box_w)
-            self.momentum_hor_value = QLabel('deg')
-            self.momentum_vert_label = QLabel('kx:')
+            self.momentum_hor_value = QLabel("deg")
+            self.momentum_vert_label = QLabel("kx:")
             self.momentum_vert_label.setMaximumWidth(max_lbl_w)
             self.momentum_vert = QSpinBox()
             self.momentum_vert.setMaximumWidth(coords_box_w)
-            self.momentum_vert_value = QLabel('deg')
+            self.momentum_vert_value = QLabel("deg")
 
             col = 0
-            vtl.addWidget(self.positions_energies_label,        0, col, 1, 3)
-            vtl.addWidget(self.energy_main_label,               1, col)
-            vtl.addWidget(self.energy_main,                     1, col + 1)
-            vtl.addWidget(self.energy_main_value,               1, col + 2)
-            vtl.addWidget(self.energy_hor_label,                2, col)
-            vtl.addWidget(self.energy_hor,                      2, col + 1)
-            vtl.addWidget(self.energy_hor_value,                2, col + 2)
-            vtl.addWidget(self.energy_vert_label,               3, col)
-            vtl.addWidget(self.energy_vert,                     3, col + 1)
-            vtl.addWidget(self.energy_vert_value,               3, col + 2)
+            vtl.addWidget(self.positions_energies_label, 0, col, 1, 3)
+            vtl.addWidget(self.energy_main_label, 1, col)
+            vtl.addWidget(self.energy_main, 1, col + 1)
+            vtl.addWidget(self.energy_main_value, 1, col + 2)
+            vtl.addWidget(self.energy_hor_label, 2, col)
+            vtl.addWidget(self.energy_hor, 2, col + 1)
+            vtl.addWidget(self.energy_hor_value, 2, col + 2)
+            vtl.addWidget(self.energy_vert_label, 3, col)
+            vtl.addWidget(self.energy_vert, 3, col + 1)
+            vtl.addWidget(self.energy_vert_value, 3, col + 2)
 
             col = 3
-            vtl.addWidget(self.positions_momentum_label,        0, col, 1, 3)
-            vtl.addWidget(self.momentum_vert_label,             1, col)
-            vtl.addWidget(self.momentum_vert,                   1, col + 1)
-            vtl.addWidget(self.momentum_vert_value,             1, col + 2)
-            vtl.addWidget(self.momentum_hor_label,              2, col)
-            vtl.addWidget(self.momentum_hor,                    2, col + 1)
-            vtl.addWidget(self.momentum_hor_value,              2, col + 2)
+            vtl.addWidget(self.positions_momentum_label, 0, col, 1, 3)
+            vtl.addWidget(self.momentum_vert_label, 1, col)
+            vtl.addWidget(self.momentum_vert, 1, col + 1)
+            vtl.addWidget(self.momentum_vert_value, 1, col + 2)
+            vtl.addWidget(self.momentum_hor_label, 2, col)
+            vtl.addWidget(self.momentum_hor, 2, col + 1)
+            vtl.addWidget(self.momentum_hor_value, 2, col + 2)
 
             col = 6
-            vtl.addWidget(self.bin_z,                           0, col)
-            vtl.addWidget(self.bin_z_nbins,                     0, col + 1)
-            vtl.addWidget(self.bin_x,                           1, col)
-            vtl.addWidget(self.bin_x_nbins,                     1, col + 1)
-            vtl.addWidget(self.bin_y,                           2, col)
-            vtl.addWidget(self.bin_y_nbins,                     2, col + 1)
-            vtl.addWidget(self.bin_zx,                          3, col)
-            vtl.addWidget(self.bin_zx_nbins,                    3, col + 1)
-            vtl.addWidget(self.bin_zy,                          4, col)
-            vtl.addWidget(self.bin_zy_nbins,                    4, col + 1)
+            vtl.addWidget(self.bin_z, 0, col)
+            vtl.addWidget(self.bin_z_nbins, 0, col + 1)
+            vtl.addWidget(self.bin_x, 1, col)
+            vtl.addWidget(self.bin_x_nbins, 1, col + 1)
+            vtl.addWidget(self.bin_y, 2, col)
+            vtl.addWidget(self.bin_y_nbins, 2, col + 1)
+            vtl.addWidget(self.bin_zx, 3, col)
+            vtl.addWidget(self.bin_zx_nbins, 3, col + 1)
+            vtl.addWidget(self.bin_zy, 4, col)
+            vtl.addWidget(self.bin_zy_nbins, 4, col + 1)
 
-            vtl.addWidget(self.link_windows_lbl,                5, 0, 1, 2)
-            vtl.addWidget(self.link_windows_list,               5, 2, 1, 4)
-            vtl.addWidget(self.link_windows_status,             5, 6)
-            vtl.addWidget(self.link_windows,                    5, 7)
+            vtl.addWidget(self.link_windows_lbl, 5, 0, 1, 2)
+            vtl.addWidget(self.link_windows_list, 5, 2, 1, 4)
+            vtl.addWidget(self.link_windows_status, 5, 6)
+            vtl.addWidget(self.link_windows, 5, 7)
 
         elif self.dim == 4:
             # cross' hairs positions
-            self.raster_label = QLabel('Position sliders')
+            self.raster_label = QLabel("Position sliders")
             self.raster_label.setFont(bold_font)
-            self.rx_vert_label = QLabel('x:')
+            self.rx_vert_label = QLabel("x:")
             self.rx_vert = QSpinBox()
-            self.rx_vert_value = QLabel('eV')
-            self.ry_hor_label = QLabel('y:')
+            self.rx_vert_value = QLabel("eV")
+            self.ry_hor_label = QLabel("y:")
             self.ry_hor = QSpinBox()
-            self.ry_hor_value = QLabel('deg')
-            self.bin_y.setText('bin E')
-            self.bin_z.setText('bin k')
+            self.ry_hor_value = QLabel("deg")
+            self.bin_y.setText("bin E")
+            self.bin_z.setText("bin k")
 
             col = 0
-            vtl.addWidget(self.raster_label,    0, col, 1, 3)
-            vtl.addWidget(self.rx_vert_label,   1, col)
-            vtl.addWidget(self.rx_vert,         1, col + 1)
-            vtl.addWidget(self.rx_vert_value,   1, col + 2)
-            vtl.addWidget(self.ry_hor_label,    2, col)
-            vtl.addWidget(self.ry_hor,          2, col + 1)
-            vtl.addWidget(self.ry_hor_value,    2, col + 2)
+            vtl.addWidget(self.raster_label, 0, col, 1, 3)
+            vtl.addWidget(self.rx_vert_label, 1, col)
+            vtl.addWidget(self.rx_vert, 1, col + 1)
+            vtl.addWidget(self.rx_vert_value, 1, col + 2)
+            vtl.addWidget(self.ry_hor_label, 2, col)
+            vtl.addWidget(self.ry_hor, 2, col + 1)
+            vtl.addWidget(self.ry_hor_value, 2, col + 2)
 
             col = 3
-            vtl.addWidget(self.positions_momentum_label,    0, col, 1, 3)
-            vtl.addWidget(self.energy_vert_label,           1, col)
-            vtl.addWidget(self.energy_vert,                 1, col + 1)
-            vtl.addWidget(self.energy_vert_value,           1, col + 2)
-            vtl.addWidget(self.momentum_hor_label,          2, col)
-            vtl.addWidget(self.momentum_hor,                2, col + 1)
-            vtl.addWidget(self.momentum_hor_value,          2, col + 2)
+            vtl.addWidget(self.positions_momentum_label, 0, col, 1, 3)
+            vtl.addWidget(self.energy_vert_label, 1, col)
+            vtl.addWidget(self.energy_vert, 1, col + 1)
+            vtl.addWidget(self.energy_vert_value, 1, col + 2)
+            vtl.addWidget(self.momentum_hor_label, 2, col)
+            vtl.addWidget(self.momentum_hor, 2, col + 1)
+            vtl.addWidget(self.momentum_hor_value, 2, col + 2)
 
             col = 6
-            vtl.addWidget(self.bins_label,                  0, col, 1, 2)
-            vtl.addWidget(self.bin_y,                       1, col)
-            vtl.addWidget(self.bin_y_nbins,                 1, col + 1)
-            vtl.addWidget(self.bin_z,                       2, col)
-            vtl.addWidget(self.bin_z_nbins,                 2, col + 1)
+            vtl.addWidget(self.bins_label, 0, col, 1, 2)
+            vtl.addWidget(self.bin_y, 1, col)
+            vtl.addWidget(self.bin_y_nbins, 1, col + 1)
+            vtl.addWidget(self.bin_z, 2, col)
+            vtl.addWidget(self.bin_z_nbins, 2, col + 1)
 
             # dummy lbl
-            dummy_lbl = QLabel('')
+            dummy_lbl = QLabel("")
             vtl.addWidget(dummy_lbl, 3, 0, 1, 6)
         self.volume_tab.layout = vtl
         self.volume_tab.setLayout(vtl)
-        self.tabs.addTab(self.volume_tab, 'Volume')
+        self.tabs.addTab(self.volume_tab, "Volume")
 
     def set_axes_tab(self) -> None:
         """
@@ -554,45 +568,45 @@ class UtilitiesPanel(QWidget):
         box_max_w = 100
         lbl_max_h = 30
 
-        self.axes_energy_main_lbl = QLabel('Energy correction')
+        self.axes_energy_main_lbl = QLabel("Energy correction")
         self.axes_energy_main_lbl.setFont(bold_font)
         self.axes_energy_main_lbl.setMaximumHeight(lbl_max_h)
-        self.axes_energy_Ef_lbl = QLabel('Ef (eV):')
+        self.axes_energy_Ef_lbl = QLabel("Ef (eV):")
         self.axes_energy_Ef = QDoubleSpinBox()
         self.axes_energy_Ef.setMaximumWidth(box_max_w)
-        self.axes_energy_Ef.setRange(-5000., 5000)
+        self.axes_energy_Ef.setRange(-5000.0, 5000)
         self.axes_energy_Ef.setDecimals(6)
         self.axes_energy_Ef.setSingleStep(0.001)
 
-        self.axes_energy_hv_lbl = QLabel('h\u03BD (eV):')
+        self.axes_energy_hv_lbl = QLabel("h\u03bd (eV):")
         self.axes_energy_hv = QDoubleSpinBox()
         self.axes_energy_hv.setMaximumWidth(box_max_w)
-        self.axes_energy_hv.setRange(-2000., 2000)
+        self.axes_energy_hv.setRange(-2000.0, 2000)
         self.axes_energy_hv.setDecimals(4)
         self.axes_energy_hv.setSingleStep(0.001)
 
-        self.axes_energy_wf_lbl = QLabel('wf (eV):')
+        self.axes_energy_wf_lbl = QLabel("wf (eV):")
         self.axes_energy_wf = QDoubleSpinBox()
         self.axes_energy_wf.setMaximumWidth(box_max_w)
         self.axes_energy_wf.setRange(0, 5)
         self.axes_energy_wf.setDecimals(4)
         self.axes_energy_wf.setSingleStep(0.001)
 
-        self.axes_energy_scale_lbl = QLabel('scale:')
+        self.axes_energy_scale_lbl = QLabel("scale:")
         self.axes_energy_scale = QComboBox()
-        self.axes_energy_scale.addItems(['binding', 'kinetic'])
+        self.axes_energy_scale.addItems(["binding", "kinetic"])
         self.axes_energy_scale.setCurrentIndex(1)
 
-        self.axes_momentum_main_lbl = QLabel('k-space conversion')
+        self.axes_momentum_main_lbl = QLabel("k-space conversion")
         self.axes_momentum_main_lbl.setFont(bold_font)
         self.axes_momentum_main_lbl.setMaximumHeight(lbl_max_h)
-        self.axes_gamma_x_lbl = QLabel('\u0393 x0:')
+        self.axes_gamma_x_lbl = QLabel("\u0393 x0:")
         self.axes_gamma_x = QSpinBox()
         self.axes_gamma_x.setRange(0, 5000)
 
-        self.axes_transform_kz = QCheckBox('kz')
+        self.axes_transform_kz = QCheckBox("kz")
 
-        self.axes_conv_lc_lbl = QLabel('a (\u212B):')
+        self.axes_conv_lc_lbl = QLabel("a (\u212b):")
         self.axes_conv_lc = QDoubleSpinBox()
         self.axes_conv_lc.setMaximumWidth(box_max_w)
         self.axes_conv_lc.setRange(0, 10)
@@ -600,7 +614,7 @@ class UtilitiesPanel(QWidget):
         self.axes_conv_lc.setSingleStep(0.001)
         self.axes_conv_lc.setValue(3.1416)
 
-        self.axes_conv_lc_op_lbl = QLabel('c (\u212B):')
+        self.axes_conv_lc_op_lbl = QLabel("c (\u212b):")
         self.axes_conv_lc_op = QDoubleSpinBox()
         self.axes_conv_lc_op.setMaximumWidth(box_max_w)
         self.axes_conv_lc_op.setRange(0, 100)
@@ -608,73 +622,72 @@ class UtilitiesPanel(QWidget):
         self.axes_conv_lc_op.setSingleStep(0.001)
         self.axes_conv_lc_op.setValue(3.1416)
 
-        self.axes_slit_orient_lbl = QLabel('Slit:')
+        self.axes_slit_orient_lbl = QLabel("Slit:")
         self.axes_slit_orient = QComboBox()
-        self.axes_slit_orient.addItems(['horizontal', 'vertical'])
-        self.axes_copy_values = QPushButton('Copy from \'Orientate\'')
-        self.axes_do_kspace_conv = QPushButton('Convert')
-        self.axes_reset_conv = QPushButton('Reset')
+        self.axes_slit_orient.addItems(["horizontal", "vertical"])
+        self.axes_copy_values = QPushButton("Copy from 'Orientate'")
+        self.axes_do_kspace_conv = QPushButton("Convert")
+        self.axes_reset_conv = QPushButton("Reset")
 
         row = 0
-        atl.addWidget(self.axes_energy_main_lbl,        row + 0, 0, 1, 2)
-        atl.addWidget(self.axes_energy_scale_lbl,       row + 0, 4)
-        atl.addWidget(self.axes_energy_scale,           row + 0, 5)
-        atl.addWidget(self.axes_energy_Ef_lbl,          row + 1, 0)
-        atl.addWidget(self.axes_energy_Ef,              row + 1, 1)
-        atl.addWidget(self.axes_energy_hv_lbl,          row + 1, 2)
-        atl.addWidget(self.axes_energy_hv,              row + 1, 3)
-        atl.addWidget(self.axes_energy_wf_lbl,          row + 1, 4)
-        atl.addWidget(self.axes_energy_wf,              row + 1, 5)
+        atl.addWidget(self.axes_energy_main_lbl, row + 0, 0, 1, 2)
+        atl.addWidget(self.axes_energy_scale_lbl, row + 0, 4)
+        atl.addWidget(self.axes_energy_scale, row + 0, 5)
+        atl.addWidget(self.axes_energy_Ef_lbl, row + 1, 0)
+        atl.addWidget(self.axes_energy_Ef, row + 1, 1)
+        atl.addWidget(self.axes_energy_hv_lbl, row + 1, 2)
+        atl.addWidget(self.axes_energy_hv, row + 1, 3)
+        atl.addWidget(self.axes_energy_wf_lbl, row + 1, 4)
+        atl.addWidget(self.axes_energy_wf, row + 1, 5)
 
         if self.dim in (2, 4):
-            self.axes_angle_off_lbl = QLabel('ang offset:')
+            self.axes_angle_off_lbl = QLabel("ang offset:")
             self.axes_angle_off = QDoubleSpinBox()
             self.axes_angle_off.setMaximumWidth(box_max_w)
             self.axes_angle_off.setDecimals(4)
             self.axes_angle_off.setSingleStep(0.001)
 
             row = 2
-            atl.addWidget(self.axes_momentum_main_lbl,  row + 0, 0, 1, 2)
-            atl.addWidget(self.axes_gamma_x_lbl,        row + 1, 0)
-            atl.addWidget(self.axes_gamma_x,            row + 1, 1)
-            atl.addWidget(self.axes_angle_off_lbl,      row + 1, 2)
-            atl.addWidget(self.axes_angle_off,          row + 1, 3)
-            atl.addWidget(self.axes_conv_lc_lbl,        row + 1, 4)
-            atl.addWidget(self.axes_conv_lc,            row + 1, 5)
+            atl.addWidget(self.axes_momentum_main_lbl, row + 0, 0, 1, 2)
+            atl.addWidget(self.axes_gamma_x_lbl, row + 1, 0)
+            atl.addWidget(self.axes_gamma_x, row + 1, 1)
+            atl.addWidget(self.axes_angle_off_lbl, row + 1, 2)
+            atl.addWidget(self.axes_angle_off, row + 1, 3)
+            atl.addWidget(self.axes_conv_lc_lbl, row + 1, 4)
+            atl.addWidget(self.axes_conv_lc, row + 1, 5)
 
             row = 4
-            atl.addWidget(self.axes_slit_orient_lbl,    row, 0)
-            atl.addWidget(self.axes_slit_orient,        row, 1)
-            atl.addWidget(self.axes_do_kspace_conv,     row, 2, 1, 2)
-            atl.addWidget(self.axes_reset_conv,         row, 4, 1, 2)
+            atl.addWidget(self.axes_slit_orient_lbl, row, 0)
+            atl.addWidget(self.axes_slit_orient, row, 1)
+            atl.addWidget(self.axes_do_kspace_conv, row, 2, 1, 2)
+            atl.addWidget(self.axes_reset_conv, row, 4, 1, 2)
 
         elif self.dim == 3:
-
-            self.axes_gamma_y_lbl = QLabel('\u0393 y0')
+            self.axes_gamma_y_lbl = QLabel("\u0393 y0")
             self.axes_gamma_y = QSpinBox()
             self.axes_gamma_y.setRange(0, 5000)
 
             row = 2
-            atl.addWidget(self.axes_momentum_main_lbl,  row + 0, 0, 1, 2)
-            atl.addWidget(self.axes_slit_orient_lbl,    row + 0, 4)
-            atl.addWidget(self.axes_slit_orient,        row + 0, 5)
-            atl.addWidget(self.axes_gamma_x_lbl,        row + 1, 0)
-            atl.addWidget(self.axes_gamma_x,            row + 1, 1)
-            atl.addWidget(self.axes_gamma_y_lbl,        row + 1, 2)
-            atl.addWidget(self.axes_gamma_y,            row + 1, 3)
-            atl.addWidget(self.axes_copy_values,        row + 1, 4, 1, 2)
+            atl.addWidget(self.axes_momentum_main_lbl, row + 0, 0, 1, 2)
+            atl.addWidget(self.axes_slit_orient_lbl, row + 0, 4)
+            atl.addWidget(self.axes_slit_orient, row + 0, 5)
+            atl.addWidget(self.axes_gamma_x_lbl, row + 1, 0)
+            atl.addWidget(self.axes_gamma_x, row + 1, 1)
+            atl.addWidget(self.axes_gamma_y_lbl, row + 1, 2)
+            atl.addWidget(self.axes_gamma_y, row + 1, 3)
+            atl.addWidget(self.axes_copy_values, row + 1, 4, 1, 2)
 
             row = 4
-            atl.addWidget(self.axes_conv_lc_lbl,        row, 0)
-            atl.addWidget(self.axes_conv_lc,            row, 1)
-            atl.addWidget(self.axes_conv_lc_op_lbl,     row, 2)
-            atl.addWidget(self.axes_conv_lc_op,         row, 3)
-            atl.addWidget(self.axes_transform_kz,       row, 4)
-            atl.addWidget(self.axes_do_kspace_conv,     row, 5)
+            atl.addWidget(self.axes_conv_lc_lbl, row, 0)
+            atl.addWidget(self.axes_conv_lc, row, 1)
+            atl.addWidget(self.axes_conv_lc_op_lbl, row, 2)
+            atl.addWidget(self.axes_conv_lc_op, row, 3)
+            atl.addWidget(self.axes_transform_kz, row, 4)
+            atl.addWidget(self.axes_do_kspace_conv, row, 5)
 
         self.axes_tab.layout = atl
         self.axes_tab.setLayout(atl)
-        self.tabs.addTab(self.axes_tab, 'Axes')
+        self.tabs.addTab(self.axes_tab, "Axes")
 
     def set_orientate_tab(self) -> None:
         """
@@ -685,65 +698,65 @@ class UtilitiesPanel(QWidget):
         self.orientate_tab = QWidget()
         otl = QtWidgets.QGridLayout()
 
-        self.orientate_init_cooradinates_lbl = QLabel(
-            'Give initial coordinates')
+        self.orientate_init_cooradinates_lbl = QLabel("Give initial coordinates")
         self.orientate_init_cooradinates_lbl.setFont(bold_font)
-        self.orientate_init_x_lbl = QLabel('scanned axis:')
+        self.orientate_init_x_lbl = QLabel("scanned axis:")
         self.orientate_init_x = QSpinBox()
         self.orientate_init_x.setRange(0, 1000)
-        self.orientate_init_y_lbl = QLabel('slit axis:')
+        self.orientate_init_y_lbl = QLabel("slit axis:")
         self.orientate_init_y = QSpinBox()
         self.orientate_init_y.setRange(0, 1000)
 
-        self.orientate_find_gamma = QPushButton('Find \t \u0393')
-        self.orientate_copy_coords = QPushButton('Copy from \'Volume\'')
+        self.orientate_find_gamma = QPushButton("Find \t \u0393")
+        self.orientate_copy_coords = QPushButton("Copy from 'Volume'")
 
         self.orientate_find_gamma_message = QLineEdit(
-            'NOTE: algorithm will process the main plot image.')
+            "NOTE: algorithm will process the main plot image."
+        )
         self.orientate_find_gamma_message.setReadOnly(True)
 
-        self.orientate_lines_lbl = QLabel('Show rotatable lines')
+        self.orientate_lines_lbl = QLabel("Show rotatable lines")
         self.orientate_lines_lbl.setFont(bold_font)
-        self.orientate_hor_line = QCheckBox('horizontal line')
+        self.orientate_hor_line = QCheckBox("horizontal line")
         self.orientate_hor_line
-        self.orientate_ver_line = QCheckBox('vertical line')
-        self.orientate_angle_lbl = QLabel('rotation angle:')
+        self.orientate_ver_line = QCheckBox("vertical line")
+        self.orientate_angle_lbl = QLabel("rotation angle:")
         self.orientate_angle = QDoubleSpinBox()
         self.orientate_angle.setRange(-180, 180)
         self.orientate_angle.setSingleStep(0.5)
 
-        self.orientate_info_lbl = QLabel('Orientations table:')
-        self.orientate_info_button = QPushButton('open')
+        self.orientate_info_lbl = QLabel("Orientations table:")
+        self.orientate_info_button = QPushButton("open")
 
         # addWidget(widget, row, column, rowSpan, columnSpan)
         row = 0
-        otl.addWidget(self.orientate_init_cooradinates_lbl, row,     0, 1, 2)
-        otl.addWidget(self.orientate_init_x_lbl,            row + 1, 0)
-        otl.addWidget(self.orientate_init_x,                row + 1, 1)
-        otl.addWidget(self.orientate_init_y_lbl,            row + 1, 2)
-        otl.addWidget(self.orientate_init_y,                row + 1, 3)
+        otl.addWidget(self.orientate_init_cooradinates_lbl, row, 0, 1, 2)
+        otl.addWidget(self.orientate_init_x_lbl, row + 1, 0)
+        otl.addWidget(self.orientate_init_x, row + 1, 1)
+        otl.addWidget(self.orientate_init_y_lbl, row + 1, 2)
+        otl.addWidget(self.orientate_init_y, row + 1, 3)
 
         row = 2
-        otl.addWidget(self.orientate_find_gamma,            row,     0, 1, 2)
-        otl.addWidget(self.orientate_copy_coords,           row,     2, 1, 2)
-        otl.addWidget(self.orientate_find_gamma_message,    row + 1, 0, 1, 4)
+        otl.addWidget(self.orientate_find_gamma, row, 0, 1, 2)
+        otl.addWidget(self.orientate_copy_coords, row, 2, 1, 2)
+        otl.addWidget(self.orientate_find_gamma_message, row + 1, 0, 1, 4)
 
         col = 4
-        otl.addWidget(self.orientate_lines_lbl,             0, col,     1, 2)
-        otl.addWidget(self.orientate_hor_line,              1, col)
-        otl.addWidget(self.orientate_ver_line,              1, col + 1)
-        otl.addWidget(self.orientate_angle_lbl,             2, col)
-        otl.addWidget(self.orientate_angle,                 2, col + 1)
-        otl.addWidget(self.orientate_info_lbl,              3, col)
-        otl.addWidget(self.orientate_info_button,           3, col + 1)
+        otl.addWidget(self.orientate_lines_lbl, 0, col, 1, 2)
+        otl.addWidget(self.orientate_hor_line, 1, col)
+        otl.addWidget(self.orientate_ver_line, 1, col + 1)
+        otl.addWidget(self.orientate_angle_lbl, 2, col)
+        otl.addWidget(self.orientate_angle, 2, col + 1)
+        otl.addWidget(self.orientate_info_lbl, 3, col)
+        otl.addWidget(self.orientate_info_button, 3, col + 1)
 
         # dummy lbl
-        dummy_lbl = QLabel('')
+        dummy_lbl = QLabel("")
         otl.addWidget(dummy_lbl, 4, 0, 2, 8)
 
         self.orientate_tab.layout = otl
         self.orientate_tab.setLayout(otl)
-        self.tabs.addTab(self.orientate_tab, 'Orient')
+        self.tabs.addTab(self.orientate_tab, "Orient")
 
         self.set_orientation_info_window()
 
@@ -755,78 +768,79 @@ class UtilitiesPanel(QWidget):
         self.file_tab = QWidget()
         ftl = QtWidgets.QGridLayout()
 
-        self.file_add_md_lbl = QLabel('Edit entries')
+        self.file_add_md_lbl = QLabel("Edit entries")
         self.file_add_md_lbl.setFont(bold_font)
-        self.file_md_name_lbl = QLabel('name:')
+        self.file_md_name_lbl = QLabel("name:")
         self.file_md_name = QLineEdit()
-        self.file_md_value_lbl = QLabel('value:')
+        self.file_md_value_lbl = QLabel("value:")
         self.file_md_value = QLineEdit()
-        self.file_add_md_button = QPushButton('add')
-        self.file_remove_md_button = QPushButton('remove')
+        self.file_add_md_button = QPushButton("add")
+        self.file_remove_md_button = QPushButton("remove")
 
-        self.file_show_dp_button = QPushButton('data provenance')
-        self.file_show_md_button = QPushButton('show metadata')
+        self.file_show_dp_button = QPushButton("data provenance")
+        self.file_show_md_button = QPushButton("show metadata")
 
-        self.file_sum_datasets_lbl = QLabel('Sum scans')
+        self.file_sum_datasets_lbl = QLabel("Sum scans")
         self.file_sum_datasets_lbl.setFont(bold_font)
-        self.file_sum_datasets_fname_lbl = QLabel('file name:')
-        self.file_sum_datasets_fname = QLineEdit('File name')
-        self.file_sum_datasets_sum_button = QPushButton('sum')
-        self.file_sum_datasets_reset_button = QPushButton('reset')
+        self.file_sum_datasets_fname_lbl = QLabel("file name:")
+        self.file_sum_datasets_fname = QLineEdit("File name")
+        self.file_sum_datasets_sum_button = QPushButton("sum")
+        self.file_sum_datasets_reset_button = QPushButton("reset")
 
-        self.file_jl_main_lbl = QLabel('JupyterLab')
+        self.file_jl_main_lbl = QLabel("JupyterLab")
         self.file_jl_main_lbl.setFont(bold_font)
-        self.file_jl_fname_lbl = QLabel('file name:')
-        self.file_jl_fname = QLineEdit(self.mw.title.split('.')[0] + '.ipynb')
-        self.file_jl_fname_button = QPushButton('touch')
-        self.file_jl_explog_lbl = QLabel('exp.  logbook:')
+        self.file_jl_fname_lbl = QLabel("file name:")
+        self.file_jl_fname = QLineEdit(self.mw.title.split(".")[0] + ".ipynb")
+        self.file_jl_fname_button = QPushButton("touch")
+        self.file_jl_explog_lbl = QLabel("exp.  logbook:")
         self.file_jl_explog = QComboBox()
-        self.file_jl_explog.addItems(['--beamline--', 'SIS', 'ADRESS', 'Bloch',
-                                      'I05', 'MERLIN', 'URANOS'])
-        self.file_jl_explog_button = QPushButton('create')
-        self.file_jl_session_button = QPushButton('start JL session')
+        self.file_jl_explog.addItems(
+            ["--beamline--", "SIS", "ADRESS", "Bloch", "I05", "MERLIN", "URANOS"]
+        )
+        self.file_jl_explog_button = QPushButton("create")
+        self.file_jl_session_button = QPushButton("start JL session")
 
         row = 0
-        ftl.addWidget(self.file_show_dp_button,                 row, 4, 1, 2)
-        ftl.addWidget(self.file_show_md_button,                 row, 6, 1, 2)
+        ftl.addWidget(self.file_show_dp_button, row, 4, 1, 2)
+        ftl.addWidget(self.file_show_md_button, row, 6, 1, 2)
 
         row += 1
-        ftl.addWidget(self.file_add_md_lbl,                     row, 0)
-        ftl.addWidget(self.file_md_name_lbl,                    row, 1)
-        ftl.addWidget(self.file_md_name,                        row, 2, 1, 2)
-        ftl.addWidget(self.file_md_value_lbl,                   row, 4)
-        ftl.addWidget(self.file_md_value,                       row, 5)
-        ftl.addWidget(self.file_add_md_button,                  row, 6)
-        ftl.addWidget(self.file_remove_md_button,               row, 7)
+        ftl.addWidget(self.file_add_md_lbl, row, 0)
+        ftl.addWidget(self.file_md_name_lbl, row, 1)
+        ftl.addWidget(self.file_md_name, row, 2, 1, 2)
+        ftl.addWidget(self.file_md_value_lbl, row, 4)
+        ftl.addWidget(self.file_md_value, row, 5)
+        ftl.addWidget(self.file_add_md_button, row, 6)
+        ftl.addWidget(self.file_remove_md_button, row, 7)
 
         if self.dim == 2:
             row += 1
-            ftl.addWidget(self.file_sum_datasets_lbl,           row, 0)
-            ftl.addWidget(self.file_sum_datasets_fname,         row, 1, 1, 5)
-            ftl.addWidget(self.file_sum_datasets_sum_button,    row, 6)
-            ftl.addWidget(self.file_sum_datasets_reset_button,  row, 7)
+            ftl.addWidget(self.file_sum_datasets_lbl, row, 0)
+            ftl.addWidget(self.file_sum_datasets_fname, row, 1, 1, 5)
+            ftl.addWidget(self.file_sum_datasets_sum_button, row, 6)
+            ftl.addWidget(self.file_sum_datasets_reset_button, row, 7)
 
         row += 1
-        ftl.addWidget(self.file_jl_main_lbl,                    row, 0)
-        ftl.addWidget(self.file_jl_fname_lbl,                   row, 1, 1, 2)
-        ftl.addWidget(self.file_jl_fname,                       row, 3, 1, 2)
-        ftl.addWidget(self.file_jl_fname_button,                row, 5)
-        ftl.addWidget(self.file_jl_session_button,              row, 6, 1, 2)
+        ftl.addWidget(self.file_jl_main_lbl, row, 0)
+        ftl.addWidget(self.file_jl_fname_lbl, row, 1, 1, 2)
+        ftl.addWidget(self.file_jl_fname, row, 3, 1, 2)
+        ftl.addWidget(self.file_jl_fname_button, row, 5)
+        ftl.addWidget(self.file_jl_session_button, row, 6, 1, 2)
 
         row += 1
-        ftl.addWidget(self.file_jl_explog_lbl,                  row, 1, 1, 2)
-        ftl.addWidget(self.file_jl_explog,                      row, 3, 1, 2)
-        ftl.addWidget(self.file_jl_explog_button,               row, 5)
+        ftl.addWidget(self.file_jl_explog_lbl, row, 1, 1, 2)
+        ftl.addWidget(self.file_jl_explog, row, 3, 1, 2)
+        ftl.addWidget(self.file_jl_explog_button, row, 5)
 
         if self.dim in (3, 4):
             # dummy lbl
             row += 1
-            dummy_lbl = QLabel('')
-            ftl.addWidget(dummy_lbl,                            row, 0)
+            dummy_lbl = QLabel("")
+            ftl.addWidget(dummy_lbl, row, 0)
 
         self.file_tab.layout = ftl
         self.file_tab.setLayout(ftl)
-        self.tabs.addTab(self.file_tab, 'File')
+        self.tabs.addTab(self.file_tab, "File")
 
     def set_opened_viewers_list(self) -> None:
         """
@@ -860,31 +874,32 @@ class UtilitiesPanel(QWidget):
         if self.link_windows_status.currentIndex() == 0:
             self.set_linking_status(self.get_linked_windows())
             if self.link_windows_status.currentIndex() == 2:
-                self.link_windows.setText('Unlink')
-                self.update_lists_in_other_viewers('free to child')
+                self.link_windows.setText("Unlink")
+                self.update_lists_in_other_viewers("free to child")
                 # disable all list items and uncheck them
                 for idx in range(self.link_windows_list.count()):
                     self.link_windows_list.model().item(idx).setEnabled(False)
                 return
 
         if self.link_windows_status.currentIndex() == 1:
-            if 1 in self.set_linking_status(self.get_linked_windows(),
-                                            get_statuses=True):
+            if 1 in self.set_linking_status(
+                self.get_linked_windows(), get_statuses=True
+            ):
                 two_parent_box = QMessageBox()
                 two_parent_box.setIcon(QMessageBox.Information)
-                two_parent_box.setText('Cannot link two parent viewers.')
+                two_parent_box.setText("Cannot link two parent viewers.")
                 two_parent_box.setStandardButtons(QMessageBox.Ok)
                 if two_parent_box.exec() == QMessageBox.Ok:
                     return
             if self.get_linked_windows():
-                self.link_windows.setText('Update')
+                self.link_windows.setText("Update")
             else:
-                self.link_windows.setText('Link')
+                self.link_windows.setText("Link")
                 self.link_windows_status.setCurrentIndex(0)
-            self.update_lists_in_other_viewers('as parent')
+            self.update_lists_in_other_viewers("as parent")
         else:
-            self.link_windows.setText('Link')
-            self.update_lists_in_other_viewers('as child')
+            self.link_windows.setText("Link")
+            self.update_lists_in_other_viewers("as child")
             # enable all list items and uncheck them
             for idx in range(self.link_windows_list.count()):
                 self.link_windows_list.model().item(idx).setEnabled(True)
@@ -917,8 +932,9 @@ class UtilitiesPanel(QWidget):
                 linked_windows.append(self.link_windows_list.itemText(idx))
         return linked_windows
 
-    def set_linking_status(self, windows_to_link: list,
-                           get_statuses: bool = False) -> Union[list, None]:
+    def set_linking_status(
+        self, windows_to_link: list, get_statuses: bool = False
+    ) -> Union[list, None]:
         """
         Check statuses of all the **DataViewers** that are about to be linked
         together. If no *parent* is found, make this **DataViewer** a *parent*.
@@ -934,8 +950,7 @@ class UtilitiesPanel(QWidget):
         statuses = []
         for dvi in dv.keys():
             if dv[dvi].title in windows_to_link:
-                statuses.append(dv[dvi].util_panel.
-                                link_windows_status.currentIndex())
+                statuses.append(dv[dvi].util_panel.link_windows_status.currentIndex())
         if get_statuses:
             return statuses
         else:
@@ -958,22 +973,23 @@ class UtilitiesPanel(QWidget):
         linked_list = self.get_linked_windows()
         for dvi in dv.keys():
             dv_up = dv[dvi].util_panel
-            if (action == 'free to child') and (dv[dvi].title in linked_list):
+            if (action == "free to child") and (dv[dvi].title in linked_list):
                 if dv_up.link_windows_status.currentIndex() == 1:
                     parent = dv_up
                 else:
                     linked2 = dv_up.get_linked_windows()
                     for dvj in dv.keys():
                         dvj_up = dv[dvj].util_panel
-                        if (dvj_up.link_windows_status.currentIndex() == 1) \
-                                and (dv[dvj].title in linked2):
+                        if (dvj_up.link_windows_status.currentIndex() == 1) and (
+                            dv[dvj].title in linked2
+                        ):
                             parent = dvj_up
                 idx = self.get_index_in_windows_list(parent.link_windows_list)
                 parent.link_windows_list.setItemCheckState(idx, 2)
                 parent.link_selected_windows()
                 break
-            elif (action == 'as parent') and (dv[dvi].title in linked_list):
-                dv_up.link_windows.setText('Unlink')
+            elif (action == "as parent") and (dv[dvi].title in linked_list):
+                dv_up.link_windows.setText("Unlink")
                 viewer_linked_list = dv_up.link_windows_list
                 # "enchild" checked viewers
                 idx = self.get_index_in_windows_list(viewer_linked_list)
@@ -983,23 +999,22 @@ class UtilitiesPanel(QWidget):
                     viewer_linked_list.model().item(idx).setEnabled(False)
                     if viewer_linked_list.itemText(idx) in linked_list:
                         viewer_linked_list.setItemCheckState(idx, 2)
-            elif (action == 'as parent') and \
-                    (dv[dvi].title not in linked_list):
+            elif (action == "as parent") and (dv[dvi].title not in linked_list):
                 if self.mw.title in dv[dvi].util_panel.get_linked_windows():
                     dv_up.link_windows_status.setCurrentIndex(0)
                     for idx in range(dv_up.link_windows_list.count()):
-                        dv_up.link_windows.setText('Link')
-                        dv_up.link_windows_list.model().item(
-                            idx).setEnabled(True)
+                        dv_up.link_windows.setText("Link")
+                        dv_up.link_windows_list.model().item(idx).setEnabled(True)
                         dv_up.link_windows_list.setItemCheckState(idx, 0)
-            elif (action == 'as child') and (dv[dvi].title in linked_list):
+            elif (action == "as child") and (dv[dvi].title in linked_list):
                 idx = self.get_index_in_windows_list(dv_up.link_windows_list)
                 dv_up.link_windows_list.setItemCheckState(idx, 0)
                 # make free if parent and has no more linked windows
-                if (dv_up.link_windows_status.currentIndex() == 1) and \
-                        not dv_up.get_linked_windows():
+                if (
+                    dv_up.link_windows_status.currentIndex() == 1
+                ) and not dv_up.get_linked_windows():
                     dv_up.link_windows_status.setCurrentIndex(0)
-                    dv_up.link_windows.setText('Link')
+                    dv_up.link_windows.setText("Link")
 
     def set_tabs_color(self) -> None:
         """
@@ -1007,16 +1022,21 @@ class UtilitiesPanel(QWidget):
         Windows machines.
         """
 
-        to_change = ['QPushButton', 'QLineEdit', 'QSpinBox', 'QDoubleSpinBox',
-                     'QComboBox', 'CheckComboBox']
+        to_change = [
+            "QPushButton",
+            "QLineEdit",
+            "QSpinBox",
+            "QDoubleSpinBox",
+            "QComboBox",
+            "CheckComboBox",
+        ]
         for i in range(self.tabs.count()):
             tab_i = self.tabs.widget(i)
             tab_i.setStyleSheet("QWidget {background-color: rgb(64, 64, 64);}")
             for wi in tab_i.children():
                 wi_name = wi.metaObject().className()
                 if wi_name in to_change:
-                    wi.setStyleSheet(
-                        "QWidget {background-color: rgb(255, 255, 255);}")
+                    wi.setStyleSheet("QWidget {background-color: rgb(255, 255, 255);}")
 
     def setup_cmaps(self) -> None:
         """
@@ -1041,52 +1061,53 @@ class UtilitiesPanel(QWidget):
         self.orient_info_window = QWidget()
         oiw = QtWidgets.QGridLayout()
 
-        self.oi_window_lbl = QLabel('piva -> beamline coordinates translator')
+        self.oi_window_lbl = QLabel("piva -> beamline coordinates translator")
         self.oi_window_lbl.setFont(bold_font)
-        self.oi_beamline_lbl = QLabel('Beamline')
+        self.oi_beamline_lbl = QLabel("Beamline")
         self.oi_beamline_lbl.setFont(bold_font)
-        self.oi_azimuth_lbl = QLabel('Azimuth (clockwise)')
+        self.oi_azimuth_lbl = QLabel("Azimuth (clockwise)")
         self.oi_azimuth_lbl.setFont(bold_font)
-        self.oi_analyzer_lbl = QLabel('Analyzer (-> +)')
+        self.oi_analyzer_lbl = QLabel("Analyzer (-> +)")
         self.oi_analyzer_lbl.setFont(bold_font)
-        self.oi_scanned_lbl = QLabel('Scanned (-> +)')
+        self.oi_scanned_lbl = QLabel("Scanned (-> +)")
         self.oi_scanned_lbl.setFont(bold_font)
 
         entries = [
-            ['SIS (SLS, SIStem)',  'phi -> -',     'theta -> +', 'tilt -> -'],
-            ['SIS (SLS, SES)',     'phi -> +',     'theta -> -', 'tilt -> -'],
-            ['Bloch (MaxIV)',      'azimuth -> +', 'tilt -> -',  'polar -> -'],
-            ['ALS (Merlin)',       '-',            '-',          '-'],
-            ['CASSIOPEE (SOLEIL)', '-',            '-',          '-'],
-            ['I05 (Diamond)',      '-',            '-',          '-'],
-            ['URANOS (SOLARIS)',   '-',            'R3 -> ?',    'R1 -> -'],
-            ['APE (Elettra)',      '-',            '-',          '-'],
-            ['ADDRES (SLS)',       '-',            '-',          '-'],
-            ['-',                  '-',            '-',          '-'],
-            ['-',                  '-',            '-',          '-']]
+            ["SIS (SLS, SIStem)", "phi -> -", "theta -> +", "tilt -> -"],
+            ["SIS (SLS, SES)", "phi -> +", "theta -> -", "tilt -> -"],
+            ["Bloch (MaxIV)", "azimuth -> +", "tilt -> -", "polar -> -"],
+            ["ALS (Merlin)", "-", "-", "-"],
+            ["CASSIOPEE (SOLEIL)", "-", "-", "-"],
+            ["I05 (Diamond)", "-", "-", "-"],
+            ["URANOS (SOLARIS)", "-", "R3 -> ?", "R1 -> -"],
+            ["APE (Elettra)", "-", "-", "-"],
+            ["ADDRES (SLS)", "-", "-", "-"],
+            ["-", "-", "-", "-"],
+            ["-", "-", "-", "-"],
+        ]
         labels = {}
 
         row = 0
-        oiw.addWidget(self.oi_beamline_lbl,     row, 0)
-        oiw.addWidget(self.oi_azimuth_lbl,      row, 1)
-        oiw.addWidget(self.oi_analyzer_lbl,     row, 2)
-        oiw.addWidget(self.oi_scanned_lbl,      row, 3)
+        oiw.addWidget(self.oi_beamline_lbl, row, 0)
+        oiw.addWidget(self.oi_azimuth_lbl, row, 1)
+        oiw.addWidget(self.oi_analyzer_lbl, row, 2)
+        oiw.addWidget(self.oi_scanned_lbl, row, 3)
 
         for entry in entries:
             row += 1
             labels[str(row)] = {}
-            labels[str(row)]['beamline'] = QLabel(entry[0])
-            labels[str(row)]['azimuth'] = QLabel(entry[1])
-            labels[str(row)]['azimuth'].setAlignment(QtCore.Qt.AlignCenter)
-            labels[str(row)]['analyzer'] = QLabel(entry[2])
-            labels[str(row)]['analyzer'].setAlignment(QtCore.Qt.AlignCenter)
-            labels[str(row)]['scanned'] = QLabel(entry[3])
-            labels[str(row)]['scanned'].setAlignment(QtCore.Qt.AlignCenter)
+            labels[str(row)]["beamline"] = QLabel(entry[0])
+            labels[str(row)]["azimuth"] = QLabel(entry[1])
+            labels[str(row)]["azimuth"].setAlignment(QtCore.Qt.AlignCenter)
+            labels[str(row)]["analyzer"] = QLabel(entry[2])
+            labels[str(row)]["analyzer"].setAlignment(QtCore.Qt.AlignCenter)
+            labels[str(row)]["scanned"] = QLabel(entry[3])
+            labels[str(row)]["scanned"].setAlignment(QtCore.Qt.AlignCenter)
 
-            oiw.addWidget(labels[str(row)]['beamline'],    row, 0)
-            oiw.addWidget(labels[str(row)]['azimuth'],     row, 1)
-            oiw.addWidget(labels[str(row)]['analyzer'],    row, 2)
-            oiw.addWidget(labels[str(row)]['scanned'],     row, 3)
+            oiw.addWidget(labels[str(row)]["beamline"], row, 0)
+            oiw.addWidget(labels[str(row)]["azimuth"], row, 1)
+            oiw.addWidget(labels[str(row)]["analyzer"], row, 2)
+            oiw.addWidget(labels[str(row)]["scanned"], row, 3)
 
         self.orient_info_window.layout = oiw
         self.orient_info_window.setLayout(oiw)
@@ -1102,12 +1123,12 @@ class UtilitiesPanel(QWidget):
         self.md_window = QWidget()
         mdw = QtWidgets.QGridLayout()
 
-        attribute_name_lbl = QLabel('Attribute')
+        attribute_name_lbl = QLabel("Attribute")
         attribute_name_lbl.setFont(bold_font)
-        attribute_value_lbl = QLabel('Value')
+        attribute_value_lbl = QLabel("Value")
         attribute_value_lbl.setFont(bold_font)
         attribute_value_lbl.setAlignment(QtCore.Qt.AlignCenter)
-        attribute_saved_lbl = QLabel('user saved')
+        attribute_saved_lbl = QLabel("user saved")
         attribute_saved_lbl.setFont(bold_font)
         attribute_saved_lbl.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -1115,127 +1136,121 @@ class UtilitiesPanel(QWidget):
         entries = {}
 
         row = 0
-        mdw.addWidget(attribute_name_lbl,   row, 0)
-        mdw.addWidget(attribute_value_lbl,  row, 1)
+        mdw.addWidget(attribute_name_lbl, row, 0)
+        mdw.addWidget(attribute_value_lbl, row, 1)
 
         row = 1
         for key in dataset.keys():
-            if (key == 'ekin') or (key == 'saved') or \
-                    (key == 'data_provenance') or \
-                    (key == 'add_org_file_entry'):
+            if (
+                (key == "ekin")
+                or (key == "saved")
+                or (key == "data_provenance")
+                or (key == "add_org_file_entry")
+            ):
                 continue
-            elif key == 'data':
+            elif key == "data":
                 s = dataset[key].shape
-                value = '(' + str(s[0]) + ',  ' + str(s[1]) + ',  ' + \
-                        str(s[2]) + ')'
+                value = "(" + str(s[0]) + ",  " + str(s[1]) + ",  " + str(s[2]) + ")"
                 entries[str(row)] = {}
-                entries[str(row)]['name'] = QLabel(key)
-                entries[str(row)]['value'] = QLabel(str(value))
-                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
-            elif key == 'xscale':
-                value = '({:.2f}  :  {:.2f})'.format(dataset[key][0],
-                                                     dataset[key][-1])
+                entries[str(row)]["name"] = QLabel(key)
+                entries[str(row)]["value"] = QLabel(str(value))
+                entries[str(row)]["value"].setAlignment(QtCore.Qt.AlignCenter)
+            elif key == "xscale":
+                value = "({:.2f}  :  {:.2f})".format(dataset[key][0], dataset[key][-1])
                 entries[str(row)] = {}
-                entries[str(row)]['name'] = QLabel(key)
-                entries[str(row)]['value'] = QLabel(str(value))
-                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
-            elif key == 'yscale':
-                value = '({:.4f}  :  {:.4f})'.format(dataset[key][0],
-                                                     dataset[key][-1])
+                entries[str(row)]["name"] = QLabel(key)
+                entries[str(row)]["value"] = QLabel(str(value))
+                entries[str(row)]["value"].setAlignment(QtCore.Qt.AlignCenter)
+            elif key == "yscale":
+                value = "({:.4f}  :  {:.4f})".format(dataset[key][0], dataset[key][-1])
                 entries[str(row)] = {}
-                entries[str(row)]['name'] = QLabel(key)
-                entries[str(row)]['value'] = QLabel(str(value))
-                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
-            elif key == 'zscale':
-                value = '({:.4f}  :  {:.4f})'.format(dataset[key][0],
-                                                     dataset[key][-1])
+                entries[str(row)]["name"] = QLabel(key)
+                entries[str(row)]["value"] = QLabel(str(value))
+                entries[str(row)]["value"].setAlignment(QtCore.Qt.AlignCenter)
+            elif key == "zscale":
+                value = "({:.4f}  :  {:.4f})".format(dataset[key][0], dataset[key][-1])
                 entries[str(row)] = {}
-                entries[str(row)]['name'] = QLabel(key)
-                entries[str(row)]['value'] = QLabel(str(value))
-                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
-            elif key == 'kxscale':
+                entries[str(row)]["name"] = QLabel(key)
+                entries[str(row)]["value"] = QLabel(str(value))
+                entries[str(row)]["value"].setAlignment(QtCore.Qt.AlignCenter)
+            elif key == "kxscale":
                 if dataset[key] is not None:
-                    value = '({:.3f}  :  {:.3f})'.format(dataset[key][0],
-                                                         dataset[key][-1])
+                    value = "({:.3f}  :  {:.3f})".format(
+                        dataset[key][0], dataset[key][-1]
+                    )
                     entries[str(row)] = {}
-                    entries[str(row)]['name'] = QLabel(key)
-                    entries[str(row)]['value'] = QLabel(str(value))
-                    entries[str(row)]['value'].setAlignment(
-                        QtCore.Qt.AlignCenter)
+                    entries[str(row)]["name"] = QLabel(key)
+                    entries[str(row)]["value"] = QLabel(str(value))
+                    entries[str(row)]["value"].setAlignment(QtCore.Qt.AlignCenter)
                 else:
                     entries[str(row)] = {}
-                    entries[str(row)]['name'] = QLabel(key)
-                    entries[str(row)]['value'] = QLabel(str(dataset[key]))
-                    entries[str(row)]['value'].setAlignment(
-                        QtCore.Qt.AlignCenter)
-            elif key == 'kyscale':
+                    entries[str(row)]["name"] = QLabel(key)
+                    entries[str(row)]["value"] = QLabel(str(dataset[key]))
+                    entries[str(row)]["value"].setAlignment(QtCore.Qt.AlignCenter)
+            elif key == "kyscale":
                 if dataset[key] is not None:
-                    value = '({:.3f}  :  {:.3f})'.format(dataset[key][0],
-                                                         dataset[key][-1])
+                    value = "({:.3f}  :  {:.3f})".format(
+                        dataset[key][0], dataset[key][-1]
+                    )
                     entries[str(row)] = {}
-                    entries[str(row)]['name'] = QLabel(key)
-                    entries[str(row)]['value'] = QLabel(str(value))
-                    entries[str(row)]['value'].setAlignment(
-                        QtCore.Qt.AlignCenter)
+                    entries[str(row)]["name"] = QLabel(key)
+                    entries[str(row)]["value"] = QLabel(str(value))
+                    entries[str(row)]["value"].setAlignment(QtCore.Qt.AlignCenter)
                 else:
                     entries[str(row)] = {}
-                    entries[str(row)]['name'] = QLabel(key)
-                    entries[str(row)]['value'] = QLabel(str(dataset[key]))
-                    entries[str(row)]['value'].setAlignment(
-                        QtCore.Qt.AlignCenter)
-            elif key == 'pressure':
+                    entries[str(row)]["name"] = QLabel(key)
+                    entries[str(row)]["value"] = QLabel(str(dataset[key]))
+                    entries[str(row)]["value"].setAlignment(QtCore.Qt.AlignCenter)
+            elif key == "pressure":
                 if dataset[key] is None:
                     continue
                 else:
                     entries[str(row)] = {}
-                    entries[str(row)]['name'] = QLabel(key)
-                    entries[str(row)]['value'] = QLabel(
-                        '{:.4e}'.format((dataset[key])))
-                    entries[str(row)]['value'].setAlignment(
-                        QtCore.Qt.AlignCenter)
-            elif key == 'scan_dim':
+                    entries[str(row)]["name"] = QLabel(key)
+                    entries[str(row)]["value"] = QLabel("{:.4e}".format((dataset[key])))
+                    entries[str(row)]["value"].setAlignment(QtCore.Qt.AlignCenter)
+            elif key == "scan_dim":
                 if dataset[key] is None or dataset[key] == []:
                     continue
                 else:
                     entries[str(row)] = {}
-                    entries[str(row)]['name'] = QLabel(key)
-                    entries[str(row)]['value'] = QLabel(
-                        '[{:.3f}, {:.3f}, {:.3f}]'.format(dataset[key][0],
-                                                          dataset[key][1],
-                                                          dataset[key][2]))
-                    entries[str(row)]['value'].setAlignment(
-                        QtCore.Qt.AlignCenter)
+                    entries[str(row)]["name"] = QLabel(key)
+                    entries[str(row)]["value"] = QLabel(
+                        "[{:.3f}, {:.3f}, {:.3f}]".format(
+                            dataset[key][0], dataset[key][1], dataset[key][2]
+                        )
+                    )
+                    entries[str(row)]["value"].setAlignment(QtCore.Qt.AlignCenter)
             else:
                 entries[str(row)] = {}
-                entries[str(row)]['name'] = QLabel(key)
+                entries[str(row)]["name"] = QLabel(key)
                 if isinstance(dataset[key], float):
-                    entries[str(row)]['value'] = QLabel(
-                        '{:.4f}'.format((dataset[key])))
+                    entries[str(row)]["value"] = QLabel("{:.4f}".format((dataset[key])))
                 else:
-                    entries[str(row)]['value'] = QLabel(str(dataset[key]))
-                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+                    entries[str(row)]["value"] = QLabel(str(dataset[key]))
+                entries[str(row)]["value"].setAlignment(QtCore.Qt.AlignCenter)
 
-            mdw.addWidget(entries[str(row)]['name'],    row, 0)
-            mdw.addWidget(entries[str(row)]['value'],   row, 1)
+            mdw.addWidget(entries[str(row)]["name"], row, 0)
+            mdw.addWidget(entries[str(row)]["value"], row, 1)
             row += 1
 
-        if 'saved' in dataset.keys():
-            mdw.addWidget(attribute_saved_lbl,   row, 0, 1, 2)
-            for key in dataset['saved'].keys():
+        if "saved" in dataset.keys():
+            mdw.addWidget(attribute_saved_lbl, row, 0, 1, 2)
+            for key in dataset["saved"].keys():
                 row += 1
                 entries[str(row)] = {}
-                entries[str(row)]['name'] = QLabel(key)
-                if key == 'kx' or key == 'ky' or key == 'k':
-                    value = '({:.2f}  :  {:.2f})'.format(
-                        dataset['saved'][key][0], dataset['saved'][key][-1])
-                    entries[str(row)]['value'] = QLabel(str(value))
+                entries[str(row)]["name"] = QLabel(key)
+                if key == "kx" or key == "ky" or key == "k":
+                    value = "({:.2f}  :  {:.2f})".format(
+                        dataset["saved"][key][0], dataset["saved"][key][-1]
+                    )
+                    entries[str(row)]["value"] = QLabel(str(value))
                 else:
-                    entries[str(row)]['value'] = QLabel(
-                        str(dataset['saved'][key]))
-                entries[str(row)]['value'].setAlignment(QtCore.Qt.AlignCenter)
+                    entries[str(row)]["value"] = QLabel(str(dataset["saved"][key]))
+                entries[str(row)]["value"].setAlignment(QtCore.Qt.AlignCenter)
 
-                mdw.addWidget(entries[str(row)]['name'],    row, 0)
-                mdw.addWidget(entries[str(row)]['value'],   row, 1)
+                mdw.addWidget(entries[str(row)]["name"], row, 0)
+                mdw.addWidget(entries[str(row)]["value"], row, 1)
 
         self.md_window.layout = mdw
         self.md_window.setLayout(mdw)
@@ -1250,7 +1265,7 @@ class UtilitiesPanel(QWidget):
             self.set_metadata_window(self.mw.data_set)
         elif self.dim == 4:
             self.set_metadata_window(self.mw.scan[0, 0])
-        title = self.mw.title + ' - metadata'
+        title = self.mw.title + " - metadata"
         self.info_box = InfoWindow(self.md_window, title)
         self.info_box.setMinimumWidth(350)
         self.info_box.show()
@@ -1269,40 +1284,40 @@ class UtilitiesPanel(QWidget):
             pass
 
         if not settings.IS_TESTING:
-            if name == '':
+            if name == "":
                 empty_name_box = QMessageBox()
                 empty_name_box.setIcon(QMessageBox.Information)
-                empty_name_box.setText('Attribute\'s name not given.')
+                empty_name_box.setText("Attribute's name not given.")
                 empty_name_box.setStandardButtons(QMessageBox.Ok)
                 if empty_name_box.exec() == QMessageBox.Ok:
                     return
 
-        message = 'Sure to add attribute \'{}\' with value <{}> (type: {}) ' \
-                  'to the file?'.format(name, value, type(value))
+        message = (
+            "Sure to add attribute '{}' with value <{}> (type: {}) "
+            "to the file?".format(name, value, type(value))
+        )
         if not settings.IS_TESTING:
             sanity_check_box = QMessageBox()
             sanity_check_box.setIcon(QMessageBox.Question)
             sanity_check_box.setText(message)
-            sanity_check_box.setStandardButtons(QMessageBox.Ok |
-                                                QMessageBox.Cancel)
+            sanity_check_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             if sanity_check_box.exec() == QMessageBox.Cancel:
                 return
-        
-        if (hasattr(self.mw.data_set, name) and (not settings.IS_TESTING)):
+
+        if hasattr(self.mw.data_set, name) and (not settings.IS_TESTING):
             old = vars(self.mw.data_set)[name]
             attr_conflict_box = QMessageBox()
             attr_conflict_box.setIcon(QMessageBox.Question)
-            attr_conflict_box.setText(f'Data set already has attribute '
-                                        f'\'{name}\'.  Overwrite?')
-            attr_conflict_box.setStandardButtons(QMessageBox.Ok |
-                                                    QMessageBox.Cancel)
+            attr_conflict_box.setText(
+                f"Data set already has attribute " f"'{name}'.  Overwrite?"
+            )
+            attr_conflict_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             if attr_conflict_box.exec() == QMessageBox.Ok:
                 setattr(self.mw.data_set, name, value)
-                self.dp_add_edited_metadata_entry('updated', name,
-                                                    old, value)
+                self.dp_add_edited_metadata_entry("updated", name, old, value)
         else:
             dl.update_namespace(self.mw.data_set, [name, value])
-            self.dp_add_edited_metadata_entry('added', name, '-', value)
+            self.dp_add_edited_metadata_entry("added", name, "-", value)
 
     def remove_metadata(self) -> None:
         """
@@ -1314,34 +1329,33 @@ class UtilitiesPanel(QWidget):
         if not hasattr(self.mw.data_set, name):
             no_attr_box = QMessageBox()
             no_attr_box.setIcon(QMessageBox.Information)
-            no_attr_box.setText(f'Attribute \'{name}\' not found.')
+            no_attr_box.setText(f"Attribute '{name}' not found.")
             no_attr_box.setStandardButtons(QMessageBox.Ok)
             if no_attr_box.exec() == QMessageBox.Ok:
                 return
 
-        if name in ['data', 'xscale', 'yscale', 'zscale']:
+        if name in ["data", "xscale", "yscale", "zscale"]:
             essential_md_box = QMessageBox()
             essential_md_box.setIcon(QMessageBox.Information)
-            essential_md_box.setText('Sorry, no can do.  '
-                                     'Data and axes cannot be removed.')
+            essential_md_box.setText(
+                "Sorry, no can do.  " "Data and axes cannot be removed."
+            )
             essential_md_box.setStandardButtons(QMessageBox.Ok)
             if essential_md_box.exec() == QMessageBox.Ok:
                 return
 
-        message = 'Sure to remove attribute \'{}\' from the data set?'.format(
-            name)
+        message = "Sure to remove attribute '{}' from the data set?".format(name)
         if not settings.IS_TESTING:
             sanity_check_box = QMessageBox()
             sanity_check_box.setIcon(QMessageBox.Question)
             sanity_check_box.setText(message)
-            sanity_check_box.setStandardButtons(QMessageBox.Ok |
-                                                QMessageBox.Cancel)
+            sanity_check_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             if sanity_check_box.exec() == QMessageBox.Calcel:
                 return
-        
+
         value = vars(self.mw.data_set)[name]
         delattr(self.mw.data_set, name)
-        self.dp_add_edited_metadata_entry('removed', name, value, '-')
+        self.dp_add_edited_metadata_entry("removed", name, value, "-")
 
     def sum_datasets(self) -> None:
         """
@@ -1360,8 +1374,9 @@ class UtilitiesPanel(QWidget):
             such acquired files.
         """
 
-        file_path = os.path.join(os.path.dirname(self.mw.fname), 
-                                 self.file_sum_datasets_fname.text())
+        file_path = os.path.join(
+            os.path.dirname(self.mw.fname), self.file_sum_datasets_fname.text()
+        )
         org_dataset = dl.load_data(self.mw.fname)
         new_dataset, check_result = None, None
 
@@ -1370,7 +1385,7 @@ class UtilitiesPanel(QWidget):
         except FileNotFoundError:
             no_file_box = QMessageBox()
             no_file_box.setIcon(QMessageBox.Information)
-            no_file_box.setText('File not found.')
+            no_file_box.setText("File not found.")
             no_file_box.setStandardButtons(QMessageBox.Ok)
             if no_file_box.exec() == QMessageBox.Ok:
                 return
@@ -1380,7 +1395,7 @@ class UtilitiesPanel(QWidget):
         except AttributeError:
             error_box = QMessageBox()
             error_box.setIcon(QMessageBox.Information)
-            error_box.setText('Aborted, datasets could not be compared.')
+            error_box.setText("Aborted, datasets could not be compared.")
             error_box.setStandardButtons(QMessageBox.Ok)
             if error_box.exec() == QMessageBox.Ok:
                 return
@@ -1388,8 +1403,7 @@ class UtilitiesPanel(QWidget):
         if check_result == 0:
             data_mismatch_box = QMessageBox()
             data_mismatch_box.setIcon(QMessageBox.Information)
-            data_mismatch_box.setText('Aborted.\n'
-                                      'Data sets\' shapes don\'t match.\n')
+            data_mismatch_box.setText("Aborted.\n" "Data sets' shapes don't match.\n")
             data_mismatch_box.setStandardButtons(QMessageBox.Ok)
             if data_mismatch_box.exec() == QMessageBox.Ok:
                 return
@@ -1400,11 +1414,10 @@ class UtilitiesPanel(QWidget):
             check_result_box.setMaximumWidth(1000)
             check_result_box.setIcon(QMessageBox.Information)
             check_result_box.setText(check_result)
-            check_result_box.setStandardButtons(QMessageBox.Ok |
-                                                QMessageBox.Cancel)
+            check_result_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             if check_result_box.exec() == QMessageBox.Cancel:
                 return
-        
+
         self.mw.org_dataset = org_dataset
         self.mw.data_set.data += new_dataset.data
         self.mw.data_set.n_sweeps += new_dataset.n_sweeps
@@ -1422,7 +1435,7 @@ class UtilitiesPanel(QWidget):
         if self.mw.org_dataset is None:
             no_summing_yet_box = QMessageBox()
             no_summing_yet_box.setIcon(QMessageBox.Information)
-            no_summing_yet_box.setText('No summing done yet.')
+            no_summing_yet_box.setText("No summing done yet.")
             no_summing_yet_box.setStandardButtons(QMessageBox.Ok)
             if no_summing_yet_box.exec() == QMessageBox.Ok:
                 return
@@ -1432,20 +1445,20 @@ class UtilitiesPanel(QWidget):
             reset_summation_box.setMinimumWidth(600)
             reset_summation_box.setMaximumWidth(1000)
             reset_summation_box.setIcon(QMessageBox.Question)
-            reset_summation_box.setText('Want to reset summation?')
-            reset_summation_box.setStandardButtons(QMessageBox.Ok | 
-                                                   QMessageBox.Cancel)
+            reset_summation_box.setText("Want to reset summation?")
+            reset_summation_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             if reset_summation_box.exec() == QMessageBox.Cancel:
                 return
-        
+
         self.mw.data_set.data = self.mw.org_dataset.data
         self.mw.data_set.n_sweeps = self.mw.org_dataset.n_sweeps
         d = np.swapaxes(self.mw.data_set.data, 1, 2)
         self.mw.data_handler.set_data(d)
         self.mw.set_image(self.mw.data_handler.get_data())
 
-    def open_jl_session(self, directory: Union[str, None] = None,
-                        port: Union[str, None] = None) -> None:
+    def open_jl_session(
+        self, directory: Union[str, None] = None, port: Union[str, None] = None
+    ) -> None:
         """
         Start new ``jupyter-lab`` session.
         """
@@ -1453,21 +1466,24 @@ class UtilitiesPanel(QWidget):
         if self.mw.db.jl_session_running:
             jl_running_box = QMessageBox()
             jl_running_box.setIcon(QMessageBox.Information)
-            jl_running_box.setText('JupyterLab session is already running.\n'
-                                   'Want to start another one?')
-            jl_running_box.setStandardButtons(QMessageBox.Ok |
-                                               QMessageBox.Cancel)
+            jl_running_box.setText(
+                "JupyterLab session is already running.\n" "Want to start another one?"
+            )
+            jl_running_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             if jl_running_box.exec() == QMessageBox.Cancel:
                 return
 
         if directory is None:
-            directory = str(QtWidgets.QFileDialog.getExistingDirectory(
-                self, 'Select Directory', self.mw.fname[:-len(self.mw.title)]))
+            directory = str(
+                QtWidgets.QFileDialog.getExistingDirectory(
+                    self, "Select Directory", self.mw.fname[: -len(self.mw.title)]
+                )
+            )
 
         # Open jupyter notebook as a subprocess
-        openJupyter = 'jupyter-lab'
+        openJupyter = "jupyter-lab"
         if port:
-            openJupyter = openJupyter + ' --port=' + port
+            openJupyter = openJupyter + " --port=" + port
         process = subprocess.Popen(openJupyter, shell=True, cwd=directory)
         self.mw.db.jupyter_servers.append(process)
 
@@ -1482,24 +1498,26 @@ class UtilitiesPanel(QWidget):
         """
 
         if directory is None:
-            directory = str(QtWidgets.QFileDialog.getExistingDirectory(
-                self, 'Select Directory', self.mw.fname[:-len(self.mw.title)]))
+            directory = str(
+                QtWidgets.QFileDialog.getExistingDirectory(
+                    self, "Select Directory", self.mw.fname[: -len(self.mw.title)]
+                )
+            )
 
         fname = os.path.join(directory, self.file_jl_fname.text())
 
         if os.path.isfile(fname):
             file_exists_box = QMessageBox()
             file_exists_box.setIcon(QMessageBox.Information)
-            file_exists_box.setText('File already exists.\nOverwrite?')
-            file_exists_box.setStandardButtons(QMessageBox.Ok |
-                                               QMessageBox.Cancel)
+            file_exists_box.setText("File already exists.\nOverwrite?")
+            file_exists_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             if file_exists_box.exec() == QMessageBox.Cancel:
                 return
-        os.system('touch ' + fname)
+        os.system("touch " + fname)
 
         root_dir = os.path.dirname(os.path.abspath(__file__))
-        template = os.path.join(root_dir, 'ipynb_templates', 'template.ipynb')
-        templ_file = open(template, 'r')
+        template = os.path.join(root_dir, "ipynb_templates", "template.ipynb")
+        templ_file = open(template, "r")
         templ_lines = templ_file.readlines()
         templ_file.close()
 
@@ -1508,65 +1526,69 @@ class UtilitiesPanel(QWidget):
         for line in templ_lines:
             new_lines.append(line)
 
-        new_file = open(fname, 'w')
+        new_file = open(fname, "w")
         new_file.writelines(new_lines)
         new_file.close()
 
     def create_experimental_logbook_file(
-            self, directory: Union[str, None] = None) -> None:
+        self, directory: Union[str, None] = None
+    ) -> None:
         """
         Create new ``jupyter`` notebook file allowing for generating
         experimental logbook for selected beamline.
         """
 
         beamline = self.file_jl_explog.currentText()
-        if beamline == '--beamline--':
+        if beamline == "--beamline--":
             no_bealine_box = QMessageBox()
             no_bealine_box.setIcon(QMessageBox.Information)
-            no_bealine_box.setText('Select a beamline.')
+            no_bealine_box.setText("Select a beamline.")
             no_bealine_box.setStandardButtons(QMessageBox.Ok)
             if no_bealine_box.exec() == QMessageBox.Ok:
                 return
         else:
             if directory is None:
-                directory = str(QtWidgets.QFileDialog.getExistingDirectory(
-                    self, 'Select Directory',
-                    self.mw.fname[:-len(self.mw.title)]))
-            fname = os.path.join(directory, 'metadata-{}.ipynb'.format(beamline))
+                directory = str(
+                    QtWidgets.QFileDialog.getExistingDirectory(
+                        self, "Select Directory", self.mw.fname[: -len(self.mw.title)]
+                    )
+                )
+            fname = os.path.join(directory, "metadata-{}.ipynb".format(beamline))
             # fname = '{}/metadata-{}.ipynb'.format(directory, beamline)
 
         if os.path.isfile(fname):
             file_exists_box = QMessageBox()
             file_exists_box.setIcon(QMessageBox.Information)
-            file_exists_box.setText('File already exists.\nOverwrite?')
-            file_exists_box.setStandardButtons(QMessageBox.Ok |
-                                               QMessageBox.Cancel)
+            file_exists_box.setText("File already exists.\nOverwrite?")
+            file_exists_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             if file_exists_box.exec() == QMessageBox.Cancel:
                 return
-        os.system('touch ' + fname)
+        os.system("touch " + fname)
 
         root_dir = os.path.dirname(os.path.abspath(__file__))
-        template = os.path.join(root_dir, 'ipynb_templates',
-                                'template-metadata.ipynb')
-        templ_file = open(template, 'r')
+        template = os.path.join(root_dir, "ipynb_templates", "template-metadata.ipynb")
+        templ_file = open(template, "r")
         templ_lines = templ_file.readlines()
         templ_file.close()
 
         # writing to file
         new_lines = []
         for line in templ_lines:
-            if 'from piva.data_loader' in line:
-                line = '    "from piva.data_loaders import Dataloader{} ' \
-                       'as dl\\n",'.format(beamline)
+            if "from piva.data_loader" in line:
+                line = (
+                    '    "from piva.data_loaders import Dataloader{} '
+                    'as dl\\n",'.format(beamline)
+                )
             new_lines.append(line)
 
-        new_file = open(fname, 'w')
+        new_file = open(fname, "w")
         new_file.writelines(new_lines)
         new_file.close()
 
-    @ staticmethod
-    def dp_add_file_cut_entry(data_set: Dataset, direction: str,
-                              cut_idx: int, binned: int) -> None:
+    @staticmethod
+    def dp_add_file_cut_entry(
+        data_set: Dataset, direction: str, cut_idx: int, binned: int
+    ) -> None:
         """
         Add an entry to ``Dataset.data_provenance`` :py:obj:`dict` with
         information on original :class:`~data_loaders.Dataset`, when new
@@ -1580,15 +1602,17 @@ class UtilitiesPanel(QWidget):
 
         dp = data_set.data_provenance
 
-        entry = {'index': len(dp['file']),
-                 'date_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                 'path': '-',
-                 'type': 'cut along {}'.format(direction),
-                 'index_taken': cut_idx,
-                 'binned': binned,
-                 'data_loader': '-'}
+        entry = {
+            "index": len(dp["file"]),
+            "date_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "path": "-",
+            "type": "cut along {}".format(direction),
+            "index_taken": cut_idx,
+            "binned": binned,
+            "data_loader": "-",
+        }
 
-        dp['file'].append(entry)
+        dp["file"].append(entry)
 
     def dp_add_file_sum_entry(self, fname: str) -> None:
         """
@@ -1602,15 +1626,17 @@ class UtilitiesPanel(QWidget):
 
         dp = self.mw.data_set.data_provenance
 
-        entry = {'index': len(dp['file']),
-                 'date_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                 'path': fname,
-                 'type': 'added dataset',
-                 'index_taken': '-',
-                 'binned': '-',
-                 'data_loader': '-'}
+        entry = {
+            "index": len(dp["file"]),
+            "date_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "path": fname,
+            "type": "added dataset",
+            "index_taken": "-",
+            "binned": "-",
+            "data_loader": "-",
+        }
 
-        dp['file'].append(entry)
+        dp["file"].append(entry)
 
     def dp_add_k_space_conversion_entry(self, dataset: Dataset) -> None:
         """
@@ -1627,44 +1653,47 @@ class UtilitiesPanel(QWidget):
         wf = self.axes_energy_wf.value()
 
         if np.isclose(self.axes_conv_lc.value(), 3.1416):
-            a = '-'
+            a = "-"
         else:
             a = self.axes_conv_lc.value()
 
         if self.dim in (2, 4):
             ana_off = self.axes_gamma_x.value()
             scan_off = self.axes_angle_off.value()
-            kz = '-'
-            c = '-'
+            kz = "-"
+            c = "-"
         else:
             ana_off = self.axes_gamma_y.value()
             scan_off = self.axes_gamma_x.value()
             if self.axes_transform_kz.isChecked():
-                kz = 'yes'
+                kz = "yes"
                 if np.isclose(self.axes_conv_lc_op.value(), 3.1416):
-                    c = '-'
+                    c = "-"
                 else:
                     c = self.axes_conv_lc_op.value()
             else:
-                kz = '-'
-                c = '-'
+                kz = "-"
+                c = "-"
 
-        entry = {'index': len(dp['k_space_conv']),
-                 'date_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                 'ana_ax_off': ana_off,
-                 'scan_ax_off': scan_off,
-                 'orient': orient,
-                 'kz': kz,
-                 'Ef': Ef,
-                 'hv': hv,
-                 'wf': wf,
-                 'a': a,
-                 'c': c}
+        entry = {
+            "index": len(dp["k_space_conv"]),
+            "date_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "ana_ax_off": ana_off,
+            "scan_ax_off": scan_off,
+            "orient": orient,
+            "kz": kz,
+            "Ef": Ef,
+            "hv": hv,
+            "wf": wf,
+            "a": a,
+            "c": c,
+        }
 
-        dp['k_space_conv'].append(entry)
+        dp["k_space_conv"].append(entry)
 
-    def dp_add_edited_metadata_entry(self, action: str, attr_name: str,
-                                     old: Any, new: Any) -> None:
+    def dp_add_edited_metadata_entry(
+        self, action: str, attr_name: str, old: Any, new: Any
+    ) -> None:
         """
         Add an entry to ``Dataset.data_provenance`` :py:obj:`dict` with
         information on adeed/updated/removed metadata.
@@ -1679,14 +1708,16 @@ class UtilitiesPanel(QWidget):
 
         dp = self.mw.data_set.data_provenance
 
-        entry = {'index': len(dp['edited_entries']),
-                 'date_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                 'action': action,
-                 'attribute': attr_name,
-                 'old_value': old,
-                 'new_value': new}
+        entry = {
+            "index": len(dp["edited_entries"]),
+            "date_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "action": action,
+            "attribute": attr_name,
+            "old_value": old,
+            "new_value": new,
+        }
 
-        dp['edited_entries'].append(entry)
+        dp["edited_entries"].append(entry)
 
     def set_dp_window(self, width: int) -> None:
         """
@@ -1703,17 +1734,40 @@ class UtilitiesPanel(QWidget):
         elif self.dim == 4:
             dp = self.mw.scan[0, 0].data_provenance
 
-        file_entries = ['#', 'Date & time', 'path', 'type', 'taken @',
-                        'n_bins', 'Data loader']
-        kspc_entries = ['#', 'Date & time', 'Analyzer axis offset',
-                        'Scanned axis offset', 'Slit orientation', 'kz', 'Ef',
-                        'hv', 'wf', 'a, A', 'c, A']
-        edit_entries = ['#', 'Date & time', 'Action', 'Attribute', 'Old value',
-                        'New Value']
+        file_entries = [
+            "#",
+            "Date & time",
+            "path",
+            "type",
+            "taken @",
+            "n_bins",
+            "Data loader",
+        ]
+        kspc_entries = [
+            "#",
+            "Date & time",
+            "Analyzer axis offset",
+            "Scanned axis offset",
+            "Slit orientation",
+            "kz",
+            "Ef",
+            "hv",
+            "wf",
+            "a, A",
+            "c, A",
+        ]
+        edit_entries = [
+            "#",
+            "Date & time",
+            "Action",
+            "Attribute",
+            "Old value",
+            "New Value",
+        ]
 
-        file_lbl = QLabel('File')
-        kspc_lbl = QLabel('k-space conversion')
-        edit_lbl = QLabel('Editted entries')
+        file_lbl = QLabel("File")
+        kspc_lbl = QLabel("k-space conversion")
+        edit_lbl = QLabel("Editted entries")
         file_lbl.setFont(bold_font)
         kspc_lbl.setFont(bold_font)
         edit_lbl.setFont(bold_font)
@@ -1722,22 +1776,21 @@ class UtilitiesPanel(QWidget):
         edit_lbl.setAlignment(QtCore.Qt.AlignCenter)
 
         dpw.addWidget(file_lbl)
-        if len(dp['file']) != 0:
-            file_table = QTableWidget(len(dp['file']), len(file_entries))
-            file_table.setSizePolicy(QSizePolicy.Maximum,
-                                     QSizePolicy.Maximum)
+        if len(dp["file"]) != 0:
+            file_table = QTableWidget(len(dp["file"]), len(file_entries))
+            file_table.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
             file_table.setHorizontalHeaderLabels(file_entries)
             file_table.setMinimumWidth(width)
             height = int(file_table.horizontalHeader().height() * 1.2)
-            for idx in range(len(dp['file'])):
-                dpfi = dp['file'][idx]
-                file_table.setItem(idx, 0, QTabItem(str(dpfi['index'])))
-                file_table.setItem(idx, 1, QTabItem(str(dpfi['date_time'])))
-                file_table.setItem(idx, 2, QTabItem(str(dpfi['path'])))
-                file_table.setItem(idx, 3, QTabItem(str(dpfi['type'])))
-                file_table.setItem(idx, 4, QTabItem(str(dpfi['index_taken'])))
-                file_table.setItem(idx, 5, QTabItem(str(dpfi['binned'])))
-                file_table.setItem(idx, 6, QTabItem(str(dpfi['data_loader'])))
+            for idx in range(len(dp["file"])):
+                dpfi = dp["file"][idx]
+                file_table.setItem(idx, 0, QTabItem(str(dpfi["index"])))
+                file_table.setItem(idx, 1, QTabItem(str(dpfi["date_time"])))
+                file_table.setItem(idx, 2, QTabItem(str(dpfi["path"])))
+                file_table.setItem(idx, 3, QTabItem(str(dpfi["type"])))
+                file_table.setItem(idx, 4, QTabItem(str(dpfi["index_taken"])))
+                file_table.setItem(idx, 5, QTabItem(str(dpfi["binned"])))
+                file_table.setItem(idx, 6, QTabItem(str(dpfi["data_loader"])))
                 height += file_table.rowHeight(idx)
             file_table.resizeColumnsToContents()
             file_table.setColumnWidth(0, 30)
@@ -1747,25 +1800,24 @@ class UtilitiesPanel(QWidget):
             dpw.addWidget(file_table)
 
         dpw.addWidget(kspc_lbl)
-        if len(dp['k_space_conv']) != 0:
-            kspc_table = QTableWidget(len(dp['k_space_conv']),
-                                      len(kspc_entries))
+        if len(dp["k_space_conv"]) != 0:
+            kspc_table = QTableWidget(len(dp["k_space_conv"]), len(kspc_entries))
             kspc_table.setHorizontalHeaderLabels(kspc_entries)
             kspc_table.setMinimumWidth(width)
             height = int(kspc_table.horizontalHeader().height() * 1.2)
-            for idx in range(len(dp['k_space_conv'])):
-                dpfi = dp['k_space_conv'][idx]
-                kspc_table.setItem(idx, 0, QTabItem(str(dpfi['index'])))
-                kspc_table.setItem(idx, 1, QTabItem(str(dpfi['date_time'])))
-                kspc_table.setItem(idx, 2, QTabItem(str(dpfi['ana_ax_off'])))
-                kspc_table.setItem(idx, 3, QTabItem(str(dpfi['scan_ax_off'])))
-                kspc_table.setItem(idx, 4, QTabItem(str(dpfi['orient'])))
-                kspc_table.setItem(idx, 5, QTabItem(str(dpfi['kz'])))
-                kspc_table.setItem(idx, 6, QTabItem(str(dpfi['Ef'])))
-                kspc_table.setItem(idx, 7, QTabItem(str(dpfi['hv'])))
-                kspc_table.setItem(idx, 8, QTabItem(str(dpfi['wf'])))
-                kspc_table.setItem(idx, 9, QTabItem(str(dpfi['a'])))
-                kspc_table.setItem(idx, 10, QTabItem(str(dpfi['c'])))
+            for idx in range(len(dp["k_space_conv"])):
+                dpfi = dp["k_space_conv"][idx]
+                kspc_table.setItem(idx, 0, QTabItem(str(dpfi["index"])))
+                kspc_table.setItem(idx, 1, QTabItem(str(dpfi["date_time"])))
+                kspc_table.setItem(idx, 2, QTabItem(str(dpfi["ana_ax_off"])))
+                kspc_table.setItem(idx, 3, QTabItem(str(dpfi["scan_ax_off"])))
+                kspc_table.setItem(idx, 4, QTabItem(str(dpfi["orient"])))
+                kspc_table.setItem(idx, 5, QTabItem(str(dpfi["kz"])))
+                kspc_table.setItem(idx, 6, QTabItem(str(dpfi["Ef"])))
+                kspc_table.setItem(idx, 7, QTabItem(str(dpfi["hv"])))
+                kspc_table.setItem(idx, 8, QTabItem(str(dpfi["wf"])))
+                kspc_table.setItem(idx, 9, QTabItem(str(dpfi["a"])))
+                kspc_table.setItem(idx, 10, QTabItem(str(dpfi["c"])))
                 height += kspc_table.rowHeight(idx)
             kspc_table.resizeColumnsToContents()
             kspc_table.setColumnWidth(0, 30)
@@ -1775,20 +1827,19 @@ class UtilitiesPanel(QWidget):
             dpw.addWidget(kspc_table)
 
         dpw.addWidget(edit_lbl)
-        if len(dp['edited_entries']) != 0:
-            edit_table = QTableWidget(len(dp['edited_entries']),
-                                      len(edit_entries))
+        if len(dp["edited_entries"]) != 0:
+            edit_table = QTableWidget(len(dp["edited_entries"]), len(edit_entries))
             edit_table.setHorizontalHeaderLabels(edit_entries)
             edit_table.setMinimumWidth(width)
             height = int(edit_table.horizontalHeader().height() * 1.2)
-            for idx in range(len(dp['edited_entries'])):
-                dpfi = dp['edited_entries'][idx]
-                edit_table.setItem(idx, 0, QTabItem(str(dpfi['index'])))
-                edit_table.setItem(idx, 1, QTabItem(str(dpfi['date_time'])))
-                edit_table.setItem(idx, 2, QTabItem(str(dpfi['action'])))
-                edit_table.setItem(idx, 3, QTabItem(str(dpfi['attribute'])))
-                edit_table.setItem(idx, 4, QTabItem(str(dpfi['old_value'])))
-                edit_table.setItem(idx, 5, QTabItem(str(dpfi['new_value'])))
+            for idx in range(len(dp["edited_entries"])):
+                dpfi = dp["edited_entries"][idx]
+                edit_table.setItem(idx, 0, QTabItem(str(dpfi["index"])))
+                edit_table.setItem(idx, 1, QTabItem(str(dpfi["date_time"])))
+                edit_table.setItem(idx, 2, QTabItem(str(dpfi["action"])))
+                edit_table.setItem(idx, 3, QTabItem(str(dpfi["attribute"])))
+                edit_table.setItem(idx, 4, QTabItem(str(dpfi["old_value"])))
+                edit_table.setItem(idx, 5, QTabItem(str(dpfi["new_value"])))
                 height += edit_table.rowHeight(idx)
             edit_table.resizeColumnsToContents()
             edit_table.setColumnWidth(0, 30)
@@ -1812,7 +1863,7 @@ class UtilitiesPanel(QWidget):
 
         width = 800
         self.set_dp_window(width)
-        title = self.mw.title + ' - data provenance'
+        title = self.mw.title + " - data provenance"
         self.dp_box = InfoWindow(self.dp_window, title)
         self.dp_box.setMinimumWidth(width + 100)
         self.dp_box.show()
@@ -1829,12 +1880,30 @@ class UtilitiesPanel(QWidget):
                  what conflict in which parameters were detected
         """
 
-        labels = ['fname', 'data', 'T', 'hv', 'polarization', 'PE', 'FE',
-                  'exit', 'x', 'y', 'z', 'theta', 'phi', 'tilt', 'lens_mode',
-                  'acq_mode', 'e_start', 'e_stop', 'e_step']
+        labels = [
+            "fname",
+            "data",
+            "T",
+            "hv",
+            "polarization",
+            "PE",
+            "FE",
+            "exit",
+            "x",
+            "y",
+            "z",
+            "theta",
+            "phi",
+            "tilt",
+            "lens_mode",
+            "acq_mode",
+            "e_start",
+            "e_stop",
+            "e_step",
+        ]
         to_check = [[] for _ in range(len(labels))]
 
-        to_check[0] = ['original', 'new']
+        to_check[0] = ["original", "new"]
         for ds in datasets:
             to_check[1].append(ds.data.shape)
             to_check[2].append(ds.temp)
@@ -1858,9 +1927,9 @@ class UtilitiesPanel(QWidget):
         # check if imporatnt stuff match
         check_result = []
         for idx, lbl in enumerate(labels):
-            if lbl == 'fname' or lbl == 'data':
+            if lbl == "fname" or lbl == "data":
                 check_result.append(True)
-            elif lbl == 'T':
+            elif lbl == "T":
                 err = 1
                 par = np.array(to_check[idx])
                 try:
@@ -1868,7 +1937,7 @@ class UtilitiesPanel(QWidget):
                     check_result.append(np.allclose(par, to_compare, atol=err))
                 except TypeError:
                     pass
-            elif lbl == 'hv':
+            elif lbl == "hv":
                 err = 0.1
                 par = np.array(to_check[idx])
                 try:
@@ -1876,7 +1945,7 @@ class UtilitiesPanel(QWidget):
                     check_result.append(np.allclose(par, to_compare, atol=err))
                 except TypeError:
                     pass
-            elif lbl == 'e_start':
+            elif lbl == "e_start":
                 err = to_check[-1][0]
                 par = np.array(to_check[idx])
                 try:
@@ -1884,7 +1953,7 @@ class UtilitiesPanel(QWidget):
                     check_result.append(np.allclose(par, to_compare, atol=err))
                 except TypeError:
                     pass
-            elif lbl == 'e_stop':
+            elif lbl == "e_stop":
                 err = to_check[-1][0]
                 par = np.array(to_check[idx])
                 try:
@@ -1892,13 +1961,12 @@ class UtilitiesPanel(QWidget):
                     check_result.append(np.allclose(par, to_compare, atol=err))
                 except TypeError:
                     pass
-            elif lbl == 'e_step':
+            elif lbl == "e_step":
                 err = to_check[-1][0]
                 par = np.array(to_check[idx])
                 try:
                     to_compare = np.ones(par.size) * par[0]
-                    check_result.append(np.allclose(par, to_compare,
-                                                    atol=err * 0.1))
+                    check_result.append(np.allclose(par, to_compare, atol=err * 0.1))
                 except TypeError:
                     pass
             else:
@@ -1908,23 +1976,24 @@ class UtilitiesPanel(QWidget):
             return 0
 
         if np.array(check_result).all():
-            message = 'Everything match! We\'re good to go!'
+            message = "Everything match! We're good to go!"
         else:
-            message = 'Some stuff doesn\'t match...\n\n'
+            message = "Some stuff doesn't match...\n\n"
             dont_match = np.where(~np.array(check_result))
             for idx in dont_match[0]:
                 try:
-                    message += '{}\t{:.3f}\t {:.3f}\n'.format(
-                        str(labels[idx]), to_check[idx][0], to_check[idx][1])
+                    message += "{}\t{:.3f}\t {:.3f}\n".format(
+                        str(labels[idx]), to_check[idx][0], to_check[idx][1]
+                    )
                 except TypeError:
-                    message += '{} \t\t {}\t  {} \n'.format(
-                        str(labels[idx]), str(to_check[idx][0]),
-                        str(to_check[idx][1]))
+                    message += "{} \t\t {}\t  {} \n".format(
+                        str(labels[idx]), str(to_check[idx][0]), str(to_check[idx][1])
+                    )
                 except ValueError:
-                    message += '{} \t\t {}\t  {} \n'.format(
-                        str(labels[idx]), str(to_check[idx][0]),
-                        str(to_check[idx][1]))
-            message += '\nSure to proceed?'
+                    message += "{} \t\t {}\t  {} \n".format(
+                        str(labels[idx]), str(to_check[idx][0]), str(to_check[idx][1])
+                    )
+            message += "\nSure to proceed?"
 
         return message
 

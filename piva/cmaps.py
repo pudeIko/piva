@@ -13,8 +13,9 @@ class PIVAColorMap(ColorMap):
     Adds ``vmax`` and powerlaw normalization ``gamma``.
     """
 
-    def __init__(self, pos: Any, color: Any,
-                 gamma: float = 1., **kwargs: dict) -> None:
+    def __init__(
+        self, pos: Any, color: Any, gamma: float = 1.0, **kwargs: dict
+    ) -> None:
         super().__init__(pos, color, **kwargs)
 
         # Initialize instance variables
@@ -30,12 +31,12 @@ class PIVAColorMap(ColorMap):
     def apply_transformations(self) -> None:
         """
         Recalculate the positions where the colormapping is defined by
-        applying (in sequence) alpha, then a linear map to the range 
+        applying (in sequence) alpha, then a linear map to the range
         [0, ``vmax``] and finally the powerlaw scaling: ::
 
             pos = pos^gamma
         """
-        
+
         # Reset the cache in pyqtgraph.Colormap
         self.stopsCache = dict()
 
@@ -50,9 +51,9 @@ class PIVAColorMap(ColorMap):
         self.pos = m * (self.original_pos - old_max) + new_max
 
         # Apply a powerlaw norm to the positions
-        self.pos = self.pos**(1 / self.gamma)
+        self.pos = self.pos ** (1 / self.gamma)
 
-    def set_gamma(self, gamma: float = 1.) -> None:
+    def set_gamma(self, gamma: float = 1.0) -> None:
         """
         Set the exponent for the power-law norm (``gamma``) that maps the
         colors to values. The values where the colours are defined are mapped
@@ -60,33 +61,35 @@ class PIVAColorMap(ColorMap):
 
             y = x^gamma
         """
-        
+
         self.gamma = gamma
         self.apply_transformations()
 
     def set_alpha(self, alpha: float) -> None:
-        """ 
+        """
         Set the value of alpha for the whole colormap to ``alpha`` where
         ``alpha`` can be a float or an array of length ``len(self.color)``.
         """
-        
+
         self.alpha = alpha
         self.apply_transformations()
 
     def set_vmax(self, vmax: float = 1) -> None:
         """
-        Set the relative (to the maximum of the data) maximum of the 
-        colorscale. 
+        Set the relative (to the maximum of the data) maximum of the
+        colorscale.
         """
-        
+
         self.vmax = vmax
         self.apply_transformations()
 
 
 def convert_matplotlib_to_pyqtgraph(
-        matplotlib_cmap: Union[str, matplotlib.colors.LinearSegmentedColormap,
-                               matplotlib.colors.ListedColormap],
-        alpha: float = 0.5) -> ColorMap:
+    matplotlib_cmap: Union[
+        str, matplotlib.colors.LinearSegmentedColormap, matplotlib.colors.ListedColormap
+    ],
+    alpha: float = 0.5,
+) -> ColorMap:
     """
     Converts ``ColorMap`` object from :mod:`matplotlib` format to
     :mod:`pyqtgraph<pyqtgraph>` format.
@@ -97,7 +100,7 @@ def convert_matplotlib_to_pyqtgraph(
     :return: corresponding colormap object in :mod:`pyqtgrqph`
     """
 
-    # Get the colormap object if a colormap name is given 
+    # Get the colormap object if a colormap name is given
     if isinstance(matplotlib_cmap, str):
         matplotlib_cmap = cm[matplotlib_cmap]
     # Number of entries in the matplotlib colormap
@@ -115,9 +118,9 @@ def convert_matplotlib_to_pyqtgraph(
     return PIVAColorMap(values, rgba)
 
 
-def convert_piva_to_matplotlib(piva_cmap: PIVAColorMap,
-                               cmap_name: str = 'converted_cmap') -> \
-        matplotlib.colors.LinearSegmentedColormap:
+def convert_piva_to_matplotlib(
+    piva_cmap: PIVAColorMap, cmap_name: str = "converted_cmap"
+) -> matplotlib.colors.LinearSegmentedColormap:
     """
     Create a :mod:`matplotlib` colormap from a
     :class:`PIVAColorMap<piva.cmaps.PIVAColorMap>` instance.
@@ -143,12 +146,44 @@ def convert_piva_to_matplotlib(piva_cmap: PIVAColorMap,
 # +-------------------+ #
 
 # list of selected matplotlib colormaps
-my_cmaps = ['Blues', 'BrBG', 'BuGn', 'CMRmap', 'GnBu', 'Greens', 'Oranges',
-            'PuRd', 'Purples', 'RdBu', 'RdPu', 'Reds', 'Spectral', 'YlOrRd',
-            'afmhot', 'binary', 'bone', 'bwr', 'cividis', 'coolwarm', 'copper',
-            'cubehelix', 'gist_earth', 'gist_heat', 'gnuplot', 'gnuplot2',
-            'hot', 'inferno', 'jet', 'magma', 'pink', 'plasma', 'terrain',
-            'turbo', 'twilight', 'viridis']
+my_cmaps = [
+    "Blues",
+    "BrBG",
+    "BuGn",
+    "CMRmap",
+    "GnBu",
+    "Greens",
+    "Oranges",
+    "PuRd",
+    "Purples",
+    "RdBu",
+    "RdPu",
+    "Reds",
+    "Spectral",
+    "YlOrRd",
+    "afmhot",
+    "binary",
+    "bone",
+    "bwr",
+    "cividis",
+    "coolwarm",
+    "copper",
+    "cubehelix",
+    "gist_earth",
+    "gist_heat",
+    "gnuplot",
+    "gnuplot2",
+    "hot",
+    "inferno",
+    "jet",
+    "magma",
+    "pink",
+    "plasma",
+    "terrain",
+    "turbo",
+    "twilight",
+    "viridis",
+]
 
 
 # Convert all matplotlib colormaps to pyqtgraph ones and make them available

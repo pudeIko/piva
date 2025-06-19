@@ -130,8 +130,8 @@ Successful execution of the tests should give a message like::
    you can work around this by setting `XDG_SESSION_TYPE=xcb` (as opposed 
    to `wayland` as the error message would suggest).
    Do this either by running `export XDG_SESSION_TYPE=xcb` in the shell you
-   are working with, or directly at the `db` command:
-   `XDG_SESSION_TYPE=xcb; db`.
+   are working with, or directly at the `piva` command:
+   `XDG_SESSION_TYPE=xcb; piva`.
 
 
 

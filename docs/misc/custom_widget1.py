@@ -1,8 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from pyqtgraph.Qt import QtWidgets
+
 # from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QLabel, QPushButton
+
 if TYPE_CHECKING:
     from piva.data_browser import DataBrowser
 
@@ -31,7 +33,7 @@ class CustomWidget(QtWidgets.QMainWindow):
         self.central_widget = QtWidgets.QWidget()
         self.layout = QtWidgets.QGridLayout()
         self.setStyleSheet(app_style)
-        self.setWindowTitle('Custom Widget')
+        self.setWindowTitle("Custom Widget")
         self.setGeometry(100, 100, 500, 400)
         self.central_widget.setLayout(self.layout)
         self.setCentralWidget(self.central_widget)
@@ -50,10 +52,10 @@ class CustomWidget(QtWidgets.QMainWindow):
         """
 
         # initiate basic widgets
-        labell = QLabel('Here you can place your stuff.')
-        button = QPushButton('Close')
-        dummy1 = QLabel('')
-        dummy2 = QLabel('')
+        labell = QLabel("Here you can place your stuff.")
+        button = QPushButton("Close")
+        dummy1 = QLabel("")
+        dummy2 = QLabel("")
 
         # add the widgets to the layout
         self.layout.addWidget(dummy1, 0, 0)
@@ -70,6 +72,4 @@ class CustomWidget(QtWidgets.QMainWindow):
         :class:`~data_browser.DataBrowser`.
         """
 
-        del (self.db.custom_plugins[self.index])
-
-
+        del self.db.custom_plugins[self.index]

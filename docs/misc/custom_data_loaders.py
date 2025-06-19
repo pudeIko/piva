@@ -1,5 +1,5 @@
 import numpy as np
-from piva.data_loaders import Dataloader
+from piva.data_loaders import Dataloader, Dataset
 
 
 class CustomDataloader(Dataloader):
@@ -7,7 +7,7 @@ class CustomDataloader(Dataloader):
     Simple example of a custom Dataloader.
     """
 
-    name = 'Custom1'
+    name = "Custom1"
 
     def __init__(self):
         super(CustomDataloader, self).__init__()
@@ -27,13 +27,14 @@ class CustomDataloader(Dataloader):
 
         # dummy if condition to make the example work. One should remove
         # 'isinstance' part and change extension in 'endswith'
-        if filename.endswith('h5') or isinstance(filename, str):
+        if filename.endswith("h5") or isinstance(filename, str):
             self.custom_loading_method(filename, metadata=metadata)
         else:
             raise NotImplementedError
 
         self.ds.add_org_file_entry(filename, self.name)
-        return self.ds
+        # enforce validation of the returned Dataset
+        return Dataset.model_validate(self.ds.model_dump())
 
     # function to implement. It supposed to read the file, extract data and
     # metadata from it and pass them into Dataset object.

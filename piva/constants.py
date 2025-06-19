@@ -36,7 +36,7 @@ hbar_eV = hbar / eV
 R_const = 10973731.56816
 
 # Speed of light [m / s]
-c = 299792458.
+c = 299792458.0
 
 # Universal Gas constant [J / K / mol]
 R = 8.3144598

@@ -3,8 +3,15 @@ import time
 import subprocess
 
 import numpy as np
-from PyQt5.QtWidgets import QAction, QHBoxLayout, QLabel, QVBoxLayout, \
-    QLineEdit, QMessageBox, QMainWindow
+from PyQt5.QtWidgets import (
+    QAction,
+    QHBoxLayout,
+    QLabel,
+    QVBoxLayout,
+    QLineEdit,
+    QMessageBox,
+    QMainWindow,
+)
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
 import piva.data_loaders as dl
@@ -19,15 +26,16 @@ from typing import Union
 START_TIME = time.time()
 testing = True
 all_dls = {
-    'Pickle': dl.DataloaderPickle,
-    'SLS - SIS': dl.DataloaderSIS,
-    'SLS - ADRESS': dl.DataloaderADRESS,
-    'MAX IV - Bloch': dl.DataloaderBloch,
-    'ALS - MERLIN (4.0.3)': dl.DataloaderMERLIN,
-    'ALS - HERS (10.0.1)': dl.DataloaderHERS,
-    'Diamond - i05': dl.DataloaderI05,
-    'SOLARIS - URANOS': dl.DataloaderURANOS,
-    'SOLEIL - CASSIOPEE': dl.DataloaderCASSIOPEE}
+    "Pickle": dl.DataloaderPickle,
+    "SLS - SIS": dl.DataloaderSIS,
+    "SLS - ADRESS": dl.DataloaderADRESS,
+    "MAX IV - Bloch": dl.DataloaderBloch,
+    "ALS - MERLIN (4.0.3)": dl.DataloaderMERLIN,
+    "ALS - HERS (10.0.1)": dl.DataloaderHERS,
+    "Diamond - i05": dl.DataloaderI05,
+    "SOLARIS - URANOS": dl.DataloaderURANOS,
+    "SOLEIL - CASSIOPEE": dl.DataloaderCASSIOPEE,
+}
 
 
 class DataBrowser(QMainWindow):
@@ -36,7 +44,6 @@ class DataBrowser(QMainWindow):
     """
 
     def __init__(self) -> None:
-
         super(DataBrowser, self).__init__()
         # get time required for opening a window
         time_packages = time.time()
@@ -64,11 +71,10 @@ class DataBrowser(QMainWindow):
         self.load_custom_plugins()
 
         # set window
-        self.setWindowTitle('piva data browser - ' + self.working_dir + '/')
+        self.setWindowTitle("piva data browser - " + self.working_dir + "/")
         self.show()
         time_init = time.time()
-        print("initializing piva browser: {:.3f} s".format(time_init -
-                                                           time_packages))
+        print("initializing piva browser: {:.3f} s".format(time_init - time_packages))
 
     @staticmethod
     def add_slash(path: str) -> str:
@@ -79,8 +85,8 @@ class DataBrowser(QMainWindow):
         :return: path with appended slash
         """
 
-        if path[-1] != '/':
-            path += '/'
+        if path[-1] != "/":
+            path += "/"
         return path
 
     def align(self) -> None:
@@ -110,7 +116,7 @@ class DataBrowser(QMainWindow):
         if fname in self.data_viewers:
             already_opened_box = QMessageBox()
             already_opened_box.setIcon(QMessageBox.Information)
-            already_opened_box.setText('File already opened.')
+            already_opened_box.setText("File already opened.")
             already_opened_box.setStandardButtons(QMessageBox.Ok)
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
@@ -122,8 +128,9 @@ class DataBrowser(QMainWindow):
         Open **DataViewer** with an example data.
         """
 
-        fname = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             'tests', 'data', 'test_map.p')
+        fname = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "tests", "data", "test_map.p"
+        )
         self.open_dv(fname)
 
     def mb_open_dir(self, chosen_dir: Union[str, None] = None) -> None:
@@ -133,16 +140,18 @@ class DataBrowser(QMainWindow):
         """
 
         if chosen_dir is None:
-            chosen_dir = str(QtWidgets.QFileDialog.getExistingDirectory(
-                self, 'Select Directory', self.working_dir))
+            chosen_dir = str(
+                QtWidgets.QFileDialog.getExistingDirectory(
+                    self, "Select Directory", self.working_dir
+                )
+            )
         else:
             pass
         try:
             # self.working_dir = self.add_slash(chosen_dir)
             self.working_dir = chosen_dir
             self.change_working_dir(self.working_dir)
-            self.setWindowTitle('piva data browser - ' + self.working_dir +
-                                '/')
+            self.setWindowTitle("piva data browser - " + self.working_dir + "/")
         except IndexError:
             pass
 
@@ -155,11 +164,11 @@ class DataBrowser(QMainWindow):
         """
 
         if example:
-            loader = all_dls['Pickle']()
+            loader = all_dls["Pickle"]()
             data_set = loader.load_data(fname)
         else:
             selected_loader = self.dp_dl_picker.currentText()
-            if selected_loader == 'All':
+            if selected_loader == "All":
                 data_set = dl.load_data(fname)
             else:
                 loader = all_dls[selected_loader]()
@@ -167,12 +176,13 @@ class DataBrowser(QMainWindow):
 
         if isinstance(data_set, np.ndarray):
             try:
-                self.data_viewers[fname] = \
-                    p4d.DataViewer4D(self, data_set=data_set, index=fname)
+                self.data_viewers[fname] = p4d.DataViewer4D(
+                    self, data_set=data_set, index=fname
+                )
             except (Exception, AttributeError) as e:
                 self.sb.showMessage(
-                    'Couldn\'t load data,  format not supported.',
-                    self.sb_timeout)
+                    "Couldn't load data,  format not supported.", self.sb_timeout
+                )
                 if testing:
                     raise e
             return
@@ -181,15 +191,18 @@ class DataBrowser(QMainWindow):
             # choose correct viewer
             if data_set.xscale.size == 1:
                 self.add_viewer_to_linked_list(fname, 2)
-                self.data_viewers[fname] = \
-                    p2d.DataViewer2D(self, data_set=data_set, index=fname)
+                self.data_viewers[fname] = p2d.DataViewer2D(
+                    self, data_set=data_set, index=fname
+                )
             else:
                 self.add_viewer_to_linked_list(fname, 3)
-                self.data_viewers[fname] = \
-                    p3d.DataViewer3D(self, data_set=data_set, index=fname)
+                self.data_viewers[fname] = p3d.DataViewer3D(
+                    self, data_set=data_set, index=fname
+                )
         except (Exception, AttributeError) as e:
-            self.sb.showMessage('Couldn\'t load data,  format not supported.',
-                                self.sb_timeout)
+            self.sb.showMessage(
+                "Couldn't load data,  format not supported.", self.sb_timeout
+            )
             if testing:
                 raise e
 
@@ -198,13 +211,11 @@ class DataBrowser(QMainWindow):
         Open :class:`PlotTool` window.
         """
 
-        thread_lbl = f'Plotting tool - {self.thread_count + 1}'
+        thread_lbl = f"Plotting tool - {self.thread_count + 1}"
         try:
-            self.plotting_tools[thread_lbl] = pt.PlotTool(self,
-                                                            title=thread_lbl)
+            self.plotting_tools[thread_lbl] = pt.PlotTool(self, title=thread_lbl)
         except Exception:
-            self.sb.showMessage('Couldn\'t open plotting tool',
-                                self.sb_timeout)
+            self.sb.showMessage("Couldn't open plotting tool", self.sb_timeout)
         finally:
             self.thread_count += 1
 
@@ -254,24 +265,24 @@ class DataBrowser(QMainWindow):
 
         bold_font = QtGui.QFont()
         bold_font.setBold(True)
-        dp_def_fill = '-'
+        dp_def_fill = "-"
         max_len_1 = 60
         max_len_2 = int(1.5 * 50)
 
         # pick dataloader
         if 1:
             dp_dl_picker_layout = QHBoxLayout()
-            dp_dl_picker_label = QLabel('Data loader:')
+            dp_dl_picker_label = QLabel("Data loader:")
             dp_dl_picker_label.setFont(bold_font)
             self.dp_dl_picker = QtWidgets.QComboBox()
-            self.dp_dl_picker.addItem('All')
+            self.dp_dl_picker.addItem("All")
             for key in all_dls.keys():
                 self.dp_dl_picker.addItem(key)
             dp_dl_picker_layout.addWidget(dp_dl_picker_label)
             dp_dl_picker_layout.addWidget(self.dp_dl_picker)
             dp_dl_picker_layout.addStretch()
 
-        dp_lbl = QLabel('Metadata')
+        dp_lbl = QLabel("Metadata")
         dp_lbl.setFont(bold_font)
         dp_layout.addWidget(dp_lbl)
 
@@ -284,18 +295,18 @@ class DataBrowser(QMainWindow):
             dp_scan_layout.addLayout(dp_scan_row1_layout)
             dp_scan_layout.addLayout(dp_scan_row2_layout)
             # create labels
-            dp_scan_type_lbl = QLabel('Scan type: ')
+            dp_scan_type_lbl = QLabel("Scan type: ")
             dp_scan_type_lbl.setFont(bold_font)
-            dp_scan_start_lbl = QLabel('[0]:')
-            dp_scan_stop_lbl = QLabel('[-1]:')
-            dp_scan_step_lbl = QLabel('step:')
+            dp_scan_start_lbl = QLabel("[0]:")
+            dp_scan_stop_lbl = QLabel("[-1]:")
+            dp_scan_step_lbl = QLabel("step:")
             # create textboxes
             self.dp_scan_type = QLineEdit(dp_def_fill)
             self.dp_scan_start = QLineEdit(dp_def_fill)
             self.dp_scan_stop = QLineEdit(dp_def_fill)
             self.dp_scan_step = QLineEdit(dp_def_fill)
             # set max width
-            self.dp_scan_type.setMaximumWidth(max_len_2*2)
+            self.dp_scan_type.setMaximumWidth(max_len_2 * 2)
             self.dp_scan_start.setMaximumWidth(max_len_1)
             self.dp_scan_stop.setMaximumWidth(max_len_1)
             self.dp_scan_step.setMaximumWidth(max_len_1)
@@ -319,7 +330,7 @@ class DataBrowser(QMainWindow):
         # manipulator details
         if 1:
             # create main label and layouts
-            dp_manip_lbl = QLabel('Manipulator')
+            dp_manip_lbl = QLabel("Manipulator")
             dp_manip_lbl.setFont(bold_font)
             dp_manip_layout = QVBoxLayout()
             dp_manip_row1_layout = QHBoxLayout()
@@ -333,21 +344,21 @@ class DataBrowser(QMainWindow):
             # create labels
             dp_manip_col1_width = 35
             dp_manip_col2_width = 60
-            dp_manip_x_lbl = QLabel('x:')
+            dp_manip_x_lbl = QLabel("x:")
             dp_manip_x_lbl.setFixedWidth(dp_manip_col1_width)
-            dp_manip_y_lbl = QLabel('y:')
+            dp_manip_y_lbl = QLabel("y:")
             dp_manip_y_lbl.setFixedWidth(dp_manip_col1_width)
-            dp_manip_z_lbl = QLabel('z:')
+            dp_manip_z_lbl = QLabel("z:")
             dp_manip_z_lbl.setFixedWidth(dp_manip_col1_width)
-            dp_manip_theta_lbl = QLabel('theta:')
+            dp_manip_theta_lbl = QLabel("theta:")
             dp_manip_theta_lbl.setFixedWidth(dp_manip_col2_width)
-            dp_manip_phi_lbl = QLabel('phi:')
+            dp_manip_phi_lbl = QLabel("phi:")
             dp_manip_phi_lbl.setFixedWidth(dp_manip_col2_width)
-            dp_manip_tilt_lbl = QLabel('tilt:')
+            dp_manip_tilt_lbl = QLabel("tilt:")
             dp_manip_tilt_lbl.setFixedWidth(dp_manip_col2_width)
-            dp_manip_temp_lbl = QLabel('T [K]:')
+            dp_manip_temp_lbl = QLabel("T [K]:")
             dp_manip_temp_lbl.setFixedWidth(dp_manip_col1_width)
-            dp_manip_press_lbl = QLabel('p [mbar]:')
+            dp_manip_press_lbl = QLabel("p [mbar]:")
             dp_manip_press_lbl.setFixedWidth(dp_manip_col2_width)
             # create textboxes
             self.dp_manip_x = QLineEdit(dp_def_fill)
@@ -401,7 +412,7 @@ class DataBrowser(QMainWindow):
         # analyzer details
         if 1:
             # create main label and layouts
-            dp_ana_lbl = QLabel('Analyzer')
+            dp_ana_lbl = QLabel("Analyzer")
             dp_ana_lbl.setFont(bold_font)
             dp_ana_layout = QVBoxLayout()
             dp_ana_row1_layout = QHBoxLayout()
@@ -417,25 +428,25 @@ class DataBrowser(QMainWindow):
             # create labels
             dp_ana_col1_width = 35
             dp_ana_col2_width = 65
-            dp_ana_e0_lbl = QLabel('E[0]:')
+            dp_ana_e0_lbl = QLabel("E[0]:")
             dp_ana_e0_lbl.setFixedWidth(dp_ana_col1_width)
-            dp_ana_e1_lbl = QLabel('E[-1]:')
+            dp_ana_e1_lbl = QLabel("E[-1]:")
             dp_ana_e1_lbl.setFixedWidth(dp_ana_col1_width)
-            dp_ana_de_lbl = QLabel('step:')
+            dp_ana_de_lbl = QLabel("step:")
             dp_ana_de_lbl.setFixedWidth(dp_ana_col1_width)
-            dp_ana_pe_lbl = QLabel('PE:')
+            dp_ana_pe_lbl = QLabel("PE:")
             dp_ana_pe_lbl.setFixedWidth(dp_ana_col1_width)
-            dp_ana_dt_lbl = QLabel('DT:')
+            dp_ana_dt_lbl = QLabel("DT:")
             dp_ana_dt_lbl.setFixedWidth(dp_ana_col1_width)
-            dp_ana_lm_lbl = QLabel('lens mode:')
+            dp_ana_lm_lbl = QLabel("lens mode:")
             dp_ana_lm_lbl.setFixedWidth(dp_ana_col2_width)
-            dp_ana_am_lbl = QLabel('acq mode:')
+            dp_ana_am_lbl = QLabel("acq mode:")
             dp_ana_am_lbl.setFixedWidth(dp_ana_col2_width)
-            dp_ana_ana_slit_lbl = QLabel('ana slit:')
+            dp_ana_ana_slit_lbl = QLabel("ana slit:")
             dp_ana_ana_slit_lbl.setFixedWidth(dp_ana_col2_width)
-            dp_ana_defl_ang_lbl = QLabel('defl [deg]:')
+            dp_ana_defl_ang_lbl = QLabel("defl [deg]:")
             dp_ana_defl_ang_lbl.setFixedWidth(dp_ana_col2_width)
-            dp_ana_n_sweeps_lbl = QLabel('sweeps:')
+            dp_ana_n_sweeps_lbl = QLabel("sweeps:")
             dp_ana_n_sweeps_lbl.setFixedWidth(dp_ana_col2_width)
             # create textboxes
             self.dp_ana_e = QLineEdit(dp_def_fill)
@@ -501,7 +512,7 @@ class DataBrowser(QMainWindow):
         # beamline details
         if 1:
             # create main label and layouts
-            dp_bl_lbl = QLabel('Beamline')
+            dp_bl_lbl = QLabel("Beamline")
             dp_bl_lbl.setFont(bold_font)
             dp_bl_layout = QVBoxLayout()
             dp_bl_row1_layout = QHBoxLayout()
@@ -511,13 +522,13 @@ class DataBrowser(QMainWindow):
             # create labels
             dp_bl_col1_width = 35
             dp_bl_col2_width = 75
-            dp_bl_hv_lbl = QLabel('h\u03BD:')
+            dp_bl_hv_lbl = QLabel("h\u03bd:")
             dp_bl_hv_lbl.setFixedWidth(dp_bl_col1_width)
-            dp_bl_polar_lbl = QLabel('polarization:')
+            dp_bl_polar_lbl = QLabel("polarization:")
             dp_bl_polar_lbl.setFixedWidth(dp_bl_col2_width)
-            dp_bl_exit_lbl = QLabel('exit:')
+            dp_bl_exit_lbl = QLabel("exit:")
             dp_bl_exit_lbl.setFixedWidth(dp_bl_col1_width)
-            dp_bl_fe_lbl = QLabel('front end:')
+            dp_bl_fe_lbl = QLabel("front end:")
             dp_bl_fe_lbl.setFixedWidth(dp_bl_col2_width)
             # create textboxes
             self.dp_bl_hv = QLineEdit(dp_def_fill)
@@ -575,28 +586,28 @@ class DataBrowser(QMainWindow):
         """
 
         menu_bar = QtWidgets.QMenuBar()
-        file_menu = menu_bar.addMenu('&File')
-        open_dir = QAction('Open directory', self)
-        open_dir.setShortcut('Ctrl+O')
-        open_dir.setStatusTip('Open directory')
+        file_menu = menu_bar.addMenu("&File")
+        open_dir = QAction("Open directory", self)
+        open_dir.setShortcut("Ctrl+O")
+        open_dir.setStatusTip("Open directory")
         open_dir.triggered.connect(lambda: self.mb_open_dir(chosen_dir=None))
         file_menu.addAction(open_dir)
 
-        open_file = QAction('Launch piva', self)
-        open_file.setShortcut('Ctrl+L')
-        open_file.setStatusTip('Launch piva')
+        open_file = QAction("Launch piva", self)
+        open_file.setShortcut("Ctrl+L")
+        open_file.setStatusTip("Launch piva")
         open_file.triggered.connect(self.launch_piva)
         file_menu.addAction(open_file)
 
-        open_menu = menu_bar.addMenu('&Open')
-        single_plot = QAction('Plotting Tool', self)
-        single_plot.setShortcut('Ctrl+P')
-        single_plot.setStatusTip('Plotting Tool')
+        open_menu = menu_bar.addMenu("&Open")
+        single_plot = QAction("Plotting Tool", self)
+        single_plot.setShortcut("Ctrl+P")
+        single_plot.setStatusTip("Plotting Tool")
         single_plot.triggered.connect(self.open_single_plotting_tool)
         open_menu.addAction(single_plot)
 
-        example_data = QAction('Example', self)
-        example_data.setStatusTip('Example')
+        example_data = QAction("Example", self)
+        example_data.setStatusTip("Example")
         # print(EXAMPLE_DATA, type(EXAMPLE_DATA))
         example_data.triggered.connect(self.launch_example)
         open_menu.addAction(example_data)
@@ -629,7 +640,7 @@ class DataBrowser(QMainWindow):
         model.setRootPath(cwd)
         file_explorer.setRootIndex(model.index(cwd))
 
-        # Visual fiddling: the columns are 0: filename, 1: size, 2: date 
+        # Visual fiddling: the columns are 0: filename, 1: size, 2: date
         # modified, 3: type
         self.shown_columns = [0, 1, 2, 3]
         self.hidden_columns = [1, 2, 3]
@@ -640,7 +651,8 @@ class DataBrowser(QMainWindow):
 
         # Connect signal for changing selection in the QTreeView
         file_explorer.selectionModel().selectionChanged.connect(
-            self.on_selection_change)
+            self.on_selection_change
+        )
         self.file_explorer = file_explorer
         self.model = model
 
@@ -687,7 +699,7 @@ class DataBrowser(QMainWindow):
         fname = self.get_selected_path()
 
         try:
-            if selected_loader == 'All':
+            if selected_loader == "All":
                 data = dl.load_data(fname, metadata=True)
             else:
                 # Instantiante a loader of selected type
@@ -696,12 +708,15 @@ class DataBrowser(QMainWindow):
         except FileNotFoundError:
             return
         except NotImplementedError:
-            self.sb.showMessage('File extension not implemented '
-                                'for a chosen data loader.', self.sb_timeout)
+            self.sb.showMessage(
+                "File extension not implemented " "for a chosen data loader.",
+                self.sb_timeout,
+            )
             return
         except Exception as e:
-            self.sb.showMessage('Couldn\'t load data, '
-                                'file format not supported.', self.sb_timeout)
+            self.sb.showMessage(
+                "Couldn't load data, " "file format not supported.", self.sb_timeout
+            )
             if testing:
                 raise e
             return
@@ -716,72 +731,73 @@ class DataBrowser(QMainWindow):
         try:
             # scan
             if data.scan_type is not None:
-                self.dp_scan_type.setText('{}'.format(data.scan_type))
+                self.dp_scan_type.setText("{}".format(data.scan_type))
             if data.scan_dim is not None:
                 sd = data.scan_dim
                 if len(sd) == 0:
                     pass
                 else:
-                    if hasattr(data, 'scan_dim'):
-                        self.dp_scan_start.setText('{:.2f}'.format(
-                            float(data.scan_dim[0])))
-                    if hasattr(data, 'scan_dim'):
-                        self.dp_scan_stop.setText('{:.2f}'.format(
-                            float(data.scan_dim[1])))
-                    if hasattr(data, 'scan_dim'):
-                        self.dp_scan_step.setText('{:.2f}'.format(
-                            float(data.scan_dim[2])))
+                    if hasattr(data, "scan_dim"):
+                        self.dp_scan_start.setText(
+                            "{:.2f}".format(float(data.scan_dim[0]))
+                        )
+                    if hasattr(data, "scan_dim"):
+                        self.dp_scan_stop.setText(
+                            "{:.2f}".format(float(data.scan_dim[1]))
+                        )
+                    if hasattr(data, "scan_dim"):
+                        self.dp_scan_step.setText(
+                            "{:.2f}".format(float(data.scan_dim[2]))
+                        )
             # manipulator
             if data.x is not None:
-                self.dp_manip_x.setText('{:.2f}'.format(float(data.x)))
+                self.dp_manip_x.setText("{:.2f}".format(float(data.x)))
             if data.y is not None:
-                self.dp_manip_y.setText('{:.2f}'.format(float(data.y)))
+                self.dp_manip_y.setText("{:.2f}".format(float(data.y)))
             if data.z is not None:
-                self.dp_manip_z.setText('{:.2f}'.format(float(data.z)))
+                self.dp_manip_z.setText("{:.2f}".format(float(data.z)))
             if data.theta is not None:
-                self.dp_manip_theta.setText('{:.2f}'.format(float(data.theta)))
+                self.dp_manip_theta.setText("{:.2f}".format(float(data.theta)))
             if data.phi is not None:
-                self.dp_manip_phi.setText('{:.2f}'.format(float(data.phi)))
+                self.dp_manip_phi.setText("{:.2f}".format(float(data.phi)))
             if data.tilt is not None:
-                self.dp_manip_tilt.setText('{:.2f}'.format(float(data.tilt)))
+                self.dp_manip_tilt.setText("{:.2f}".format(float(data.tilt)))
             if data.temp is not None:
-                self.dp_manip_temp.setText('{:.1f}'.format(float(data.temp)))
+                self.dp_manip_temp.setText("{:.1f}".format(float(data.temp)))
             if data.pressure is not None:
-                self.dp_manip_press.setText('{:.2e}'.format(
-                    float(data.pressure)))
+                self.dp_manip_press.setText("{:.2e}".format(float(data.pressure)))
 
             # analyzer
             if data.zscale is not None:
-                self.dp_ana_e0.setText('{:.4f}'.format(data.zscale[0]))
+                self.dp_ana_e0.setText("{:.4f}".format(data.zscale[0]))
             if data.zscale is not None:
-                self.dp_ana_e1.setText('{:.4f}'.format(data.zscale[-1]))
+                self.dp_ana_e1.setText("{:.4f}".format(data.zscale[-1]))
             if data.zscale is not None:
-                self.dp_ana_de.setText('{:.2e}'.format(
-                    wp.get_step(data.zscale)))
+                self.dp_ana_de.setText("{:.2e}".format(wp.get_step(data.zscale)))
             if data.PE is not None:
-                self.dp_ana_pe.setText('{}'.format(int(data.PE)))
+                self.dp_ana_pe.setText("{}".format(int(data.PE)))
             if data.DT is not None:
-                self.dp_ana_dt.setText('{}'.format(int(data.DT)))
+                self.dp_ana_dt.setText("{}".format(int(data.DT)))
             if data.lens_mode is not None:
-                self.dp_ana_lm.setText('{}'.format(data.lens_mode))
+                self.dp_ana_lm.setText("{}".format(data.lens_mode))
             if data.acq_mode is not None:
-                self.dp_ana_am.setText('{}'.format(data.acq_mode))
+                self.dp_ana_am.setText("{}".format(data.acq_mode))
             if data.ana_slit is not None:
-                self.dp_ana_ana_slit.setText('{}'.format(data.ana_slit))
+                self.dp_ana_ana_slit.setText("{}".format(data.ana_slit))
             if data.defl_angle is not None:
-                self.dp_ana_defl_ang.setText('{}'.format(data.defl_angle))
+                self.dp_ana_defl_ang.setText("{}".format(data.defl_angle))
             if data.n_sweeps is not None:
-                self.dp_ana_n_sweeps.setText('{}'.format(int(data.n_sweeps)))
+                self.dp_ana_n_sweeps.setText("{}".format(int(data.n_sweeps)))
 
             # beamline
             if data.hv is not None:
-                self.dp_bl_hv.setText('{:.1f}'.format(float(data.hv)))
+                self.dp_bl_hv.setText("{:.1f}".format(float(data.hv)))
             if data.polarization is not None:
                 self.dp_bl_polar.setText(data.polarization)
             if data.exit_slit is not None:
-                self.dp_bl_exit.setText('{}'.format(float(data.exit_slit)))
+                self.dp_bl_exit.setText("{}".format(float(data.exit_slit)))
             if data.FE is not None:
-                self.dp_bl_fe.setText('{}'.format(float(data.FE)))
+                self.dp_bl_fe.setText("{}".format(float(data.FE)))
         except AttributeError:
             self.reset_detail_panel()
 
@@ -824,13 +840,14 @@ class DataBrowser(QMainWindow):
 
         try:
             import piva_dataloader_importer as dli
-            print('Loading custom data loaders:')
 
-            if 'DataloaderImporter' not in dir(dli):
-                print('\t', 'Couldn\'t find class DataloaderImporter.')
+            print("Loading custom data loaders:")
+
+            if "DataloaderImporter" not in dir(dli):
+                print("\t", "Couldn't find the DataloaderImporter class.")
                 return
 
-            self.dli = getattr(dli, 'DataloaderImporter')(self)
+            self.dli = getattr(dli, "DataloaderImporter")(self)
 
         except ModuleNotFoundError:
             pass
@@ -847,14 +864,15 @@ class DataBrowser(QMainWindow):
 
         try:
             import piva_plugin_importer as ppi
-            print('Loading custom plugins:')
 
-            if 'PluginImporter' not in dir(ppi):
-                print('\t', 'Couldn\'t find class PluginImporter.')
+            print("Loading custom plugins:")
+
+            if "PluginImporter" not in dir(ppi):
+                print("\t", "Couldn't find class PluginImporter.")
                 return
 
             self.custom_plugins = {}
-            self.pi = getattr(ppi, 'PluginImporter')(self)
+            self.pi = getattr(ppi, "PluginImporter")(self)
 
         except ModuleNotFoundError:
             pass
@@ -863,7 +881,7 @@ class DataBrowser(QMainWindow):
         """
         Stop all started ``jupyter-lab`` session.
         """
-        
+
         for p in self.jupyter_servers:
             if p.poll() is None:  # Still running
                 p.terminate()

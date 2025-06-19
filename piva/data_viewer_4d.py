@@ -21,7 +21,7 @@ app_style = """
 QMainWindow{background-color: rgb(64,64,64);}
 QTabWidget{background-color: rgb(64,64,64);}
 """
-DEFAULT_CMAP = 'viridis'
+DEFAULT_CMAP = "viridis"
 ORIENTLINES_LINECOLOR = (164, 37, 22, 255)
 
 
@@ -78,7 +78,7 @@ class DataHandler4D:
         """
 
         # self.data = ip.TracedVariable(data, name='data')
-        self.data = ip.CustomTracedVariable(data, name='data')
+        self.data = ip.CustomTracedVariable(data, name="data")
         self.axes = np.array(axes, dtype="object")
         self.norm_data = wp.normalize(self.data.get_value()[0, :, :].T).T
 
@@ -115,8 +115,7 @@ class DataHandler4D:
         x_ax, y_ax = [], []
         for xi in range(nx):
             for yi in range(ny):
-                self.scan_data[xi, yi] = \
-                    self.main_window.scan[xi, yi].data[0, :, :]
+                self.scan_data[xi, yi] = self.main_window.scan[xi, yi].data[0, :, :]
                 x_ax.append(self.main_window.scan[xi, yi].x)
                 y_ax.append(self.main_window.scan[xi, yi].y)
         self.x_ax = np.unique(np.array(x_ax))
@@ -141,8 +140,8 @@ class DataHandler4D:
                 if up.image_normalize.isChecked():
                     norm_along = up.image_normalize_along.currentIndex()
                     tmp_data = wp.normalize(
-                        self.main_window.scan[xi, yi].data[0, :, :],
-                        axis=norm_along)
+                        self.main_window.scan[xi, yi].data[0, :, :], axis=norm_along
+                    )
                 else:
                     tmp_data = self.main_window.scan[xi, yi].data[0, :, :]
                 self.scan_data[xi, yi] = tmp_data
@@ -161,19 +160,17 @@ class DataHandler4D:
         tmp_scan_data = np.zeros((nx, ny, ne, nk))
         for xi in range(nx):
             for yi in range(ny):
-                tmp_scan_data[xi, yi] = \
-                    self.main_window.scan[xi, yi].data[0, :, :]
+                tmp_scan_data[xi, yi] = self.main_window.scan[xi, yi].data[0, :, :]
         if opt == 0:
             self.raster_data = np.sum(np.sum(tmp_scan_data, axis=2), axis=2)
         elif opt == 1:
             for xi in range(tmp_scan_data.shape[0]):
                 for yi in range(tmp_scan_data.shape[1]):
-                    flat = tmp_scan_data[xi, yi].flatten() + 1.
+                    flat = tmp_scan_data[xi, yi].flatten() + 1.0
                     cut_off = int(flat.size * 0.05)
                     low = np.sort(flat)[:cut_off]
                     high = np.sort(flat)[-cut_off:]
-                    self.raster_data[xi, yi] = \
-                        np.average(high) / np.average(low)
+                    self.raster_data[xi, yi] = np.average(high) / np.average(low)
         elif opt == 2:
             for xi in range(tmp_scan_data.shape[0]):
                 for yi in range(tmp_scan_data.shape[1]):
@@ -187,8 +184,13 @@ class DataViewer4D(QtWidgets.QMainWindow):
     Main window of the 4D data.
     """
 
-    def __init__(self, data_browser: DataBrowser, data_set: dl.Dataset,
-                 index: str = None, slice: bool = False) -> None:
+    def __init__(
+        self,
+        data_browser: DataBrowser,
+        data_set: dl.Dataset,
+        index: str = None,
+        slice: bool = False,
+    ) -> None:
         """
         Initialize main window.
 
@@ -240,18 +242,17 @@ class DataViewer4D(QtWidgets.QMainWindow):
         self.data_handler = DataHandler4D(self)
 
         # raster xy map
-        self.raster_plot = ip.ImagePlot(name='bm_plot', crosshair=True)
+        self.raster_plot = ip.ImagePlot(name="bm_plot", crosshair=True)
         # band map
-        self.bm_plot = ip.ImagePlot(name='bm_plot', crosshair=True)
+        self.bm_plot = ip.ImagePlot(name="bm_plot", crosshair=True)
         # Create cut of cut_x
-        self.plot_x = ip.CurvePlot(name='plot_x')
+        self.plot_x = ip.CurvePlot(name="plot_x")
         # Create cut of cut_y
-        self.plot_y = ip.CurvePlot(name='plot_y', orientation='vertical')
+        self.plot_y = ip.CurvePlot(name="plot_y", orientation="vertical")
         # Create utilities panel
-        self.util_panel = UtilitiesPanel(self, name='utilities_panel',
-                                         dim=4)
-        self.util_panel.positions_momentum_label.setText('Spectrum sliders')
-        self.util_panel.bins_label.setText('Integrate spectra')
+        self.util_panel = UtilitiesPanel(self, name="utilities_panel", dim=4)
+        self.util_panel.positions_momentum_label.setText("Spectrum sliders")
+        self.util_panel.bins_label.setText("Integrate spectra")
 
         self.setStyleSheet(app_style)
         self.set_cmap()
@@ -271,8 +272,7 @@ class DataViewer4D(QtWidgets.QMainWindow):
         self.org_image_data = self.data_handler.get_data()
 
         self.util_panel.energy_vert.setRange(0, len(self.data_handler.axes[2]))
-        self.util_panel.momentum_hor.setRange(
-            0, len(self.data_handler.axes[1]))
+        self.util_panel.momentum_hor.setRange(0, len(self.data_handler.axes[1]))
 
         self.util_panel.rx_vert.setRange(0, self.data_handler.x_ax.size)
         self.util_panel.ry_hor.setRange(0, self.data_handler.y_ax.size)
@@ -307,64 +307,60 @@ class DataViewer4D(QtWidgets.QMainWindow):
 
         # binning boxes
         self.util_panel.bin_y.stateChanged.connect(self.update_binning_lines)
-        self.util_panel.bin_y_nbins.valueChanged.connect(
-            self.update_binning_lines)
+        self.util_panel.bin_y_nbins.valueChanged.connect(self.update_binning_lines)
         self.util_panel.bin_z.stateChanged.connect(self.update_binning_lines)
-        self.util_panel.bin_z_nbins.valueChanged.connect(
-            self.update_binning_lines)
+        self.util_panel.bin_z_nbins.valueChanged.connect(self.update_binning_lines)
         # spectra position boxes
-        self.util_panel.energy_vert.valueChanged.connect(
-            self.set_vert_slider)
-        self.util_panel.momentum_hor.valueChanged.connect(
-            self.set_hor_slider)
+        self.util_panel.energy_vert.valueChanged.connect(self.set_vert_slider)
+        self.util_panel.momentum_hor.valueChanged.connect(self.set_hor_slider)
 
         # raster position boxes
         self.util_panel.rx_vert.valueChanged.connect(self.set_rx_slider)
         self.util_panel.ry_hor.valueChanged.connect(self.set_ry_slider)
 
-        self.raster_plot.sliders.vpos.sig_value_changed.connect(
-            self.set_bm_image)
-        self.raster_plot.sliders.hpos.sig_value_changed.connect(
-            self.set_bm_image)
+        self.raster_plot.sliders.vpos.sig_value_changed.connect(self.set_bm_image)
+        self.raster_plot.sliders.hpos.sig_value_changed.connect(self.set_bm_image)
 
         # Create utilities panel and connect signals
         self.util_panel.image_cmaps.currentIndexChanged.connect(self.set_cmap)
         self.util_panel.image_invert_colors.stateChanged.connect(self.set_cmap)
         self.util_panel.image_gamma.valueChanged.connect(self.set_gamma)
         self.util_panel.image_only_spectrum.stateChanged.connect(self.set_cmap)
-        self.util_panel.image_normalize.stateChanged.connect(
-            self.normalize_data)
+        self.util_panel.image_normalize.stateChanged.connect(self.normalize_data)
         self.util_panel.image_normalize_to.currentIndexChanged.connect(
-            self.normalize_data)
+            self.normalize_data
+        )
         self.util_panel.image_normalize_to.setDisabled(True)
         self.util_panel.image_normalize_along.currentIndexChanged.connect(
-            self.normalize_data)
+            self.normalize_data
+        )
         self.util_panel.image_raster_options.currentIndexChanged.connect(
-            self.change_raster_plot)
+            self.change_raster_plot
+        )
         self.util_panel.image_2dv_cut_selector.setDisabled(True)
         self.util_panel.image_2dv_button.clicked.connect(self.open_2dviewer)
 
         # buttons
-        self.util_panel.file_mdc_fitter_button.clicked.connect(
-            self.open_mdc_fitter)
-        self.util_panel.file_edc_fitter_button.clicked.connect(
-            self.open_edc_fitter)
+        self.util_panel.file_mdc_fitter_button.clicked.connect(self.open_mdc_fitter)
+        self.util_panel.file_edc_fitter_button.clicked.connect(self.open_edc_fitter)
         self.util_panel.close_button.clicked.connect(self.close)
         self.util_panel.save_button.clicked.connect(self.save_to_pickle)
 
         # energy and k-space concersion
         self.util_panel.axes_energy_Ef.valueChanged.connect(
-            self.apply_energy_correction)
+            self.apply_energy_correction
+        )
         self.util_panel.axes_energy_hv.valueChanged.connect(
-            self.apply_energy_correction)
+            self.apply_energy_correction
+        )
         self.util_panel.axes_energy_wf.valueChanged.connect(
-            self.apply_energy_correction)
+            self.apply_energy_correction
+        )
         self.util_panel.axes_energy_scale.currentIndexChanged.connect(
-            self.apply_energy_correction)
-        self.util_panel.axes_do_kspace_conv.clicked.connect(
-            self.convert_to_kspace)
-        self.util_panel.axes_reset_conv.clicked.connect(
-            self.reset_kspace_conversion)
+            self.apply_energy_correction
+        )
+        self.util_panel.axes_do_kspace_conv.clicked.connect(self.convert_to_kspace)
+        self.util_panel.axes_reset_conv.clicked.connect(self.reset_kspace_conversion)
 
         self.util_panel.file_add_md_button.setEnabled(False)
         self.util_panel.file_remove_md_button.setEnabled(False)
@@ -383,18 +379,18 @@ class DataViewer4D(QtWidgets.QMainWindow):
         # Get a short handle
         layout = self.layout
         # utilities bar
-        layout.addWidget(self.util_panel,    0, 0, 2, 5)
+        layout.addWidget(self.util_panel, 0, 0, 2, 5)
         # raster plot
-        layout.addWidget(self.raster_plot,    3, 0, 3, 2)
+        layout.addWidget(self.raster_plot, 3, 0, 3, 2)
         # Main plot
-        layout.addWidget(self.bm_plot,     3, 2, 3, 2)
+        layout.addWidget(self.bm_plot, 3, 2, 3, 2)
         # EDC
-        layout.addWidget(self.plot_x,        2, 2, 1, 2)
+        layout.addWidget(self.plot_x, 2, 2, 1, 2)
         # MDC
-        layout.addWidget(self.plot_y,        3, 4, 3, 1)
+        layout.addWidget(self.plot_y, 3, 4, 3, 1)
 
-        dummy_lbl = QLabel('')
-        layout.addWidget(dummy_lbl,          2, 0, 1, 2)
+        dummy_lbl = QLabel("")
+        layout.addWidget(dummy_lbl, 2, 0, 1, 2)
 
         nrows = 6 * sd
         ncols = 5 * sd
@@ -456,12 +452,11 @@ class DataViewer4D(QtWidgets.QMainWindow):
         if data_set.kyscale is not None:
             self.k_axis = data_set.kyscale
             new_range = [self.k_axis[0], self.k_axis[-1]]
-            self.bm_plot.plotItem.getAxis(
-                self.bm_plot.main_yaxis).setRange(*new_range)
-            self.plot_y.plotItem.getAxis(
-                self.plot_y.main_xaxis).setRange(*new_range)
-            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-                self.k_axis[self.bm_plot.pos[1].get_value()]))
+            self.bm_plot.plotItem.getAxis(self.bm_plot.main_yaxis).setRange(*new_range)
+            self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
+            self.util_panel.momentum_hor_value.setText(
+                "({:.4f})".format(self.k_axis[self.bm_plot.pos[1].get_value()])
+            )
 
     @staticmethod
     def swap_axes_aroud(D: np.ndarray) -> np.ndarray:
@@ -496,13 +491,11 @@ class DataViewer4D(QtWidgets.QMainWindow):
         xaxis = self.data_handler.axes[1]
         yaxis = self.data_handler.axes[2]
         self.bm_plot.set_xscale(range(0, xaxis.size))
-        self.bm_plot.set_ticks(xaxis[0], xaxis[-1],
-                                 self.bm_plot.main_xaxis)
+        self.bm_plot.set_ticks(xaxis[0], xaxis[-1], self.bm_plot.main_xaxis)
         self.plot_x.set_ticks(xaxis[0], xaxis[-1], self.plot_x.main_xaxis)
         self.plot_x.set_secondary_axis(0, xaxis.size)
         self.bm_plot.set_yscale(range(0, yaxis.size))
-        self.bm_plot.set_ticks(yaxis[0], yaxis[-1],
-                                 self.bm_plot.main_yaxis)
+        self.bm_plot.set_ticks(yaxis[0], yaxis[-1], self.bm_plot.main_yaxis)
         self.plot_y.set_ticks(yaxis[0], yaxis[-1], self.plot_y.main_xaxis)
         self.plot_y.set_secondary_axis(0, yaxis.size)
         self.bm_plot.fix_viewrange()
@@ -511,11 +504,9 @@ class DataViewer4D(QtWidgets.QMainWindow):
         x_ax_r = self.data_handler.x_ax
         y_ax_r = self.data_handler.y_ax
         self.raster_plot.set_xscale(range(0, x_ax_r.size))
-        self.raster_plot.set_ticks(x_ax_r[0], x_ax_r[-1],
-                                   self.raster_plot.main_xaxis)
+        self.raster_plot.set_ticks(x_ax_r[0], x_ax_r[-1], self.raster_plot.main_xaxis)
         self.raster_plot.set_yscale(range(0, y_ax_r.size))
-        self.raster_plot.set_ticks(y_ax_r[0], y_ax_r[-1],
-                                   self.raster_plot.main_yaxis)
+        self.raster_plot.set_ticks(y_ax_r[0], y_ax_r[-1], self.raster_plot.main_yaxis)
         self.raster_plot.fix_viewrange()
 
     def update_plot_x(self) -> None:
@@ -556,15 +547,18 @@ class DataViewer4D(QtWidgets.QMainWindow):
             y = np.sum(data[:, start:stop], axis=1)
         x = np.arange(0, len(self.data_handler.axes[1]))
         self.edc = y
-        xp.plot(x, y)
+        # xp.plot(x, y)
+        xp.plot(x[~np.isnan(y)], y[~np.isnan(y)])
         self.util_panel.energy_vert.setValue(i_x)
 
         if self.new_energy_axis is None:
-            self.util_panel.energy_vert_value.setText('({:.4f})'.format(
-                self.data_handler.axes[2][i_x]))
+            self.util_panel.energy_vert_value.setText(
+                "({:.4f})".format(self.data_handler.axes[2][i_x])
+            )
         else:
-            self.util_panel.energy_vert_value.setText('({:.4f})'.format(
-                self.new_energy_axis[i_x]))
+            self.util_panel.energy_vert_value.setText(
+                "({:.4f})".format(self.new_energy_axis[i_x])
+            )
 
         if binning:
             self.plot_y.left_line.setValue(i_x - width)
@@ -616,16 +610,19 @@ class DataViewer4D(QtWidgets.QMainWindow):
             y = np.sum(data[start:stop, :], axis=0)
         x = np.arange(0, len(self.data_handler.axes[2]))
         # x = self.data_handler.ang_ax
-        self.mdc = y
-        yp.plot(y, x)
+        self.mdc = y[~np.isnan(y)]
+        # yp.plot(y, x)
+        yp.plot(y[~np.isnan(y)], x[~np.isnan(y)])
         self.util_panel.momentum_hor.setValue(i_y)
 
         if self.k_axis is None:
-            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-                self.data_handler.axes[1][i_y]))
+            self.util_panel.momentum_hor_value.setText(
+                "({:.4f})".format(self.data_handler.axes[1][i_y])
+            )
         else:
-            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-                self.k_axis[i_y]))
+            self.util_panel.momentum_hor_value.setText(
+                "({:.4f})".format(self.k_axis[i_y])
+            )
 
         if binning:
             self.plot_x.left_line.setValue(i_y - width)
@@ -676,8 +673,7 @@ class DataViewer4D(QtWidgets.QMainWindow):
             try:
                 half_width = self.util_panel.bin_z_nbins.value()
                 pos = self.bm_plot.pos[0].get_value()
-                self.bm_plot.add_binning_lines(pos, half_width,
-                                                 orientation='vertical')
+                self.bm_plot.add_binning_lines(pos, half_width, orientation="vertical")
                 self.plot_x.add_binning_lines(pos, half_width)
                 ymin = 0 + half_width
                 ymax = len(self.data_handler.axes[1]) - half_width
@@ -688,9 +684,9 @@ class DataViewer4D(QtWidgets.QMainWindow):
                 pass
         else:
             try:
-                self.bm_plot.remove_binning_lines(orientation='vertical')
+                self.bm_plot.remove_binning_lines(orientation="vertical")
                 self.plot_x.remove_binning_lines()
-                org_range = np.arange(0, len(self.data_handler.axes[2]))
+                org_range = np.arange(0, len(self.data_handler.axes[1]))
                 self.bm_plot.pos[0].set_allowed_values(org_range)
                 self.plot_x.pos.set_allowed_values(org_range)
             except AttributeError:
@@ -764,14 +760,14 @@ class DataViewer4D(QtWidgets.QMainWindow):
         try:
             cmap = self.util_panel.image_cmaps.currentText()
             if self.util_panel.image_invert_colors.isChecked() and ip.MY_CMAPS:
-                cmap = cmap + '_r'
+                cmap = cmap + "_r"
         except AttributeError:
             cmap = DEFAULT_CMAP
 
         try:
             self.cmap = cmaps[cmap]
         except KeyError:
-            print('Invalid colormap name. Use one of: ')
+            print("Invalid colormap name. Use one of: ")
             print(cmaps.keys())
         self.cmap_name = cmap
         # Since the cmap changed it forgot our settings for alpha and gamma
@@ -826,10 +822,12 @@ class DataViewer4D(QtWidgets.QMainWindow):
 
         self.util_panel.rx_vert.setValue(x_pos)
         self.util_panel.ry_hor.setValue(y_pos)
-        self.util_panel.rx_vert_value.setText('({:.3f})'.format(
-            self.data_handler.x_ax[x_pos]))
-        self.util_panel.ry_hor_value.setText('({:.3f})'.format(
-            self.data_handler.y_ax[y_pos]))
+        self.util_panel.rx_vert_value.setText(
+            "({:.3f})".format(self.data_handler.x_ax[x_pos])
+        )
+        self.util_panel.ry_hor_value.setText(
+            "({:.3f})".format(self.data_handler.y_ax[y_pos])
+        )
 
     def set_raster_image(self, *args: dict, **kwargs: dict) -> None:
         """
@@ -889,10 +887,10 @@ class DataViewer4D(QtWidgets.QMainWindow):
         else:
             org_is_kin = False
 
-        if (not org_is_kin) and (scale == 'kinetic'):
+        if (not org_is_kin) and (scale == "kinetic"):
             hv = -self.util_panel.axes_energy_hv.value()
             wf = -self.util_panel.axes_energy_wf.value()
-        elif org_is_kin and (scale == 'binding'):
+        elif org_is_kin and (scale == "binding"):
             hv = self.util_panel.axes_energy_hv.value()
             wf = self.util_panel.axes_energy_wf.value()
         else:
@@ -902,15 +900,14 @@ class DataViewer4D(QtWidgets.QMainWindow):
         new_energy_axis = self.data_handler.axes[2] + Ef - hv + wf
         self.new_energy_axis = new_energy_axis
         new_range = [new_energy_axis[0], new_energy_axis[-1]]
-        self.bm_plot.plotItem.getAxis(self.bm_plot.main_yaxis).setRange(
-            *new_range)
-        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(
-            *new_range)
+        self.bm_plot.plotItem.getAxis(self.bm_plot.main_yaxis).setRange(*new_range)
+        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
 
         # update energy labels
         erg_idx = self.bm_plot.sliders.hpos.get_value()
-        self.util_panel.energy_vert_value.setText('({:.4f})'.format(
-            self.new_energy_axis[erg_idx]))
+        self.util_panel.energy_vert_value.setText(
+            "({:.4f})".format(self.new_energy_axis[erg_idx])
+        )
 
     def convert_to_kspace(self) -> None:
         """
@@ -921,8 +918,7 @@ class DataViewer4D(QtWidgets.QMainWindow):
         scan_ax = np.array([0])
         ana_axis = self.data_handler.axes[1]
         d_scan_ax = self.util_panel.axes_angle_off.value()
-        d_ana_ax = self.data_handler.axes[1][
-            self.util_panel.axes_gamma_x.value()]
+        d_ana_ax = self.data_handler.axes[1][self.util_panel.axes_gamma_x.value()]
         orientation = self.util_panel.axes_slit_orient.currentText()
         a = self.util_panel.axes_conv_lc.value()
         energy = self.new_energy_axis
@@ -932,30 +928,36 @@ class DataViewer4D(QtWidgets.QMainWindow):
         if hv == 0 or wf == 0:
             warning_box = QMessageBox()
             warning_box.setIcon(QMessageBox.Information)
-            warning_box.setWindowTitle('Wrong conversion values.')
+            warning_box.setWindowTitle("Wrong conversion values.")
             if hv == 0 and wf == 0:
-                msg = 'Photon energy and work fonction values not given.'
+                msg = "Photon energy and work fonction values not given."
             elif hv == 0:
-                msg = 'Photon energy value not given.'
+                msg = "Photon energy value not given."
             elif wf == 0:
-                msg = 'Work fonction value not given.'
+                msg = "Work fonction value not given."
             warning_box.setText(msg)
             warning_box.setStandardButtons(QMessageBox.Ok)
             if warning_box.exec() == QMessageBox.Ok:
                 return
 
-        nma, erg = wp.angle2kspace(scan_ax, ana_axis, d_scan_ax=d_scan_ax,
-                                   d_ana_ax=d_ana_ax,
-                                   orientation=orientation, a=a, energy=energy,
-                                   hv=hv, work_func=wf)
+        nma, erg = wp.angle2kspace(
+            scan_ax,
+            ana_axis,
+            d_scan_ax=d_scan_ax,
+            d_ana_ax=d_ana_ax,
+            orientation=orientation,
+            a=a,
+            energy=energy,
+            hv=hv,
+            work_func=wf,
+        )
         self.k_axis = nma[-1]
         new_range = [nma[-1][0], nma[-1][-1]]
-        self.bm_plot.plotItem.getAxis(self.bm_plot.main_xaxis).setRange(
-            *new_range)
-        self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(
-            *new_range)
-        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-            self.k_axis[self.bm_plot.pos[0].get_value()]))
+        self.bm_plot.plotItem.getAxis(self.bm_plot.main_xaxis).setRange(*new_range)
+        self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_range)
+        self.util_panel.momentum_hor_value.setText(
+            "({:.4f})".format(self.k_axis[self.bm_plot.pos[0].get_value()])
+        )
         # self.util_panel.dp_add_k_space_conversion_entry(self.data_set)
 
     def reset_kspace_conversion(self) -> None:
@@ -964,14 +966,14 @@ class DataViewer4D(QtWidgets.QMainWindow):
         """
 
         self.k_axis = None
-        org_range = [self.data_handler.axes[1][0],
-                     self.data_handler.axes[1][-1]]
-        self.bm_plot.plotItem.getAxis(
-            self.bm_plot.main_xaxis).setRange(*org_range)
-        self.plot_x.plotItem.getAxis(
-            self.plot_x.main_xaxis).setRange(*org_range)
-        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-            self.data_handler.axes[1][self.bm_plot.pos[0].get_value()]))
+        org_range = [self.data_handler.axes[1][0], self.data_handler.axes[1][-1]]
+        self.bm_plot.plotItem.getAxis(self.bm_plot.main_xaxis).setRange(*org_range)
+        self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*org_range)
+        self.util_panel.momentum_hor_value.setText(
+            "({:.4f})".format(
+                self.data_handler.axes[1][self.bm_plot.pos[0].get_value()]
+            )
+        )
         # self.data_set.data_provenance['k_space_conv'] = []
 
     # general functionalities
@@ -985,31 +987,31 @@ class DataViewer4D(QtWidgets.QMainWindow):
         y_pos = self.raster_plot.pos[1].get_value()
         data_set = deepcopy(self.scan[x_pos, y_pos])
 
-        idx = '[{}, {}]'.format(x_pos, y_pos)
-        n_bin = '-'
-        viewer_idx = '{} [x:{}, y:{}]'.format(self.index, x_pos, y_pos)
-        data_set.scan_type = 'cut'
+        idx = "[{}, {}]".format(x_pos, y_pos)
+        n_bin = "-"
+        viewer_idx = "{} [x:{}, y:{}]".format(self.index, x_pos, y_pos)
+        data_set.scan_type = "cut"
         data_set.scan_dim = []
 
         if viewer_idx in self.db.data_viewers.keys():
             viewer_running_box = QMessageBox()
             viewer_running_box.setIcon(QMessageBox.Information)
-            viewer_running_box.setWindowTitle('Doh.')
-            viewer_running_box.setText('Same cut is already opened')
+            viewer_running_box.setWindowTitle("Doh.")
+            viewer_running_box.setText("Same cut is already opened")
             viewer_running_box.setStandardButtons(QMessageBox.Ok)
             if viewer_running_box.exec() == QMessageBox.Ok:
                 return
 
         try:
-            self.util_panel.dp_add_file_cut_entry(data_set, '-', idx, n_bin)
-            self.db.data_viewers[viewer_idx] = \
-                p2d.DataViewer2D(self.db, data_set=data_set,
-                                 index=viewer_idx, slice=True)
+            self.util_panel.dp_add_file_cut_entry(data_set, "-", idx, n_bin)
+            self.db.data_viewers[viewer_idx] = p2d.DataViewer2D(
+                self.db, data_set=data_set, index=viewer_idx, slice=True
+            )
         except Exception as e:
             raise e
             error_box = QMessageBox()
             error_box.setIcon(QMessageBox.Information)
-            error_box.setText('Couldn\'t load data,  something went wrong.')
+            error_box.setText("Couldn't load data,  something went wrong.")
             error_box.setStandardButtons(QMessageBox.Ok)
             if error_box.exec() == QMessageBox.Ok:
                 return
@@ -1020,13 +1022,13 @@ class DataViewer4D(QtWidgets.QMainWindow):
         distribution curves (MDCs).
         """
 
-        title = self.title + ' - mdc fitter'
+        title = self.title + " - mdc fitter"
         self.mdc_thread_lbl = title
 
         if title in self.data_viewers:
             already_opened_box = QMessageBox()
             already_opened_box.setIcon(QMessageBox.Information)
-            already_opened_box.setText('MDC viewer already opened.')
+            already_opened_box.setText("MDC viewer already opened.")
             already_opened_box.setStandardButtons(QMessageBox.Ok)
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
@@ -1045,12 +1047,11 @@ class DataViewer4D(QtWidgets.QMainWindow):
             k_ax = data_set.yscale
         axes = [k_ax, erg_ax]
         try:
-            self.data_viewers[title] = \
-                MDCFitter(self, data_set, axes, title)
+            self.data_viewers[title] = MDCFitter(self, data_set, axes, title)
         except Exception as e:
             error_box = QMessageBox()
             error_box.setIcon(QMessageBox.Information)
-            error_box.setText('Couldn\'t load data,  something went wrong.')
+            error_box.setText("Couldn't load data,  something went wrong.")
             error_box.setStandardButtons(QMessageBox.Ok)
             if error_box.exec() == QMessageBox.Ok:
                 raise e
@@ -1062,13 +1063,13 @@ class DataViewer4D(QtWidgets.QMainWindow):
         distribution curves (EDCs).
         """
 
-        title = self.title + ' - edc fitter'
+        title = self.title + " - edc fitter"
         self.edc_thread_lbl = title
 
         if title in self.data_viewers:
             already_opened_box = QMessageBox()
             already_opened_box.setIcon(QMessageBox.Information)
-            already_opened_box.setText('EDC viewer already opened.')
+            already_opened_box.setText("EDC viewer already opened.")
             already_opened_box.setStandardButtons(QMessageBox.Ok)
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
@@ -1087,8 +1088,7 @@ class DataViewer4D(QtWidgets.QMainWindow):
             k_ax = data_set.yscale
         axes = [erg_ax, k_ax]
         try:
-            self.data_viewers[title] = \
-                EDCFitter(self, data_set, axes, title)
+            self.data_viewers[title] = EDCFitter(self, data_set, axes, title)
         except Exception as e:
             raise e
 
@@ -1101,20 +1101,22 @@ class DataViewer4D(QtWidgets.QMainWindow):
         dataset = self.scan
         file_selection = True
         # Prepare a filename with the .p suffix
-        init_fname = '.'.join(self.title.split('.')[:-1] + ['p'])
+        init_fname = ".".join(self.title.split(".")[:-1] + ["p"])
 
         # Choose directory
-        savedir = str(QtWidgets.QFileDialog.getExistingDirectory(
-            self, 'Select Directory', self.fname[:-len(self.title)]))
+        savedir = str(
+            QtWidgets.QFileDialog.getExistingDirectory(
+                self, "Select Directory", self.fname[: -len(self.title)]
+            )
+        )
         # savedir = self.fname[:-len(self.title)]
         if not savedir:
             return
 
         while file_selection:
-            fname, fname_return_value = \
-                QtWidgets.QInputDialog.getText(self, '', 'File name:',
-                                               QtWidgets.QLineEdit.Normal,
-                                               init_fname)
+            fname, fname_return_value = QtWidgets.QInputDialog.getText(
+                self, "", "File name:", QtWidgets.QLineEdit.Normal, init_fname
+            )
             if not fname_return_value:
                 return
 
@@ -1122,12 +1124,15 @@ class DataViewer4D(QtWidgets.QMainWindow):
             if fname in os.listdir(savedir):
                 fname_colision_box = QMessageBox()
                 fname_colision_box.setIcon(QMessageBox.Question)
-                fname_colision_box.setWindowTitle('File name already used.')
-                fname_colision_box.setText('File {} already exists.\nDo you '
-                                           'want to overwrite '
-                                           'it?'.format(fname))
-                fname_colision_box.setStandardButtons(QMessageBox.Ok |
-                                                      QMessageBox.Cancel)
+                fname_colision_box.setWindowTitle("File name already used.")
+                fname_colision_box.setText(
+                    "File {} already exists.\nDo you "
+                    "want to overwrite "
+                    "it?".format(fname)
+                )
+                fname_colision_box.setStandardButtons(
+                    QMessageBox.Ok | QMessageBox.Cancel
+                )
                 if fname_colision_box.exec() == QMessageBox.Ok:
                     file_selection = False
                 else:
@@ -1144,4 +1149,4 @@ class DataViewer4D(QtWidgets.QMainWindow):
         """
 
         # self.db.delete_viewer_from_linked_lists(self.title)
-        del (self.db.data_viewers[self.index])
+        del self.db.data_viewers[self.index]

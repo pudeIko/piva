@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - main
+      - pyOS-review
 
 defaults:
   run:
@@ -51,12 +52,11 @@ jobs:
       - name: Lint with Ruff
         run: |
           pipx install ruff
-          ruff check --exit-zero --output-format=github --target-version=py310
+          ruff check --output-format=github
 
       - name: Check formatting with Ruff
         run: |
-          ruff format --diff --target-version=py310
-        continue-on-error: true
+          ruff format --diff
 
       - name: Test dataloaders
         run: >

@@ -6,16 +6,18 @@ import os
 import pickle
 import re
 import h5py
+
 # from igor import igorpy
 from igor2 import binarywave, packed
 import zipfile
 from argparse import Namespace
 from errno import ENOENT
 from warnings import catch_warnings, simplefilter
+
 # from PyQt5.QtWidgets import QDialog, QLabel, QComboBox, QDialogButtonBox, \
 #     QGridLayout
 from datetime import datetime
-from typing import Union, Any, Optional, List, Dict
+from typing import Union, Any, List, Dict
 from pydantic import BaseModel, Field
 from abc import ABC, abstractmethod
 
@@ -122,54 +124,52 @@ class Dataset(BaseModel):
                                             called on the data
     ===============  ===================  =====================================
     """
-    
 
-    data: np.ndarray = None
-    xscale: np.ndarray = None
-    yscale: np.ndarray = None
-    zscale: np.ndarray = None
-    ekin: Optional[np.ndarray] = None
-    kxscale: Optional[np.ndarray] = None
-    kyscale: Optional[np.ndarray] = None
+    data: np.ndarray
+    xscale: np.ndarray
+    yscale: np.ndarray
+    zscale: np.ndarray
+    ekin: np.ndarray | None = None
+    kxscale: np.ndarray | None = None
+    kyscale: np.ndarray | None = None
 
-    x: Optional[float] = None
-    y: Optional[float] = None
-    z: Optional[float] = None
-    theta: Optional[float] = None
-    phi: Optional[float] = None
-    tilt: Optional[float] = None
-    temp: Optional[float] = None
-    pressure: Optional[float] = None
-    hv: Optional[float] = None
-    wf: Optional[float] = None
-    Ef: Optional[float] = None
+    x: float | None = None
+    y: float | None = None
+    z: float | None = None
+    theta: float | None = None
+    phi: float | None = None
+    tilt: float | None = None
+    temp: float | None = None
+    pressure: float | None = None
+    hv: float | None = None
+    wf: float | None = None
+    Ef: float | None = None
 
-    polarization: Optional[str] = None
-    PE: Optional[int] = None
-    exit_slit: Optional[float] = None
-    FE: Optional[float] = None
+    polarization: str | None = None
+    PE: int | None = None
+    exit_slit: float | None = None
+    FE: float | None = None
 
-    scan_type: Optional[str] = None
-    scan_dim: List[float] = Field(default_factory=list)
+    scan_type: str | None = None
+    scan_dim: List[float] | None = None  # = Field(default_factory=list)
 
-    acq_mode: Optional[str] = None
-    lens_mode: Optional[str] = None
-    ana_slit: Optional[str] = None
-    defl_angle: Optional[float] = None
-    n_sweeps: Optional[int] = None
-    DT: Optional[int] = None
-    date: Optional[str] = None
+    acq_mode: str | None = None
+    lens_mode: str | None = None
+    ana_slit: str | None = None
+    defl_angle: float | None = None
+    n_sweeps: int | None = None
+    DT: int | None = None
+    date: str | None = None
 
-    data_provenance: Dict[str, List[Dict]] = Field(default_factory=lambda: {
-        'file': [],
-        'k_space_conv': [],
-        'edited_entries': [],
-    })
+    data_provenance: Dict[str, List[Dict]] = Field(
+        default_factory=lambda: {
+            "file": [],
+            "k_space_conv": [],
+            "edited_entries": [],
+        }
+    )
 
-    model_config = {
-        "arbitrary_types_allowed": True,
-        "extra": "allow"
-    }
+    model_config = {"arbitrary_types_allowed": True, "extra": "allow"}
 
     def add_org_file_entry(self, fname: str, dl: str) -> None:
         """
@@ -182,15 +182,15 @@ class Dataset(BaseModel):
         """
 
         file_entry = {}
-        file_entry['index'] = 0
-        file_entry['date_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        file_entry['path'] = fname
-        file_entry['type'] = 'original'
-        file_entry['index_taken'] = '-'
-        file_entry['binned'] = '-'
-        file_entry['data_loader'] = dl
+        file_entry["index"] = 0
+        file_entry["date_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        file_entry["path"] = fname
+        file_entry["type"] = "original"
+        file_entry["index_taken"] = "-"
+        file_entry["binned"] = "-"
+        file_entry["data_loader"] = dl
 
-        self.data_provenance['file'].append(file_entry)
+        self.data_provenance["file"].append(file_entry)
 
 
 class Dataloader(ABC):
@@ -202,10 +202,10 @@ class Dataloader(ABC):
     beamlines are implemented separately.
     """
 
-    name = 'Base'
+    name = "Base"
 
     def __init__(self) -> None:
-        self.ds = Dataset()
+        self.ds = Dataset.model_construct()
         self.raster = False
         self.scan = None
 
@@ -217,8 +217,9 @@ class Dataloader(ABC):
 
         pass
 
-    def load_ses_zip(self, filename: str, bl_md: list = None,
-                     metadata: bool = False) -> None:
+    def load_ses_zip(
+        self, filename: str, bl_md: list = None, metadata: bool = False
+    ) -> None:
         """
         Load data from SES (Scienta) **\ *.zip** files.
 
@@ -239,56 +240,56 @@ class Dataloader(ABC):
         # Prepare metadata key-value pairs for the different metadata files
         # and their expected types
         ds = self.ds
-        keys1 = [('width', 'n_energy', int),
-                 ('depth', 'n_x', int),
-                 ('height', 'n_y', int),
-                 ('first_full', 'first_energy', int),
-                 ('last_full', 'last_energy', int),
-                 ('widthoffset', 'start_energy', float),
-                 ('widthdelta', 'step_energy', float),
-                 ('depthoffset', 'start_x', float),
-                 ('depthdelta', 'step_x', float),
-                 ('heightoffset', 'start_y', float),
-                 ('heightdelta', 'step_y', float)]
+        keys1 = [
+            ("width", "n_energy", int),
+            ("depth", "n_x", int),
+            ("height", "n_y", int),
+            ("first_full", "first_energy", int),
+            ("last_full", "last_energy", int),
+            ("widthoffset", "start_energy", float),
+            ("widthdelta", "step_energy", float),
+            ("depthoffset", "start_x", float),
+            ("depthdelta", "step_x", float),
+            ("heightoffset", "start_y", float),
+            ("heightdelta", "step_y", float),
+        ]
 
         # Load the zipfile
-        with zipfile.ZipFile(filename, 'r') as z:
+        with zipfile.ZipFile(filename, "r") as z:
             # Get the created filename from the viewer
-            with z.open('viewer.ini') as viewer:
+            with z.open("viewer.ini") as viewer:
                 for line in viewer.readlines():
-                    ln = line.decode('UTF-8')
-                    if ln.startswith('name'):
+                    ln = line.decode("UTF-8")
+                    if ln.startswith("name"):
                         # Make sure to split off unwanted whitespace
-                        file_id = ln.split('=')[1].split()[0]
+                        file_id = ln.split("=")[1].split()[0]
 
             # Get most metadata from a metadata file
-            with z.open('Spectrum_' + file_id + '.ini') as md_file1:
+            with z.open("Spectrum_" + file_id + ".ini") as md_file1:
                 M = Namespace()
-                self.read_ses_metadata(M, md_file1.readlines(), bl_md=keys1,
-                                       zip=True)
+                self.read_ses_metadata(M, md_file1.readlines(), bl_md=keys1, zip=True)
             # Get additional metadata from a second metadata file...
-            with z.open(file_id + '.ini') as md_file2:
+            with z.open(file_id + ".ini") as md_file2:
                 self.read_ses_metadata(ds, md_file2, bl_md=bl_md, zip=True)
 
             # Extract the binary data from the zipfile
             if metadata:
-                data_flat = np.zeros(
-                    (int(M.n_y) * int(M.n_x) * int(M.n_energy)))
+                data_flat = np.zeros((int(M.n_y) * int(M.n_x) * int(M.n_energy)))
             else:
-                with z.open('Spectrum_' + file_id + '.bin') as f:
-                    data_flat = np.frombuffer(f.read(), dtype='float32')
+                with z.open("Spectrum_" + file_id + ".bin") as f:
+                    data_flat = np.frombuffer(f.read(), dtype="float32")
 
         # Put the data back into its actual shape
         data = np.reshape(data_flat, (int(M.n_x), int(M.n_y), int(M.n_energy)))
         # Cut off unswept region
-        data = data[:, :, M.first_energy:M.last_energy + 1]
+        data = data[:, :, M.first_energy : M.last_energy + 1]
         # Put into shape (energy, other angle, angle along analyzer)
         data = np.moveaxis(data, 2, 0)
         # Create axes
         xscale = start_step_n(M.start_x, M.step_x, M.n_x)
         yscale = start_step_n(M.start_y, M.step_y, M.n_y)
         energies = start_step_n(M.start_energy, M.step_energy, M.n_energy)
-        energies = energies[M.first_energy:M.last_energy + 1]
+        energies = energies[M.first_energy : M.last_energy + 1]
 
         if yscale.size > 1:
             data = np.swapaxes(np.swapaxes(data, 0, 1), 1, 2)
@@ -303,13 +304,17 @@ class Dataloader(ABC):
         ds.ekin = energies
 
         if ds.xscale.size == 1:
-            ds.scan_type = 'cut'
+            ds.scan_type = "cut"
         else:
-            ds.scan_dim = [ds.xscale[0], ds.xscale[-1],
-                           np.abs(ds.xscale[0] - ds.xscale[1])]
+            ds.scan_dim = [
+                ds.xscale[0],
+                ds.xscale[-1],
+                np.abs(ds.xscale[0] - ds.xscale[1]),
+            ]
 
-    def load_ses_ibw(self, filename: str, bl_md: list = None,
-                     metadata: bool = False) -> None:
+    def load_ses_ibw(
+        self, filename: str, bl_md: list = None, metadata: bool = False
+    ) -> None:
         """
         Load data from SES (Scianta) IGOR binary wave (**\ *.ibw**) files.
 
@@ -322,11 +327,12 @@ class Dataloader(ABC):
         """
 
         ds = self.ds
-        wave = binarywave.load(filename)['wave']
+        wave = binarywave.load(filename)["wave"]
         self._read_ibw_(ds, wave, bl_md=bl_md, metadata=metadata)
 
-    def load_ses_pxt(self, filename: str, bl_md: list = None,
-                     metadata: bool = False) -> None:
+    def load_ses_pxt(
+        self, filename: str, bl_md: list = None, metadata: bool = False
+    ) -> None:
         """
         Load data from SES (Scianta) IGOR packed experiment (**\ *.pxt**)
         files.
@@ -340,12 +346,13 @@ class Dataloader(ABC):
         """
 
         ds = self.ds
-        wave = packed.load(filename)[0][0].wave['wave']
+        wave = packed.load(filename)[0][0].wave["wave"]
 
         self._read_ibw_(ds, wave, bl_md=bl_md)
 
-    def _read_ibw_(self, ds: Dataset, wave: Any, bl_md: list = None,
-                   metadata: bool = False) -> None:
+    def _read_ibw_(
+        self, ds: Dataset, wave: Any, bl_md: list = None, metadata: bool = False
+    ) -> None:
         """
         Read igor binary wave file.
 
@@ -360,25 +367,24 @@ class Dataloader(ABC):
         """
 
         # The `header` contains some metadata
-        header = wave['wave_header']
+        header = wave["wave_header"]
 
         # load raster scan in data are 4D
         # if not ((header['nDim'][2] == 0) and (header['nDim'][3] == 0)):
-        if header['nDim'][3] != 0:
+        if header["nDim"][3] != 0:
             self.raster = True
-            self.scan = self.load_raster_scan(wave, bl_md=bl_md,
-                                              metadata=metadata)
+            self.scan = self.load_raster_scan(wave, bl_md=bl_md, metadata=metadata)
 
-        nDim = header['nDim']
-        steps = header['sfA']
-        starts = header['sfB']
+        nDim = header["nDim"]
+        steps = header["sfA"]
+        starts = header["sfB"]
 
         # Construct the x and y scales from start, stop and n
         if nDim[2] == 0:
             nDim[2] += 1
-            data = np.swapaxes(np.array([wave['wData']]), 1, 2)
+            data = np.swapaxes(np.array([wave["wData"]]), 1, 2)
         else:
-            data = np.swapaxes(np.array([wave['wData']])[0, :, :, :], 0, 2)
+            data = np.swapaxes(np.array([wave["wData"]])[0, :, :, :], 0, 2)
 
         xscale = start_step_n(starts[2], steps[2], nDim[2])
         yscale = start_step_n(starts[1], steps[1], nDim[1])
@@ -392,18 +398,22 @@ class Dataloader(ABC):
 
         # Convert  bytestring of ASCII characters `note` containing some
         # metadata, to a list of strings
-        meta = wave['note'].decode('ASCII').split('\r')
+        meta = wave["note"].decode("ASCII").split("\r")
         self.read_ses_metadata(ds, meta, bl_md=bl_md)
 
         if ds.xscale.size == 1:
-            ds.scan_type = 'cut'
+            ds.scan_type = "cut"
         else:
-            ds.scan_dim = [ds.xscale[0], ds.xscale[-1],
-                           np.abs(ds.xscale[0] - ds.xscale[1])]
+            ds.scan_dim = [
+                ds.xscale[0],
+                ds.xscale[-1],
+                np.abs(ds.xscale[0] - ds.xscale[1]),
+            ]
 
     @staticmethod
-    def read_ses_metadata(ns: Union[Dataset, Namespace], meta: list,
-                          bl_md: list = None, zip: bool = False) -> None:
+    def read_ses_metadata(
+        ns: Union[Dataset, Namespace], meta: list, bl_md: list = None, zip: bool = False
+    ) -> None:
         """
         Load metadata from SES file/notes/comments for the analyzer settings
         and some beamline specific, if provided.
@@ -419,13 +429,15 @@ class Dataloader(ABC):
         """
 
         # standard SES metadata
-        meta_keys = [('Excitation Energy', 'hv', float),
-                     ('Acquisition Mode', 'acq_mode', str),
-                     ('Pass Energy', 'PE', int),
-                     ('Lens Mode', 'lens_mode', str),
-                     ('ThetaY', 'defl_angle', float),
-                     ('Number of Sweeps', 'n_sweeps', int),
-                     ('Step Time', 'DT', int)]
+        meta_keys = [
+            ("Excitation Energy", "hv", float),
+            ("Acquisition Mode", "acq_mode", str),
+            ("Pass Energy", "PE", int),
+            ("Lens Mode", "lens_mode", str),
+            ("ThetaY", "defl_angle", float),
+            ("Number of Sweeps", "n_sweeps", int),
+            ("Step Time", "DT", int),
+        ]
 
         # append beamline specific metadata, if there are any
         if bl_md is not None:
@@ -436,9 +448,9 @@ class Dataloader(ABC):
         for line in meta:
             # Split at 'equals' sign
             if zip:
-                tokens = line.decode('utf-8').split('=')
+                tokens = line.decode("utf-8").split("=")
             else:
-                tokens = line.split('=')
+                tokens = line.split("=")
             for key, name, dtype in meta_keys:
                 if tokens[0] == key:
                     # Split off whitespace or garbage at the end
@@ -446,19 +458,18 @@ class Dataloader(ABC):
                     # And cast to right type
                     value = dtype(value)
                     ns.__setattr__(name, value)
-                elif tokens[0] == 'Mode':
-                    if tokens[1].split()[0] == 'ARPES' and \
-                            tokens[1].split()[1] == 'Mapping':
-                        ns.__setattr__('scan_type', 'DA scan')
-                elif tokens[0] == 'Thetay_Low':
-                    ns.__setattr__('scan_start',
-                                   float(tokens[1].split()[0]))
-                elif tokens[0] == 'Thetay_High':
-                    ns.__setattr__('scan_stop',
-                                   float(tokens[1].split()[0]))
-                elif tokens[0] == 'Thetay_StepSize':
-                    ns.__setattr__('scan_step',
-                                   float(tokens[1].split()[0]))
+                elif tokens[0] == "Mode":
+                    if (
+                        tokens[1].split()[0] == "ARPES"
+                        and tokens[1].split()[1] == "Mapping"
+                    ):
+                        ns.__setattr__("scan_type", "DA scan")
+                elif tokens[0] == "Thetay_Low":
+                    ns.__setattr__("scan_start", float(tokens[1].split()[0]))
+                elif tokens[0] == "Thetay_High":
+                    ns.__setattr__("scan_stop", float(tokens[1].split()[0]))
+                elif tokens[0] == "Thetay_StepSize":
+                    ns.__setattr__("scan_step", float(tokens[1].split()[0]))
 
     # def _load_ses_pxt(self, filename: str, bl_md: list = None,
     #                   metadata: bool = False) -> None:
@@ -531,8 +542,9 @@ class Dataloader(ABC):
     #                        np.abs(ds.xscale[0] - ds.xscale[1])]
 
     @staticmethod
-    def load_raster_scan(wave: Any, bl_md: list = None,
-                         metadata: bool = False) -> np.ndarray:
+    def load_raster_scan(
+        wave: Any, bl_md: list = None, metadata: bool = False
+    ) -> np.ndarray:
         """
         Load data from `xy` manipulator raster scan. Each energy-momentum map
         is saved as a separate :class:`Dataset` object.
@@ -547,10 +559,10 @@ class Dataloader(ABC):
         """
 
         # The `header` contains some metadata
-        header = wave['wave_header']
-        nDim = header['nDim']
-        steps = header['sfA']
-        starts = header['sfB']
+        header = wave["wave_header"]
+        nDim = header["nDim"]
+        steps = header["sfA"]
+        starts = header["sfB"]
 
         scan = np.empty((nDim[2], nDim[3]), dtype=object)
         xscale = np.array([0])
@@ -562,17 +574,17 @@ class Dataloader(ABC):
             for yi in range(nDim[3]):
                 scan[xi, yi] = Dataset()
                 tmp_dl = DataloaderBloch()
-                meta = wave['note'].decode('ASCII').split('\r')
+                meta = wave["note"].decode("ASCII").split("\r")
                 tmp_dl.read_ses_metadata(scan[xi, yi], meta, bl_md)
                 scan[xi, yi].x = x_axis[xi]
                 scan[xi, yi].y = y_axis[yi]
                 scan[xi, yi].data = np.zeros((1, nDim[1], nDim[0]))
                 if not metadata:
-                    scan[xi, yi].data[0, :, :] = wave['wData'][:, :, xi, yi].T
+                    scan[xi, yi].data[0, :, :] = wave["wData"][:, :, xi, yi].T
                 scan[xi, yi].xscale = xscale
                 scan[xi, yi].yscale = yscale
                 scan[xi, yi].zscale = zscale
-                scan[xi, yi].scan_type = 'raster scan'
+                scan[xi, yi].scan_type = "raster scan"
         # print(type(scan))
         # print(isinstance(scan, np.ndarray))
         return scan
@@ -585,7 +597,7 @@ class DataloaderPickle(Dataloader):
     contain raw :class:`Dataset` object.
     """
 
-    name = 'Pickle'
+    name = "Pickle"
 
     def __init__(self):
         super(DataloaderPickle, self).__init__()
@@ -603,8 +615,8 @@ class DataloaderPickle(Dataloader):
         """
 
         # Open the file and get a handle for it
-        if filename.endswith('.p'):
-            with open(filename, 'rb') as f:
+        if filename.endswith(".p"):
+            with open(filename, "rb") as f:
                 filedata = pickle.load(f)
         else:
             raise NotImplementedError
@@ -614,7 +626,7 @@ class DataloaderPickle(Dataloader):
             self.scan = filedata
 
         # synchronize all attributes in case file was saved using older version
-        for attr in vars(self.ds):
+        for attr in Dataset.model_fields:
             if hasattr(filedata, attr):
                 try:
                     setattr(self.ds, attr, getattr(filedata, attr))
@@ -628,7 +640,7 @@ class DataloaderPickle(Dataloader):
             return self.scan
         else:
             self.ds.add_org_file_entry(filename, self.name)
-            return self.ds
+            return Dataset.model_validate(self.ds.model_dump())
 
 
 class DataloaderSIS(Dataloader):
@@ -637,7 +649,7 @@ class DataloaderSIS(Dataloader):
     Switzerland).
     """
 
-    name = 'SIS'
+    name = "SIS"
 
     def __init__(self):
         super(DataloaderSIS, self).__init__()
@@ -654,13 +666,13 @@ class DataloaderSIS(Dataloader):
         :return: loaded dataset with available metadata
         """
 
-        if filename.endswith('h5'):
+        if filename.endswith("h5"):
             self.load_h5(filename, metadata=metadata)
-        elif filename.endswith('zip'):
+        elif filename.endswith("zip"):
             self.load_ses_zip(filename, metadata=metadata)
-        elif filename.endswith('ibw'):
+        elif filename.endswith("ibw"):
             self.load_ses_ibw(filename, metadata=metadata)
-        elif filename.endswith('pxt'):
+        elif filename.endswith("pxt"):
             self.load_ses_pxt(filename, metadata=metadata)
         else:
             raise NotImplementedError
@@ -672,7 +684,7 @@ class DataloaderSIS(Dataloader):
             return self.scan
         else:
             self.ds.add_org_file_entry(filename, self.name)
-            return self.ds
+            return Dataset.model_validate(self.ds.model_dump())
 
     def load_h5(self, filename: str, metadata: bool = False) -> None:
         """
@@ -687,9 +699,9 @@ class DataloaderSIS(Dataloader):
 
         # Load the hdf5 file
         # Use 'rdcc_nbytes' flag for setting up the chunk cache (in bytes)
-        datfile = h5py.File(filename, 'r')
+        datfile = h5py.File(filename, "r")
         # Extract the actual dataset and some metadata
-        h5_data = datfile['Electron Analyzer/Image Data']
+        h5_data = datfile["Electron Analyzer/Image Data"]
         attributes = h5_data.attrs
 
         # Convert to array and make 3 dimensional if necessary
@@ -713,8 +725,8 @@ class DataloaderSIS(Dataloader):
             data = data.reshape((1, y, N_E))
             # Extract the limits
             xlims = [1, 1]
-            ylims = attributes['Axis1.Scale']
-            elims = attributes['Axis0.Scale']
+            ylims = attributes["Axis1.Scale"]
+            elims = attributes["Axis0.Scale"]
             xscale = start_step_n(*xlims, x)
             yscale = start_step_n(*ylims, y)
             energies = start_step_n(*elims, N_E)
@@ -723,9 +735,9 @@ class DataloaderSIS(Dataloader):
             y = shape[2]
             N_E = shape[0]
             # Extract the limits
-            xlims = attributes['Axis2.Scale']
-            ylims = attributes['Axis1.Scale']
-            elims = attributes['Axis0.Scale']
+            xlims = attributes["Axis2.Scale"]
+            ylims = attributes["Axis1.Scale"]
+            elims = attributes["Axis0.Scale"]
             xscale = start_step_n(*xlims, y)
             yscale = start_step_n(*ylims, x)
             energies = start_step_n(*elims, N_E)
@@ -736,48 +748,50 @@ class DataloaderSIS(Dataloader):
             N_E = y
             data = np.rollaxis(data, 2, 0)
             # Extract the limits
-            xlims = attributes['Axis1.Scale']
-            ylims = attributes['Axis0.Scale']
+            xlims = attributes["Axis1.Scale"]
+            ylims = attributes["Axis0.Scale"]
             elims = ylims
             xscale = start_step_n(*xlims, y)
             yscale = start_step_n(*ylims, x)
             energies = start_step_n(*elims, N_E)
 
         # Extract some data for ang2k conversion
-        metadata = datfile['Other Instruments']
-        x_pos = metadata['X'][0]
-        y_pos = metadata['Y'][0]
-        z_pos = metadata['Z'][0]
-        theta = metadata['Theta'][0]
-        phi = metadata['Phi'][0]
-        tilt = metadata['Tilt'][0]
+        metadata = datfile["Other Instruments"]
+        x_pos = metadata["X"][0]
+        y_pos = metadata["Y"][0]
+        z_pos = metadata["Z"][0]
+        theta = metadata["Theta"][0]
+        phi = metadata["Phi"][0]
+        tilt = metadata["Tilt"][0]
         # account for differences from before the beamline upgrade
         try:
-            temp = metadata['Temperature B (Sample 1)'][0]
-            pressure = metadata['Pressure AC (ACMI)'][0]
+            temp = metadata["Temperature B (Sample 1)"][0]
+            pressure = metadata["Pressure AC (ACMI)"][0]
         except KeyError:
-            temp = metadata['Temperature B'][0]
-            pressure = metadata['Pressure AC1'][0]
-        hv = attributes['Excitation Energy (eV)']
-        wf = attributes['Work Function (eV)']
-        polarization = metadata['hv'].attrs['Mode'][10:]
-        PE = attributes['Pass Energy (eV)']
-        exit_slit = metadata['Exit Slit'][0]
-        FE = metadata['FE Horiz. Width'][0]
+            temp = metadata["Temperature B"][0]
+            pressure = metadata["Pressure AC1"][0]
+        hv = attributes["Excitation Energy (eV)"]
+        wf = attributes["Work Function (eV)"]
+        polarization = metadata["hv"].attrs["Mode"][10:]
+        PE = attributes["Pass Energy (eV)"]
+        exit_slit = metadata["Exit Slit"][0]
+        FE = metadata["FE Horiz. Width"][0]
         ekin = energies + hv - wf
-        lens_mode = attributes['Lens Mode']
-        acq_mode = attributes['Acquisition Mode']
-        n_sweeps = attributes['Sweeps on Last Image']
-        DT = attributes['Dwell Time (ms)']
-        if 'Axis2.Scale' in attributes:
-            scan_type = attributes['Axis2.Description'] + ' scan'
-            start = attributes['Axis2.Scale'][0]
-            step = attributes['Axis2.Scale'][1]
-            stop = attributes['Axis2.Scale'][0] + attributes['Axis2.Scale'][
-                1] * xscale.size
+        lens_mode = attributes["Lens Mode"]
+        acq_mode = attributes["Acquisition Mode"]
+        n_sweeps = attributes["Sweeps on Last Image"]
+        DT = attributes["Dwell Time (ms)"]
+        if "Axis2.Scale" in attributes:
+            scan_type = attributes["Axis2.Description"] + " scan"
+            start = attributes["Axis2.Scale"][0]
+            step = attributes["Axis2.Scale"][1]
+            stop = (
+                attributes["Axis2.Scale"][0]
+                + attributes["Axis2.Scale"][1] * xscale.size
+            )
             scan_dim = [start, stop, step]
         else:
-            scan_type = 'cut'
+            scan_type = "cut"
             scan_dim = []
 
         self.ds.data = data
@@ -815,7 +829,7 @@ class DataloaderADRESS(Dataloader):
     Source, Switzerland).
     """
 
-    name = 'ADRESS'
+    name = "ADRESS"
 
     def __init__(self):
         super(DataloaderADRESS, self).__init__()
@@ -832,13 +846,13 @@ class DataloaderADRESS(Dataloader):
         :return: loaded dataset with available metadata
         """
 
-        if filename.endswith('h5'):
+        if filename.endswith("h5"):
             self.load_h5(filename, metadata=metadata)
         else:
             raise NotImplementedError
 
         self.ds.add_org_file_entry(filename, self.name)
-        return self.ds
+        return Dataset.model_validate(self.ds.model_dump())
 
     def load_h5(self, filename: str, metadata: bool = False) -> None:
         """
@@ -851,13 +865,13 @@ class DataloaderADRESS(Dataloader):
                          for more info.
         """
 
-        h5file = h5py.File(filename, 'r')
+        h5file = h5py.File(filename, "r")
         # The actual data is in the field: 'Matrix'
-        matrix = h5file['Matrix']
+        matrix = h5file["Matrix"]
 
         # The scales can be extracted from the matrix' attributes
-        scalings = matrix.attrs['IGORWaveScaling']
-        info = matrix.attrs['IGORWaveNote']
+        scalings = matrix.attrs["IGORWaveScaling"]
+        info = matrix.attrs["IGORWaveNote"]
 
         # Convert `units` and `info`, which is a bytestring of ASCII
         # characters, to lists of strings Put the data into a numpy array and
@@ -897,24 +911,26 @@ class DataloaderADRESS(Dataloader):
         self.ds.zscale = zscale
 
         # more metadata
-        metadata_list = info.decode('ASCII').split('\n')
-        keys1 = [('hv', 'hv', float),
-                 ('Pol', 'polarization', str),
-                 ('Slit  ', 'exit_slit', float),
-                 ('Mode', 'lens_mode', str),
-                 ('Epass', 'PE', int),
-                 ('X ', 'x', float),
-                 ('Y ', 'y', float),
-                 ('Z ', 'z', float),
-                 ('Theta', 'theta', float),
-                 ('Azimuth', 'phi', float),
-                 ('Tilt', 'tilt', float),
-                 ('ADef', 'defl_angle', float),
-                 ('Temp', 'temp', float),
-                 ('dt', 'DT', int)]
+        metadata_list = info.decode("ASCII").split("\n")
+        keys1 = [
+            ("hv", "hv", float),
+            ("Pol", "polarization", str),
+            ("Slit  ", "exit_slit", float),
+            ("Mode", "lens_mode", str),
+            ("Epass", "PE", int),
+            ("X ", "x", float),
+            ("Y ", "y", float),
+            ("Z ", "z", float),
+            ("Theta", "theta", float),
+            ("Azimuth", "phi", float),
+            ("Tilt", "tilt", float),
+            ("ADef", "defl_angle", float),
+            ("Temp", "temp", float),
+            ("dt", "DT", int),
+        ]
         self.read_metadata(keys1, metadata_list)
         if xscale.size == 1:
-            self.ds.__setattr__('scan_type', 'cut')
+            self.ds.__setattr__("scan_type", "cut")
 
         h5py.File.close(h5file)
 
@@ -937,27 +953,27 @@ class DataloaderADRESS(Dataloader):
         # List of interesting keys and associated variable names
         for line in metadata_list:
             # Split at 'equals' sign
-            tokens = line.split('=')
+            tokens = line.split("=")
             for key, name, dtype in keys:
                 if key in tokens[0]:
-                    if 'Tilt' in tokens[0] and ':' in tokens[1]:
-                        self.ds.__setattr__('scan_type', 'Tilt scan')
-                        start, step, stop = tokens[1].split(':')
-                        self.ds.__setattr__('scan_dim', [start, stop, step])
-                        self.ds.__setattr__('tilt', start)
-                    elif 'hv' in tokens[0] and ':' in tokens[1]:
-                        self.ds.__setattr__('scan_type', 'hv scan')
-                        start, step, stop = tokens[1].split(':')
-                        self.ds.__setattr__('scan_dim', [start, stop, step])
-                        self.ds.__setattr__('hv', start)
-                    elif 'ADef' in tokens[0] and ':' in tokens[1]:
-                        self.ds.__setattr__('scan_type', 'DA scan')
-                        start, step, stop = tokens[1].split(':')
-                        self.ds.__setattr__('scan_dim', [start, stop, step])
-                        self.ds.__setattr__('defl_angle', None)
-                    elif 'Slit' in tokens[0] and tokens[0][0] == 'A':
+                    if "Tilt" in tokens[0] and ":" in tokens[1]:
+                        self.ds.__setattr__("scan_type", "Tilt scan")
+                        start, step, stop = tokens[1].split(":")
+                        self.ds.__setattr__("scan_dim", [start, stop, step])
+                        self.ds.__setattr__("tilt", start)
+                    elif "hv" in tokens[0] and ":" in tokens[1]:
+                        self.ds.__setattr__("scan_type", "hv scan")
+                        start, step, stop = tokens[1].split(":")
+                        self.ds.__setattr__("scan_dim", [start, stop, step])
+                        self.ds.__setattr__("hv", start)
+                    elif "ADef" in tokens[0] and ":" in tokens[1]:
+                        self.ds.__setattr__("scan_type", "DA scan")
+                        start, step, stop = tokens[1].split(":")
+                        self.ds.__setattr__("scan_dim", [start, stop, step])
+                        self.ds.__setattr__("defl_angle", None)
+                    elif "Slit" in tokens[0] and tokens[0][0] == "A":
                         value = tokens[1].split()[0][:-2]
-                        self.ds.__setattr__('ana_slit', value)
+                        self.ds.__setattr__("ana_slit", value)
                     # Split off whitespace or garbage at the end
                     else:
                         value = tokens[1].split()[0]
@@ -972,7 +988,7 @@ class DataloaderBloch(Dataloader):
     Dataloader for opening files from Bloch beamline at MAX-IV (Sweden).
     """
 
-    name = 'Bloch'
+    name = "Bloch"
 
     def __init__(self):
         super(DataloaderBloch, self).__init__()
@@ -989,17 +1005,19 @@ class DataloaderBloch(Dataloader):
         :return: loaded dataset with available metadata
         """
 
-        bl_md = [('A', 'phi', float),
-                 ('P', 'theta', float),
-                 ('T', 'tilt', float),
-                 ('X', 'x', float),
-                 ('Y', 'y', float),
-                 ('Z', 'z', float)]
-        if filename.endswith('zip'):
+        bl_md = [
+            ("A", "phi", float),
+            ("P", "theta", float),
+            ("T", "tilt", float),
+            ("X", "x", float),
+            ("Y", "y", float),
+            ("Z", "z", float),
+        ]
+        if filename.endswith("zip"):
             self.load_ses_zip(filename, bl_md=bl_md, metadata=metadata)
-        elif filename.endswith('ibw'):
+        elif filename.endswith("ibw"):
             self.load_ses_ibw(filename, bl_md=bl_md, metadata=metadata)
-        elif filename.endswith('pxt'):
+        elif filename.endswith("pxt"):
             self.load_ses_pxt(filename, bl_md=bl_md, metadata=metadata)
         else:
             raise NotImplementedError
@@ -1011,7 +1029,7 @@ class DataloaderBloch(Dataloader):
             return self.scan
         else:
             self.ds.add_org_file_entry(filename, self.name)
-            return self.ds
+            return Dataset.model_validate(self.ds.model_dump())
 
 
 class DataloaderI05(Dataloader):
@@ -1020,8 +1038,8 @@ class DataloaderI05(Dataloader):
     (UK).
     """
 
-    name = 'I05'
-    
+    name = "I05"
+
     def __init__(self):
         super(DataloaderI05, self).__init__()
 
@@ -1037,13 +1055,13 @@ class DataloaderI05(Dataloader):
         :return: loaded dataset with available metadata
         """
 
-        if fname.endswith('nxs'):
+        if fname.endswith("nxs"):
             self.load_nxs(fname, metadata=metadata)
         else:
             raise NotImplementedError
 
         self.ds.add_org_file_entry(fname, self.name)
-        return self.ds
+        return Dataset.model_validate(self.ds.model_dump())
 
     def load_nxs(self, filename: str, metadata: bool) -> None:
         """
@@ -1057,14 +1075,14 @@ class DataloaderI05(Dataloader):
         """
 
         # Read file with h5py reader
-        infile = h5py.File(filename, 'r')
+        infile = h5py.File(filename, "r")
 
         if metadata:
-            data = np.zeros(infile['/entry1/analyser/data'].shape)
+            data = np.zeros(infile["/entry1/analyser/data"].shape)
         else:
-            data = np.array(infile['/entry1/analyser/data'])
-        angles = np.array(infile['/entry1/analyser/angles'])
-        energies = np.array(infile['/entry1/analyser/energies'])
+            data = np.array(infile["/entry1/analyser/data"])
+        angles = np.array(infile["/entry1/analyser/angles"])
+        energies = np.array(infile["/entry1/analyser/energies"])
 
         if len(energies.shape) == 2:
             zscale = energies[0]
@@ -1077,28 +1095,28 @@ class DataloaderI05(Dataloader):
             xscale = np.array([0])
         else:
             # Otherwise, extract third dimension from scan command
-            command = infile['entry1/scan_command'][()]
+            command = infile["entry1/scan_command"][()]
 
             # Special case for 'pathgroup'
-            if command.split()[1] == 'pathgroup':
-                self.print_m('is pathgroup')
+            if command.split()[1] == "pathgroup":
+                self.print_m("is pathgroup")
                 # Extract points from a ([polar, x, y], [polar, x, y], ...)
                 # tuple
-                points = command.split('(')[-1].split(')')[0]
-                tuples = points.split('[')[1:]
+                points = command.split("(")[-1].split(")")[0]
+                tuples = points.split("[")[1:]
                 xscale = []
                 for t in tuples:
-                    point = t.split(',')[0]
+                    point = t.split(",")[0]
                     xscale.append(float(point))
                 xscale = np.array(xscale)
 
             # Special case for 'scangroup'
-            elif command.split()[1] == 'scan_group':
-                self.print_m('is scan_group')
+            elif command.split()[1] == "scan_group":
+                self.print_m("is scan_group")
                 # Extract points from a ([polar, x, y], [polar, x, y], ...)
                 # tuple
-                points = command.split('((')[-1].split('))')[0]
-                points = '((' + points + '))'
+                points = command.split("((")[-1].split("))")[0]
+                points = "((" + points + "))"
                 xscale = np.array(ast.literal_eval(points))[:, 0]
 
                 # Now, if this was a scan with varying centre_energy, the
@@ -1117,52 +1135,55 @@ class DataloaderI05(Dataloader):
             data_tmp = np.zeros((xscale.size, data.shape[1], data.shape[2]))
             data_tmp[:x_done, :, :] = data
             data = data_tmp
-            xscale = xscale[:data.shape[0]]
+            xscale = xscale[: data.shape[0]]
 
         # read metadata
-        x = float(infile['entry1/instrument/manipulator/sax'][0])
-        y = float(infile['entry1/instrument/manipulator/say'][0])
-        z = float(infile['entry1/instrument/manipulator/saz'][0])
-        theta = float(infile['entry1/instrument/manipulator/sapolar'][0])
-        phi = float(infile['entry1/instrument/manipulator/saazimuth'][0])
-        tilt = float(infile['entry1/instrument/manipulator/satilt'][0])
+        x = float(infile["entry1/instrument/manipulator/sax"][0])
+        y = float(infile["entry1/instrument/manipulator/say"][0])
+        z = float(infile["entry1/instrument/manipulator/saz"][0])
+        theta = float(infile["entry1/instrument/manipulator/sapolar"][0])
+        phi = float(infile["entry1/instrument/manipulator/saazimuth"][0])
+        tilt = float(infile["entry1/instrument/manipulator/satilt"][0])
 
-        PE = int(infile['entry1/instrument/analyser/pass_energy'][0])
-        n_sweeps = int(infile['entry1/instrument/analyser/'
-                              'number_of_iterations'][0])
-        lens_mode = str(infile['entry1/instrument/analyser/'
-                               'lens_mode'][0])[2:-1]
-        acq_mode = str(infile['entry1/instrument/analyser/'
-                              'acquisition_mode'][0])[2:-1]
-        DT = int(infile['entry1/instrument/analyser/'
-                        'time_for_frames'][0] * 1000)
-        defl_ang = float(infile['entry1/instrument/analyser/deflector_x'][0])
+        PE = int(infile["entry1/instrument/analyser/pass_energy"][0])
+        n_sweeps = int(infile["entry1/instrument/analyser/" "number_of_iterations"][0])
+        lens_mode = str(infile["entry1/instrument/analyser/" "lens_mode"][0])[2:-1]
+        acq_mode = str(infile["entry1/instrument/analyser/" "acquisition_mode"][0])[
+            2:-1
+        ]
+        DT = int(infile["entry1/instrument/analyser/" "time_for_frames"][0] * 1000)
+        defl_ang = float(infile["entry1/instrument/analyser/deflector_x"][0])
 
-        hv = float(infile['entry1/instrument/monochromator/energy'][0])
-        exit_slit = float(infile['entry1/instrument/monochromator/'
-                                 'exit_slit_size'][0] * 1000)
-        FE = round(infile['entry1/instrument/monochromator/'
-                          's2_horizontal_slit_size'][0], 2)
-        polarization = str(infile['entry1/instrument/insertion_device/beam/'
-                                  'final_polarisation_label'][0])[2:-1]
-        temp = float(infile['entry1/sample/temperature'][0])
-        pressure = float(infile['entry1/sample/lc_pressure'][0])
+        hv = float(infile["entry1/instrument/monochromator/energy"][0])
+        exit_slit = float(
+            infile["entry1/instrument/monochromator/" "exit_slit_size"][0] * 1000
+        )
+        FE = round(
+            infile["entry1/instrument/monochromator/" "s2_horizontal_slit_size"][0], 2
+        )
+        polarization = str(
+            infile[
+                "entry1/instrument/insertion_device/beam/" "final_polarisation_label"
+            ][0]
+        )[2:-1]
+        temp = float(infile["entry1/sample/temperature"][0])
+        pressure = float(infile["entry1/sample/lc_pressure"][0])
 
         # get scan info
-        if infile['entry1/scan_dimensions'][0] == 1:
-            scan_type = 'cut'
+        if infile["entry1/scan_dimensions"][0] == 1:
+            scan_type = "cut"
             scan_dim = None
         else:
-            tmp = str(np.string_(infile['entry1/scan_command']))[2:-1].split()
+            tmp = str(np.string_(infile["entry1/scan_command"]))[2:-1].split()
             start, stop, step = float(tmp[2]), float(tmp[3]), float(tmp[4])
             scan_dim = [start, stop, step]
-            if 'deflector' in tmp[1]:
-                scan_type = 'DA'
-            elif 'polar' in tmp[1]:
-                scan_type = 'theta'
-            elif 'energy' in tmp[1]:
-                scan_type = 'hv'
-            scan_type += ' scan'
+            if "deflector" in tmp[1]:
+                scan_type = "DA"
+            elif "polar" in tmp[1]:
+                scan_type = "theta"
+            elif "energy" in tmp[1]:
+                scan_type = "hv"
+            scan_type += " scan"
 
         self.ds.data = data
         self.ds.xscale = xscale
@@ -1204,7 +1225,7 @@ class DataloaderMERLIN(Dataloader):
     Source, Berkeley, CA).
     """
 
-    name = 'Merlin'
+    name = "Merlin"
 
     def __init__(self):
         super(DataloaderMERLIN, self).__init__()
@@ -1222,11 +1243,11 @@ class DataloaderMERLIN(Dataloader):
         :return: loaded dataset with available metadata
         """
 
-        if filename.endswith('h5'):
+        if filename.endswith("h5"):
             self.load_h5(filename, metadata=metadata)
-        elif filename.endswith('ibw'):
+        elif filename.endswith("ibw"):
             self.load_ses_ibw(filename, metadata=metadata)
-        elif filename.endswith('pxt'):
+        elif filename.endswith("pxt"):
             self.load_ses_pxt(self, filename, metadata=metadata)
         else:
             raise NotImplementedError
@@ -1238,7 +1259,7 @@ class DataloaderMERLIN(Dataloader):
             return self.scan
         else:
             self.ds.add_org_file_entry(filename, self.name)
-            return self.ds
+            return Dataset.model_validate(self.ds.model_dump())
 
     def load_h5(self, filename: str, metadata: bool = False) -> None:
         """
@@ -1253,33 +1274,37 @@ class DataloaderMERLIN(Dataloader):
 
         # Load the hdf5 file
         # Use 'rdcc_nbytes' flag for setting up the chunk cache (in bytes)
-        self.datfile = h5py.File(filename, 'r')
-        if '3Ddata' in self.datfile.keys():
-            type = '3Ddata'
+        self.datfile = h5py.File(filename, "r")
+        if "3Ddata" in self.datfile.keys():
+            type = "3Ddata"
 
-        elif '2Ddata' in self.datfile.keys():
-            type = '2Ddata'
+        elif "2Ddata" in self.datfile.keys():
+            type = "2Ddata"
         else:
             return
         # Extract the actual dataset and some metadata
-        h5_data = self.datfile[type + '/Spectrum']
-        detector = self.datfile[type + '/Detector'].attrs
-        sample = self.datfile[type + '/Sample'].attrs
-        source = self.datfile[type + '/Source'].attrs
+        h5_data = self.datfile[type + "/Spectrum"]
+        detector = self.datfile[type + "/Detector"].attrs
+        sample = self.datfile[type + "/Sample"].attrs
+        source = self.datfile[type + "/Source"].attrs
 
-        if type == '2Ddata':
+        if type == "2Ddata":
             data = np.zeros((1, h5_data.shape[0], h5_data.shape[1]))
             data[0, :, :] = h5_data
             xscale = np.array([1])
-            yscale = start_step_n(float(h5_data.attrs['AxisScaling'][1, 1]),
-                                  float(h5_data.attrs['AxisScaling'][1, 0]),
-                                  h5_data.shape[0])
-            zscale = start_step_n(float(h5_data.attrs['AxisScaling'][0, 1]),
-                                  float(h5_data.attrs['AxisScaling'][0, 0]),
-                                  h5_data.shape[1])
-            scan_type = 'cut'
+            yscale = start_step_n(
+                float(h5_data.attrs["AxisScaling"][1, 1]),
+                float(h5_data.attrs["AxisScaling"][1, 0]),
+                h5_data.shape[0],
+            )
+            zscale = start_step_n(
+                float(h5_data.attrs["AxisScaling"][0, 1]),
+                float(h5_data.attrs["AxisScaling"][0, 0]),
+                h5_data.shape[1],
+            )
+            scan_type = "cut"
             scan_dim = []
-        elif type == '3Ddata':
+        elif type == "3Ddata":
             data = np.zeros(h5_data.shape)
             if not metadata:
                 for i in range(data.shape[0]):
@@ -1288,48 +1313,51 @@ class DataloaderMERLIN(Dataloader):
 
             try:
                 xaxis = []
-                file = open(filename[:-3] + '_Motor_Pos.txt')
+                file = open(filename[:-3] + "_Motor_Pos.txt")
                 for line in file.readlines():
-                    xaxis.append(line.strip('\n'))
+                    xaxis.append(line.strip("\n"))
                 file.close()
                 scan_type = str(xaxis[0])
                 xscale = np.array(xaxis[1:], dtype=float)
                 if xscale[0] > xscale[-1]:
                     xscale = np.flip(xscale)
                     data = np.flip(data, axis=0)
-                scan_dim = [xscale[0], xscale[-1],
-                            np.abs(xscale[0] - xscale[1])]
+                scan_dim = [xscale[0], xscale[-1], np.abs(xscale[0] - xscale[1])]
             except FileNotFoundError as e:
                 raise e
-            yscale = start_step_n(float(h5_data.attrs['AxisScaling'][1, 1]),
-                                  float(h5_data.attrs['AxisScaling'][1, 0]),
-                                  h5_data.shape[0])
-            zscale = start_step_n(float(h5_data.attrs['AxisScaling'][0, 1]),
-                                  float(h5_data.attrs['AxisScaling'][0, 0]),
-                                  h5_data.shape[1])
+            yscale = start_step_n(
+                float(h5_data.attrs["AxisScaling"][1, 1]),
+                float(h5_data.attrs["AxisScaling"][1, 0]),
+                h5_data.shape[0],
+            )
+            zscale = start_step_n(
+                float(h5_data.attrs["AxisScaling"][0, 1]),
+                float(h5_data.attrs["AxisScaling"][0, 0]),
+                h5_data.shape[1],
+            )
         else:
             return
 
         # Extract some metadata
-        x_pos = float(sample['Sample X'])
-        y_pos = float(sample['Sample Y'])
-        z_pos = float(sample['Sample Z'])
-        theta = float(sample['Polar'])
-        phi = float(sample['Azimuth'])
-        tilt = float(sample['Tilt'])
-        temp = float(sample['Temperature A'])
-        pressure = float(sample['Pressure'])
-        hv = float(source['BL Energy'])
+        x_pos = float(sample["Sample X"])
+        y_pos = float(sample["Sample Y"])
+        z_pos = float(sample["Sample Z"])
+        theta = float(sample["Polar"])
+        phi = float(sample["Azimuth"])
+        tilt = float(sample["Tilt"])
+        temp = float(sample["Temperature A"])
+        pressure = float(sample["Pressure"])
+        hv = float(source["BL Energy"])
         wf = 4.44
-        polarization = ['LH', 'LC', 'LV', 'RC'][int(source['EPU POL'])]
-        PE = int(detector['Pass Energy'])
-        exit_slit = round(float(source['Exit Slit']), 2)
-        FE = round(float(source['Entrance Slit']), 2)
+        polarization = ["LH", "LC", "LV", "RC"][int(source["EPU POL"])]
+        PE = int(detector["Pass Energy"])
+        exit_slit = round(float(source["Exit Slit"]), 2)
+        FE = round(float(source["Entrance Slit"]), 2)
         # ekin = energies + hv - wf
-        lens_mode = detector['Lens Mode']
-        acq_mode = detector['Acq Mode']
-        n_sweeps = int(detector['Num of Sweeps'])
-        DT = float(detector['Step Time'])
+        lens_mode = detector["Lens Mode"]
+        acq_mode = detector["Acq Mode"]
+        n_sweeps = int(detector["Num of Sweeps"])
+        DT = float(detector["Step Time"])
 
         self.ds.data = data
         self.ds.xscale = xscale
@@ -1365,7 +1393,7 @@ class DataloaderHERS(Dataloader):
     Source, Berkeley, CA).
     """
 
-    name = 'HERS'
+    name = "HERS"
 
     def __init__(self):
         super(DataloaderHERS, self).__init__()
@@ -1383,11 +1411,11 @@ class DataloaderHERS(Dataloader):
         :return: loaded dataset with available metadata
         """
 
-        if filename.endswith('zip'):
+        if filename.endswith("zip"):
             self.load_ses_zip(filename, metadata=metadata)
-        elif filename.endswith('ibw'):
+        elif filename.endswith("ibw"):
             self.load_ses_ibw(filename, metadata=metadata)
-        elif filename.endswith('pxt'):
+        elif filename.endswith("pxt"):
             self.load_ses_pxt(self, filename, metadata=metadata)
         else:
             raise NotImplementedError
@@ -1399,7 +1427,7 @@ class DataloaderHERS(Dataloader):
             return self.scan
         else:
             self.ds.add_org_file_entry(filename, self.name)
-            return self.ds
+            return Dataset.model_validate(self.ds.model_dump())
 
 
 class DataloaderURANOS(Dataloader):
@@ -1407,7 +1435,7 @@ class DataloaderURANOS(Dataloader):
     Dataloader for opening files from Uranos beamline at Solaris (Poland).
     """
 
-    name = 'URANOS'
+    name = "URANOS"
 
     def __init__(self):
         super(DataloaderURANOS, self).__init__()
@@ -1426,16 +1454,18 @@ class DataloaderURANOS(Dataloader):
         :return: loaded dataset with available metadata
         """
 
-        bl_md = [('X', 'x', float),
-                 ('Y', 'y', float),
-                 ('Z', 'z', float),
-                 ('R1', 'theta', float),
-                 ('R3', 'tilt', float)]
-        if filename.endswith('zip'):
+        bl_md = [
+            ("X", "x", float),
+            ("Y", "y", float),
+            ("Z", "z", float),
+            ("R1", "theta", float),
+            ("R3", "tilt", float),
+        ]
+        if filename.endswith("zip"):
             self.load_ses_zip(filename, bl_md=bl_md, metadata=metadata)
-        elif filename.endswith('ibw'):
+        elif filename.endswith("ibw"):
             self.load_ses_ibw(filename, bl_md=bl_md, metadata=metadata)
-        elif filename.endswith('pxt'):
+        elif filename.endswith("pxt"):
             self.load_ses_pxt(filename, bl_md=bl_md, metadata=metadata)
         else:
             raise NotImplementedError
@@ -1447,7 +1477,7 @@ class DataloaderURANOS(Dataloader):
             return self.scan
         else:
             self.ds.add_org_file_entry(filename, self.name)
-            return self.ds
+            return Dataset.model_validate(self.ds.model_dump())
 
 
 class DataloaderCASSIOPEE(Dataloader):
@@ -1455,10 +1485,10 @@ class DataloaderCASSIOPEE(Dataloader):
     Dataloader for opening files from CASSIOPEE beamline at SOLEIL (France).
     """
 
-    name = 'CASSIOPEE'
+    name = "CASSIOPEE"
     # Possible scantypes
-    HV = 'hv scan'
-    FSM = 'Theta scan'
+    HV = "hv scan"
+    FSM = "Theta scan"
 
     def __init__(self):
         super(DataloaderCASSIOPEE, self).__init__()
@@ -1478,12 +1508,12 @@ class DataloaderCASSIOPEE(Dataloader):
         if os.path.isfile(filename):
             self.load_from_file(filename, metadata=metadata)
         else:
-            if not filename.endswith('/'):
-                filename += '/'
+            if not filename.endswith("/"):
+                filename += "/"
             self.load_from_dir(filename)
 
         self.ds.add_org_file_entry(filename, self.name)
-        return self.ds
+        return Dataset.model_validate(self.ds.model_dump())
 
     def load_from_file(self, filename: str, metadata: bool = False) -> None:
         """
@@ -1497,9 +1527,9 @@ class DataloaderCASSIOPEE(Dataloader):
         :return: loaded dataset with available metadata
         """
 
-        if filename.endswith('.ibw'):
+        if filename.endswith(".ibw"):
             self.load_ses_ibw(filename, metadata=metadata)
-        elif filename.endswith('pxt'):
+        elif filename.endswith("pxt"):
             self.load_ses_pxt(filename, metadata=metadata)
         else:
             self.load_from_txt(filename)
@@ -1520,23 +1550,25 @@ class DataloaderCASSIOPEE(Dataloader):
         # Remove all non-data files
         filenames = []
         for name in all_filenames:
-            if '_1_i' in name:
+            if "_1_i" in name:
                 metadata_file = open(dirname + name)
-            if 'ROI' in name:
+            if "ROI" in name:
                 filenames.append(name)
 
         # Get metadata from first file in list
         skip, energy, angles = self.get_metadata(dirname + filenames[0])
-        keys = [('hv (eV) ', 'hv', float),
-                ('x (mm) ', 'x', float),
-                ('y (mm) ', 'y', float),
-                ('z (mm) ', 'z', float),
-                ('theta (deg) ', 'theta', float),
-                ('phi (deg) ', 'phi', float),
-                ('tilt (deg) ', 'tilt', float),
-                ('InputB ', 'temp', float),
-                ('P(mbar) ', 'pressure', float),
-                ('Polarisation [0', 'polarization', str)]
+        keys = [
+            ("hv (eV) ", "hv", float),
+            ("x (mm) ", "x", float),
+            ("y (mm) ", "y", float),
+            ("z (mm) ", "z", float),
+            ("theta (deg) ", "theta", float),
+            ("phi (deg) ", "phi", float),
+            ("tilt (deg) ", "tilt", float),
+            ("InputB ", "temp", float),
+            ("P(mbar) ", "pressure", float),
+            ("Polarisation [0", "polarization", str),
+        ]
         md = self.read_metadata(keys, metadata_file)
 
         # Get the data from each cut separately. This happens in the order
@@ -1547,7 +1579,7 @@ class DataloaderCASSIOPEE(Dataloader):
         i_max = -np.inf
         for name in filenames:
             # Keep track of the min and max indices in the directory
-            i = int(name.split('_')[-3])
+            i = int(name.split("_")[-3])
             if i < i_min:
                 i_min = i
             if i > i_max:
@@ -1564,8 +1596,7 @@ class DataloaderCASSIOPEE(Dataloader):
         data = np.array(data)
 
         # Get the z-axis from the metadata files
-        scan_type, outer_loop, hv, thetas = self.get_outer_loop(dirname,
-                                                                filenames)
+        scan_type, outer_loop, hv, thetas = self.get_outer_loop(dirname, filenames)
         thetas = sorted(thetas)
         if scan_type == self.HV:
             xscale = outer_loop
@@ -1638,37 +1669,36 @@ class DataloaderCASSIOPEE(Dataloader):
         """
 
         # Prepare containers
-        indices, xs, ys, zs, thetas, phis, tilts, hvs = ([], [], [], [], [],
-                                                         [], [], [])
+        indices, xs, ys, zs, thetas, phis, tilts, hvs = ([], [], [], [], [], [], [], [])
         containers = [indices, xs, ys, zs, thetas, phis, tilts, hvs]
         for name in filenames:
             # Get the index of the file
-            index = int(name.split('_')[-3])
+            index = int(name.split("_")[-3])
 
             # Build the metadata-filename by substituting the ROI part with i
-            metafile = re.sub(r'_ROI.?_', '_i', name)
+            metafile = re.sub(r"_ROI.?_", "_i", name)
 
             # The values are separated from the names by a `:`
-            splitchar = ':'
+            splitchar = ":"
 
             # Read in the file
-            with open(dirname + metafile, 'r') as f:
+            with open(dirname + metafile, "r") as f:
                 for line in f.readlines():
-                    if line.startswith('x (mm)'):
+                    if line.startswith("x (mm)"):
                         x = float(line.split(splitchar)[-1])
-                    elif line.startswith('y (mm)'):
+                    elif line.startswith("y (mm)"):
                         y = float(line.split(splitchar)[-1])
-                    elif line.startswith('z (mm)'):
+                    elif line.startswith("z (mm)"):
                         z = float(line.split(splitchar)[-1])
-                    elif line.startswith('theta (deg)'):
+                    elif line.startswith("theta (deg)"):
                         theta = float(line.split(splitchar)[-1])
-                    elif line.startswith('phi (deg)'):
+                    elif line.startswith("phi (deg)"):
                         phi = float(line.split(splitchar)[-1])
-                    elif line.startswith('tilt (deg)'):
+                    elif line.startswith("tilt (deg)"):
                         tilt = float(line.split(splitchar)[-1])
-                    elif line.startswith('hv (eV)'):
+                    elif line.startswith("hv (eV)"):
                         hv = float(line.split(splitchar)[-1])
-                    elif line.startswith('UNDULATOR'):
+                    elif line.startswith("UNDULATOR"):
                         break
             # NOTE The order of this list has to match the order of the
             # containers
@@ -1706,17 +1736,17 @@ class DataloaderCASSIOPEE(Dataloader):
                  `angles` - analyzer axis.
         """
 
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             for i, line in enumerate(f.readlines()):
-                if line.startswith('Dimension 1 scale='):
-                    energy = line.split('=')[-1].split()
+                if line.startswith("Dimension 1 scale="):
+                    energy = line.split("=")[-1].split()
                     energy = np.array(energy, dtype=float)
-                elif line.startswith('Dimension 2 scale='):
-                    angles = line.split('=')[-1].split()
+                elif line.startswith("Dimension 2 scale="):
+                    angles = line.split("=")[-1].split()
                     angles = np.array(angles, dtype=float)
-                elif line.startswith('Excitation Energy'):
+                elif line.startswith("Excitation Energy"):
                     pass
-                elif line.startswith('inputA') or line.startswith('[Data'):
+                elif line.startswith("inputA") or line.startswith("[Data"):
                     # this seems to be the last line before the data
                     break
         return i, energy, angles
@@ -1741,7 +1771,7 @@ class DataloaderCASSIOPEE(Dataloader):
         metadata = Namespace()
         for line in metadata_file.readlines():
             # Split at 'equals' sign
-            tokens = line.split(':')
+            tokens = line.split(":")
             for key, name, dtype in keys:
                 if tokens[0] == key:
                     if hasattr(metadata, name):
@@ -1750,17 +1780,17 @@ class DataloaderCASSIOPEE(Dataloader):
                         # Split off whitespace or garbage at the end
                         value = tokens[-1][1:-1]
                         # And cast to right type
-                        if key == 'Polarisation [0':
-                            if value == '0':
-                                metadata.__setattr__(name, 'LV')
-                            elif value == '1':
-                                metadata.__setattr__(name, 'LH')
-                            elif value == '2':
-                                metadata.__setattr__(name, 'AV')
-                            elif value == '3':
-                                metadata.__setattr__(name, 'AH')
-                            elif value == '4':
-                                metadata.__setattr__(name, 'CR')
+                        if key == "Polarisation [0":
+                            if value == "0":
+                                metadata.__setattr__(name, "LV")
+                            elif value == "1":
+                                metadata.__setattr__(name, "LH")
+                            elif value == "2":
+                                metadata.__setattr__(name, "AV")
+                            elif value == "3":
+                                metadata.__setattr__(name, "AH")
+                            elif value == "4":
+                                metadata.__setattr__(name, "CR")
                             else:
                                 pass
                         else:
@@ -1818,8 +1848,9 @@ def start_step_n(start: float, step: float, n: int) -> np.ndarray:
     return np.linspace(start, end, n)
 
 
-def load_data(filename: str, metadata: bool = False,
-              suppress_warnings: bool = False) -> Dataset:
+def load_data(
+    filename: str, metadata: bool = False, suppress_warnings: bool = False
+) -> Dataset:
     """
     Try to load file by iterating through all Dataloaders and applying the
     respective **Dataloader's** :obj:`load_data` method.
@@ -1846,7 +1877,8 @@ def load_data(filename: str, metadata: bool = False,
         DataloaderADRESS,
         DataloaderI05,
         DataloaderCASSIOPEE,
-        DataloaderMERLIN]
+        DataloaderMERLIN,
+    ]
 
     # Sanity check: does the given path even exist in the filesystem?
     if not os.path.exists(filename):
@@ -1855,7 +1887,7 @@ def load_data(filename: str, metadata: bool = False,
     # Suppress warnings
     with catch_warnings():
         if suppress_warnings:
-            simplefilter('ignore')
+            simplefilter("ignore")
         for dataloader in all_dls:
             dl = dataloader()
             # Try loading the data
@@ -1880,16 +1912,16 @@ def dump(data: Dataset, filename: str, force: bool = False) -> None:
 
     # Check if file already exists
     if not force and os.path.isfile(filename):
-        question = 'File <{}> exists. Overwrite it? (y/N)'.format(filename)
+        question = "File <{}> exists. Overwrite it? (y/N)".format(filename)
         answer = input(question)
         # If the answer is anything but a clear affirmative, stop here
-        if answer.lower() not in ['y', 'yes']:
+        if answer.lower() not in ["y", "yes"]:
             return
 
-    with open(filename, 'wb') as f:
+    with open(filename, "wb") as f:
         pickle.dump(data, f)
 
-    message = 'Wrote to file <{}>.'.format(filename)
+    message = "Wrote to file <{}>.".format(filename)
     print(message)
 
 

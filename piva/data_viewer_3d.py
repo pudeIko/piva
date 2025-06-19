@@ -20,6 +20,7 @@ from piva.utilities_panel import UtilitiesPanel, InfoWindow
 from piva.data_viewer_2d import ORIENTLINES_LINECOLOR
 from piva.cmaps import cmaps
 from piva.config import settings
+
 if TYPE_CHECKING:
     from piva.data_browser import DataBrowser
 
@@ -53,7 +54,7 @@ class DataHandler3D:
         self.displayed_axes = (0, 1)
         # Index along the z axis at which to produce a slice
         # self.z = ip.TracedVariable(0, name='z')
-        self.z = ip.CustomTracedVariable(0, name='z')
+        self.z = ip.CustomTracedVariable(0, name="z")
 
         # moved to get rid of warnings
         self.zmin = 0
@@ -95,7 +96,7 @@ class DataHandler3D:
         """
 
         # self.data = ip.TracedVariable(data, name='data')
-        self.data = ip.CustomTracedVariable(data, name='data')
+        self.data = ip.CustomTracedVariable(data, name="data")
         self.axes = np.array(axes, dtype="object")
         with warnings.catch_warnings():
             self.norm_data = wp.normalize(data)
@@ -104,7 +105,8 @@ class DataHandler3D:
 
         # Connect signal handling so changes in data are immediately reflected
         self.z.sig_value_changed.connect(
-            lambda: self.main_window.update_main_plot(emit=False))
+            lambda: self.main_window.update_main_plot(emit=False)
+        )
 
         self.main_window.update_main_plot()
         self.main_window.set_axes()
@@ -160,7 +162,9 @@ class DataHandler3D:
         # Calculate the integrated intensity and plot it
         self.calculate_integrated_intensity()
         with warnings.catch_warnings():
-            ip.plot(wp.normalize(self.integrated))
+            y = wp.normalize(self.integrated)
+            ip.plot(y[~np.isnan(y)])
+            # ip.plot(wp.normalize(self.integrated))
 
         # Also display the actual data values in the top axis
         zscale = self.axes[erg_ax]
@@ -186,20 +190,24 @@ class DataHandler3D:
         data = self.get_data()
         try:
             self.main_window.image_data = self.make_slice(
-                data, dim=2, index=z, integrate=integrate_z)
+                data, dim=2, index=z, integrate=integrate_z
+            )
         except IndexError:
             pass
         self.main_window.util_panel.energy_main.setValue(z)
         if self.main_window.new_energy_axis is None:
             self.main_window.util_panel.energy_main_value.setText(
-                '({:.4f})'.format(self.axes[erg_ax][z]))
+                "({:.4f})".format(self.axes[erg_ax][z])
+            )
         else:
             self.main_window.util_panel.energy_main_value.setText(
-                '({:.4f})'.format(self.main_window.new_energy_axis[z]))
+                "({:.4f})".format(self.main_window.new_energy_axis[z])
+            )
 
     @staticmethod
-    def make_slice(data: np.ndarray, dim: int, index: int,
-                   integrate: int = 0) -> np.ndarray:
+    def make_slice(
+        data: np.ndarray, dim: int, index: int, integrate: int = 0
+    ) -> np.ndarray:
         """
         Take a slice of dataset at ``index`` along dimension ``dim``.
         Optionally integrate by (+\-) ``integrate`` channels around ``index``.
@@ -218,8 +226,10 @@ class DataHandler3D:
         try:
             n_slices = shape[dim]
         except IndexError:
-            message = '*dim* ({}) needs to be smaller than the ' \
-                      'dimension of *data* ({})'.format(dim, ndim)
+            message = (
+                "*dim* ({}) needs to be smaller than the "
+                "dimension of *data* ({})".format(dim, ndim)
+            )
             raise IndexError(message)
 
         # Set the integration indices and adjust them if they go out of scope
@@ -238,7 +248,7 @@ class DataHandler3D:
         sliced = data[start:stop].sum(0)
         # Bring back to more intuitive form. For that we have to remove the now
         # lost dimension from the index arrays and shift all indices.
-        i_original = np.concatenate((i_original[:dim], i_original[dim + 1:]))
+        i_original = np.concatenate((i_original[:dim], i_original[dim + 1 :]))
         i_original[i_original > dim] -= 1
         i_rolled = np.roll(i_original, dim)
         return np.moveaxis(sliced, i_rolled, i_original)
@@ -249,8 +259,9 @@ class DataViewer3D(QtWidgets.QMainWindow):
     Main window of the 3D viewer.
     """
 
-    def __init__(self, data_browser: DataBrowser, data_set: Dataset = None,
-                 index: str = None) -> None:
+    def __init__(
+        self, data_browser: DataBrowser, data_set: Dataset = None, index: str = None
+    ) -> None:
         """
         Initialize main window.
 
@@ -295,19 +306,19 @@ class DataViewer3D(QtWidgets.QMainWindow):
         self._transform_factors = []
 
         # Create the 3D (main) and cut ImagePlots
-        self.main_plot = ip.ImagePlot(name='main_plot')
+        self.main_plot = ip.ImagePlot(name="main_plot")
         # Create cut plot along x
-        self.cut_x = ip.ImagePlot(name='cut_x')
+        self.cut_x = ip.ImagePlot(name="cut_x")
         # Create cut of cut_x
-        self.plot_x = ip.CurvePlot(name='plot_x')
+        self.plot_x = ip.CurvePlot(name="plot_x")
         # Create cut plot along y
-        self.cut_y = ip.ImagePlot(name='cut_y', orientation='vertical')
+        self.cut_y = ip.ImagePlot(name="cut_y", orientation="vertical")
         # Create cut of cut_y
-        self.plot_y = ip.CurvePlot(name='plot_y', orientation='vertical')
+        self.plot_y = ip.CurvePlot(name="plot_y", orientation="vertical")
         # Create the integrated intensity plot
-        self.plot_z = ip.CurvePlot(name='plot_z', z_plot=True)
+        self.plot_z = ip.CurvePlot(name="plot_z", z_plot=True)
         # Create utilities panel
-        self.util_panel = UtilitiesPanel(self, name='utilities_panel')
+        self.util_panel = UtilitiesPanel(self, name="utilities_panel")
 
         self.setStyleSheet(p2d.app_style)
         self.set_cmap()
@@ -317,7 +328,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
         self.sp_EDC = None
 
         if data_set is None:
-            print('No dataset to open.')
+            print("No dataset to open.")
         else:
             D = data_set
 
@@ -329,20 +340,17 @@ class DataViewer3D(QtWidgets.QMainWindow):
         self.data_handler.prepare_data(D.data, [D.xscale, D.yscale, D.zscale])
         self.set_sliders_labels(D)
 
-        self.util_panel.energy_main.setRange(
-            0, len(self.data_handler.axes[erg_ax]))
-        self.util_panel.energy_hor.setRange(
-            0, len(self.data_handler.axes[erg_ax]))
-        self.util_panel.energy_vert.setRange(
-            0, len(self.data_handler.axes[erg_ax]))
-        self.util_panel.momentum_hor.setRange(
-            0, len(self.data_handler.axes[slit_ax]))
-        self.util_panel.momentum_vert.setRange(
-            0, len(self.data_handler.axes[scan_ax]))
+        self.util_panel.energy_main.setRange(0, len(self.data_handler.axes[erg_ax]))
+        self.util_panel.energy_hor.setRange(0, len(self.data_handler.axes[erg_ax]))
+        self.util_panel.energy_vert.setRange(0, len(self.data_handler.axes[erg_ax]))
+        self.util_panel.momentum_hor.setRange(0, len(self.data_handler.axes[slit_ax]))
+        self.util_panel.momentum_vert.setRange(0, len(self.data_handler.axes[scan_ax]))
         self.util_panel.orientate_init_x.setRange(
-            0, self.data_handler.axes[scan_ax].size)
+            0, self.data_handler.axes[scan_ax].size
+        )
         self.util_panel.orientate_init_y.setRange(
-            0, self.data_handler.axes[slit_ax].size)
+            0, self.data_handler.axes[slit_ax].size
+        )
 
         # create a single point EDC at crossing point of momentum sliders
         self.sp_EDC = self.plot_z.plot()
@@ -391,48 +399,38 @@ class DataViewer3D(QtWidgets.QMainWindow):
         self.util_panel.image_gamma.valueChanged.connect(self.set_gamma)
         # self.util_panel.image_colorscale.valueChanged.connect(
         #     self.set_colorscale)
-        self.util_panel.image_normalize.stateChanged.connect(
-            self.normalize_data)
+        self.util_panel.image_normalize.stateChanged.connect(self.normalize_data)
         self.util_panel.image_normalize_to.currentIndexChanged.connect(
-            self.normalize_data)
+            self.normalize_data
+        )
         self.util_panel.image_normalize_along.currentIndexChanged.connect(
-            self.normalize_data)
-        self.util_panel.image_show_BZ.stateChanged.connect(
-            self.update_main_plot)
-        self.util_panel.image_symmetry.valueChanged.connect(
-            self.update_main_plot)
-        self.util_panel.image_rotate_BZ.valueChanged.connect(
-            self.update_main_plot)
+            self.normalize_data
+        )
+        self.util_panel.image_show_BZ.stateChanged.connect(self.update_main_plot)
+        self.util_panel.image_symmetry.valueChanged.connect(self.update_main_plot)
+        self.util_panel.image_rotate_BZ.valueChanged.connect(self.update_main_plot)
         self.util_panel.image_2dv_button.clicked.connect(self.open_2dviewer)
 
         # binning signals
         self.util_panel.bin_x.stateChanged.connect(self.set_x_binning_lines)
-        self.util_panel.bin_x_nbins.valueChanged.connect(
-            self.set_x_binning_lines)
+        self.util_panel.bin_x_nbins.valueChanged.connect(self.set_x_binning_lines)
         self.util_panel.bin_y.stateChanged.connect(self.set_y_binning_lines)
-        self.util_panel.bin_y_nbins.valueChanged.connect(
-            self.set_y_binning_lines)
+        self.util_panel.bin_y_nbins.valueChanged.connect(self.set_y_binning_lines)
         self.util_panel.bin_z.stateChanged.connect(self.update_z_binning_lines)
-        self.util_panel.bin_z_nbins.valueChanged.connect(
-            self.update_z_binning_lines)
+        self.util_panel.bin_z_nbins.valueChanged.connect(self.update_z_binning_lines)
         self.util_panel.bin_zx.stateChanged.connect(self.set_zx_binning_line)
-        self.util_panel.bin_zx_nbins.valueChanged.connect(
-            self.set_zx_binning_line)
+        self.util_panel.bin_zx_nbins.valueChanged.connect(self.set_zx_binning_line)
         self.util_panel.bin_zy.stateChanged.connect(self.set_zy_binning_line)
-        self.util_panel.bin_zy_nbins.valueChanged.connect(
-            self.set_zy_binning_line)
+        self.util_panel.bin_zy_nbins.valueChanged.connect(self.set_zy_binning_line)
 
         # sliders signals
-        self.util_panel.energy_main.valueChanged.connect(
-            self.set_main_energy_slider)
-        self.util_panel.energy_hor.valueChanged.connect(
-            self.set_hor_energy_slider)
-        self.util_panel.energy_vert.valueChanged.connect(
-            self.set_vert_energy_slider)
-        self.util_panel.momentum_hor.valueChanged.connect(
-            self.set_hor_momentum_slider)
+        self.util_panel.energy_main.valueChanged.connect(self.set_main_energy_slider)
+        self.util_panel.energy_hor.valueChanged.connect(self.set_hor_energy_slider)
+        self.util_panel.energy_vert.valueChanged.connect(self.set_vert_energy_slider)
+        self.util_panel.momentum_hor.valueChanged.connect(self.set_hor_momentum_slider)
         self.util_panel.momentum_vert.valueChanged.connect(
-            self.set_vert_momentum_slider)
+            self.set_vert_momentum_slider
+        )
         self.util_panel.bin_x_nbins.setValue(2)
         self.util_panel.bin_y_nbins.setValue(10)
         self.util_panel.bin_z_nbins.setValue(10)
@@ -446,39 +444,46 @@ class DataViewer3D(QtWidgets.QMainWindow):
 
         # energy and k-space concersion
         self.util_panel.axes_energy_Ef.valueChanged.connect(
-            self.apply_energy_correction)
+            self.apply_energy_correction
+        )
         self.util_panel.axes_energy_hv.valueChanged.connect(
-            self.apply_energy_correction)
+            self.apply_energy_correction
+        )
         self.util_panel.axes_energy_wf.valueChanged.connect(
-            self.apply_energy_correction)
+            self.apply_energy_correction
+        )
         self.util_panel.axes_energy_scale.currentIndexChanged.connect(
-            self.apply_energy_correction)
-        self.util_panel.axes_conv_lc.valueChanged.connect(
-            self.update_main_plot)
+            self.apply_energy_correction
+        )
+        self.util_panel.axes_conv_lc.valueChanged.connect(self.update_main_plot)
         self.util_panel.axes_copy_values.clicked.connect(
-            self.copy_values_orientate_to_axes)
-        self.util_panel.axes_do_kspace_conv.clicked.connect(
-            self.convert_to_kspace)
+            self.copy_values_orientate_to_axes
+        )
+        self.util_panel.axes_do_kspace_conv.clicked.connect(self.convert_to_kspace)
         # self.util_panel.axes_reset_conv.clicked.connect(
         #     self.reset_kspace_conversion)
 
         # orientating options
         self.util_panel.orientate_init_x.valueChanged.connect(
-            self.set_orientating_lines)
+            self.set_orientating_lines
+        )
         self.util_panel.orientate_init_y.valueChanged.connect(
-            self.set_orientating_lines)
-        self.util_panel.orientate_find_gamma.clicked.connect(
-            self.find_gamma)
+            self.set_orientating_lines
+        )
+        self.util_panel.orientate_find_gamma.clicked.connect(self.find_gamma)
         self.util_panel.orientate_copy_coords.clicked.connect(
-            self.copy_values_volume_to_orientate)
+            self.copy_values_volume_to_orientate
+        )
         self.util_panel.orientate_hor_line.stateChanged.connect(
-            self.set_orientating_lines)
+            self.set_orientating_lines
+        )
         self.util_panel.orientate_ver_line.stateChanged.connect(
-            self.set_orientating_lines)
-        self.util_panel.orientate_angle.valueChanged.connect(
-            self.set_orientating_lines)
+            self.set_orientating_lines
+        )
+        self.util_panel.orientate_angle.valueChanged.connect(self.set_orientating_lines)
         self.util_panel.orientate_info_button.clicked.connect(
-            self.show_orientation_info)
+            self.show_orientation_info
+        )
 
         # Align all the gui elements
         self._align()
@@ -495,17 +500,17 @@ class DataViewer3D(QtWidgets.QMainWindow):
         layout = self.layout
         # addWidget(row, column, rowSpan, columnSpan)
         # utilities bar
-        layout.addWidget(self.util_panel,  0,      0,          2 * sd, 5 * sd)
+        layout.addWidget(self.util_panel, 0, 0, 2 * sd, 5 * sd)
         # X cut and mdc
-        layout.addWidget(self.plot_x,      2 * sd, 0,          1 * sd, 2 * sd)
-        layout.addWidget(self.cut_x,       3 * sd, 0,          1 * sd, 2 * sd)
+        layout.addWidget(self.plot_x, 2 * sd, 0, 1 * sd, 2 * sd)
+        layout.addWidget(self.cut_x, 3 * sd, 0, 1 * sd, 2 * sd)
         # Main plot
-        layout.addWidget(self.main_plot,   4 * sd, 0,          2 * sd, 2 * sd)
+        layout.addWidget(self.main_plot, 4 * sd, 0, 2 * sd, 2 * sd)
         # Y cut and mdc
-        layout.addWidget(self.cut_y,       4 * sd, 2,          2 * sd, 1 * sd)
-        layout.addWidget(self.plot_y,      4 * sd, 3 * sd,     2 * sd, 1 * sd)
+        layout.addWidget(self.cut_y, 4 * sd, 2, 2 * sd, 1 * sd)
+        layout.addWidget(self.plot_y, 4 * sd, 3 * sd, 2 * sd, 1 * sd)
         # EDC (integrated)
-        layout.addWidget(self.plot_z,      2 * sd, 2 * sd,     2 * sd, 2 * sd)
+        layout.addWidget(self.plot_z, 2 * sd, 2 * sd, 2 * sd, 2 * sd)
 
         nrows = 6 * sd
         ncols = 4 * sd
@@ -537,15 +542,17 @@ class DataViewer3D(QtWidgets.QMainWindow):
         self.update_xy_binning_lines()
         self.show_BZ_contour()
 
-        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
-                self.util_panel.get_linked_windows():
+        if (
+            self.util_panel.link_windows_status.currentIndex() == 1
+        ) and self.util_panel.get_linked_windows():
             linked_windows = self.util_panel.get_linked_windows()
             z = self.data_handler.z.get_value()
             for dvi in self.db.data_viewers.keys():
                 if self.db.data_viewers[dvi].title in linked_windows:
                     pos_variable = self.db.data_viewers[dvi].data_handler.z
                     matching_idx = self.get_matching_energy_idx(
-                        z, self.db.data_viewers[dvi])
+                        z, self.db.data_viewers[dvi]
+                    )
                     pos_variable.set_value(matching_idx)
 
     def set_axes(self) -> None:
@@ -559,15 +566,13 @@ class DataViewer3D(QtWidgets.QMainWindow):
         yaxis = self.data_handler.axes[slit_ax]
         zaxis = self.data_handler.axes[erg_ax]
         self.main_plot.set_xscale(range(0, len(xaxis)))
-        self.main_plot.set_ticks(xaxis[0], xaxis[-1],
-                                 self.main_plot.main_xaxis)
+        self.main_plot.set_ticks(xaxis[0], xaxis[-1], self.main_plot.main_xaxis)
         self.cut_x.set_ticks(xaxis[0], xaxis[-1], self.cut_x.main_xaxis)
         self.cut_y.set_ticks(yaxis[0], yaxis[-1], self.cut_y.main_xaxis)
         self.plot_x.set_ticks(xaxis[0], xaxis[-1], self.plot_x.main_xaxis)
         self.plot_x.set_secondary_axis(0, len(xaxis))
         self.main_plot.set_yscale(range(0, len(yaxis)))
-        self.main_plot.set_ticks(yaxis[0], yaxis[-1],
-                                 self.main_plot.main_yaxis)
+        self.main_plot.set_ticks(yaxis[0], yaxis[-1], self.main_plot.main_yaxis)
         self.cut_x.set_ticks(zaxis[0], zaxis[-1], self.cut_x.main_yaxis)
         self.cut_y.set_ticks(zaxis[0], zaxis[-1], self.cut_y.main_yaxis)
         self.plot_y.set_ticks(yaxis[0], yaxis[-1], self.plot_y.main_xaxis)
@@ -597,30 +602,36 @@ class DataViewer3D(QtWidgets.QMainWindow):
             bins = self.util_panel.bin_zx_nbins.value()
             start, stop = i_x - bins, i_x + bins
             with warnings.catch_warnings():
-                y = wp.normalize(np.sum(
-                    self.data_handler.cut_x_data[:, start:stop], axis=1))
+                y = wp.normalize(
+                    np.sum(self.data_handler.cut_x_data[:, start:stop], axis=1)
+                )
         else:
             y = self.data_handler.cut_x_data[:, i_x]
         x = np.arange(0, len(self.data_handler.axes[scan_ax]))
-        self.plot_x_data = y
-        xp.plot(x, y)
+        self.plot_x_data = y[~np.isnan(y)]
+        # xp.plot(x, y)
+        xp.plot(x[~np.isnan(y)], y[~np.isnan(y)])
         self.util_panel.energy_hor.setValue(i_x)
         if self.new_energy_axis is None:
-            self.util_panel.energy_hor_value.setText('({:.4f})'.format(
-                self.data_handler.axes[erg_ax][i_x]))
+            self.util_panel.energy_hor_value.setText(
+                "({:.4f})".format(self.data_handler.axes[erg_ax][i_x])
+            )
         else:
-            self.util_panel.energy_hor_value.setText('({:.4f})'.format(
-                self.new_energy_axis[i_x]))
+            self.util_panel.energy_hor_value.setText(
+                "({:.4f})".format(self.new_energy_axis[i_x])
+            )
         self.update_zx_zy_binning_line()
 
-        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
-                self.util_panel.get_linked_windows():
+        if (
+            self.util_panel.link_windows_status.currentIndex() == 1
+        ) and self.util_panel.get_linked_windows():
             linked_windows = self.util_panel.get_linked_windows()
             for dvi in self.db.data_viewers.keys():
                 if self.db.data_viewers[dvi].title in linked_windows:
                     var = self.db.data_viewers[dvi].cut_x.sliders.hpos
                     matching_idx = self.get_matching_energy_idx(
-                        i_x, self.db.data_viewers[dvi])
+                        i_x, self.db.data_viewers[dvi]
+                    )
                     var.set_value(matching_idx)
 
     def update_plot_y(self) -> None:
@@ -646,30 +657,36 @@ class DataViewer3D(QtWidgets.QMainWindow):
             bins = self.util_panel.bin_zy_nbins.value()
             start, stop = i_x - bins, i_x + bins
             with warnings.catch_warnings():
-                y = wp.normalize(np.sum(
-                    self.data_handler.cut_y_data[start:stop, :], axis=0))
+                y = wp.normalize(
+                    np.sum(self.data_handler.cut_y_data[start:stop, :], axis=0)
+                )
         else:
             y = self.data_handler.cut_y_data[i_x, :]
         x = np.arange(0, len(self.data_handler.axes[slit_ax]))
-        self.plot_y_data = y
-        yp.plot(y, x)
+        self.plot_y_data = y[~np.isnan(y)]
+        # yp.plot(y, x)
+        yp.plot(y[~np.isnan(y)], x[~np.isnan(y)])
         self.util_panel.energy_vert.setValue(i_x)
         if self.new_energy_axis is None:
-            self.util_panel.energy_vert_value.setText('({:.4f})'.format(
-                self.data_handler.axes[erg_ax][i_x]))
+            self.util_panel.energy_vert_value.setText(
+                "({:.4f})".format(self.data_handler.axes[erg_ax][i_x])
+            )
         else:
-            self.util_panel.energy_vert_value.setText('({:.4f})'.format(
-                self.new_energy_axis[i_x]))
+            self.util_panel.energy_vert_value.setText(
+                "({:.4f})".format(self.new_energy_axis[i_x])
+            )
         self.update_zx_zy_binning_line()
 
-        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
-                self.util_panel.get_linked_windows():
+        if (
+            self.util_panel.link_windows_status.currentIndex() == 1
+        ) and self.util_panel.get_linked_windows():
             linked_windows = self.util_panel.get_linked_windows()
             for dvi in self.db.data_viewers.keys():
                 if self.db.data_viewers[dvi].title in linked_windows:
                     var = self.db.data_viewers[dvi].cut_y.sliders.hpos
                     matching_idx = self.get_matching_energy_idx(
-                        i_x, self.db.data_viewers[dvi])
+                        i_x, self.db.data_viewers[dvi]
+                    )
                     var.set_value(matching_idx)
 
     def update_cut_x(self) -> None:
@@ -703,37 +720,47 @@ class DataViewer3D(QtWidgets.QMainWindow):
         self.cut_x.xscale_rescaled = self.data_handler.axes[scan_ax]
         self.cut_x.yscale_rescaled = self.data_handler.axes[erg_ax]
         self.set_cut_x_image(image=cut, lut=self.lut)
-        self.cut_x.sliders.vpos._set_allowed_values(np.arange(
-            0, len(self.data_handler.axes[scan_ax])), binning=binning)
-        self.cut_x.sliders.hpos._set_allowed_values(np.arange(
-            0, len(self.data_handler.axes[erg_ax])), binning=binning)
-        self.cut_x.set_bounds(0, len(self.data_handler.axes[scan_ax]),
-                              0, len(self.data_handler.axes[erg_ax]))
+        self.cut_x.sliders.vpos._set_allowed_values(
+            np.arange(0, len(self.data_handler.axes[scan_ax])), binning=binning
+        )
+        self.cut_x.sliders.hpos._set_allowed_values(
+            np.arange(0, len(self.data_handler.axes[erg_ax])), binning=binning
+        )
+        self.cut_x.set_bounds(
+            0,
+            len(self.data_handler.axes[scan_ax]),
+            0,
+            len(self.data_handler.axes[erg_ax]),
+        )
 
         self.cut_x.fix_viewrange()
 
         # update values of momentum at utilities panel
         self.util_panel.momentum_hor.setValue(i_x)
         if self.ky_axis is None:
-            self.util_panel.momentum_hor_value.setText('({:.3f})'.format(
-                self.data_handler.axes[slit_ax][i_x]))
+            self.util_panel.momentum_hor_value.setText(
+                "({:.3f})".format(self.data_handler.axes[slit_ax][i_x])
+            )
         else:
-            self.util_panel.momentum_hor_value.setText('({:.3f})'.format(
-                self.ky_axis[i_x]))
+            self.util_panel.momentum_hor_value.setText(
+                "({:.3f})".format(self.ky_axis[i_x])
+            )
         self.update_xy_binning_lines()
 
         # update EDC at crossing point
         if self.sp_EDC is not None:
             self.set_sp_EDC_data()
 
-        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
-                self.util_panel.get_linked_windows():
+        if (
+            self.util_panel.link_windows_status.currentIndex() == 1
+        ) and self.util_panel.get_linked_windows():
             linked_windows = self.util_panel.get_linked_windows()
             for dvi in self.db.data_viewers.keys():
                 if self.db.data_viewers[dvi].title in linked_windows:
                     var = self.db.data_viewers[dvi].main_plot.sliders.hpos
                     matching_idx = self.get_matching_cut_x_idx(
-                        i_x, self.db.data_viewers[dvi])
+                        i_x, self.db.data_viewers[dvi]
+                    )
                     var.set_value(matching_idx)
 
     def update_cut_y(self) -> None:
@@ -763,8 +790,12 @@ class DataViewer3D(QtWidgets.QMainWindow):
         self.cut_y.yscale_rescaled = self.data_handler.axes[erg_ax]
         self.set_cut_y_image(image=cut, lut=self.lut)
         # bounds swapped to match transposed dimensions
-        self.cut_y.set_bounds(0, len(self.data_handler.axes[erg_ax]), 0,
-                              len(self.data_handler.axes[slit_ax]))
+        self.cut_y.set_bounds(
+            0,
+            len(self.data_handler.axes[erg_ax]),
+            0,
+            len(self.data_handler.axes[slit_ax]),
+        )
 
         self.cut_y.fix_viewrange()
 
@@ -772,28 +803,31 @@ class DataViewer3D(QtWidgets.QMainWindow):
         self.util_panel.momentum_vert.setValue(i_x)
         if self.kx_axis is None:
             self.util_panel.momentum_vert_value.setText(
-                '({:.3f})'.format(self.data_handler.axes[scan_ax][i_x]))
+                "({:.3f})".format(self.data_handler.axes[scan_ax][i_x])
+            )
         else:
             self.util_panel.momentum_vert_value.setText(
-                '({:.3f})'.format(self.kx_axis[i_x]))
+                "({:.3f})".format(self.kx_axis[i_x])
+            )
         self.update_xy_binning_lines()
 
         # update EDC at crossing point
         if self.sp_EDC is not None:
             self.set_sp_EDC_data()
 
-        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
-                self.util_panel.get_linked_windows():
+        if (
+            self.util_panel.link_windows_status.currentIndex() == 1
+        ) and self.util_panel.get_linked_windows():
             linked_windows = self.util_panel.get_linked_windows()
             for dvi in self.db.data_viewers.keys():
                 if self.db.data_viewers[dvi].title in linked_windows:
                     var = self.db.data_viewers[dvi].cut_x.sliders.vpos
                     matching_idx = self.get_matching_cut_y_idx(
-                        i_x, self.db.data_viewers[dvi])
+                        i_x, self.db.data_viewers[dvi]
+                    )
                     var.set_value(matching_idx)
 
-    def get_matching_energy_idx(self, parent_idx: int,
-                                dv: DataViewer3D) -> int:
+    def get_matching_energy_idx(self, parent_idx: int, dv: DataViewer3D) -> int:
         """
         When option for linking multiple windows is enabled, find position in
         coordinates of parent's axis energy values.
@@ -862,27 +896,33 @@ class DataViewer3D(QtWidgets.QMainWindow):
         try:
             xpos = self.main_plot.sliders.vpos.get_value()
             ypos = self.main_plot.sliders.hpos.get_value()
-            bin_x, bin_y = self.util_panel.bin_x.isChecked(), \
-                           self.util_panel.bin_y.isChecked()
+            bin_x, bin_y = (
+                self.util_panel.bin_x.isChecked(),
+                self.util_panel.bin_y.isChecked(),
+            )
             if bin_x and bin_y:
                 nbx = self.util_panel.bin_x_nbins.value()
                 nby = self.util_panel.bin_y_nbins.value()
-                data = self.data_handler.get_data()[(xpos - nbx):(xpos + nbx),
-                       (ypos - nby):(ypos + nby), :]
+                data = self.data_handler.get_data()[
+                    (xpos - nbx) : (xpos + nbx), (ypos - nby) : (ypos + nby), :
+                ]
                 data = np.sum(np.sum(data, axis=1), axis=0)
             elif bin_x:
                 nbx = self.util_panel.bin_x_nbins.value()
-                data = self.data_handler.get_data()[(xpos - nbx):(xpos + nbx),
-                       ypos, :]
+                data = self.data_handler.get_data()[
+                    (xpos - nbx) : (xpos + nbx), ypos, :
+                ]
                 data = np.sum(data, axis=0)
             elif bin_y:
                 nby = self.util_panel.bin_y_nbins.value()
-                data = self.data_handler.get_data()[xpos,
-                       (ypos - nby):(ypos + nby), :]
+                data = self.data_handler.get_data()[
+                    xpos, (ypos - nby) : (ypos + nby), :
+                ]
                 data = np.sum(data, axis=0)
             else:
                 data = self.data_handler.get_data()[xpos, ypos, :]
             with warnings.catch_warnings():
+                data = data[~np.isnan(data)]
                 data = wp.normalize(data)
             self.sp_EDC.setData(data, pen=self.plot_z.sp_EDC_pen)
         except Exception:
@@ -896,13 +936,11 @@ class DataViewer3D(QtWidgets.QMainWindow):
         """
 
         try:
-            self.set_image(image,
-                           displayed_axes=self.data_handler.displayed_axes)
+            self.set_image(image, displayed_axes=self.data_handler.displayed_axes)
         except AttributeError:
             pass
 
-    def set_image(self, image: np.ndarray = None, *args: dict,
-                  **kwargs: dict) -> None:
+    def set_image(self, image: np.ndarray = None, *args: dict, **kwargs: dict) -> None:
         """
         Wraps underlying :meth:`image_panels.ImagePlot.set_image()` method.
 
@@ -920,8 +958,9 @@ class DataViewer3D(QtWidgets.QMainWindow):
         self.main_plot.set_image(image, *args, lut=self.lut, **kwargs)
         self.set_orientating_lines()
 
-    def set_cut_x_image(self, image: np.ndarray = None, *args: dict,
-                        **kwargs: dict) -> None:
+    def set_cut_x_image(
+        self, image: np.ndarray = None, *args: dict, **kwargs: dict
+    ) -> None:
         """
         Wraps the underlying :meth:`~image_panels.ImagePlot.set_image`
         method for the **horizontal cut panel** image.
@@ -939,8 +978,9 @@ class DataViewer3D(QtWidgets.QMainWindow):
             image = self.image_data
         self.cut_x.set_image(image, *args, **kwargs)
 
-    def set_cut_y_image(self, image: np.ndarray = None, *args: dict,
-                        **kwargs: dict) -> None:
+    def set_cut_y_image(
+        self, image: np.ndarray = None, *args: dict, **kwargs: dict
+    ) -> None:
         """
         Wraps the underlying :meth:`~image_panels.ImagePlot.set_image`
         method for the **vertical cut panel** image.
@@ -967,14 +1007,14 @@ class DataViewer3D(QtWidgets.QMainWindow):
         try:
             cmap = self.util_panel.image_cmaps.currentText()
             if self.util_panel.image_invert_colors.isChecked() and ip.MY_CMAPS:
-                cmap = cmap + '_r'
+                cmap = cmap + "_r"
         except AttributeError:
             cmap = p2d.DEFAULT_CMAP
 
         try:
             self.cmap = cmaps[cmap]
         except KeyError:
-            print('Invalid colormap name. Use one of: ')
+            print("Invalid colormap name. Use one of: ")
             print(cmaps.keys())
         self.cmap_name = cmap
         # Since the cmap changed it forgot our settings for alpha and gamma
@@ -1021,10 +1061,10 @@ class DataViewer3D(QtWidgets.QMainWindow):
             try:
                 half_width = self.util_panel.bin_x_nbins.value()
                 pos = self.main_plot.pos[0].get_value()
-                self.main_plot.add_binning_lines(pos, half_width,
-                                                 orientation='vertical')
-                self.cut_x.add_binning_lines(pos, half_width,
-                                             orientation='vertical')
+                self.main_plot.add_binning_lines(
+                    pos, half_width, orientation="vertical"
+                )
+                self.cut_x.add_binning_lines(pos, half_width, orientation="vertical")
                 self.plot_x.add_binning_lines(pos, half_width)
                 xmin = half_width
                 xmax = len(self.data_handler.axes[0]) - half_width
@@ -1036,8 +1076,8 @@ class DataViewer3D(QtWidgets.QMainWindow):
                 pass
         else:
             try:
-                self.main_plot.remove_binning_lines(orientation='vertical')
-                self.cut_x.remove_binning_lines(orientation='vertical')
+                self.main_plot.remove_binning_lines(orientation="vertical")
+                self.cut_x.remove_binning_lines(orientation="vertical")
                 self.plot_x.remove_binning_lines()
                 org_range = np.arange(0, len(self.data_handler.axes[0]))
                 self.main_plot.pos[0].set_allowed_values(org_range)
@@ -1114,8 +1154,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
             try:
                 half_width = self.util_panel.bin_zy_nbins.value()
                 pos = self.cut_y.pos[1].get_value()
-                self.cut_y.add_binning_lines(pos, half_width,
-                                             orientation='vertical')
+                self.cut_y.add_binning_lines(pos, half_width, orientation="vertical")
                 zmin = half_width
                 zmax = len(self.data_handler.axes[erg_ax]) - half_width
                 new_range = np.arange(zmin, zmax)
@@ -1124,7 +1163,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
                 pass
         else:
             try:
-                self.cut_y.remove_binning_lines(orientation='vertical')
+                self.cut_y.remove_binning_lines(orientation="vertical")
                 org_range = np.arange(0, len(self.data_handler.axes[erg_ax]))
                 self.cut_y.pos[1].set_allowed_values(org_range)
             except AttributeError:
@@ -1139,10 +1178,10 @@ class DataViewer3D(QtWidgets.QMainWindow):
             try:
                 pos = self.main_plot.pos[0].get_value()
                 half_width = self.util_panel.bin_x_nbins.value()
-                self.main_plot.add_binning_lines(pos, half_width,
-                                                 orientation='vertical')
-                self.cut_x.add_binning_lines(pos, half_width,
-                                             orientation='vertical')
+                self.main_plot.add_binning_lines(
+                    pos, half_width, orientation="vertical"
+                )
+                self.cut_x.add_binning_lines(pos, half_width, orientation="vertical")
                 self.plot_x.add_binning_lines(pos, half_width)
             except AttributeError:
                 pass
@@ -1180,8 +1219,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
             try:
                 pos = self.cut_y.pos[1].get_value()
                 half_width = self.util_panel.bin_zy_nbins.value()
-                self.cut_y.add_binning_lines(pos, half_width,
-                                             orientation='vertical')
+                self.cut_y.add_binning_lines(pos, half_width, orientation="vertical")
             except AttributeError:
                 pass
         else:
@@ -1327,12 +1365,12 @@ class DataViewer3D(QtWidgets.QMainWindow):
         :param dataset: loaded dataset with available metadata
         """
 
-        if hasattr(dataset, 'scan_type'):
-            if dataset.scan_type == 'hv scan':
-                self.util_panel.momentum_vert_label.setText('hv:')
-                self.util_panel.energy_hor_label.setText('hv:')
-                self.util_panel.bin_x.setText('bin hv')
-                self.util_panel.bin_zx.setText('bin E (hv)')
+        if hasattr(dataset, "scan_type"):
+            if dataset.scan_type == "hv scan":
+                self.util_panel.momentum_vert_label.setText("hv:")
+                self.util_panel.energy_hor_label.setText("hv:")
+                self.util_panel.bin_x.setText("bin hv")
+                self.util_panel.bin_zx.setText("bin E (hv)")
         else:
             return
 
@@ -1350,10 +1388,10 @@ class DataViewer3D(QtWidgets.QMainWindow):
         else:
             org_is_kin = False
 
-        if (not org_is_kin) and (scale == 'kinetic'):
+        if (not org_is_kin) and (scale == "kinetic"):
             hv = -self.util_panel.axes_energy_hv.value()
             wf = -self.util_panel.axes_energy_wf.value()
-        elif org_is_kin and (scale == 'binding'):
+        elif org_is_kin and (scale == "binding"):
             hv = self.util_panel.axes_energy_hv.value()
             wf = self.util_panel.axes_energy_wf.value()
         else:
@@ -1365,19 +1403,21 @@ class DataViewer3D(QtWidgets.QMainWindow):
         new_range = [new_energy_axis[0], new_energy_axis[-1]]
         self.cut_x.plotItem.getAxis(self.cut_x.main_yaxis).setRange(*new_range)
         self.cut_y.plotItem.getAxis(self.cut_y.main_yaxis).setRange(*new_range)
-        self.plot_z.plotItem.getAxis(self.plot_z.main_xaxis).setRange(
-            *new_range)
+        self.plot_z.plotItem.getAxis(self.plot_z.main_xaxis).setRange(*new_range)
 
         # update energy labels
         main_erg_idx = self.plot_z.pos.get_value()
         cut_x_erg_idx = self.cut_x.sliders.hpos.get_value()
         cut_y_erg_idx = self.cut_y.sliders.hpos.get_value()
-        self.util_panel.energy_main_value.setText('({:.4f})'.format(
-            self.new_energy_axis[main_erg_idx]))
-        self.util_panel.energy_hor_value.setText('({:.4f})'.format(
-            self.new_energy_axis[cut_x_erg_idx]))
-        self.util_panel.energy_vert_value.setText('({:.4f})'.format(
-            self.new_energy_axis[cut_y_erg_idx]))
+        self.util_panel.energy_main_value.setText(
+            "({:.4f})".format(self.new_energy_axis[main_erg_idx])
+        )
+        self.util_panel.energy_hor_value.setText(
+            "({:.4f})".format(self.new_energy_axis[cut_x_erg_idx])
+        )
+        self.util_panel.energy_vert_value.setText(
+            "({:.4f})".format(self.new_energy_axis[cut_y_erg_idx])
+        )
 
     # analysis options
     def normalize_data(self) -> None:
@@ -1390,11 +1430,9 @@ class DataViewer3D(QtWidgets.QMainWindow):
             norm_along = self.util_panel.image_normalize_along.currentIndex()
             norm_to = self.util_panel.image_normalize_to.currentIndex()
             if norm_to == 0:
-                self.data_handler.norm_data = \
-                    wp.normalize(data, axis=norm_along)
+                self.data_handler.norm_data = wp.normalize(data, axis=norm_along)
             elif norm_to == 1:
-                self.data_handler.norm_data = \
-                    wp.normalize_to_sum(data, axis=norm_along)
+                self.data_handler.norm_data = wp.normalize_to_sum(data, axis=norm_along)
         else:
             pass
         self.update_main_plot()
@@ -1411,12 +1449,14 @@ class DataViewer3D(QtWidgets.QMainWindow):
         res = wp.find_gamma(fs, x_init, y_init)
         if res.success:
             self.util_panel.orientate_find_gamma_message.setText(
-                'Success,  values found!')
+                "Success,  values found!"
+            )
             self.util_panel.orientate_init_x.setValue(int(res.x[0]))
             self.util_panel.orientate_init_y.setValue(int(res.x[1]))
         else:
             self.util_panel.orientate_find_gamma_message.setText(
-                'Couldn\'t find center of rotation.')
+                "Couldn't find center of rotation."
+            )
 
     def copy_values_volume_to_orientate(self) -> None:
         """
@@ -1424,20 +1464,16 @@ class DataViewer3D(QtWidgets.QMainWindow):
         **Orientate tab**.
         """
 
-        self.util_panel.orientate_init_x.setValue(
-            self.util_panel.momentum_vert.value())
-        self.util_panel.orientate_init_y.setValue(
-            self.util_panel.momentum_hor.value())
+        self.util_panel.orientate_init_x.setValue(self.util_panel.momentum_vert.value())
+        self.util_panel.orientate_init_y.setValue(self.util_panel.momentum_hor.value())
 
     def copy_values_orientate_to_axes(self) -> None:
         """
         Copy for :math:`\Gamma` point to :class:`QSpinBox` of **Axes tab**.
         """
 
-        self.util_panel.axes_gamma_x.setValue(
-            self.util_panel.orientate_init_x.value())
-        self.util_panel.axes_gamma_y.setValue(
-            self.util_panel.orientate_init_y.value())
+        self.util_panel.axes_gamma_x.setValue(self.util_panel.orientate_init_x.value())
+        self.util_panel.axes_gamma_y.setValue(self.util_panel.orientate_init_y.value())
 
     def set_orientating_lines(self) -> None:
         """
@@ -1453,8 +1489,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
         except AttributeError:
             pass
         if self.util_panel.orientate_hor_line.isChecked():
-            angle = self.transform_angle(
-                self.util_panel.orientate_angle.value())
+            angle = self.transform_angle(self.util_panel.orientate_angle.value())
             if (-180 < angle < 90) and (angle != -90):
                 beta = np.deg2rad(angle)
                 if angle == 0:
@@ -1464,8 +1499,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
                 angle = -angle
             elif (angle == 90) or (angle == -90):
                 self.orient_hor_line = InfiniteLine(x0, movable=False)
-                self.orient_hor_line.setPen(color=ORIENTLINES_LINECOLOR,
-                                            width=3)
+                self.orient_hor_line.setPen(color=ORIENTLINES_LINECOLOR, width=3)
                 self.main_plot.addItem(self.orient_hor_line)
                 return
             elif 90 < angle < 180:
@@ -1485,18 +1519,16 @@ class DataViewer3D(QtWidgets.QMainWindow):
         except AttributeError:
             pass
         if self.util_panel.orientate_ver_line.isChecked():
-            angle = \
-                self.transform_angle(self.util_panel.orientate_angle.value(),
-                                     orientation='vertical')
+            angle = self.transform_angle(
+                self.util_panel.orientate_angle.value(), orientation="vertical"
+            )
             if (-180 < angle < 90) and (angle != -90) and (angle != 90):
                 beta = 0.5 * np.pi - np.deg2rad(angle)
                 x_pos = x0 - (y0 / np.tan(beta))
                 angle = 90 - angle
             elif (angle == 90) or (angle == -90):
-                self.orient_ver_line = InfiniteLine(y0,
-                                                    movable=False, angle=0)
-                self.orient_ver_line.setPen(color=ORIENTLINES_LINECOLOR,
-                                            width=3)
+                self.orient_ver_line = InfiniteLine(y0, movable=False, angle=0)
+                self.orient_ver_line.setPen(color=ORIENTLINES_LINECOLOR, width=3)
                 self.main_plot.addItem(self.orient_ver_line)
                 return
             elif 90 < angle < 180:
@@ -1511,8 +1543,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
             self.orient_ver_line.setAngle(angle)
             self.main_plot.addItem(self.orient_ver_line)
 
-    def transform_angle(self, angle: float,
-                        orientation: str = 'horizontal') -> float:
+    def transform_angle(self, angle: float, orientation: str = "horizontal") -> float:
         """
         Transform angles to coordinates of :class:`~image_panels.ImagePlot`.
 
@@ -1527,9 +1558,10 @@ class DataViewer3D(QtWidgets.QMainWindow):
         :return: transformed value of angle
         """
 
-        coeff = wp.get_step(self.data_handler.axes[scan_ax]) / \
-                wp.get_step(self.data_handler.axes[slit_ax])
-        if orientation == 'horizontal':
+        coeff = wp.get_step(self.data_handler.axes[scan_ax]) / wp.get_step(
+            self.data_handler.axes[slit_ax]
+        )
+        if orientation == "horizontal":
             return np.rad2deg(np.arctan(np.tan(np.deg2rad(angle)) * coeff))
         else:
             return np.rad2deg(np.arctan(np.tan(np.deg2rad(angle)) / coeff))
@@ -1542,10 +1574,10 @@ class DataViewer3D(QtWidgets.QMainWindow):
 
         scanned_ax = self.data_handler.axes[scan_ax]
         ana_axis = self.data_handler.axes[slit_ax]
-        d_ana_ax = self.data_handler.axes[slit_ax][
-            self.util_panel.axes_gamma_y.value()]
+        d_ana_ax = self.data_handler.axes[slit_ax][self.util_panel.axes_gamma_y.value()]
         d_scan_ax = self.data_handler.axes[scan_ax][
-            self.util_panel.axes_gamma_x.value()]
+            self.util_panel.axes_gamma_x.value()
+        ]
         orientation = self.util_panel.axes_slit_orient.currentText()
         a = self.util_panel.axes_conv_lc.value()
         hv = self.util_panel.axes_energy_hv.value()
@@ -1556,10 +1588,12 @@ class DataViewer3D(QtWidgets.QMainWindow):
         if not settings.IS_TESTING:
             info_box = QMessageBox()
             info_box.setIcon(QMessageBox.Information)
-            info_box.setWindowTitle('K-space conversion.')
-            msg = 'Conversion might take a while,  ' \
-                'depending on the dataset\'s size.\n' \
-                'Make sure all parameters are correct and be patient.'.format()
+            info_box.setWindowTitle("K-space conversion.")
+            msg = (
+                "Conversion might take a while,  "
+                "depending on the dataset's size.\n"
+                "Make sure all parameters are correct and be patient.".format()
+            )
             info_box.setText(msg)
             info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
             choice = info_box.exec()
@@ -1569,62 +1603,73 @@ class DataViewer3D(QtWidgets.QMainWindow):
                 return
 
         if self.util_panel.axes_transform_kz.isChecked():
-            ky, _ = wp.hv2kz(ana_axis, scanned_ax, d_scan_ax=d_scan_ax,
-                             d_ana_ax=d_ana_ax, a=a, orientation=orientation)
-            y_min, y_max, min_step = ky[-1].min(), ky[-1].max(), \
-                                     wp.get_step(ky[0])
+            ky, _ = wp.hv2kz(
+                ana_axis,
+                scanned_ax,
+                d_scan_ax=d_scan_ax,
+                d_ana_ax=d_ana_ax,
+                a=a,
+                orientation=orientation,
+            )
+            y_min, y_max, min_step = ky[-1].min(), ky[-1].max(), wp.get_step(ky[0])
             new_yscale = np.arange(y_min, y_max, min_step)
 
-            print('rescaling data: ', end='')
+            print("rescaling data: ", end="")
             start_time = time.time()
             dataset_rescaled = wp.rescale_data(ds.data, ky, new_yscale)
-            print('{:.4} s'.format(time.time() - start_time))
+            print("{:.4} s".format(time.time() - start_time))
         else:
             if hv == 0 or wf == 0:
                 warning_box = QMessageBox()
                 warning_box.setIcon(QMessageBox.Information)
-                warning_box.setWindowTitle('Wrong conversion values.')
+                warning_box.setWindowTitle("Wrong conversion values.")
                 if hv == 0 and wf == 0:
-                    msg = 'Photon energy and work function values not given.'
+                    msg = "Photon energy and work function values not given."
                 elif hv == 0:
-                    msg = 'Photon energy value not given.'
+                    msg = "Photon energy value not given."
                 elif wf == 0:
-                    msg = 'Work function value not given.'
+                    msg = "Work function value not given."
                 warning_box.setText(msg)
                 warning_box.setStandardButtons(QMessageBox.Ok)
                 if warning_box.exec() == QMessageBox.Ok:
                     return
-            kx, ky = wp.angle2kspace(scanned_ax, ana_axis,
-                                     d_scan_ax=d_scan_ax, d_ana_ax=d_ana_ax,
-                                     a=a, orientation=orientation, hv=hv,
-                                     work_func=wf)
+            kx, ky = wp.angle2kspace(
+                scanned_ax,
+                ana_axis,
+                d_scan_ax=d_scan_ax,
+                d_ana_ax=d_ana_ax,
+                a=a,
+                orientation=orientation,
+                hv=hv,
+                work_func=wf,
+            )
             # kxx, kyy = np.meshgrid(kx[:, 0], ky[0, :])
             # cut = self.main_plot.image_data
             # plt.pcolormesh(kxx, kyy, cut.T)
             y_min, y_max, min_step = ky.min(), ky.max(), wp.get_step(ky[0, :])
             new_yscale = np.arange(y_min, y_max, min_step)
 
-            print('rescaling data done in: ', end='')
+            print("rescaling data done in: ", end="")
             start_time = time.time()
             dataset_rescaled = wp.rescale_data(ds.data, ky, new_yscale)
-            print('{:.4} s'.format(time.time() - start_time))
+            print("{:.4} s".format(time.time() - start_time))
             new_dataset.xscale = kx[:, 0]
             new_dataset.kxscale = kx[:, 0]
         new_dataset.data = dataset_rescaled
         new_dataset.yscale = new_yscale
         new_dataset.kyscale = new_yscale
-        new_idx = self.index + ' [rescaled to k-space]'
+        new_idx = self.index + " [rescaled to k-space]"
         self.util_panel.dp_add_k_space_conversion_entry(new_dataset)
 
         try:
-            self.db.data_viewers[new_idx] = \
-                DataViewer3D(self.db, data_set=new_dataset, index=new_idx)
+            self.db.data_viewers[new_idx] = DataViewer3D(
+                self.db, data_set=new_dataset, index=new_idx
+            )
         except Exception:
             fail_box = QMessageBox()
             fail_box.setIcon(QMessageBox.Information)
-            fail_box.setWindowTitle('K-space conversion.')
-            msg = 'Something went wrong.<br>' \
-                  'K-space conversion failed.'
+            fail_box.setWindowTitle("K-space conversion.")
+            msg = "Something went wrong.<br>" "K-space conversion failed."
             fail_box.setText(msg)
             fail_box.setStandardButtons(QMessageBox.Ok)
             if fail_box.exec() == QMessageBox.Ok:
@@ -1633,9 +1678,8 @@ class DataViewer3D(QtWidgets.QMainWindow):
         if not settings.IS_TESTING:
             success_box = QMessageBox()
             success_box.setIcon(QMessageBox.Information)
-            success_box.setWindowTitle('Conversion succeed.')
-            msg = 'K-space conversion succeed!<br>' \
-                'Make sure to save results.'
+            success_box.setWindowTitle("Conversion succeed.")
+            msg = "K-space conversion succeed!<br>" "Make sure to save results."
             success_box.setText(msg)
             success_box.setStandardButtons(QMessageBox.Ok)
             if success_box.exec() == QMessageBox.Ok:
@@ -1684,7 +1728,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
         if (self.kx_axis is None) or (self.ky_axis is None):
             warning_box = QMessageBox()
             warning_box.setIcon(QMessageBox.Information)
-            warning_box.setText('Data must be converted to k-space.')
+            warning_box.setText("Data must be converted to k-space.")
             warning_box.setStandardButtons(QMessageBox.Ok)
             if warning_box.exec() == QMessageBox.Ok:
                 self.util_panel.image_show_BZ.setChecked(False)
@@ -1694,7 +1738,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
         if not ((symmetry == 4) or (symmetry == 6)):
             warning_box = QMessageBox()
             warning_box.setIcon(QMessageBox.Information)
-            warning_box.setText('Only 4- and 6-fold symmetry supported.')
+            warning_box.setText("Only 4- and 6-fold symmetry supported.")
             warning_box.setStandardButtons(QMessageBox.Ok)
             if warning_box.exec() == QMessageBox.Ok:
                 self.util_panel.image_show_BZ.setChecked(False)
@@ -1708,8 +1752,9 @@ class DataViewer3D(QtWidgets.QMainWindow):
         elif symmetry == 6:
             G = np.pi / a
             b = 2 * G / np.sqrt(3)
-            raw_pts = np.array([[-b / 2, -G], [b / 2, -G], [b, 0],
-                                [b / 2, G], [-b / 2, G], [-b, 0]])
+            raw_pts = np.array(
+                [[-b / 2, -G], [b / 2, -G], [b, 0], [b / 2, G], [-b / 2, G], [-b, 0]]
+            )
 
         rotation_angle = self.util_panel.image_rotate_BZ.value()
         raw_pts = self.transform_points(raw_pts, rotation_angle)
@@ -1738,7 +1783,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
         correspond to the way data are displayed in :mod:`piva`.
         """
 
-        title = 'piva -> beamline coordinates translator'
+        title = "piva -> beamline coordinates translator"
         self.info_box = InfoWindow(self.util_panel.orient_info_window, title)
         self.info_box.show()
 
@@ -1750,10 +1795,12 @@ class DataViewer3D(QtWidgets.QMainWindow):
 
         info_box = QMessageBox()
         info_box.setIcon(QMessageBox.Information)
-        info_box.setWindowTitle('K-space conversion.')
-        msg = 'Note:\n' \
-        'PIT is a third-party package and may not work ' \
-        'properly with Python versions above 3.8.'
+        info_box.setWindowTitle("K-space conversion.")
+        msg = (
+            "Note:\n"
+            "PIT is a third-party package and may not work "
+            "properly with Python versions above 3.8."
+        )
         info_box.setText(msg)
         info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
         choice = info_box.exec()
@@ -1761,10 +1808,9 @@ class DataViewer3D(QtWidgets.QMainWindow):
             pass
         elif choice == QMessageBox.Cancel:
             return
-        
+
         mw = pit.MainWindow()
-        mw.data_handler.set_data(self.data_set.data,
-                                 axes=self.data_handler.axes)
+        mw.data_handler.set_data(self.data_set.data, axes=self.data_handler.axes)
         mw.set_cmap(self.cmap_name)
 
     def open_2dviewer(self) -> None:
@@ -1776,72 +1822,70 @@ class DataViewer3D(QtWidgets.QMainWindow):
         data_set = deepcopy(self.data_set)
         cut_orient = self.util_panel.image_2dv_cut_selector.currentText()
 
-        if cut_orient[0] == 'h':
-            direction = 'analyzer'
+        if cut_orient[0] == "h":
+            direction = "analyzer"
             cut = self.data_handler.cut_x_data
-            dim_value = self.data_set.yscale[
-                self.main_plot.sliders.hpos.get_value()]
+            dim_value = self.data_set.yscale[self.main_plot.sliders.hpos.get_value()]
             data_set.yscale = data_set.xscale
             idx = self.main_plot.sliders.hpos.get_value()
             lbl = self.util_panel.momentum_hor_label.text()[:-1]
             if self.util_panel.bin_y.isChecked():
                 n_bin = self.util_panel.bin_y_nbins.value()
-                thread_idx = '{}: {} [{}]; nbin [{}]'.format(
-                    self.index, lbl, str(idx), str(n_bin))
+                thread_idx = "{}: {} [{}]; nbin [{}]".format(
+                    self.index, lbl, str(idx), str(n_bin)
+                )
             else:
-                thread_idx = '{}: {} [{}]'.format(self.index, lbl, str(idx))
-                n_bin = '-'
+                thread_idx = "{}: {} [{}]".format(self.index, lbl, str(idx))
+                n_bin = "-"
         else:
-            direction = 'scanned'
+            direction = "scanned"
             cut = self.data_handler.cut_y_data.T
-            dim_value = self.data_set.xscale[
-                self.main_plot.sliders.vpos.get_value()]
+            dim_value = self.data_set.xscale[self.main_plot.sliders.vpos.get_value()]
             idx = self.main_plot.sliders.vpos.get_value()
             lbl = self.util_panel.momentum_vert_label.text()[:-1]
             if self.util_panel.bin_x.isChecked():
                 n_bin = self.util_panel.bin_x_nbins.value()
-                thread_idx = '{}: {} [{}]; nbin [{}]'.format(
-                    self.index, lbl, str(idx), str(n_bin))
+                thread_idx = "{}: {} [{}]; nbin [{}]".format(
+                    self.index, lbl, str(idx), str(n_bin)
+                )
             else:
-                thread_idx = '{}: {} [{}]'.format(self.index, lbl, str(idx))
-                n_bin = '-'
+                thread_idx = "{}: {} [{}]".format(self.index, lbl, str(idx))
+                n_bin = "-"
 
         data = np.ones((1, cut.shape[0], cut.shape[1]))
         data[0, :, :] = cut
         data_set.data = data
         data_set.xscale = np.array([1])
-        data_set.scan_type = 'cut'
+        data_set.scan_type = "cut"
         data_set.scan_dim = []
 
-        if (data_set.scan_type == 'tilt scan') or \
-                (data_set.scan_type == 'DA scan'):
+        if (data_set.scan_type == "tilt scan") or (data_set.scan_type == "DA scan"):
             data_set.tilt = dim_value
-            thread_idx += '_@{:.3}deg'.format(dim_value)
-        elif data_set.scan_type == 'hv scan':
+            thread_idx += "_@{:.3}deg".format(dim_value)
+        elif data_set.scan_type == "hv scan":
             data_set.hv = dim_value
-            thread_idx += '_@{:.1}eV'.format(dim_value)
+            thread_idx += "_@{:.1}eV".format(dim_value)
 
         if thread_idx in self.db.data_viewers.keys():
             thread_running_box = QMessageBox()
             thread_running_box.setIcon(QMessageBox.Information)
-            thread_running_box.setWindowTitle('Doh.')
-            thread_running_box.setText('Same cut is already opened')
+            thread_running_box.setWindowTitle("Doh.")
+            thread_running_box.setText("Same cut is already opened")
             thread_running_box.setStandardButtons(QMessageBox.Ok)
             if thread_running_box.exec() == QMessageBox.Ok:
                 return
 
         try:
-            self.util_panel.dp_add_file_cut_entry(data_set, direction, idx,
-                                                  n_bin)
+            self.util_panel.dp_add_file_cut_entry(data_set, direction, idx, n_bin)
             self.db.add_viewer_to_linked_list(thread_idx, 2)
-            self.db.data_viewers[thread_idx] = \
-                p2d.DataViewer2D(self.db, data_set=data_set,
-                                 index=thread_idx, slice=True)
+            self.db.data_viewers[thread_idx] = p2d.DataViewer2D(
+                self.db, data_set=data_set, index=thread_idx, slice=True
+            )
         except Exception as e:
             raise e
             error_box = QMessageBox()
             error_box.setIcon(QMessageBox.Information)
-            error_box.setText('Couldn\'t load data,  something went wrong.')
+            error_box.setText("Couldn't load data,  something went wrong.")
             error_box.setStandardButtons(QMessageBox.Ok)
             if error_box.exec() == QMessageBox.Ok:
                 return
@@ -1860,8 +1904,9 @@ class DataViewer3D(QtWidgets.QMainWindow):
         """
 
         theta = np.deg2rad(angle)
-        transform_matrix = np.array([[np.cos(theta), -np.sin(theta)],
-                                     [np.sin(theta), np.cos(theta)]])
+        transform_matrix = np.array(
+            [[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]]
+        )
         res_pts = []
         for pt in pts:
             res_pts.append(np.array(pt) @ transform_matrix)
@@ -1901,38 +1946,45 @@ class DataViewer3D(QtWidgets.QMainWindow):
         up = self.util_panel
         file_selection = True
         # Prepare a filename with the .p suffix
-        init_fname = '.'.join(self.title.split('.')[:-1] + ['p'])
-        
+        init_fname = ".".join(self.title.split(".")[:-1] + ["p"])
+
         # Choose directory
         if settings.IS_TESTING:
             savedir = os.getcwd()
             # pass
         else:
-            savedir = str(QtWidgets.QFileDialog.getExistingDirectory(
-                self, 'Select Directory', self.fname[:-len(self.title)]))
+            savedir = str(
+                QtWidgets.QFileDialog.getExistingDirectory(
+                    self, "Select Directory", self.fname[: -len(self.title)]
+                )
+            )
             # savedir = self.fname[:-len(self.title)]
             if not savedir:
                 return
 
         while file_selection:
             if settings.IS_TESTING:
-                fname, fname_return_value = 'x', True
+                fname, fname_return_value = "x", True
             else:
                 fname, fname_return_value = QtWidgets.QInputDialog.getText(
-                    self, '', 'File name:', QLineEdit.Normal, init_fname)
+                    self, "", "File name:", QLineEdit.Normal, init_fname
+                )
             if not fname_return_value:
                 return
 
             # check if there is no fname colosions
-            if (fname in os.listdir(savedir) and (not settings.IS_TESTING)):
+            if fname in os.listdir(savedir) and (not settings.IS_TESTING):
                 fname_colision_box = QMessageBox()
                 fname_colision_box.setIcon(QMessageBox.Question)
-                fname_colision_box.setWindowTitle('File name already used.')
+                fname_colision_box.setWindowTitle("File name already used.")
                 fname_colision_box.setText(
-                    'File {} already exists.\n'
-                    'Do you want to overwrite it?'.format(fname))
-                fname_colision_box.setStandardButtons(QMessageBox.Ok |
-                                                      QMessageBox.Cancel)
+                    "File {} already exists.\n" "Do you want to overwrite it?".format(
+                        fname
+                    )
+                )
+                fname_colision_box.setStandardButtons(
+                    QMessageBox.Ok | QMessageBox.Cancel
+                )
                 if fname_colision_box.exec() == QMessageBox.Ok:
                     file_selection = False
                 else:
@@ -1940,19 +1992,22 @@ class DataViewer3D(QtWidgets.QMainWindow):
             else:
                 file_selection = False
 
-        conditions = [up.axes_energy_Ef.value() != 0,
-                      up.axes_energy_hv.value() != 0,
-                      up.axes_energy_wf.value() != 0,
-                      up.axes_gamma_y.value() != 0,
-                      up.axes_gamma_x.value() != 0]
+        conditions = [
+            up.axes_energy_Ef.value() != 0,
+            up.axes_energy_hv.value() != 0,
+            up.axes_energy_wf.value() != 0,
+            up.axes_gamma_y.value() != 0,
+            up.axes_gamma_x.value() != 0,
+        ]
 
-        if (np.any(conditions) and (not settings.IS_TESTING)):
+        if np.any(conditions) and (not settings.IS_TESTING):
             save_cor_box = QMessageBox()
             save_cor_box.setIcon(QMessageBox.Question)
-            save_cor_box.setWindowTitle('Save data')
+            save_cor_box.setWindowTitle("Save data")
             save_cor_box.setText("Do you want to save applied corrections?")
-            save_cor_box.setStandardButtons(QMessageBox.No | QMessageBox.Ok |
-                                            QMessageBox.Cancel)
+            save_cor_box.setStandardButtons(
+                QMessageBox.No | QMessageBox.Ok | QMessageBox.Cancel
+            )
 
             box_return_value = save_cor_box.exec()
             if box_return_value == QMessageBox.Ok:
@@ -1971,10 +2026,10 @@ class DataViewer3D(QtWidgets.QMainWindow):
                 return
         else:
             pass
-        
+
         if settings.IS_TESTING:
             return
-        
+
         dl.dump(dataset, os.path.join(savedir, fname), force=True)
 
     def load_corrections(self, data_set: Dataset) -> None:
@@ -1991,9 +2046,9 @@ class DataViewer3D(QtWidgets.QMainWindow):
             self.util_panel.axes_energy_wf.setValue(data_set.wf)
         if data_set.Ef is not None:
             self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
-        if hasattr(data_set, 'kxscale'):
+        if hasattr(data_set, "kxscale"):
             self.kx_axis = data_set.kxscale
-        if hasattr(data_set, 'kyscale'):
+        if hasattr(data_set, "kyscale"):
             self.ky_axis = data_set.kyscale
 
     def closeEvent(self, event: Any) -> None:
@@ -2002,6 +2057,5 @@ class DataViewer3D(QtWidgets.QMainWindow):
         :class:`~data_browser.DataBrowser`.
         """
 
-        self.db.delete_viewer_from_linked_lists(self.index.split('/')[-1])
-        del(self.db.data_viewers[self.index])
-
+        self.db.delete_viewer_from_linked_lists(self.index.split("/")[-1])
+        del self.db.data_viewers[self.index]

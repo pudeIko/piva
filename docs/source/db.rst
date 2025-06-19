@@ -7,7 +7,7 @@ Data Browser
 **DataBrowser** is the main window of the :mod:`piva` package. To open it,
 simply run::
 
-    db
+    piva
 
 in the terminal. This will start a :mod:`piva` session and open the following
 window:

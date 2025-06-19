@@ -44,7 +44,7 @@ To set up the project locally:
 3. **Install Dependencies**:
    - Install the required packages:
      ```bash
-     pip install -r requirements.txt
+     pip install -e .[test]
      ```
 
 4. **Run Tests**:
