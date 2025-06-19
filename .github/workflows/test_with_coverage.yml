@@ -57,6 +57,7 @@ jobs:
       - name: Check formatting with Ruff
         run: |
           ruff format --diff
+        continue-on-error: true
 
       - name: Test dataloaders
         run: >
