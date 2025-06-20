@@ -607,7 +607,7 @@ class PlotTool(QtWidgets.QMainWindow):
             no_entries_box.setIcon(QMessageBox.Information)
             no_entries_box.setWindowTitle("Doh.")
             no_entries_box.setText(
-                "Something went wrong.  " "Open new dataset and update."
+                "Something went wrong.  Open new dataset and update."
             )
             no_entries_box.setStandardButtons(QMessageBox.Ok)
             if no_entries_box.exec() == QMessageBox.Ok:
@@ -632,7 +632,7 @@ class PlotTool(QtWidgets.QMainWindow):
                 no_dv_box.setIcon(QMessageBox.Information)
                 no_dv_box.setWindowTitle("Doh.")
                 no_dv_box.setText(
-                    "It seems the dataset has been closed.  " "Make sure to update."
+                    "It seems the dataset has been closed.  Make sure to update."
                 )
                 no_dv_box.setStandardButtons(QMessageBox.Ok)
                 if no_dv_box.exec() == QMessageBox.Ok:
@@ -656,9 +656,7 @@ class PlotTool(QtWidgets.QMainWindow):
             data_item_colision_box.setIcon(QMessageBox.Question)
             data_item_colision_box.setWindowTitle("Ooh.")
             data_item_colision_box.setText(
-                "Curve with this name already has "
-                "been added.  Want to add "
-                "another one?"
+                "Curve with this name already has been added.  Want to add another one?"
             )
             data_item_colision_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
             if data_item_colision_box.exec() == QMessageBox.Yes:
@@ -1460,7 +1458,7 @@ class PlotTool(QtWidgets.QMainWindow):
             warning_box = QMessageBox()
             warning_box.setIcon(QMessageBox.Information)
             warning_box.setWindowTitle("Load")
-            warning_box.setText("Current progress will be lost.  " "Sure to continue?")
+            warning_box.setText("Current progress will be lost.  Sure to continue?")
             warning_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
             choice = warning_box.exec_()
             if choice == QMessageBox.Ok:
