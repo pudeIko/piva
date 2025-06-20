@@ -2,13 +2,32 @@ from __future__ import annotations
 import os
 import numpy as np
 from typing import TYPE_CHECKING, Any
-from PyQt5.QtWidgets import QTabWidget, QWidget, QLabel, QCheckBox, QComboBox,\
-    QDoubleSpinBox, QSpinBox, QPushButton, QLineEdit, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import (
+    QTabWidget,
+    QWidget,
+    QLabel,
+    QCheckBox,
+    QComboBox,
+    QDoubleSpinBox,
+    QSpinBox,
+    QPushButton,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+)
 from PyQt5.QtGui import QFont
 from PyQt5 import QtCore
 from pyqtgraph.Qt import QtWidgets
-from pyqtgraph import InfiniteLine, PlotWidget, AxisItem, mkPen, mkBrush, \
-    FillBetweenItem, PlotDataItem, ScatterPlotItem
+from pyqtgraph import (
+    InfiniteLine,
+    PlotWidget,
+    AxisItem,
+    mkPen,
+    mkBrush,
+    FillBetweenItem,
+    PlotDataItem,
+    ScatterPlotItem,
+)
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
 from scipy.optimize import curve_fit
 from scipy.optimize import OptimizeWarning
@@ -17,6 +36,7 @@ import piva.working_procedures as wp
 from piva.data_loaders import Dataset
 from piva.cmaps import cmaps, my_cmaps
 from piva.image_panels import TracedVariable
+
 if TYPE_CHECKING:
     from piva.data_viewer_2d import DataViewer2D
 
@@ -34,7 +54,7 @@ QCheckBox{color: rgb(246, 246, 246);}
 """
 SIGNALS = 5
 MY_CMAPS = True
-DEFAULT_CMAP = 'coolwarm'
+DEFAULT_CMAP = "coolwarm"
 
 bold_font = QFont()
 bold_font.setBold(True)
@@ -46,8 +66,9 @@ class Fitter(QMainWindow):
     Specific **Fitters** for MDC and EDC curves inherit from it.
     """
 
-    def __init__(self, data_viewer: DataViewer2D, data_set: Dataset,
-                 axes: list, title: str) -> None:
+    def __init__(
+        self, data_viewer: DataViewer2D, data_set: Dataset, axes: list, title: str
+    ) -> None:
         """
         Create **setting, Image and DC (distribution curve) panels** and
         initialize basic functionalities.
@@ -90,9 +111,9 @@ class Fitter(QMainWindow):
 
         mdl = self.fitter_layout
 
-        mdl.addWidget(self.tabs,             0, 0, 3, 8)
-        mdl.addWidget(self.cut_panel,        4, 0, 4, 4)
-        mdl.addWidget(self.dc_panel,        4, 4, 4, 4)
+        mdl.addWidget(self.tabs, 0, 0, 3, 8)
+        mdl.addWidget(self.cut_panel, 4, 0, 4, 4)
+        mdl.addWidget(self.dc_panel, 4, 4, 4, 4)
 
     def set_image_tab(self) -> None:
         """
@@ -103,52 +124,52 @@ class Fitter(QMainWindow):
         self.image_tab = QWidget()
         itl = QtWidgets.QGridLayout()
 
-        self.image_cmaps_label = QLabel('cmaps:')
+        self.image_cmaps_label = QLabel("cmaps:")
         self.image_cmaps = QComboBox()
-        self.image_invert_colors = QCheckBox('invert colors')
-        self.image_gamma_label = QLabel('gamma:')
+        self.image_invert_colors = QCheckBox("invert colors")
+        self.image_gamma_label = QLabel("gamma:")
         self.image_gamma = QDoubleSpinBox()
         self.image_gamma.setRange(0.05, 10)
         self.image_gamma.setSingleStep(0.05)
         self.image_gamma.setValue(1)
 
-        self.image_x_pos_lbl = QLabel('')
+        self.image_x_pos_lbl = QLabel("")
         self.image_x_pos = QSpinBox()
         self.image_x_pos.setRange(0, self.x_axis.size)
-        self.image_x_pos_value_lbl = QLabel('')
+        self.image_x_pos_value_lbl = QLabel("")
 
-        self.image_y_pos_lbl = QLabel('')
+        self.image_y_pos_lbl = QLabel("")
         self.image_y_pos = QSpinBox()
         self.image_y_pos.setRange(0, self.y_axis.size)
-        self.image_y_pos_value_lbl = QLabel('')
+        self.image_y_pos_value_lbl = QLabel("")
 
-        self.image_close_button = QPushButton('close')
+        self.image_close_button = QPushButton("close")
 
         row = 0
-        itl.addWidget(self.image_y_pos_lbl,         row, 0)
-        itl.addWidget(self.image_y_pos,             row, 1)
-        itl.addWidget(self.image_y_pos_value_lbl,   row, 2)
-        itl.addWidget(self.image_close_button,      row, 8)
+        itl.addWidget(self.image_y_pos_lbl, row, 0)
+        itl.addWidget(self.image_y_pos, row, 1)
+        itl.addWidget(self.image_y_pos_value_lbl, row, 2)
+        itl.addWidget(self.image_close_button, row, 8)
 
         row = 1
-        itl.addWidget(self.image_x_pos_lbl,         row, 0)
-        itl.addWidget(self.image_x_pos,             row, 1)
-        itl.addWidget(self.image_x_pos_value_lbl,   row, 2)
+        itl.addWidget(self.image_x_pos_lbl, row, 0)
+        itl.addWidget(self.image_x_pos, row, 1)
+        itl.addWidget(self.image_x_pos_value_lbl, row, 2)
 
         row = 2
-        itl.addWidget(self.image_cmaps_label,       row, 0)
-        itl.addWidget(self.image_cmaps,             row, 1)
-        itl.addWidget(self.image_invert_colors,     row, 2)
-        itl.addWidget(self.image_gamma_label,       row, 3)
-        itl.addWidget(self.image_gamma,             row, 4)
+        itl.addWidget(self.image_cmaps_label, row, 0)
+        itl.addWidget(self.image_cmaps, row, 1)
+        itl.addWidget(self.image_invert_colors, row, 2)
+        itl.addWidget(self.image_gamma_label, row, 3)
+        itl.addWidget(self.image_gamma, row, 4)
 
-        dummy_lbl = QLabel('')
+        dummy_lbl = QLabel("")
         itl.addWidget(dummy_lbl, 3, 0, 1, 9)
 
         self.setup_cmaps()
         self.image_tab.layout = itl
         self.image_tab.setLayout(itl)
-        self.tabs.addTab(self.image_tab, 'Image')
+        self.tabs.addTab(self.image_tab, "Image")
 
     def setup_cmaps(self) -> None:
         """
@@ -171,14 +192,14 @@ class Fitter(QMainWindow):
         try:
             cmap = self.image_cmaps.currentText()
             if self.image_invert_colors.isChecked() and MY_CMAPS:
-                cmap = cmap + '_r'
+                cmap = cmap + "_r"
         except AttributeError:
             cmap = DEFAULT_CMAP
 
         try:
             self.cmap = cmaps[cmap]
         except KeyError:
-            print('Invalid colormap name. Use one of: ')
+            print("Invalid colormap name. Use one of: ")
             print(cmaps.keys())
         self.cmap_name = cmap
         # Since the cmap changed it forgot our settings for alpha and gamma
@@ -186,8 +207,9 @@ class Fitter(QMainWindow):
         self.cmap.set_gamma()
         self.cmap_changed()
 
-    def cmap_changed(self, image: np.ndarray = None, *args: dict,
-                     **kwargs: dict) -> None:
+    def cmap_changed(
+        self, image: np.ndarray = None, *args: dict, **kwargs: dict
+    ) -> None:
         """
         Recalculate the lookup table and redraw the plots such that the
         changes are immediately reflected.
@@ -231,17 +253,17 @@ class Fitter(QMainWindow):
         """
 
         # Show top and right axes by default, but without ticklabels
-        self.cut_panel.showAxis('top')
-        self.cut_panel.showAxis('right')
-        self.cut_panel.getAxis('top').setStyle(showValues=False)
-        self.cut_panel.getAxis('right').setStyle(showValues=False)
-        self.cut_panel.main_xaxis = 'bottom'
+        self.cut_panel.showAxis("top")
+        self.cut_panel.showAxis("right")
+        self.cut_panel.getAxis("top").setStyle(showValues=False)
+        self.cut_panel.getAxis("right").setStyle(showValues=False)
+        self.cut_panel.main_xaxis = "bottom"
         self.cut_panel.main_xaxis_grid = (255, 1)
-        self.cut_panel.main_yaxis = 'left'
+        self.cut_panel.main_yaxis = "left"
         self.cut_panel.main_yaxis_grid = (2, 0)
 
         # moved here to get rid of warnings:
-        self.cut_panel.right_axis = 'top'
+        self.cut_panel.right_axis = "top"
         self.cut_panel.angle = 90
         self.cut_panel.slider_axis_index = 1
 
@@ -255,12 +277,17 @@ class Fitter(QMainWindow):
             self.image_item = image
 
         self.cut_panel.addItem(self.image_item)
-        self.set_ticks(self.x_axis.min(), self.x_axis.max(), 'bottom')
-        self.set_ticks(self.y_axis.min(), self.y_axis.max(), 'left')
+        self.set_ticks(self.x_axis.min(), self.x_axis.max(), "bottom")
+        self.set_ticks(self.y_axis.min(), self.y_axis.max(), "left")
         x_min, x_max, y_min, y_max = 0, self.x_axis.size, 0, self.y_axis.size
-        self.cut_panel.setLimits(xMin=x_min, xMax=x_max, yMin=y_min,
-                                 yMax=y_max, maxXRange=x_max - x_min,
-                                 maxYRange=y_max - y_min)
+        self.cut_panel.setLimits(
+            xMin=x_min,
+            xMax=x_max,
+            yMin=y_min,
+            yMax=y_max,
+            maxXRange=x_max - x_min,
+            maxYRange=y_max - y_min,
+        )
 
         self.set_hor_line()
 
@@ -275,7 +302,7 @@ class Fitter(QMainWindow):
             y_idx = self.y_axis.size // 2
         self.hor_line = InfiniteLine(y_idx, movable=True, angle=0)
         self.hor_line.setBounds([1, self.y_axis.size - 1])
-        self.hor_pos = TracedVariable(y_idx, name='pos')
+        self.hor_pos = TracedVariable(y_idx, name="pos")
         self.update_allowed_values(1, self.y_axis.size - 1)
         self.hor_pos.sig_value_changed.connect(self.update_position)
         self.hor_line.sigDragged.connect(self.on_dragged)
@@ -299,11 +326,10 @@ class Fitter(QMainWindow):
 
         k_idx = self.x_axis.size // 2
         self.ver_line_cut = InfiniteLine(k_idx, movable=True, angle=90)
-        self.ver_line_dc = InfiniteLine(self.x_axis[k_idx], movable=True,
-                                        angle=90)
+        self.ver_line_dc = InfiniteLine(self.x_axis[k_idx], movable=True, angle=90)
         self.ver_line_cut.setBounds([1, self.x_axis.size - 1])
         self.ver_line_dc.setBounds([self.x_axis.min(), self.x_axis.max()])
-        self.ver_pos = TracedVariable(k_idx, name='pos')
+        self.ver_pos = TracedVariable(k_idx, name="pos")
         self.ver_pos.set_allowed_values(np.arange(1, self.x_axis.size - 1, 1))
         self.ver_pos.sig_value_changed.connect(self.update_position)
         self.ver_line_cut.sigDragged.connect(self.on_dragged_cut_ver)
@@ -350,8 +376,8 @@ class Fitter(QMainWindow):
         # Create the new axis and set its range
         new_axis = AxisItem(orientation=axis)
         new_axis.setRange(min_val, max_val)
-        plotItem.axes[axis]['item'] = new_axis
-        if axis == 'bottom':
+        plotItem.axes[axis]["item"] = new_axis
+        if axis == "bottom":
             plotItem.layout.addItem(new_axis, *self.cut_panel.main_xaxis_grid)
         else:
             plotItem.layout.addItem(new_axis, *self.cut_panel.main_yaxis_grid)
@@ -401,10 +427,8 @@ class Fitter(QMainWindow):
         vertical sliders was dragged in **DC panel**.
         """
 
-        self.ver_pos.set_value(wp.indexof(self.ver_line_dc.value(),
-                                          self.x_axis))
-        self.ver_line_cut.setValue(wp.indexof(self.ver_line_dc.value(),
-                                              self.x_axis))
+        self.ver_pos.set_value(wp.indexof(self.ver_line_dc.value(), self.x_axis))
+        self.ver_line_cut.setValue(wp.indexof(self.ver_line_dc.value(), self.x_axis))
         self.image_x_pos.setValue(int(self.ver_pos.get_value()))
         self.update_labels()
 
@@ -497,7 +521,7 @@ class Fitter(QMainWindow):
         :class:`~DataViewer2D`.
         """
 
-        del(self.data_viewer.data_viewers[self.title])
+        del self.data_viewer.data_viewers[self.title]
 
 
 class MDCFitter(Fitter):
@@ -511,8 +535,9 @@ class MDCFitter(Fitter):
     `e.g.` replica bands.
     """
 
-    def __init__(self, data_viewer: DataViewer2D, data_set: Dataset,
-                 axes: list, title: str) -> None:
+    def __init__(
+        self, data_viewer: DataViewer2D, data_set: Dataset, axes: list, title: str
+    ) -> None:
         """
         Initialize fitter window.
 
@@ -581,16 +606,16 @@ class MDCFitter(Fitter):
         # create elements
         itl = self.image_tab.layout
 
-        self.image_x_pos_lbl.setText('Momentum:')
-        self.image_y_pos_lbl.setText('Energy:')
+        self.image_x_pos_lbl.setText("Momentum:")
+        self.image_y_pos_lbl.setText("Energy:")
 
-        self.image_bin = QCheckBox('bin k')
+        self.image_bin = QCheckBox("bin k")
         self.image_bin_n = QSpinBox()
         self.image_bin_n.setValue(3)
 
         row = 1
-        itl.addWidget(self.image_bin,               row, 3)
-        itl.addWidget(self.image_bin_n,             row, 4)
+        itl.addWidget(self.image_bin, row, 3)
+        itl.addWidget(self.image_bin_n, row, 4)
 
     def set_fitting_tab(self) -> None:
         """
@@ -601,29 +626,29 @@ class MDCFitter(Fitter):
         self.fitting_tab = QWidget()
         ftl = QtWidgets.QGridLayout()
 
-        self.fitting_mu_lbl = QLabel('\u03BC:')
+        self.fitting_mu_lbl = QLabel("\u03bc:")
         self.fitting_mu = QDoubleSpinBox()
         self.fitting_mu.setRange(self.x_axis.min(), self.x_axis.max())
         self.fitting_mu.setDecimals(4)
-        self.fitting_gamma_lbl = QLabel('\u0393:')
+        self.fitting_gamma_lbl = QLabel("\u0393:")
         self.fitting_gamma = QDoubleSpinBox()
         self.fitting_gamma.setValue(0.1)
         self.fitting_mu.setDecimals(4)
-        self.fitting_alpha_lbl = QLabel('\u03B1:')
+        self.fitting_alpha_lbl = QLabel("\u03b1:")
         self.fitting_alpha = QDoubleSpinBox()
-        self.fitting_alpha.setValue(1.)
-        self.fitting_beta_lbl = QLabel('\u03B2:')
+        self.fitting_alpha.setValue(1.0)
+        self.fitting_beta_lbl = QLabel("\u03b2:")
         self.fitting_beta = QDoubleSpinBox()
-        self.fitting_beta.setValue(1.)
-        self.fitting_a_lbl = QLabel('a:')
+        self.fitting_beta.setValue(1.0)
+        self.fitting_a_lbl = QLabel("a:")
         self.fitting_a = QDoubleSpinBox()
         self.fitting_a.setValue(100)
         self.fitting_a.setRange(0, 1e5)
-        self.fitting_button = QPushButton('fit MDC')
+        self.fitting_button = QPushButton("fit MDC")
 
-        self.fitting_message_cell = QLineEdit('Some stuff will show up here.')
+        self.fitting_message_cell = QLineEdit("Some stuff will show up here.")
 
-        self.fitting_range_lbl = QLabel('fit range:')
+        self.fitting_range_lbl = QLabel("fit range:")
         self.fitting_range_lbl.setFont(bold_font)
         self.fitting_range_start = QDoubleSpinBox()
         self.fitting_range_start.setRange(self.x_axis.min(), self.x_axis.max())
@@ -637,7 +662,7 @@ class MDCFitter(Fitter):
         self.fitting_range_stop.setDecimals(6)
         self.fitting_range_stop.setValue(self.x_axis.max())
 
-        self.fitting_bgr_range_lbl = QLabel('bgr range:')
+        self.fitting_bgr_range_lbl = QLabel("bgr range:")
         self.fitting_bgr_range_lbl.setFont(bold_font)
         self.fitting_bgr_range_first = QDoubleSpinBox()
         self.fitting_bgr_range_first.setRange(self.x_axis.min(), self.x_axis.max())
@@ -646,64 +671,63 @@ class MDCFitter(Fitter):
         self.fitting_bgr_range_first.setValue(self.x_axis.min())
 
         self.fitting_bgr_range_second = QDoubleSpinBox()
-        self.fitting_bgr_range_second.setRange(self.x_axis.min(),
-                                               self.x_axis.max())
+        self.fitting_bgr_range_second.setRange(self.x_axis.min(), self.x_axis.max())
         self.fitting_bgr_range_second.setSingleStep(wp.get_step(self.x_axis))
         self.fitting_bgr_range_second.setDecimals(6)
         self.fitting_bgr_range_second.setValue(self.x_axis.max())
 
-        self.fitting_bgr_poly_lbl = QLabel('bgr poly:')
+        self.fitting_bgr_poly_lbl = QLabel("bgr poly:")
         self.fitting_bgr_poly_lbl.setFont(bold_font)
-        self.fitting_bgr_poly_order_lbl = QLabel('order')
+        self.fitting_bgr_poly_order_lbl = QLabel("order")
         self.fitting_bgr_poly_order = QSpinBox()
         self.fitting_bgr_poly_order.setRange(1, 10)
-        self.fitting_bgr_poly_button = QPushButton('fit bgr')
+        self.fitting_bgr_poly_button = QPushButton("fit bgr")
 
-        self.fitting_results_lbl = QLabel('results:')
+        self.fitting_results_lbl = QLabel("results:")
         self.fitting_results_lbl.setFont(bold_font)
-        self.fitting_result_append = QPushButton('append')
-        self.fitting_result_edit = QPushButton('edit')
-        self.fitting_result_update = QPushButton('load/update')
-        self.fitting_result_save = QPushButton('save')
+        self.fitting_result_append = QPushButton("append")
+        self.fitting_result_edit = QPushButton("edit")
+        self.fitting_result_update = QPushButton("load/update")
+        self.fitting_result_save = QPushButton("save")
 
         row = 0
-        ftl.addWidget(self.fitting_mu_lbl,              row, 0)
-        ftl.addWidget(self.fitting_mu,                  row, 1)
-        ftl.addWidget(self.fitting_gamma_lbl,           row, 2)
-        ftl.addWidget(self.fitting_gamma,               row, 3)
-        ftl.addWidget(self.fitting_range_lbl,           row, 5)
-        ftl.addWidget(self.fitting_range_start,         row, 6, 1, 2)
-        ftl.addWidget(self.fitting_range_stop,          row, 8, 1, 2)
+        ftl.addWidget(self.fitting_mu_lbl, row, 0)
+        ftl.addWidget(self.fitting_mu, row, 1)
+        ftl.addWidget(self.fitting_gamma_lbl, row, 2)
+        ftl.addWidget(self.fitting_gamma, row, 3)
+        ftl.addWidget(self.fitting_range_lbl, row, 5)
+        ftl.addWidget(self.fitting_range_start, row, 6, 1, 2)
+        ftl.addWidget(self.fitting_range_stop, row, 8, 1, 2)
 
         row = 1
-        ftl.addWidget(self.fitting_alpha_lbl,           row, 0)
-        ftl.addWidget(self.fitting_alpha,               row, 1)
-        ftl.addWidget(self.fitting_beta_lbl,            row, 2)
-        ftl.addWidget(self.fitting_beta,                row, 3)
-        ftl.addWidget(self.fitting_bgr_range_lbl,       row, 5)
-        ftl.addWidget(self.fitting_bgr_range_first,     row, 6, 1, 2)
-        ftl.addWidget(self.fitting_bgr_range_second,    row, 8, 1, 2)
+        ftl.addWidget(self.fitting_alpha_lbl, row, 0)
+        ftl.addWidget(self.fitting_alpha, row, 1)
+        ftl.addWidget(self.fitting_beta_lbl, row, 2)
+        ftl.addWidget(self.fitting_beta, row, 3)
+        ftl.addWidget(self.fitting_bgr_range_lbl, row, 5)
+        ftl.addWidget(self.fitting_bgr_range_first, row, 6, 1, 2)
+        ftl.addWidget(self.fitting_bgr_range_second, row, 8, 1, 2)
 
         row = 2
-        ftl.addWidget(self.fitting_a_lbl,               row, 0)
-        ftl.addWidget(self.fitting_a,                   row, 1)
-        ftl.addWidget(self.fitting_button,              row, 2, 1, 2)
-        ftl.addWidget(self.fitting_bgr_poly_lbl,        row, 5)
-        ftl.addWidget(self.fitting_bgr_poly_order_lbl,  row, 6)
-        ftl.addWidget(self.fitting_bgr_poly_order,      row, 7)
-        ftl.addWidget(self.fitting_bgr_poly_button,     row, 8, 1, 2)
+        ftl.addWidget(self.fitting_a_lbl, row, 0)
+        ftl.addWidget(self.fitting_a, row, 1)
+        ftl.addWidget(self.fitting_button, row, 2, 1, 2)
+        ftl.addWidget(self.fitting_bgr_poly_lbl, row, 5)
+        ftl.addWidget(self.fitting_bgr_poly_order_lbl, row, 6)
+        ftl.addWidget(self.fitting_bgr_poly_order, row, 7)
+        ftl.addWidget(self.fitting_bgr_poly_button, row, 8, 1, 2)
 
         row = 3
-        ftl.addWidget(self.fitting_message_cell,        row, 0, 1, 5)
-        ftl.addWidget(self.fitting_results_lbl,         row, 5)
-        ftl.addWidget(self.fitting_result_append,       row, 6)
-        ftl.addWidget(self.fitting_result_edit,         row, 7)
-        ftl.addWidget(self.fitting_result_update,       row, 8)
-        ftl.addWidget(self.fitting_result_save,         row, 9)
+        ftl.addWidget(self.fitting_message_cell, row, 0, 1, 5)
+        ftl.addWidget(self.fitting_results_lbl, row, 5)
+        ftl.addWidget(self.fitting_result_append, row, 6)
+        ftl.addWidget(self.fitting_result_edit, row, 7)
+        ftl.addWidget(self.fitting_result_update, row, 8)
+        ftl.addWidget(self.fitting_result_save, row, 9)
 
         self.fitting_tab.layout = ftl
         self.fitting_tab.setLayout(ftl)
-        self.tabs.addTab(self.fitting_tab, 'Fitting')
+        self.tabs.addTab(self.fitting_tab, "Fitting")
 
     def set_dc_panel(self) -> None:
         """
@@ -723,44 +747,50 @@ class MDCFitter(Fitter):
         e_idx = self.hor_pos.get_value()
         if self.image_bin.isChecked():
             n = self.image_bin_n.value()
-            self.mdc = np.sum(self.data[:, (e_idx - n):(e_idx + n)], axis=1)
+            self.mdc = np.sum(self.data[:, (e_idx - n) : (e_idx + n)], axis=1)
         else:
             self.mdc = self.data[:, e_idx]
 
-        range_start, range_stop = self.fitting_range_start.value(), \
-                                  self.fitting_range_stop.value()
-        bgr_range_f, bgr_range_s = self.fitting_bgr_range_first.value(), \
-                                   self.fitting_bgr_range_second.value()
+        range_start, range_stop = (
+            self.fitting_range_start.value(),
+            self.fitting_range_stop.value(),
+        )
+        bgr_range_f, bgr_range_s = (
+            self.fitting_bgr_range_first.value(),
+            self.fitting_bgr_range_second.value(),
+        )
         self.fitting_range_start.setRange(self.x_axis.min(), range_stop)
         self.fitting_range_stop.setRange(range_start, self.x_axis.max())
         self.fitting_bgr_range_first.setRange(range_start, range_stop)
         self.fitting_bgr_range_second.setRange(range_start, range_stop)
 
         # print(self.x_axis.shape, self.mdc.shape)
-        mdc_plot.plot(self.x_axis, self.mdc, pen=mkPen('k', width=2))
-        shadow_bottom = PlotDataItem([range_start, range_stop],
-                                     [-self.mdc.max(), -self.mdc.max()])
-        shadow_top = PlotDataItem([range_start, range_stop],
-                                  [2 * self.mdc.max(), 2 * self.mdc.max()])
+        mdc_plot.plot(self.x_axis, self.mdc, pen=mkPen("k", width=2))
+        shadow_bottom = PlotDataItem(
+            [range_start, range_stop], [-self.mdc.max(), -self.mdc.max()]
+        )
+        shadow_top = PlotDataItem(
+            [range_start, range_stop], [2 * self.mdc.max(), 2 * self.mdc.max()]
+        )
 
         try:
             mdc_plot.removeItem(self.shadow)
         except AttributeError:
             pass
-        self.shadow = FillBetweenItem(shadow_top, shadow_bottom,
-                                      mkBrush((229, 229, 229)))
+        self.shadow = FillBetweenItem(
+            shadow_top, shadow_bottom, mkBrush((229, 229, 229))
+        )
 
-        self.bgr_first = PlotDataItem([bgr_range_f, bgr_range_f],
-                                      [-self.mdc.max(),
-                                       self.mdc[wp.indexof(bgr_range_f,
-                                                           self.x_axis)]],
-                                      pen=mkPen('k', style=QtCore.Qt.DashLine))
-        self.bgr_second = PlotDataItem([bgr_range_s, bgr_range_s],
-                                       [-self.mdc.max(),
-                                        self.mdc[wp.indexof(bgr_range_s,
-                                                            self.x_axis)]],
-                                       pen=mkPen('k',
-                                                 style=QtCore.Qt.DashLine))
+        self.bgr_first = PlotDataItem(
+            [bgr_range_f, bgr_range_f],
+            [-self.mdc.max(), self.mdc[wp.indexof(bgr_range_f, self.x_axis)]],
+            pen=mkPen("k", style=QtCore.Qt.DashLine),
+        )
+        self.bgr_second = PlotDataItem(
+            [bgr_range_s, bgr_range_s],
+            [-self.mdc.max(), self.mdc[wp.indexof(bgr_range_s, self.x_axis)]],
+            pen=mkPen("k", style=QtCore.Qt.DashLine),
+        )
         mdc_plot.addItem(self.shadow)
         mdc_plot.addItem(self.bgr_first)
         mdc_plot.addItem(self.bgr_second)
@@ -772,10 +802,12 @@ class MDCFitter(Fitter):
         """
 
         try:
-            self.image_x_pos_value_lbl.setText('({:.4f})'.format(
-                self.x_axis[int(self.ver_pos.get_value())]))
-            self.image_y_pos_value_lbl.setText('({:.4f})'.format(
-                self.y_axis[int(self.hor_pos.get_value())]))
+            self.image_x_pos_value_lbl.setText(
+                "({:.4f})".format(self.x_axis[int(self.ver_pos.get_value())])
+            )
+            self.image_y_pos_value_lbl.setText(
+                "({:.4f})".format(self.y_axis[int(self.hor_pos.get_value())])
+            )
             self.fitting_mu.setValue(self.ver_line_dc.value())
         except AttributeError:
             pass
@@ -785,10 +817,14 @@ class MDCFitter(Fitter):
         Fit polynomial background within the specified region.
         """
 
-        bgr0, bgr1 = self.fitting_range_start.value(), \
-                     self.fitting_bgr_range_first.value()
-        bgr2, bgr3 = self.fitting_bgr_range_second.value(), \
-                     self.fitting_range_stop.value()
+        bgr0, bgr1 = (
+            self.fitting_range_start.value(),
+            self.fitting_bgr_range_first.value(),
+        )
+        bgr2, bgr3 = (
+            self.fitting_bgr_range_second.value(),
+            self.fitting_range_stop.value(),
+        )
         bgr0, bgr1 = wp.indexof(bgr0, self.x_axis), wp.indexof(bgr1, self.x_axis)
         bgr2, bgr3 = wp.indexof(bgr2, self.x_axis), wp.indexof(bgr3, self.x_axis)
 
@@ -805,8 +841,7 @@ class MDCFitter(Fitter):
         except AttributeError:
             pass
 
-        self.bgr = PlotDataItem(self.fit_k, self.bgr_fit,
-                                pen=mkPen('c', width=2))
+        self.bgr = PlotDataItem(self.fit_k, self.bgr_fit, pen=mkPen("c", width=2))
         self.dc_panel.addItem(self.bgr)
 
     def fit_mdc(self) -> None:
@@ -832,7 +867,7 @@ class MDCFitter(Fitter):
             mdc_fit = self.mdc[range0:range1]
             self.bgr_fit = np.zeros_like(mdc_fit)
         except ValueError:
-            message = 'Fitting range doesn\'t match background size.'
+            message = "Fitting range doesn't match background size."
             self.fitting_message_cell.setText(message)
             return
 
@@ -857,11 +892,11 @@ class MDCFitter(Fitter):
             message = self.set_fitting_message(fit_alpha, fit_beta)
             self.fitting_message_cell.setText(message)
         except RuntimeWarning:
-            message = 'Runtime: Couldn\'t fit with current parameters.'
+            message = "Runtime: Couldn't fit with current parameters."
             self.fitting_message_cell.setText(message)
             return
         except OptimizeWarning:
-            message = 'Optimization: Couldn\'t fit with current parameters.'
+            message = "Optimization: Couldn't fit with current parameters."
             self.fitting_message_cell.setText(message)
             return
 
@@ -873,7 +908,7 @@ class MDCFitter(Fitter):
 
         fit = res_func(k_fit) + self.bgr_fit
 
-        self.fit = PlotDataItem(k_fit, fit, pen=mkPen('m', width=2))
+        self.fit = PlotDataItem(k_fit, fit, pen=mkPen("m", width=2))
         self.dc_panel.addItem(self.fit)
 
     def set_fit_fun(self, fit_alpha: bool, fit_beta: bool) -> None:
@@ -886,24 +921,29 @@ class MDCFitter(Fitter):
                          above the expectation values.
         """
 
-        self.p0 = [self.fitting_a.value(), self.fitting_mu.value(),
-                   self.fitting_gamma.value()]
+        self.p0 = [
+            self.fitting_a.value(),
+            self.fitting_mu.value(),
+            self.fitting_gamma.value(),
+        ]
         if fit_alpha and fit_beta:
-            self.fit_fun = lambda x, a0, mu, gamma, alpha, beta: \
-                wp.asym_lorentzian(x, a0, mu, gamma, alpha, beta)
+            self.fit_fun = lambda x, a0, mu, gamma, alpha, beta: wp.asym_lorentzian(
+                x, a0, mu, gamma, alpha, beta
+            )
             self.p0.append(self.fitting_alpha.value())
             self.p0.append(self.fitting_beta.value())
         elif fit_alpha and not fit_beta:
-            self.fit_fun = lambda x, a0, mu, gamma, alpha: \
-                wp.asym_lorentzian(x, a0, mu, gamma, alpha=alpha)
+            self.fit_fun = lambda x, a0, mu, gamma, alpha: wp.asym_lorentzian(
+                x, a0, mu, gamma, alpha=alpha
+            )
             self.p0.append(self.fitting_alpha.value())
         elif not fit_alpha and fit_beta:
-            self.fit_fun = lambda x, a0, mu, gamma, beta: \
-                wp.asym_lorentzian(x, a0, mu, gamma, beta=beta)
+            self.fit_fun = lambda x, a0, mu, gamma, beta: wp.asym_lorentzian(
+                x, a0, mu, gamma, beta=beta
+            )
             self.p0.append(self.fitting_beta.value())
         else:
-            self.fit_fun = lambda x, a0, mu, gamma: \
-                wp.asym_lorentzian(x, a0, mu, gamma)
+            self.fit_fun = lambda x, a0, mu, gamma: wp.asym_lorentzian(x, a0, mu, gamma)
 
     def set_fitting_message(self, fit_alpha: bool, fit_beta: bool) -> str:
         """
@@ -915,17 +955,18 @@ class MDCFitter(Fitter):
         """
 
         e = self.y_axis[int(self.hor_pos.get_value())]
-        message = 'E = {:.4f};  a = {:.1f};  \u03BC = {:.4f};  ' \
-                  '\u0393 = {:.4f}'.format(e, self.p[0], self.p[1], self.p[2])
+        message = "E = {:.4f};  a = {:.1f};  \u03bc = {:.4f};  \u0393 = {:.4f}".format(
+            e, self.p[0], self.p[1], self.p[2]
+        )
         if fit_alpha:
-            message += ';  \u03B1 = {:.4f}'.format(self.p[3])
+            message += ";  \u03b1 = {:.4f}".format(self.p[3])
         else:
-            message += ';  \u03B1 = -'
+            message += ";  \u03b1 = -"
 
         if fit_beta:
-            message += ';  \u03B2 = {:.4f}'.format(self.p[-1])
+            message += ";  \u03b2 = {:.4f}".format(self.p[-1])
         else:
-            message += ';  \u03B2 = -'
+            message += ";  \u03b2 = -"
 
         return message
 
@@ -958,7 +999,7 @@ class MDCFitter(Fitter):
         if self.fit_result is None:
             no_fit_box = QMessageBox()
             no_fit_box.setIcon(QMessageBox.Information)
-            no_fit_box.setText('No result to save.')
+            no_fit_box.setText("No result to save.")
             no_fit_box.setStandardButtons(QMessageBox.Ok)
             if no_fit_box.exec() == QMessageBox.Ok:
                 return
@@ -971,8 +1012,7 @@ class MDCFitter(Fitter):
         if len(self.fit_results.shape) == 1:
             pass
         else:
-            self.fit_results = np.flip(np.sort(self.fit_results, axis=0),
-                                       axis=0)
+            self.fit_results = np.flip(np.sort(self.fit_results, axis=0), axis=0)
 
         try:
             self.cut_panel.removeItem(self.fit_points)
@@ -980,12 +1020,13 @@ class MDCFitter(Fitter):
             pass
 
         try:
-            fit_points_k = np.array([wp.indexof(ki, self.x_axis)
-                                     for ki in self.fit_results[:, 2]])
-            fit_points_e = np.array([wp.indexof(ei, self.y_axis)
-                                     for ei in self.fit_results[:, 0]])
-            self.fit_points = ScatterPlotItem(fit_points_k, fit_points_e,
-                                              symbol='h')
+            fit_points_k = np.array(
+                [wp.indexof(ki, self.x_axis) for ki in self.fit_results[:, 2]]
+            )
+            fit_points_e = np.array(
+                [wp.indexof(ei, self.y_axis) for ei in self.fit_results[:, 0]]
+            )
+            self.fit_points = ScatterPlotItem(fit_points_k, fit_points_e, symbol="h")
             self.cut_panel.addItem(self.fit_points)
         except IndexError:
             pass
@@ -996,31 +1037,32 @@ class MDCFitter(Fitter):
         in the directory of the original file.
         """
 
-        fname = self.title[:-13] + '_mdc_fit_results.txt'
+        fname = self.title[:-13] + "_mdc_fit_results.txt"
         if os.path.exists(fname):
             no_fit_box = QMessageBox()
             no_fit_box.setIcon(QMessageBox.Information)
-            no_fit_box.setText('File already exists, want to overwrite?')
+            no_fit_box.setText("File already exists, want to overwrite?")
             no_fit_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             if no_fit_box.exec() == QMessageBox.Cancel:
                 return
             else:
                 pass
 
-        f = open(fname, 'w+')
-        line = 'E [eV]\t\t\ta [a.u.] \t\t mu [1/A]\t\tgamma [1/A]\t\t' \
-               'alpha\tbeta [a.u]\n'
+        f = open(fname, "w+")
+        line = (
+            "E [eV]\t\t\ta [a.u.] \t\t mu [1/A]\t\tgamma [1/A]\t\talpha\tbeta [a.u]\n"
+        )
         f.write(line)
         try:
             for result in self.fit_results:
-                line = ''
+                line = ""
                 for entry in result:
-                    line += str(entry) + '\t'
-                f.write(line + '\n')
+                    line += str(entry) + "\t"
+                f.write(line + "\n")
         except TypeError:
             for entry in self.fit_results:
-                line += str(entry) + '\t'
-            f.write(line + '\n')
+                line += str(entry) + "\t"
+            f.write(line + "\n")
         f.close()
 
     def edit_fit_results(self) -> None:
@@ -1029,35 +1071,34 @@ class MDCFitter(Fitter):
         button. For convenience.
         """
 
-        fname = self.title[:-13] + '_mdc_fit_results.txt'
+        fname = self.title[:-13] + "_mdc_fit_results.txt"
         if not os.path.exists(fname):
             no_file_box = QMessageBox()
             no_file_box.setIcon(QMessageBox.Information)
-            no_file_box.setText('File not found.')
+            no_file_box.setText("File not found.")
             no_file_box.setStandardButtons(QMessageBox.Ok)
             if no_file_box.exec() == QMessageBox.Ok:
                 return
 
-        os.system('open ' + fname)
+        os.system("open " + fname)
 
     def load_update_fit_result(self) -> None:
         """
         Load previously saved fit results form **\ *.txt** file.
         """
 
-        fname = self.title[:-13] + '_mdc_fit_results.txt'
+        fname = self.title[:-13] + "_mdc_fit_results.txt"
         if not os.path.exists(fname):
             no_file_box = QMessageBox()
             no_file_box.setIcon(QMessageBox.Information)
-            no_file_box.setText('File not found.')
+            no_file_box.setText("File not found.")
             no_file_box.setStandardButtons(QMessageBox.Ok)
             if no_file_box.exec() == QMessageBox.Ok:
                 return
 
         overwriting_box = QMessageBox()
         overwriting_box.setIcon(QMessageBox.Question)
-        overwriting_box.setText('Fit results will be overwritten, '
-                                'sure to proceed?')
+        overwriting_box.setText("Fit results will be overwritten, sure to proceed?")
         overwriting_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         if overwriting_box.exec() == QMessageBox.Cancel:
             return
@@ -1068,7 +1109,7 @@ class MDCFitter(Fitter):
         lines = f.readlines()
         self.fit_results = None
         for line in lines[1:]:
-            row = np.array([float(entry) for entry in line.split('\t')[:-1]])
+            row = np.array([float(entry) for entry in line.split("\t")[:-1]])
             if self.fit_results is None:
                 self.fit_results = row
             else:
@@ -1082,12 +1123,13 @@ class MDCFitter(Fitter):
             pass
 
         try:
-            fit_points_k = np.array([wp.indexof(ki, self.x_axis)
-                                     for ki in self.fit_results[:, 2]])
-            fit_points_e = np.array([wp.indexof(ei, self.y_axis)
-                                     for ei in self.fit_results[:, 0]])
-            self.fit_points = ScatterPlotItem(fit_points_k, fit_points_e,
-                                              symbol='h')
+            fit_points_k = np.array(
+                [wp.indexof(ki, self.x_axis) for ki in self.fit_results[:, 2]]
+            )
+            fit_points_e = np.array(
+                [wp.indexof(ei, self.y_axis) for ei in self.fit_results[:, 0]]
+            )
+            self.fit_points = ScatterPlotItem(fit_points_k, fit_points_e, symbol="h")
             self.cut_panel.addItem(self.fit_points)
         except IndexError:
             pass
@@ -1098,8 +1140,9 @@ class EDCFitter(Fitter):
     Utility for convenient inspection of energy distribution curves (EDCs).
     """
 
-    def __init__(self, data_viewer: DataViewer2D, data_set: Dataset,
-                 axes: list, title: str) -> None:
+    def __init__(
+        self, data_viewer: DataViewer2D, data_set: Dataset, axes: list, title: str
+    ) -> None:
         """
         Initialize fitter window.
 
@@ -1159,40 +1202,38 @@ class EDCFitter(Fitter):
         # create elements
         itl = self.image_tab.layout
 
-        self.image_x_pos_lbl.setText('Energy:')
-        self.image_y_pos_lbl.setText('Momentum:')
+        self.image_x_pos_lbl.setText("Energy:")
+        self.image_y_pos_lbl.setText("Momentum:")
 
-        self.image_bin = QCheckBox('bin E')
+        self.image_bin = QCheckBox("bin E")
         self.image_bin_n = QSpinBox()
         self.image_bin_n.setValue(3)
 
-        self.image_edc_range_lbl = QLabel('EDC range:')
+        self.image_edc_range_lbl = QLabel("EDC range:")
         self.image_edc_range_lbl.setFont(bold_font)
         self.image_edc_range_start = QDoubleSpinBox()
-        self.image_edc_range_start.setRange(self.x_axis.min(),
-                                            self.x_axis.max())
+        self.image_edc_range_start.setRange(self.x_axis.min(), self.x_axis.max())
         self.image_edc_range_start.setSingleStep(wp.get_step(self.x_axis))
         self.image_edc_range_start.setDecimals(6)
         self.image_edc_range_start.setValue(self.x_axis.min())
 
-        self.symmetrize_box = QCheckBox('symmetrize')
+        self.symmetrize_box = QCheckBox("symmetrize")
 
         self.image_edc_range_stop = QDoubleSpinBox()
-        self.image_edc_range_stop.setRange(self.x_axis.min(),
-                                           self.x_axis.max())
+        self.image_edc_range_stop.setRange(self.x_axis.min(), self.x_axis.max())
         self.image_edc_range_stop.setSingleStep(wp.get_step(self.x_axis))
         self.image_edc_range_stop.setDecimals(6)
         self.image_edc_range_stop.setValue(self.x_axis.max())
 
         row = 0
-        itl.addWidget(self.image_edc_range_lbl,     row, 5)
-        itl.addWidget(self.image_edc_range_start,   row, 6)
-        itl.addWidget(self.image_edc_range_stop,    row, 7)
+        itl.addWidget(self.image_edc_range_lbl, row, 5)
+        itl.addWidget(self.image_edc_range_start, row, 6)
+        itl.addWidget(self.image_edc_range_stop, row, 7)
 
         row = 1
-        itl.addWidget(self.image_bin,               row, 3)
-        itl.addWidget(self.image_bin_n,             row, 4)
-        itl.addWidget(self.symmetrize_box,          row, 5)
+        itl.addWidget(self.image_bin, row, 3)
+        itl.addWidget(self.image_bin_n, row, 4)
+        itl.addWidget(self.symmetrize_box, row, 5)
 
     def set_dc_panel(self) -> None:
         """
@@ -1208,15 +1249,18 @@ class EDCFitter(Fitter):
                 pass
 
         k_idx = self.hor_pos.get_value()
-        e_start, e_stop = self.image_edc_range_start.value(), \
-                          self.image_edc_range_stop.value()
-        e_start, e_stop = wp.indexof(e_start, self.x_axis), \
-                          wp.indexof(e_stop, self.x_axis)
+        e_start, e_stop = (
+            self.image_edc_range_start.value(),
+            self.image_edc_range_stop.value(),
+        )
+        e_start, e_stop = (
+            wp.indexof(e_start, self.x_axis),
+            wp.indexof(e_stop, self.x_axis),
+        )
 
         try:
             self.ver_line_cut.setBounds([e_start, e_stop])
-            self.ver_line_edc.setBounds([self.x_axis[e_start],
-                                         self.x_axis[e_stop]])
+            self.ver_line_edc.setBounds([self.x_axis[e_start], self.x_axis[e_stop]])
             self.image_x_pos.setRange(e_start, e_stop)
         except AttributeError:
             pass
@@ -1224,8 +1268,9 @@ class EDCFitter(Fitter):
         # remember analyzer and energy axes are swapped here
         if self.image_bin.isChecked():
             n = self.image_bin_n.value()
-            self.edc = np.sum(self.data[e_start:e_stop,
-                              (k_idx - n):(k_idx + n)], axis=1)
+            self.edc = np.sum(
+                self.data[e_start:e_stop, (k_idx - n) : (k_idx + n)], axis=1
+            )
         else:
             self.edc = self.data[e_start:e_stop, k_idx]
         self.edc_erg_ax = self.x_axis[e_start:e_stop]
@@ -1234,17 +1279,17 @@ class EDCFitter(Fitter):
             if self.image_edc_range_start.value() > 0:
                 kin_erg_box = QMessageBox()
                 kin_erg_box.setIcon(QMessageBox.Information)
-                kin_erg_box.setText('Energy must be in binding')
+                kin_erg_box.setText("Energy must be in binding")
                 kin_erg_box.setStandardButtons(QMessageBox.Ok)
                 if kin_erg_box.exec() == QMessageBox.Ok:
                     self.symmetrize_box.setChecked(False)
-                    self.edc, self.edc_erg_ax = \
-                        wp.symmetrize_edc(self.edc, self.edc_erg_ax)
+                    self.edc, self.edc_erg_ax = wp.symmetrize_edc(
+                        self.edc, self.edc_erg_ax
+                    )
             else:
-                self.edc, self.edc_erg_ax = \
-                    wp.symmetrize_edc(self.edc, self.edc_erg_ax)
+                self.edc, self.edc_erg_ax = wp.symmetrize_edc(self.edc, self.edc_erg_ax)
 
-        edc_plot.plot(self.edc_erg_ax, self.edc, pen=mkPen('k', width=2))
+        edc_plot.plot(self.edc_erg_ax, self.edc, pen=mkPen("k", width=2))
 
         for di in self.cut_panel.listDataItems():
             try:
@@ -1256,11 +1301,15 @@ class EDCFitter(Fitter):
         edc_plot.setXRange(self.edc_erg_ax.min(), self.edc_erg_ax.max())
 
         self.edc_line_start = PlotDataItem(
-            [e_start, e_start], [0, self.y_axis.size],
-            pen=mkPen('m', style=QtCore.Qt.DashLine))
+            [e_start, e_start],
+            [0, self.y_axis.size],
+            pen=mkPen("m", style=QtCore.Qt.DashLine),
+        )
         self.edc_line_stop = PlotDataItem(
-            [e_stop, e_stop], [0, self.y_axis.size],
-            pen=mkPen('m', width=2, style=QtCore.Qt.DashLine))
+            [e_stop, e_stop],
+            [0, self.y_axis.size],
+            pen=mkPen("m", width=2, style=QtCore.Qt.DashLine),
+        )
         self.cut_panel.addItem(self.edc_line_start)
         self.cut_panel.addItem(self.edc_line_stop)
 
@@ -1270,9 +1319,11 @@ class EDCFitter(Fitter):
         """
 
         try:
-            self.image_y_pos_value_lbl.setText('({:.4f})'.format(
-                self.y_axis[int(self.hor_pos.get_value())]))
-            self.image_x_pos_value_lbl.setText('({:.4f})'.format(
-                self.x_axis[int(self.ver_pos.get_value())]))
+            self.image_y_pos_value_lbl.setText(
+                "({:.4f})".format(self.y_axis[int(self.hor_pos.get_value())])
+            )
+            self.image_x_pos_value_lbl.setText(
+                "({:.4f})".format(self.x_axis[int(self.ver_pos.get_value())])
+            )
         except AttributeError:
             pass

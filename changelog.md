@@ -9,33 +9,23 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- the showcase video to the documentation
+- comprehensive examples on custom dataloader implementation and guide on data
+ingestion and analysis
 - testing extras to `toml` file
 - example spectrum for testing
 - directory selection when saving to pickle
 - method that stops all started `jupyter` sessions
+- broader test coverage
 
 ### Changed
 
-- `Dataset` base calss `argparse.Namespace` to `pydantic.BaseModel`
+- `setup.py` to `pyproject.toml`
+- `Dataset` base calss from `argparse.Namespace` to `pydantic.BaseModel`
 
 ### Deprecated
 
 ### Removed
-
-### Fixed
-
-
-## [2.3.2]
-
-### Added
-
-- the showcase video to the documentation
-- comprehensive examples on custom dataloader implementation and guide on data
-ingestion and analysis
-
-### Changed
-
-- setup.py to pyproject.toml
 
 ### Fixed
 

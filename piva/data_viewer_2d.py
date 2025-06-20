@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 import numpy as np
 from pyqtgraph.Qt import QtWidgets
+
 # from pyqtgraph.Qt.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox
 # from PyQt5.QtCore import QTimer
@@ -16,6 +17,7 @@ from data_slicer import pit
 from piva.cmaps import cmaps
 from piva.fitters import MDCFitter, EDCFitter
 from piva.config import settings
+
 if TYPE_CHECKING:
     from piva.data_browser import DataBrowser
     # from piva.data_viewer_3d import DataViewer3D
@@ -24,7 +26,7 @@ app_style = """
 QMainWindow{background-color: rgb(64,64,64);}
 QTabWidget{background-color: rgb(64,64,64);}
 """
-DEFAULT_CMAP = 'viridis'
+DEFAULT_CMAP = "viridis"
 ORIENTLINES_LINECOLOR = (164, 37, 22, 255)
 
 
@@ -81,7 +83,7 @@ class DataHandler2D:
         """
 
         # self.data = ip.TracedVariable(data, name='data')
-        self.data = ip.CustomTracedVariable(data, name='data')
+        self.data = ip.CustomTracedVariable(data, name="data")
         self.axes = np.array(axes, dtype="object")
         self.norm_data = wp.normalize(self.data.get_value()[0, :, :].T).T
 
@@ -109,23 +111,28 @@ class DataViewer2D(QtWidgets.QMainWindow):
     Main window of the 2D data.
     """
 
-    def __init__(self, data_browser: DataBrowser, data_set: dl.Dataset,
-                 index: str = None, slice: bool = False) -> None:
+    def __init__(
+        self,
+        data_browser: DataBrowser,
+        data_set: dl.Dataset,
+        index: str = None,
+        slice: bool = False,
+    ) -> None:
         """
         Initialize main window.
-        
+
         :param data_browser: `DataBrowser` that was used for opening
                              **DataViewer**, for keeping reference to all
                              other opened  **DataViewer**
         :param data_set: loaded dataset with available metadata.
-        :param index: title of the window and index in the record of opened 
+        :param index: title of the window and index in the record of opened
                       **DataViewer**
         :param slice: if :py:obj:`True`, opened
                       :class:`DataViewer2D` is a slice extracted from
                       :class:`~_3Dviewer.DataViewer3D`, that affects behavior
                       of some methods
         """
-        
+
         super(DataViewer2D, self).__init__()
         # self.title = index.split('/')[-1]
         self.title = os.path.split(index)[-1]
@@ -162,15 +169,14 @@ class DataViewer2D(QtWidgets.QMainWindow):
         self.data_handler = DataHandler2D(self)
 
         # Create the 3D (main) and cut ImagePlots
-        self.main_plot = ip.ImagePlot(name='main_plot', crosshair=True)
+        self.main_plot = ip.ImagePlot(name="main_plot", crosshair=True)
         # Create cut of cut_x
-        self.plot_x = ip.CurvePlot(name='plot_x')
+        self.plot_x = ip.CurvePlot(name="plot_x")
         # Create cut of cut_y
-        self.plot_y = ip.CurvePlot(name='plot_y', orientation='vertical')
+        self.plot_y = ip.CurvePlot(name="plot_y", orientation="vertical")
         # Create utilities panel
-        self.util_panel = UtilitiesPanel(self, name='utilities_panel',
-                                            dim=2)
-        self.util_panel.positions_momentum_label.setText('Sliders')
+        self.util_panel = UtilitiesPanel(self, name="utilities_panel", dim=2)
+        self.util_panel.positions_momentum_label.setText("Sliders")
 
         self.setStyleSheet(app_style)
         self.set_cmap()
@@ -181,7 +187,7 @@ class DataViewer2D(QtWidgets.QMainWindow):
 
         # Set the loaded data
         if data_set is None:
-            print('Data set not defined.')
+            print("Data set not defined.")
         else:
             raw_data = data_set
 
@@ -191,13 +197,12 @@ class DataViewer2D(QtWidgets.QMainWindow):
         self.org_image_data = self.data_handler.get_data()
 
         self.util_panel.energy_vert.setRange(0, len(self.data_handler.axes[1]))
-        self.util_panel.momentum_hor.setRange(
-            0, len(self.data_handler.axes[0]))
+        self.util_panel.momentum_hor.setRange(0, len(self.data_handler.axes[0]))
 
         try:
             self.load_corrections(self.data_set)
         except AttributeError:
-            print('Old settings, corrections not loaded.')
+            print("Old settings, corrections not loaded.")
             pass
 
         # self.util_panel.set_metadata_window(self.data_set)
@@ -208,7 +213,7 @@ class DataViewer2D(QtWidgets.QMainWindow):
         """
         Initialize widgets by connecting triggered signals to actions.
         """
-        
+
         self.setWindowTitle(self.title)
         # Create a "central widget" and its layout
         self.central_widget.setLayout(self.layout)
@@ -226,35 +231,29 @@ class DataViewer2D(QtWidgets.QMainWindow):
 
         # binning utilities
         self.util_panel.bin_y.stateChanged.connect(self.update_binning_lines)
-        self.util_panel.bin_y_nbins.valueChanged.connect(
-            self.update_binning_lines)
+        self.util_panel.bin_y_nbins.valueChanged.connect(self.update_binning_lines)
         self.util_panel.bin_z.stateChanged.connect(self.update_binning_lines)
-        self.util_panel.bin_z_nbins.valueChanged.connect(
-            self.update_binning_lines)
-        self.util_panel.energy_vert.valueChanged.connect(
-            self.set_vert_energy_slider)
-        self.util_panel.momentum_hor.valueChanged.connect(
-            self.set_hor_momentum_slider)
+        self.util_panel.bin_z_nbins.valueChanged.connect(self.update_binning_lines)
+        self.util_panel.energy_vert.valueChanged.connect(self.set_vert_energy_slider)
+        self.util_panel.momentum_hor.valueChanged.connect(self.set_hor_momentum_slider)
 
         # Create utilities panel and connect signals
         self.util_panel.image_cmaps.currentIndexChanged.connect(self.set_cmap)
         self.util_panel.image_invert_colors.stateChanged.connect(self.set_cmap)
         self.util_panel.image_gamma.valueChanged.connect(self.set_gamma)
-        self.util_panel.image_normalize.stateChanged.connect(
-            self.normalize_data)
+        self.util_panel.image_normalize.stateChanged.connect(self.normalize_data)
         self.util_panel.image_normalize_to.currentIndexChanged.connect(
-            self.normalize_data)
+            self.normalize_data
+        )
         self.util_panel.image_normalize_to.setDisabled(True)
         self.util_panel.image_normalize_along.currentIndexChanged.connect(
-            self.normalize_data)
+            self.normalize_data
+        )
         self.util_panel.image_smooth_button.clicked.connect(self.smooth_data)
-        self.util_panel.image_curvature_button.clicked.connect(
-            self.curvature_method)
+        self.util_panel.image_curvature_button.clicked.connect(self.curvature_method)
 
-        self.util_panel.file_mdc_fitter_button.clicked.connect(
-            self.open_mdc_fitter)
-        self.util_panel.file_edc_fitter_button.clicked.connect(
-            self.open_edc_fitter)
+        self.util_panel.file_mdc_fitter_button.clicked.connect(self.open_mdc_fitter)
+        self.util_panel.file_edc_fitter_button.clicked.connect(self.open_edc_fitter)
 
         # buttons
         self.util_panel.close_button.clicked.connect(self.close)
@@ -263,24 +262,26 @@ class DataViewer2D(QtWidgets.QMainWindow):
 
         # energy and k-space concersion
         self.util_panel.axes_energy_Ef.valueChanged.connect(
-            self.apply_energy_correction)
+            self.apply_energy_correction
+        )
         self.util_panel.axes_energy_hv.valueChanged.connect(
-            self.apply_energy_correction)
+            self.apply_energy_correction
+        )
         self.util_panel.axes_energy_wf.valueChanged.connect(
-            self.apply_energy_correction)
+            self.apply_energy_correction
+        )
         self.util_panel.axes_energy_scale.currentIndexChanged.connect(
-            self.apply_energy_correction)
-        self.util_panel.axes_do_kspace_conv.clicked.connect(
-            self.convert_to_kspace)
-        self.util_panel.axes_reset_conv.clicked.connect(
-            self.reset_kspace_conversion)
+            self.apply_energy_correction
+        )
+        self.util_panel.axes_do_kspace_conv.clicked.connect(self.convert_to_kspace)
+        self.util_panel.axes_reset_conv.clicked.connect(self.reset_kspace_conversion)
 
         # Align all the gui elements
         self._align()
         self.show()
 
     def _align(self):
-        """ 
+        """
         Align all GUI widgets in the window.
         """
 
@@ -311,7 +312,7 @@ class DataViewer2D(QtWidgets.QMainWindow):
         """
         Set sliders initial positions to either middle of axes or *zeros*.
         """
-        
+
         if self.new_energy_axis is None:
             e_ax = self.data_handler.axes[1]
         else:
@@ -336,11 +337,11 @@ class DataViewer2D(QtWidgets.QMainWindow):
     def load_corrections(self, data_set: dl.Dataset) -> None:
         """
         Load saved energy corrections and axes transformed to *k*-space.
-        
+
         :param data_set: object containing data and available metadata.
         """
 
-        if hasattr(data_set, 'saved'):
+        if hasattr(data_set, "saved"):
             raise AttributeError
         if data_set.Ef is not None:
             self.util_panel.axes_energy_Ef.setValue(data_set.Ef)
@@ -352,12 +353,13 @@ class DataViewer2D(QtWidgets.QMainWindow):
         if data_set.kyscale is not None:
             self.k_axis = data_set.kyscale
             new_range = [self.k_axis[0], self.k_axis[-1]]
-            self.main_plot.plotItem.getAxis(
-                self.main_plot.main_yaxis).setRange(*new_range)
-            self.plot_y.plotItem.getAxis(
-                self.plot_y.main_xaxis).setRange(*new_range)
-            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-                self.k_axis[self.main_plot.pos[1].get_value()]))
+            self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(
+                *new_range
+            )
+            self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
+            self.util_panel.momentum_hor_value.setText(
+                "({:.4f})".format(self.k_axis[self.main_plot.pos[1].get_value()])
+            )
 
     @staticmethod
     def swap_axes_aroud(D: np.ndarray) -> np.ndarray:
@@ -389,13 +391,11 @@ class DataViewer2D(QtWidgets.QMainWindow):
         xaxis = self.data_handler.axes[1]
         yaxis = self.data_handler.axes[0]
         self.main_plot.set_xscale(range(0, len(xaxis)))
-        self.main_plot.set_ticks(xaxis[0], xaxis[-1],
-                                 self.main_plot.main_xaxis)
+        self.main_plot.set_ticks(xaxis[0], xaxis[-1], self.main_plot.main_xaxis)
         self.plot_x.set_ticks(xaxis[0], xaxis[-1], self.plot_x.main_xaxis)
         self.plot_x.set_secondary_axis(0, len(xaxis))
         self.main_plot.set_yscale(range(0, len(yaxis)))
-        self.main_plot.set_ticks(yaxis[0], yaxis[-1],
-                                 self.main_plot.main_yaxis)
+        self.main_plot.set_ticks(yaxis[0], yaxis[-1], self.main_plot.main_yaxis)
         self.plot_y.set_ticks(yaxis[0], yaxis[-1], self.plot_y.main_xaxis)
         self.plot_y.set_secondary_axis(0, len(yaxis))
         self.main_plot.fix_viewrange()
@@ -437,28 +437,33 @@ class DataViewer2D(QtWidgets.QMainWindow):
             stop = i_x + width
             y = np.sum(data[:, start:stop], axis=1)
         x = np.arange(0, len(self.data_handler.axes[1]))
-        self.edc = y
-        xp.plot(x, y)
+        self.edc = y[~np.isnan(y)]
+        # xp.plot(x, y)
+        xp.plot(x[~np.isnan(y)], y[~np.isnan(y)])
         self.util_panel.momentum_hor.setValue(i_x)
         if self.k_axis is None:
-            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-                self.data_handler.axes[0][i_x]))
+            self.util_panel.momentum_hor_value.setText(
+                "({:.4f})".format(self.data_handler.axes[0][i_x])
+            )
         else:
-            self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-                self.k_axis[i_x]))
+            self.util_panel.momentum_hor_value.setText(
+                "({:.4f})".format(self.k_axis[i_x])
+            )
 
         if binning:
             self.plot_y.left_line.setValue(i_x - width)
             self.plot_y.right_line.setValue(i_x + width)
 
-        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
-                self.util_panel.get_linked_windows():
+        if (
+            self.util_panel.link_windows_status.currentIndex() == 1
+        ) and self.util_panel.get_linked_windows():
             linked_windows = self.util_panel.get_linked_windows()
             for dvi in self.db.data_viewers.keys():
                 if self.db.data_viewers[dvi].title in linked_windows:
                     pos_variable = self.db.data_viewers[dvi].main_plot.pos[1]
                     matching_idx = self.get_matching_momentum_idx(
-                        i_x, self.db.data_viewers[dvi])
+                        i_x, self.db.data_viewers[dvi]
+                    )
                     pos_variable.set_value(matching_idx)
 
     def update_plot_y(self) -> None:
@@ -496,33 +501,37 @@ class DataViewer2D(QtWidgets.QMainWindow):
             stop = i_y + width
             y = np.sum(data[start:stop, :], axis=0)
         x = np.arange(0, len(self.data_handler.axes[0]))
-        self.mdc = y
-        yp.plot(y, x)
+        self.mdc = y[~np.isnan(y)]
+        # yp.plot(y, x)
+        yp.plot(y[~np.isnan(y)], x[~np.isnan(y)])
         self.util_panel.energy_vert.setValue(i_y)
 
         if self.new_energy_axis is None:
-            self.util_panel.energy_vert_value.setText('({:.4f})'.format(
-                self.data_handler.axes[1][i_y]))
+            self.util_panel.energy_vert_value.setText(
+                "({:.4f})".format(self.data_handler.axes[1][i_y])
+            )
         else:
-            self.util_panel.energy_vert_value.setText('({:.4f})'.format(
-                self.new_energy_axis[i_y]))
+            self.util_panel.energy_vert_value.setText(
+                "({:.4f})".format(self.new_energy_axis[i_y])
+            )
 
         if binning:
             self.plot_x.left_line.setValue(i_y - width)
             self.plot_x.right_line.setValue(i_y + width)
 
-        if (self.util_panel.link_windows_status.currentIndex() == 1) and \
-                self.util_panel.get_linked_windows():
+        if (
+            self.util_panel.link_windows_status.currentIndex() == 1
+        ) and self.util_panel.get_linked_windows():
             linked_windows = self.util_panel.get_linked_windows()
             for dvi in self.db.data_viewers.keys():
                 if self.db.data_viewers[dvi].title in linked_windows:
                     pos_variable = self.db.data_viewers[dvi].main_plot.pos[0]
                     matching_idx = self.get_matching_energy_idx(
-                        i_y, self.db.data_viewers[dvi])
+                        i_y, self.db.data_viewers[dvi]
+                    )
                     pos_variable.set_value(matching_idx)
 
-    def get_matching_energy_idx(self, parent_idx: int,
-                                dv: DataViewer2D) -> int:
+    def get_matching_energy_idx(self, parent_idx: int, dv: DataViewer2D) -> int:
         """
         When option for linking multiple windows is enabled, find position in
         coordinates of parent's energy axis.
@@ -542,8 +551,7 @@ class DataViewer2D(QtWidgets.QMainWindow):
             erg_ax = dv.new_energy_axis
         return wp.indexof(erg, erg_ax)
 
-    def get_matching_momentum_idx(self, parent_idx: int,
-                                  dv: DataViewer2D) -> int:
+    def get_matching_momentum_idx(self, parent_idx: int, dv: DataViewer2D) -> int:
         """
         When option for linking multiple windows is enabled, find position in
         coordinates of parent's momentum axis.
@@ -598,8 +606,9 @@ class DataViewer2D(QtWidgets.QMainWindow):
             try:
                 half_width = self.util_panel.bin_z_nbins.value()
                 pos = self.main_plot.pos[0].get_value()
-                self.main_plot.add_binning_lines(pos, half_width,
-                                                 orientation='vertical')
+                self.main_plot.add_binning_lines(
+                    pos, half_width, orientation="vertical"
+                )
                 self.plot_x.add_binning_lines(pos, half_width)
                 ymin = 0 + half_width
                 ymax = len(self.data_handler.axes[1]) - half_width
@@ -610,7 +619,7 @@ class DataViewer2D(QtWidgets.QMainWindow):
                 pass
         else:
             try:
-                self.main_plot.remove_binning_lines(orientation='vertical')
+                self.main_plot.remove_binning_lines(orientation="vertical")
                 self.plot_x.remove_binning_lines()
                 org_range = np.arange(0, len(self.data_handler.axes[1]))
                 self.main_plot.pos[0].set_allowed_values(org_range)
@@ -670,14 +679,14 @@ class DataViewer2D(QtWidgets.QMainWindow):
         try:
             cmap = self.util_panel.image_cmaps.currentText()
             if self.util_panel.image_invert_colors.isChecked() and ip.MY_CMAPS:
-                cmap = cmap + '_r'
+                cmap = cmap + "_r"
         except AttributeError:
             cmap = DEFAULT_CMAP
 
         try:
             self.cmap = cmaps[cmap]
         except KeyError:
-            print('Invalid colormap name. Use one of: ')
+            print("Invalid colormap name. Use one of: ")
             print(cmaps.keys())
         self.cmap_name = cmap
         # Since the cmap changed it forgot our settings for alpha and gamma
@@ -705,14 +714,12 @@ class DataViewer2D(QtWidgets.QMainWindow):
         """
 
         try:
-            self.set_image(image,
-                           displayed_axes=self.data_handler.displayed_axes)
+            self.set_image(image, displayed_axes=self.data_handler.displayed_axes)
         except AttributeError:
             # In case mainwindow is not defined yet
             pass
 
-    def set_image(self, image: np.ndarray = None, *args: dict,
-                  **kwargs: dict) -> None:
+    def set_image(self, image: np.ndarray = None, *args: dict, **kwargs: dict) -> None:
         """
         Wraps underlying :meth:`image_panels.ImagePlot.set_image()` method.
 
@@ -768,13 +775,13 @@ class DataViewer2D(QtWidgets.QMainWindow):
             rl = self.util_panel.image_smooth_rl.value()
             self.image_data = wp.smooth_2d(data, n_box=nb, recursion_level=rl)
             self.set_image()
-            self.util_panel.image_smooth_button.setText('Reset')
+            self.util_panel.image_smooth_button.setText("Reset")
         else:
             self.image_data = deepcopy(self.org_image_data)
             self.set_image()
             self.curvature = False
-            self.util_panel.image_smooth_button.setText('Smooth')
-            self.util_panel.image_curvature_button.setText('Do curvature')
+            self.util_panel.image_smooth_button.setText("Smooth")
+            self.util_panel.image_curvature_button.setText("Do curvature")
 
     def curvature_method(self) -> None:
         """
@@ -787,7 +794,7 @@ class DataViewer2D(QtWidgets.QMainWindow):
         self.curvature = not self.curvature
         if self.curvature:
             a = self.util_panel.image_curvature_a.value()
-            a = 10 ** a
+            a = 10**a
             if self.k_axis is None:
                 dx = wp.get_step(self.data_handler.axes[0])
             else:
@@ -798,26 +805,27 @@ class DataViewer2D(QtWidgets.QMainWindow):
                 dy = wp.get_step(self.new_energy_axis)
             self.smoothed_data = deepcopy(self.image_data)
             method = self.util_panel.image_curvature_method.currentText()
-            if method == '2D':
-                self.image_data = wp.curvature_2d(self.image_data, dx, dy,
-                                                  a0=a)
-            elif method == '1D (EDC)':
+            if method == "2D":
+                self.image_data = wp.curvature_2d(self.image_data, dx, dy, a0=a)
+            elif method == "1D (EDC)":
                 for idx in range(self.image_data.shape[1]):
-                    self.image_data[:, idx] = \
-                        wp.curvature_1d(self.image_data[:, idx], dy, a0=a)
-            elif method == '1D (MDC)':
+                    self.image_data[:, idx] = wp.curvature_1d(
+                        self.image_data[:, idx], dy, a0=a
+                    )
+            elif method == "1D (MDC)":
                 for idx in range(self.image_data.shape[0]):
-                    self.image_data[idx, :] = \
-                        wp.curvature_1d(self.image_data[idx, :], dx, a0=a)
+                    self.image_data[idx, :] = wp.curvature_1d(
+                        self.image_data[idx, :], dx, a0=a
+                    )
             self.set_image()
-            self.util_panel.image_curvature_button.setText('Reset')
+            self.util_panel.image_curvature_button.setText("Reset")
         else:
             if self.smooth:
                 self.image_data = self.smoothed_data
             else:
                 self.image_data = deepcopy(self.org_image_data)
             self.set_image()
-            self.util_panel.image_curvature_button.setText('Do curvature')
+            self.util_panel.image_curvature_button.setText("Do curvature")
 
     # axes methods
     def apply_energy_correction(self) -> None:
@@ -834,10 +842,10 @@ class DataViewer2D(QtWidgets.QMainWindow):
         else:
             org_is_kin = False
 
-        if (not org_is_kin) and (scale == 'kinetic'):
+        if (not org_is_kin) and (scale == "kinetic"):
             hv = -self.util_panel.axes_energy_hv.value()
             wf = -self.util_panel.axes_energy_wf.value()
-        elif org_is_kin and (scale == 'binding'):
+        elif org_is_kin and (scale == "binding"):
             hv = self.util_panel.axes_energy_hv.value()
             wf = self.util_panel.axes_energy_wf.value()
         else:
@@ -847,15 +855,14 @@ class DataViewer2D(QtWidgets.QMainWindow):
         new_energy_axis = self.data_handler.axes[1] + Ef - hv + wf
         self.new_energy_axis = new_energy_axis
         new_range = [new_energy_axis[0], new_energy_axis[-1]]
-        self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(
-            *new_range)
-        self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(
-            *new_range)
+        self.main_plot.plotItem.getAxis(self.main_plot.main_xaxis).setRange(*new_range)
+        self.plot_x.plotItem.getAxis(self.plot_x.main_xaxis).setRange(*new_range)
 
         # update energy labels
         erg_idx = self.main_plot.sliders.vpos.get_value()
-        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-            self.new_energy_axis[erg_idx]))
+        self.util_panel.momentum_hor_value.setText(
+            "({:.4f})".format(self.new_energy_axis[erg_idx])
+        )
 
     def convert_to_kspace(self) -> None:
         """
@@ -866,8 +873,7 @@ class DataViewer2D(QtWidgets.QMainWindow):
         scan_ax = np.array([0])
         ana_axis = self.data_handler.axes[0]
         d_scan_ax = self.util_panel.axes_angle_off.value()
-        d_ana_ax = self.data_handler.axes[0][
-            self.util_panel.axes_gamma_x.value()]
+        d_ana_ax = self.data_handler.axes[0][self.util_panel.axes_gamma_x.value()]
         orientation = self.util_panel.axes_slit_orient.currentText()
         a = self.util_panel.axes_conv_lc.value()
         energy = self.new_energy_axis
@@ -877,30 +883,36 @@ class DataViewer2D(QtWidgets.QMainWindow):
         if hv == 0 or wf == 0:
             warning_box = QMessageBox()
             warning_box.setIcon(QMessageBox.Information)
-            warning_box.setWindowTitle('Wrong conversion values.')
+            warning_box.setWindowTitle("Wrong conversion values.")
             if hv == 0 and wf == 0:
-                msg = 'Photon energy and work fonction values not given.'
+                msg = "Photon energy and work fonction values not given."
             elif hv == 0:
-                msg = 'Photon energy value not given.'
+                msg = "Photon energy value not given."
             elif wf == 0:
-                msg = 'Work fonction value not given.'
+                msg = "Work fonction value not given."
             warning_box.setText(msg)
             warning_box.setStandardButtons(QMessageBox.Ok)
             if warning_box.exec() == QMessageBox.Ok:
                 return
 
-        nma, erg = wp.angle2kspace(scan_ax, ana_axis, d_scan_ax=d_scan_ax,
-                                   d_ana_ax=d_ana_ax,
-                                   orientation=orientation, a=a, energy=energy,
-                                   hv=hv, work_func=wf)
+        nma, erg = wp.angle2kspace(
+            scan_ax,
+            ana_axis,
+            d_scan_ax=d_scan_ax,
+            d_ana_ax=d_ana_ax,
+            orientation=orientation,
+            a=a,
+            energy=energy,
+            hv=hv,
+            work_func=wf,
+        )
         self.k_axis = nma[-1]
         new_range = [nma[-1][0], nma[-1][-1]]
-        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(
-            *new_range)
-        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(
-            *new_range)
-        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-            self.k_axis[self.main_plot.pos[1].get_value()]))
+        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*new_range)
+        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*new_range)
+        self.util_panel.momentum_hor_value.setText(
+            "({:.4f})".format(self.k_axis[self.main_plot.pos[1].get_value()])
+        )
         self.util_panel.dp_add_k_space_conversion_entry(self.data_set)
 
     def reset_kspace_conversion(self) -> None:
@@ -909,15 +921,15 @@ class DataViewer2D(QtWidgets.QMainWindow):
         """
 
         self.k_axis = None
-        org_range = [self.data_handler.axes[0][0],
-                     self.data_handler.axes[0][-1]]
-        self.main_plot.plotItem.getAxis(
-            self.main_plot.main_yaxis).setRange(*org_range)
-        self.plot_y.plotItem.getAxis(
-            self.plot_y.main_xaxis).setRange(*org_range)
-        self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-            self.data_handler.axes[0][self.main_plot.pos[1].get_value()]))
-        self.data_set.data_provenance['k_space_conv'] = []
+        org_range = [self.data_handler.axes[0][0], self.data_handler.axes[0][-1]]
+        self.main_plot.plotItem.getAxis(self.main_plot.main_yaxis).setRange(*org_range)
+        self.plot_y.plotItem.getAxis(self.plot_y.main_xaxis).setRange(*org_range)
+        self.util_panel.momentum_hor_value.setText(
+            "({:.4f})".format(
+                self.data_handler.axes[0][self.main_plot.pos[1].get_value()]
+            )
+        )
+        self.data_set.data_provenance["k_space_conv"] = []
 
     # general functionalities
     def open_mdc_fitter(self) -> None:
@@ -926,13 +938,13 @@ class DataViewer2D(QtWidgets.QMainWindow):
         distribution curves (MDCs).
         """
 
-        title = self.title + ' - mdc fitter'
+        title = self.title + " - mdc fitter"
         self.mdc_thread_lbl = title
 
         if title in self.data_viewers:
             already_opened_box = QMessageBox()
             already_opened_box.setIcon(QMessageBox.Information)
-            already_opened_box.setText('MDC viewer already opened.')
+            already_opened_box.setText("MDC viewer already opened.")
             already_opened_box.setStandardButtons(QMessageBox.Ok)
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
@@ -947,12 +959,11 @@ class DataViewer2D(QtWidgets.QMainWindow):
             k_ax = self.data_set.yscale
         axes = [k_ax, erg_ax]
         try:
-            self.data_viewers[title] = \
-                MDCFitter(self, self.data_set, axes, title)
+            self.data_viewers[title] = MDCFitter(self, self.data_set, axes, title)
         except Exception as e:
             error_box = QMessageBox()
             error_box.setIcon(QMessageBox.Information)
-            error_box.setText('Couldn\'t load data,  something went wrong.')
+            error_box.setText("Couldn't load data,  something went wrong.")
             error_box.setStandardButtons(QMessageBox.Ok)
             if error_box.exec() == QMessageBox.Ok:
                 raise e
@@ -964,13 +975,13 @@ class DataViewer2D(QtWidgets.QMainWindow):
         distribution curves (MDCs).
         """
 
-        title = self.title + ' - edc fitter'
+        title = self.title + " - edc fitter"
         self.edc_thread_lbl = title
 
         if title in self.data_viewers:
             already_opened_box = QMessageBox()
             already_opened_box.setIcon(QMessageBox.Information)
-            already_opened_box.setText('EDC viewer already opened.')
+            already_opened_box.setText("EDC viewer already opened.")
             already_opened_box.setStandardButtons(QMessageBox.Ok)
             if already_opened_box.exec() == QMessageBox.Ok:
                 return
@@ -985,8 +996,7 @@ class DataViewer2D(QtWidgets.QMainWindow):
             k_ax = self.data_set.yscale
         axes = [erg_ax, k_ax]
         try:
-            self.data_viewers[title] = \
-                EDCFitter(self, self.data_set, axes, title)
+            self.data_viewers[title] = EDCFitter(self, self.data_set, axes, title)
         except Exception as e:
             raise e
 
@@ -1000,26 +1010,29 @@ class DataViewer2D(QtWidgets.QMainWindow):
         up = self.util_panel
         file_selection = True
         # Prepare a filename with the .p suffix
-        init_fname = '.'.join(self.title.split('.')[:-1] + ['p'])
+        init_fname = ".".join(self.title.split(".")[:-1] + ["p"])
 
         # Choose directory
         if settings.IS_TESTING:
             savedir = os.getcwd()
             # pass
         else:
-            savedir = str(QtWidgets.QFileDialog.getExistingDirectory(
-                self, 'Select Directory', self.fname[:-len(self.title)]))
+            savedir = str(
+                QtWidgets.QFileDialog.getExistingDirectory(
+                    self, "Select Directory", self.fname[: -len(self.title)]
+                )
+            )
         # savedir = self.fname[:-len(self.title)]
         if not savedir:
             return
 
         while file_selection:
             if settings.IS_TESTING:
-                fname, fname_return_value = 'x', True
+                fname, fname_return_value = "x", True
             else:
                 fname, fname_return_value = QtWidgets.QInputDialog.getText(
-                    self, '', 'File name:', QtWidgets.QLineEdit.Normal, 
-                    init_fname)
+                    self, "", "File name:", QtWidgets.QLineEdit.Normal, init_fname
+                )
             if not fname_return_value:
                 return
             # fname, fname_return_value = \
@@ -1031,18 +1044,21 @@ class DataViewer2D(QtWidgets.QMainWindow):
 
             # check if there is no fname colosions
             # if fname in os.listdir(savedir):
-            if (fname in os.listdir(savedir) and (not settings.IS_TESTING)):
+            if fname in os.listdir(savedir) and (not settings.IS_TESTING):
                 fname_colision_box = QMessageBox()
                 fname_colision_box.setIcon(QMessageBox.Question)
-                fname_colision_box.setWindowTitle('File name already used.')
-                fname_colision_box.setText('File {} already exists.\nDo you '
-                                           'want to overwrite '
-                                           'it?'.format(fname))
-                fname_colision_box.setStandardButtons(QMessageBox.Ok |
-                                                      QMessageBox.Cancel)
+                fname_colision_box.setWindowTitle("File name already used.")
+                fname_colision_box.setText(
+                    "File {} already exists.\nDo you want to overwrite it?".format(
+                        fname
+                    )
+                )
+                fname_colision_box.setStandardButtons(
+                    QMessageBox.Ok | QMessageBox.Cancel
+                )
                 # if settings.IS_TESTING:
                 #     QTimer.singleShot(100, lambda: qtbot.mouseClick(
-                #         fname_colision_box.button(QMessageBox.Ok), 
+                #         fname_colision_box.button(QMessageBox.Ok),
                 #         Qt.LeftButton))
                 if fname_colision_box.exec() == QMessageBox.Ok:
                     file_selection = False
@@ -1051,20 +1067,23 @@ class DataViewer2D(QtWidgets.QMainWindow):
             else:
                 file_selection = False
 
-        conditions = [up.axes_energy_Ef.value() != 0,
-                      up.axes_energy_hv.value() != 0,
-                      up.axes_energy_wf.value() != 0,
-                      up.axes_angle_off.value() != 0,
-                      up.axes_gamma_x.value() != 0]
+        conditions = [
+            up.axes_energy_Ef.value() != 0,
+            up.axes_energy_hv.value() != 0,
+            up.axes_energy_wf.value() != 0,
+            up.axes_angle_off.value() != 0,
+            up.axes_gamma_x.value() != 0,
+        ]
 
         # if np.any(conditions):
-        if (np.any(conditions) and (not settings.IS_TESTING)):
+        if np.any(conditions) and (not settings.IS_TESTING):
             save_cor_box = QMessageBox()
             save_cor_box.setIcon(QMessageBox.Question)
-            save_cor_box.setWindowTitle('Save data')
+            save_cor_box.setWindowTitle("Save data")
             save_cor_box.setText("Do you want to save applied corrections?")
-            save_cor_box.setStandardButtons(QMessageBox.No | QMessageBox.Ok |
-                                            QMessageBox.Cancel)
+            save_cor_box.setStandardButtons(
+                QMessageBox.No | QMessageBox.Ok | QMessageBox.Cancel
+            )
 
             box_return_value = save_cor_box.exec()
             if box_return_value == QMessageBox.Ok:
@@ -1082,10 +1101,10 @@ class DataViewer2D(QtWidgets.QMainWindow):
                 return
         else:
             pass
-        
+
         if settings.IS_TESTING:
             return
-        
+
         dl.dump(dataset, os.path.join(savedir, fname), force=True)
 
     def open_pit(self) -> None:
@@ -1107,4 +1126,4 @@ class DataViewer2D(QtWidgets.QMainWindow):
         """
 
         self.db.delete_viewer_from_linked_lists(self.title)
-        del(self.db.data_viewers[self.index])
+        del self.db.data_viewers[self.index]

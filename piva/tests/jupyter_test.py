@@ -1,6 +1,7 @@
 """
 Semi-automated test for testing jupyter-lab functionalities.
 """
+
 from piva.data_browser import DataBrowser
 from piva.data_viewer_3d import DataViewer3D
 from pyqtgraph.Qt.QtCore import Qt
@@ -14,10 +15,10 @@ from typing import Any
 
 USER = False
 
-PATH = os.path.join(resource_filename('piva', 'tests'), 'data')
-EXAMPLE = os.path.join(PATH, 'test_map.p')
-BL, BL_IDX = 'SIS', 1
-PORT = '56789'
+PATH = os.path.join(resource_filename("piva", "tests"), "data")
+EXAMPLE = os.path.join(PATH, "test_map.p")
+BL, BL_IDX = "SIS", 1
+PORT = "56789"
 LONG_WT, SHORT_WT = 300, 1
 
 
@@ -88,8 +89,7 @@ class TestJupyterUtilities:
         if USER:
             qtbot.mouseClick(self.up.file_jl_session_button, Qt.LeftButton)
         else:
-            self.jl_server_pid = self.up.open_jl_session(directory=PATH,
-                                                         port=PORT)
+            self.jl_server_pid = self.up.open_jl_session(directory=PATH, port=PORT)
 
     def test_jupyter_utilities(self, qtbot: Any) -> None:
         """
@@ -109,10 +109,14 @@ class TestJupyterUtilities:
 
         kill_server_box = QMessageBox()
         kill_server_box.setIcon(QMessageBox.Information)
-        kill_server_box.setText('Shut down Jupyter server?')
+        kill_server_box.setText("Shut down Jupyter server?")
         kill_server_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        QTimer.singleShot(300, lambda: qtbot.mouseClick(
-            kill_server_box.button(QMessageBox.Ok), Qt.LeftButton))
+        QTimer.singleShot(
+            300,
+            lambda: qtbot.mouseClick(
+                kill_server_box.button(QMessageBox.Ok), Qt.LeftButton
+            ),
+        )
         if kill_server_box.exec() == QMessageBox.Ok:
             qtbot.wait(LONG_WT * 5)
             try:
@@ -122,17 +126,21 @@ class TestJupyterUtilities:
 
         del_files_box = QMessageBox()
         del_files_box.setIcon(QMessageBox.Information)
-        del_files_box.setText('Delete created notebooks?')
+        del_files_box.setText("Delete created notebooks?")
         del_files_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        QTimer.singleShot(300, lambda: qtbot.mouseClick(
-            del_files_box.button(QMessageBox.Ok), Qt.LeftButton))
+        QTimer.singleShot(
+            300,
+            lambda: qtbot.mouseClick(
+                del_files_box.button(QMessageBox.Ok), Qt.LeftButton
+            ),
+        )
         if del_files_box.exec() == QMessageBox.Cancel:
             return
 
-        os.remove(os.path.join(PATH, 'metadata-SIS.ipynb'))
-        os.remove(os.path.join(PATH, 'test_map.ipynb'))
+        os.remove(os.path.join(PATH, "metadata-SIS.ipynb"))
+        os.remove(os.path.join(PATH, "test_map.ipynb"))
         try:
-            os.remove(os.path.join(PATH, 'Untitled.ipynb'))
+            os.remove(os.path.join(PATH, "Untitled.ipynb"))
         except FileNotFoundError:
             pass
 
@@ -144,5 +152,5 @@ if __name__ == "__main__":
     import pytest
     from pkg_resources import resource_filename
 
-    path = os.path.join(resource_filename('piva', 'tests'), 'jupyter_test.py')
-    pytest.main(['-v', '-s', path])
+    path = os.path.join(resource_filename("piva", "tests"), "jupyter_test.py")
+    pytest.main(["-v", "-s", path])

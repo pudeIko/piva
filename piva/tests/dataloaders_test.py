@@ -1,6 +1,7 @@
 """
 Automated test for all Dataloaders from implemented beamlines.
 """
+
 import numpy as np
 import piva.data_loaders as dl
 import argparse
@@ -9,7 +10,7 @@ import os
 import pkg_resources
 
 # PATH = pkg_resources.resource_filename('piva', 'tests/data/')
-PATH = os.path.join(pkg_resources.resource_filename('piva', 'tests'), 'data')
+PATH = os.path.join(pkg_resources.resource_filename("piva", "tests"), "data")
 
 
 def test_dataloaders() -> None:
@@ -19,27 +20,27 @@ def test_dataloaders() -> None:
 
     print()
     for fname in sorted(os.listdir(PATH)):
-        if 'pickle' in fname:
+        if "pickle" in fname:
             dli = dl.DataloaderPickle()
-        elif 'sis' in fname:
+        elif "sis" in fname:
             dli = dl.DataloaderSIS()
-        elif 'bloch' in fname:
+        elif "bloch" in fname:
             dli = dl.DataloaderBloch()
-        elif 'adress' in fname:
+        elif "adress" in fname:
             dli = dl.DataloaderADRESS()
-        elif 'i05' in fname:
+        elif "i05" in fname:
             dli = dl.DataloaderI05()
-        elif 'cassiopee' in fname:
+        elif "cassiopee" in fname:
             dli = dl.DataloaderCASSIOPEE()
-        elif 'merlin' in fname and (not fname.endswith('txt')):
+        elif "merlin" in fname and (not fname.endswith("txt")):
             dli = dl.DataloaderMERLIN()
-        elif 'uranos' in fname:
+        elif "uranos" in fname:
             dli = dl.DataloaderURANOS()
-        elif 'test_map' in fname:
+        elif "test_map" in fname:
             pass
         else:
             continue
-        print(f'{fname:{30}}{dli}')
+        print(f"{fname:{30}}{dli}")
         try:
             ds = dli.load_data(os.path.join(PATH, fname))
         except NotImplementedError:
@@ -47,8 +48,7 @@ def test_dataloaders() -> None:
         # if 4D dataset, extract just one spectrum
         if isinstance(ds, np.ndarray):
             ds = ds[0, 0]
-        assert (isinstance(ds, BaseModel) or 
-                isinstance(ds, argparse.Namespace))
+        assert isinstance(ds, BaseModel) or isinstance(ds, argparse.Namespace)
         # check if the mandatory attributes are loaded correctly
         assert type(ds.data) is np.ndarray
         assert len(ds.data.shape) == 3
@@ -92,6 +92,7 @@ if __name__ == "__main__":
     import pytest
 
     # path = pkg_resources.resource_filename('piva', 'tests/dataloaders_test.py')
-    path = os.path.join(pkg_resources.resource_filename('piva', 'tests'),
-                        'dataloaders_test.py')
-    pytest.main(['-v', '-s', path])
+    path = os.path.join(
+        pkg_resources.resource_filename("piva", "tests"), "dataloaders_test.py"
+    )
+    pytest.main(["-v", "-s", path])

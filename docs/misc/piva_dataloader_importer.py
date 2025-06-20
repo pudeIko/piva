@@ -3,6 +3,7 @@ from piva.data_loaders import Dataloader, Dataset
 from piva.data_browser import DataBrowser
 import h5py
 from typing import final
+# from abc import ABC, abstractmethod
 
 
 class DataloaderImporter:
@@ -12,7 +13,7 @@ class DataloaderImporter:
 
     def __init__(self, data_browser: DataBrowser) -> None:
         """
-        Initialize DataloaderImporter and export custom written loaders to the 
+        Initialize DataloaderImporter and export custom written loaders to the
         record of available **Dataloaders**.
 
         :param data_browser: `DataBrowser` of the current session
@@ -31,21 +32,21 @@ class DataloaderImporter:
     @final
     def add_dataloader(self, loader: Dataloader) -> None:
         """
-        Method for exporting implemented custom Dataloader to the 
-        DataBrowser's list of available dataloaders. 
-        
+        Method for exporting implemented custom Dataloader to the
+        DataBrowser's list of available dataloaders.
+
         Should not be overridden!
 
-        :param loader: the implemented CustomDataloader that needs to be 
+        :param loader: the implemented CustomDataloader that needs to be
                imported
         """
 
-        dl_label = '{}'.format(loader.name)
+        dl_label = "{}".format(loader.name)
 
         self.db.dp_dl_picker.addItem(dl_label)
         self.db.add_dataloader_to_record(dl_label, loader)
 
-        print('\t', dl_label)
+        print("\t", dl_label)
 
 
 class CustomDataloader(Dataloader):
@@ -53,7 +54,7 @@ class CustomDataloader(Dataloader):
     Simple example of a custom Dataloader.
     """
 
-    name = 'Custom_Dataloader'
+    name = "Custom_Dataloader"
 
     def __init__(self) -> None:
         super(CustomDataloader, self).__init__()
@@ -73,13 +74,14 @@ class CustomDataloader(Dataloader):
 
         # dummy *if* condition to make the example work. One should remove
         # 'isinstance' part and change extension in 'endswith'
-        if filename.endswith('h5') or isinstance(filename, str):
+        if filename.endswith("h5") or isinstance(filename, str):
             self.custom_loading_method(filename, metadata=metadata)
         else:
             raise NotImplementedError
 
         self.ds.add_org_file_entry(filename, self.name)
-        return self.ds
+        # enforce validation of the returned Dataset
+        return Dataset.model_validate(self.ds.model_dump())
 
     def custom_loading_method(self, filename: str, metadata: bool = False):
         """
@@ -97,10 +99,10 @@ class CustomDataloader(Dataloader):
         """
 
         # Extract the dataset and some metadata
-        datfile = h5py.File(filename, 'r')
-        h5_data = datfile['spectrum']
-        yscale = datfile['dimensions'].attrs['momentum']
-        zscale = datfile['dimensions'].attrs['energy']
+        datfile = h5py.File(filename, "r")
+        h5_data = datfile["spectrum"]
+        yscale = datfile["dimensions"].attrs["momentum"]
+        zscale = datfile["dimensions"].attrs["energy"]
 
         # Convert to array and make 3D if necessary
         shape = h5_data.shape
@@ -116,21 +118,21 @@ class CustomDataloader(Dataloader):
             # Make data 3D
             data = data.reshape((1, ny, nz))
             xscale = np.array([1])
-            scan_type = 'cut'
+            scan_type = "cut"
         else:
             # adjust if scan has higher dimensionality
             pass
 
         # Extract available metadata
-        meta = datfile['metadata'].attrs
-        x_pos = meta['x']
-        y_pos = meta['y']
-        z_pos = meta['z']
-        temp = meta['temp']
-        pressure = meta['pres']
-        hv = meta['hv']
-        polarization = meta['polar']
-        DT = meta['DT']
+        meta = datfile["metadata"].attrs
+        x_pos = meta["x"]
+        y_pos = meta["y"]
+        z_pos = meta["z"]
+        temp = meta["temp"]
+        pressure = meta["pres"]
+        hv = meta["hv"]
+        polarization = meta["polar"]
+        DT = meta["DT"]
 
         # feed Dataset object with loaded data
         self.ds.data = data
