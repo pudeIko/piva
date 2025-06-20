@@ -709,13 +709,13 @@ class DataBrowser(QMainWindow):
             return
         except NotImplementedError:
             self.sb.showMessage(
-                "File extension not implemented " "for a chosen data loader.",
+                "File extension not implemented for a chosen data loader.",
                 self.sb_timeout,
             )
             return
         except Exception as e:
             self.sb.showMessage(
-                "Couldn't load data, " "file format not supported.", self.sb_timeout
+                "Couldn't load data, file format not supported.", self.sb_timeout
             )
             if testing:
                 raise e

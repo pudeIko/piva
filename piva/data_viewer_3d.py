@@ -1669,7 +1669,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
             fail_box = QMessageBox()
             fail_box.setIcon(QMessageBox.Information)
             fail_box.setWindowTitle("K-space conversion.")
-            msg = "Something went wrong.<br>" "K-space conversion failed."
+            msg = "Something went wrong.<br>K-space conversion failed."
             fail_box.setText(msg)
             fail_box.setStandardButtons(QMessageBox.Ok)
             if fail_box.exec() == QMessageBox.Ok:
@@ -1679,7 +1679,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
             success_box = QMessageBox()
             success_box.setIcon(QMessageBox.Information)
             success_box.setWindowTitle("Conversion succeed.")
-            msg = "K-space conversion succeed!<br>" "Make sure to save results."
+            msg = "K-space conversion succeed!<br>Make sure to save results."
             success_box.setText(msg)
             success_box.setStandardButtons(QMessageBox.Ok)
             if success_box.exec() == QMessageBox.Ok:
@@ -1978,7 +1978,7 @@ class DataViewer3D(QtWidgets.QMainWindow):
                 fname_colision_box.setIcon(QMessageBox.Question)
                 fname_colision_box.setWindowTitle("File name already used.")
                 fname_colision_box.setText(
-                    "File {} already exists.\n" "Do you want to overwrite it?".format(
+                    "File {} already exists.\nDo you want to overwrite it?".format(
                         fname
                     )
                 )

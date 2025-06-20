@@ -400,7 +400,7 @@ def shirley_calculate(
         it += 1
 
     if it >= maxit:
-        print("specs.shirley_calculate: " "Max iterations exceeded before convergence.")
+        print("specs.shirley_calculate: Max iterations exceeded before convergence.")
     if is_reversed:
         return (yr + B)[::-1]
     else:

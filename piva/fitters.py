@@ -955,10 +955,8 @@ class MDCFitter(Fitter):
         """
 
         e = self.y_axis[int(self.hor_pos.get_value())]
-        message = (
-            "E = {:.4f};  a = {:.1f};  \u03bc = {:.4f};  " "\u0393 = {:.4f}".format(
-                e, self.p[0], self.p[1], self.p[2]
-            )
+        message = "E = {:.4f};  a = {:.1f};  \u03bc = {:.4f};  \u0393 = {:.4f}".format(
+            e, self.p[0], self.p[1], self.p[2]
         )
         if fit_alpha:
             message += ";  \u03b1 = {:.4f}".format(self.p[3])
@@ -1052,8 +1050,7 @@ class MDCFitter(Fitter):
 
         f = open(fname, "w+")
         line = (
-            "E [eV]\t\t\ta [a.u.] \t\t mu [1/A]\t\tgamma [1/A]\t\t"
-            "alpha\tbeta [a.u]\n"
+            "E [eV]\t\t\ta [a.u.] \t\t mu [1/A]\t\tgamma [1/A]\t\talpha\tbeta [a.u]\n"
         )
         f.write(line)
         try:
@@ -1101,7 +1098,7 @@ class MDCFitter(Fitter):
 
         overwriting_box = QMessageBox()
         overwriting_box.setIcon(QMessageBox.Question)
-        overwriting_box.setText("Fit results will be overwritten, " "sure to proceed?")
+        overwriting_box.setText("Fit results will be overwritten, sure to proceed?")
         overwriting_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         if overwriting_box.exec() == QMessageBox.Cancel:
             return

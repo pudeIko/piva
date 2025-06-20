@@ -1293,8 +1293,9 @@ class UtilitiesPanel(QWidget):
                     return
 
         message = (
-            "Sure to add attribute '{}' with value <{}> (type: {}) "
-            "to the file?".format(name, value, type(value))
+            "Sure to add attribute '{}' with value <{}> (type: {}) to the file?".format(
+                name, value, type(value)
+            )
         )
         if not settings.IS_TESTING:
             sanity_check_box = QMessageBox()
@@ -1309,7 +1310,7 @@ class UtilitiesPanel(QWidget):
             attr_conflict_box = QMessageBox()
             attr_conflict_box.setIcon(QMessageBox.Question)
             attr_conflict_box.setText(
-                f"Data set already has attribute " f"'{name}'.  Overwrite?"
+                f"Data set already has attribute '{name}'.  Overwrite?"
             )
             attr_conflict_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             if attr_conflict_box.exec() == QMessageBox.Ok:
@@ -1338,7 +1339,7 @@ class UtilitiesPanel(QWidget):
             essential_md_box = QMessageBox()
             essential_md_box.setIcon(QMessageBox.Information)
             essential_md_box.setText(
-                "Sorry, no can do.  " "Data and axes cannot be removed."
+                "Sorry, no can do. Data and axes cannot be removed."
             )
             essential_md_box.setStandardButtons(QMessageBox.Ok)
             if essential_md_box.exec() == QMessageBox.Ok:
@@ -1403,7 +1404,7 @@ class UtilitiesPanel(QWidget):
         if check_result == 0:
             data_mismatch_box = QMessageBox()
             data_mismatch_box.setIcon(QMessageBox.Information)
-            data_mismatch_box.setText("Aborted.\n" "Data sets' shapes don't match.\n")
+            data_mismatch_box.setText("Aborted.\nData sets' shapes don't match.\n")
             data_mismatch_box.setStandardButtons(QMessageBox.Ok)
             if data_mismatch_box.exec() == QMessageBox.Ok:
                 return
@@ -1467,7 +1468,7 @@ class UtilitiesPanel(QWidget):
             jl_running_box = QMessageBox()
             jl_running_box.setIcon(QMessageBox.Information)
             jl_running_box.setText(
-                "JupyterLab session is already running.\n" "Want to start another one?"
+                "JupyterLab session is already running.\nWant to start another one?"
             )
             jl_running_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             if jl_running_box.exec() == QMessageBox.Cancel:
@@ -1576,8 +1577,9 @@ class UtilitiesPanel(QWidget):
         for line in templ_lines:
             if "from piva.data_loader" in line:
                 line = (
-                    '    "from piva.data_loaders import Dataloader{} '
-                    'as dl\\n",'.format(beamline)
+                    '    "from piva.data_loaders import Dataloader{} as dl\\n",'.format(
+                        beamline
+                    )
                 )
             new_lines.append(line)
 

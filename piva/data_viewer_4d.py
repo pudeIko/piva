@@ -1126,9 +1126,9 @@ class DataViewer4D(QtWidgets.QMainWindow):
                 fname_colision_box.setIcon(QMessageBox.Question)
                 fname_colision_box.setWindowTitle("File name already used.")
                 fname_colision_box.setText(
-                    "File {} already exists.\nDo you "
-                    "want to overwrite "
-                    "it?".format(fname)
+                    "File {} already exists.\nDo you want to overwrite it?".format(
+                        fname
+                    )
                 )
                 fname_colision_box.setStandardButtons(
                     QMessageBox.Ok | QMessageBox.Cancel

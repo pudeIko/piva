@@ -1146,25 +1146,23 @@ class DataloaderI05(Dataloader):
         tilt = float(infile["entry1/instrument/manipulator/satilt"][0])
 
         PE = int(infile["entry1/instrument/analyser/pass_energy"][0])
-        n_sweeps = int(infile["entry1/instrument/analyser/" "number_of_iterations"][0])
-        lens_mode = str(infile["entry1/instrument/analyser/" "lens_mode"][0])[2:-1]
-        acq_mode = str(infile["entry1/instrument/analyser/" "acquisition_mode"][0])[
-            2:-1
-        ]
-        DT = int(infile["entry1/instrument/analyser/" "time_for_frames"][0] * 1000)
+        n_sweeps = int(infile["entry1/instrument/analyser/number_of_iterations"][0])
+        lens_mode = str(infile["entry1/instrument/analyser/lens_mode"][0])[2:-1]
+        acq_mode = str(infile["entry1/instrument/analyser/acquisition_mode"][0])[2:-1]
+        DT = int(infile["entry1/instrument/analyser/time_for_frames"][0] * 1000)
         defl_ang = float(infile["entry1/instrument/analyser/deflector_x"][0])
 
         hv = float(infile["entry1/instrument/monochromator/energy"][0])
         exit_slit = float(
-            infile["entry1/instrument/monochromator/" "exit_slit_size"][0] * 1000
+            infile["entry1/instrument/monochromator/exit_slit_size"][0] * 1000
         )
         FE = round(
-            infile["entry1/instrument/monochromator/" "s2_horizontal_slit_size"][0], 2
+            infile["entry1/instrument/monochromator/s2_horizontal_slit_size"][0], 2
         )
         polarization = str(
-            infile[
-                "entry1/instrument/insertion_device/beam/" "final_polarisation_label"
-            ][0]
+            infile["entry1/instrument/insertion_device/beam/final_polarisation_label"][
+                0
+            ]
         )[2:-1]
         temp = float(infile["entry1/sample/temperature"][0])
         pressure = float(infile["entry1/sample/lc_pressure"][0])
