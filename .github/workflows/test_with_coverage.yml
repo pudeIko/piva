@@ -90,13 +90,13 @@ jobs:
           --cov-config=.coveragerc piva/tests/jupyter_test.py
 
       - name: Test working_procedures module
-        if: ${{matrix.python-version=='3.10'}}
+        if: ${{matrix.os=='ubuntu-latest'}}
         run: >
           pytest --cov=$GITHUB_WORKSPACE --cov-append --cov-report=xml
           --cov-config=.coveragerc piva/tests/wp_test.py
 
       - name: Upload coverage to Codecov
-        if: ${{matrix.os=='ubuntu-latest' && matrix.python-version=='3.10'}}
+        if: ${{matrix.os=='ubuntu-latest'}}
         uses: codecov/codecov-action@v3
         with:
           files: ./coverage.xml
