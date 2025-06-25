@@ -1,5 +1,5 @@
 import numpy as np
-from piva.data_loaders import Dataloader, Dataset
+from piva.data_loaders import Dataloader
 
 
 class CustomDataloader(Dataloader):
@@ -32,9 +32,8 @@ class CustomDataloader(Dataloader):
         else:
             raise NotImplementedError
 
-        self.ds.add_org_file_entry(filename, self.name)
         # enforce validation of the returned Dataset
-        return Dataset.model_validate(self.ds.model_dump())
+        return self.validate_at_return()
 
     # function to implement. It supposed to read the file, extract data and
     # metadata from it and pass them into Dataset object.

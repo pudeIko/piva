@@ -169,7 +169,11 @@ class Dataset(BaseModel):
         }
     )
 
-    model_config = {"arbitrary_types_allowed": True, "extra": "allow"}
+    model_config = {
+        "arbitrary_types_allowed": True,
+        "extra": "allow",
+        # "validate_assignment": True,
+    }
 
     def add_org_file_entry(self, fname: str, dl: str) -> None:
         """
@@ -589,6 +593,28 @@ class Dataloader(ABC):
         # print(isinstance(scan, np.ndarray))
         return scan
 
+    def validate_at_return(self, filename: str):
+        """
+        Validate that the Dataset was correctly populated with data and add
+        original file information to the data provenance record.
+
+        :param filename: absolute path to the file
+        :return: loaded dataset with available metadata
+        """
+
+        if self.raster:
+            for xi in range(self.scan.shape[0]):
+                for yi in range(self.scan.shape[1]):
+                    dsi = self.scan[xi, yi]
+                    dsi.add_org_file_entry(filename, self.name)
+                    dsi.validate_assignment = True
+                    self.scan[xi, yi] = Dataset.model_validate(dsi.model_dump())
+            return self.scan
+        else:
+            self.ds.add_org_file_entry(filename, self.name)
+            self.ds.validate_assignment = True
+            return Dataset.model_validate(self.ds.model_dump())
+
 
 class DataloaderPickle(Dataloader):
     """
@@ -633,14 +659,7 @@ class DataloaderPickle(Dataloader):
                 except Exception as e:
                     raise e
 
-        if self.raster:
-            for xi in range(self.scan.shape[0]):
-                for yi in range(self.scan.shape[1]):
-                    self.scan[xi, yi].add_org_file_entry(filename, self.name)
-            return self.scan
-        else:
-            self.ds.add_org_file_entry(filename, self.name)
-            return Dataset.model_validate(self.ds.model_dump())
+        return self.validate_at_return(filename)
 
 
 class DataloaderSIS(Dataloader):
@@ -677,14 +696,7 @@ class DataloaderSIS(Dataloader):
         else:
             raise NotImplementedError
 
-        if self.raster:
-            for xi in range(self.scan.shape[0]):
-                for yi in range(self.scan.shape[1]):
-                    self.scan[xi, yi].add_org_file_entry(filename, self.name)
-            return self.scan
-        else:
-            self.ds.add_org_file_entry(filename, self.name)
-            return Dataset.model_validate(self.ds.model_dump())
+        return self.validate_at_return(filename)
 
     def load_h5(self, filename: str, metadata: bool = False) -> None:
         """
@@ -851,8 +863,7 @@ class DataloaderADRESS(Dataloader):
         else:
             raise NotImplementedError
 
-        self.ds.add_org_file_entry(filename, self.name)
-        return Dataset.model_validate(self.ds.model_dump())
+        return self.validate_at_return(filename)
 
     def load_h5(self, filename: str, metadata: bool = False) -> None:
         """
@@ -1022,14 +1033,7 @@ class DataloaderBloch(Dataloader):
         else:
             raise NotImplementedError
 
-        if self.raster:
-            for xi in range(self.scan.shape[0]):
-                for yi in range(self.scan.shape[1]):
-                    self.scan[xi, yi].add_org_file_entry(filename, self.name)
-            return self.scan
-        else:
-            self.ds.add_org_file_entry(filename, self.name)
-            return Dataset.model_validate(self.ds.model_dump())
+        return self.validate_at_return(filename)
 
 
 class DataloaderI05(Dataloader):
@@ -1043,11 +1047,11 @@ class DataloaderI05(Dataloader):
     def __init__(self):
         super(DataloaderI05, self).__init__()
 
-    def load_data(self, fname: str, metadata: bool = False) -> Dataset:
+    def load_data(self, filename: str, metadata: bool = False) -> Dataset:
         """
         Recognize correct format and load data from the file.
 
-        :param fname: absolute path to the file
+        :param filename: absolute path to the file
         :param metadata: if :py:obj:`True`, read only metadata and size of the
                          dataset. Not used here, but required to mach format
                          of other **Dataloaders**.See :meth:`load_ses_zip`
@@ -1055,13 +1059,12 @@ class DataloaderI05(Dataloader):
         :return: loaded dataset with available metadata
         """
 
-        if fname.endswith("nxs"):
-            self.load_nxs(fname, metadata=metadata)
+        if filename.endswith("nxs"):
+            self.load_nxs(filename, metadata=metadata)
         else:
             raise NotImplementedError
 
-        self.ds.add_org_file_entry(fname, self.name)
-        return Dataset.model_validate(self.ds.model_dump())
+        return self.validate_at_return(filename)
 
     def load_nxs(self, filename: str, metadata: bool) -> None:
         """
@@ -1250,14 +1253,7 @@ class DataloaderMERLIN(Dataloader):
         else:
             raise NotImplementedError
 
-        if self.raster:
-            for xi in range(self.scan.shape[0]):
-                for yi in range(self.scan.shape[1]):
-                    self.scan[xi, yi].add_org_file_entry(filename, self.name)
-            return self.scan
-        else:
-            self.ds.add_org_file_entry(filename, self.name)
-            return Dataset.model_validate(self.ds.model_dump())
+        return self.validate_at_return(filename)
 
     def load_h5(self, filename: str, metadata: bool = False) -> None:
         """
@@ -1418,14 +1414,7 @@ class DataloaderHERS(Dataloader):
         else:
             raise NotImplementedError
 
-        if self.raster:
-            for xi in range(self.scan.shape[0]):
-                for yi in range(self.scan.shape[1]):
-                    self.scan[xi, yi].add_org_file_entry(filename, self.name)
-            return self.scan
-        else:
-            self.ds.add_org_file_entry(filename, self.name)
-            return Dataset.model_validate(self.ds.model_dump())
+        return self.validate_at_return(filename)
 
 
 class DataloaderURANOS(Dataloader):
@@ -1468,14 +1457,7 @@ class DataloaderURANOS(Dataloader):
         else:
             raise NotImplementedError
 
-        if self.raster:
-            for xi in range(self.scan.shape[0]):
-                for yi in range(self.scan.shape[1]):
-                    self.scan[xi, yi].add_org_file_entry(filename, self.name)
-            return self.scan
-        else:
-            self.ds.add_org_file_entry(filename, self.name)
-            return Dataset.model_validate(self.ds.model_dump())
+        return self.validate_at_return(filename)
 
 
 class DataloaderCASSIOPEE(Dataloader):
@@ -1510,8 +1492,7 @@ class DataloaderCASSIOPEE(Dataloader):
                 filename += "/"
             self.load_from_dir(filename)
 
-        self.ds.add_org_file_entry(filename, self.name)
-        return Dataset.model_validate(self.ds.model_dump())
+        return self.validate_at_return(filename)
 
     def load_from_file(self, filename: str, metadata: bool = False) -> None:
         """

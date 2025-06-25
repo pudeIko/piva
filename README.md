@@ -3,15 +3,19 @@
 
 # Photoemission Interface for Visualization and Analysis
 
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![Docs](https://img.shields.io/badge/docs-latest-grren?logo=readthedocs)](https://piva.readthedocs.io/en/latest/intro.html)
+[![GitHub license](https://img.shields.io/github/license/pudeIko/piva)](https://github.com/ekiefl/pooltool/blob/master/LICENSE.txt)
 [![Build Status](https://github.com/pudeIko/piva/actions/workflows/test_with_coverage.yml/badge.svg)](https://github.com/pudeIko/piva/actions/workflows/test_with_coverage.yml)
 [![codecov](https://codecov.io/gh/pudeIko/piva/branch/main/graph/badge.svg)](https://codecov.io/gh/pudeIko/piva)
-[![Documentation Status](https://readthedocs.org/projects/piva/badge/?version=latest)](https://piva.readthedocs.io/en/latest/?badge=latest)
-[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
-[![Python Versions](https://img.shields.io/badge/python-3.10%20|%203.11-blue)](https://www.python.org/)
-![PyPI - Version](https://img.shields.io/pypi/v/piva)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-[![GitHub license](https://img.shields.io/github/license/pudeIko/piva)](https://github.com/ekiefl/pooltool/blob/master/LICENSE.txt)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
+[![PyPI - Version](https://img.shields.io/pypi/v/piva?logo=pypi)](https://pypi.org/project/piva/)
+[![Python Versions](https://img.shields.io/badge/python-3.10%20|%203.11|%203.12-blue?logo=python)](https://www.python.org/)
+[![Keep a Changelog](https://img.shields.io/badge/Keep%20a%20Changelog-v1.0.0-royalblue?logo=keepachangelog)](changelog.md)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?logo=contributorcovenant)](code_of_conduct.md)
+
+
 
 
 PIVA is a graphical user interface (GUI) application built with `PyQt5` and 

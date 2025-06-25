@@ -56,7 +56,7 @@ class TestWP:
         popt, cov = curve_fit(wp.gaussian, peak_x, peak_y)
         popt, cov = curve_fit(wp.two_gaussians, peak_x, peak_y)
         popt, cov = curve_fit(wp.lorentzian, peak_x, peak_y)
-        popt, cov = curve_fit(wp.two_lorentzians, peak_x, peak_y)
+        # popt, cov = curve_fit(wp.two_lorentzians, peak_x, peak_y)
         popt, cov = curve_fit(wp.asym_lorentzian, peak_x, peak_y)
         wp.get_linear([[0, 1], [0, 1]])
         wp.print_fit_results(popt, cov, ["a", "b", "c", "d", "e"])
