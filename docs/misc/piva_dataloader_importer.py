@@ -79,7 +79,6 @@ class CustomDataloader(Dataloader):
         else:
             raise NotImplementedError
 
-        self.ds.add_org_file_entry(filename, self.name)
         # enforce validation of the returned Dataset
         return self.validate_at_return()
 
