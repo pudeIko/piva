@@ -13,7 +13,7 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - comprehensive examples on custom dataloader implementation and guide on data
 ingestion and analysis
 - testing extras to `toml` file
-- example spectrum for testing
+- example spectrum file for testing
 - directory selection when saving to pickle
 - method that stops all started `jupyter` sessions
 - broader test coverage
@@ -25,11 +25,14 @@ ingestion and analysis
 
 ### Deprecated
 
+- old files saved with piva<=2. won't open ndue to different base class
+
 ### Removed
 
 ### Fixed
 
 - typos in docstrings
+- formatting and checks using `ruff`
 
 
 ## [2.3.0]

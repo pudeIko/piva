@@ -169,7 +169,11 @@ class Dataset(BaseModel):
         }
     )
 
-    model_config = {"arbitrary_types_allowed": True, "extra": "allow"}
+    model_config = {
+        "arbitrary_types_allowed": True,
+        "extra": "allow",
+        # "validate_assignment": True,
+    }
 
     def add_org_file_entry(self, fname: str, dl: str) -> None:
         """
@@ -589,6 +593,10 @@ class Dataloader(ABC):
         # print(isinstance(scan, np.ndarray))
         return scan
 
+    def validate_at_return(self):
+        self.ds.validate_assignment = True
+        return Dataset.model_validate(self.ds.model_dump())
+
 
 class DataloaderPickle(Dataloader):
     """
@@ -640,7 +648,7 @@ class DataloaderPickle(Dataloader):
             return self.scan
         else:
             self.ds.add_org_file_entry(filename, self.name)
-            return Dataset.model_validate(self.ds.model_dump())
+            return self.validate_at_return()
 
 
 class DataloaderSIS(Dataloader):
@@ -684,7 +692,7 @@ class DataloaderSIS(Dataloader):
             return self.scan
         else:
             self.ds.add_org_file_entry(filename, self.name)
-            return Dataset.model_validate(self.ds.model_dump())
+            return self.validate_at_return()
 
     def load_h5(self, filename: str, metadata: bool = False) -> None:
         """
@@ -852,7 +860,7 @@ class DataloaderADRESS(Dataloader):
             raise NotImplementedError
 
         self.ds.add_org_file_entry(filename, self.name)
-        return Dataset.model_validate(self.ds.model_dump())
+        return self.validate_at_return()
 
     def load_h5(self, filename: str, metadata: bool = False) -> None:
         """
@@ -1029,7 +1037,7 @@ class DataloaderBloch(Dataloader):
             return self.scan
         else:
             self.ds.add_org_file_entry(filename, self.name)
-            return Dataset.model_validate(self.ds.model_dump())
+            return self.validate_at_return()
 
 
 class DataloaderI05(Dataloader):
@@ -1061,7 +1069,7 @@ class DataloaderI05(Dataloader):
             raise NotImplementedError
 
         self.ds.add_org_file_entry(fname, self.name)
-        return Dataset.model_validate(self.ds.model_dump())
+        return self.validate_at_return()
 
     def load_nxs(self, filename: str, metadata: bool) -> None:
         """
@@ -1257,7 +1265,7 @@ class DataloaderMERLIN(Dataloader):
             return self.scan
         else:
             self.ds.add_org_file_entry(filename, self.name)
-            return Dataset.model_validate(self.ds.model_dump())
+            return self.validate_at_return()
 
     def load_h5(self, filename: str, metadata: bool = False) -> None:
         """
@@ -1425,7 +1433,7 @@ class DataloaderHERS(Dataloader):
             return self.scan
         else:
             self.ds.add_org_file_entry(filename, self.name)
-            return Dataset.model_validate(self.ds.model_dump())
+            return self.validate_at_return()
 
 
 class DataloaderURANOS(Dataloader):
@@ -1475,7 +1483,7 @@ class DataloaderURANOS(Dataloader):
             return self.scan
         else:
             self.ds.add_org_file_entry(filename, self.name)
-            return Dataset.model_validate(self.ds.model_dump())
+            return self.validate_at_return()
 
 
 class DataloaderCASSIOPEE(Dataloader):
@@ -1511,7 +1519,7 @@ class DataloaderCASSIOPEE(Dataloader):
             self.load_from_dir(filename)
 
         self.ds.add_org_file_entry(filename, self.name)
-        return Dataset.model_validate(self.ds.model_dump())
+        return self.validate_at_return()
 
     def load_from_file(self, filename: str, metadata: bool = False) -> None:
         """
