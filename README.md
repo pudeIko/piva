@@ -26,6 +26,13 @@ Angle-Resolved Photoemission Spectroscopy (ARPES) experiments.
 
 ![](./docs/img/showcase.gif)
 
+Its primary objective is to improve the efficiency of ARPES data inspection and 
+analysis by providing interactive, intuitive tools designed to handle large, 
+multidimensional datasets.
+For more information and a comparison with other packages commonly used in the 
+ARPES community, please refer to the **Statement of need** section of the 
+accompanying [manuscript](./paper/paper.md).
+
 A variety of standard methods and image processing algorithms are available 
 directly from the GUI. Additionally, several utilities are particularly 
 useful during the experimental phase when decisions about subsequent steps 

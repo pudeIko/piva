@@ -19,7 +19,8 @@ window:
   allowing you to browse through the files.
 
   The currently displayed directory can be changed from the menu bar
-  (**File** -> **Open directory**) or by using the ``CTRL + O`` shortcut.
+  (**File** -> **Open directory**) or by using the ``CTRL + O`` 
+  (``CMD + O`` on macOS) shortcut.
 
 - On the right-hand side, you can see the metadata panel, displaying all
   metadata available in the loaded file. Whenever the file selection in the
@@ -28,7 +29,7 @@ window:
   :class:`~data_loaders.Dataset` for more details.
 
   To open the selected file, go to the menu bar (**File** -> **Launch piva**)
-  or use the ``CTRL + L`` shortcut.
+  or use the ``CTRL + L`` (``CMD + L`` on macOS) shortcut.
 
   .. note::
     The default :class:`~data_loaders.Dataloader` selection set to `All`

@@ -32,12 +32,12 @@ Its layout and components are described below:
         :ref:`below <sec-utilities-panel>`.
 **d**    - **close** - close this window
          - **save** - save current dataset to a :mod:`pickle` file.
-         - **open in PIT** - open current dataset with `data-slicer's PIT
-           <https://data-slicer.readthedocs.io/en/latest/quickstart.html>`_.
          - **MDC fitter** - open current dataset in :ref:`MDC Fitter
            <sec-mdc-fitter>`
          - **EDC fitter** - open current dataset in :ref:`EDC Fitter
            <sec-edc-fitter>`
+         - **open in PIT** - open current dataset with `data-slicer's PIT
+           <https://data-slicer.readthedocs.io/en/latest/quickstart.html>`_.
 =====   =======================================================================
 
 .. note::
@@ -63,17 +63,22 @@ all three perpendicular directions.
 
 =====   =======================================================================
 **a**   **Main image plot**. Horizontal and vertical axes correspond to scanned
-        dimension and analyzer (angle/momentum) axis, respectively.
-**b**   Horizontal and vertical cuts taken along the sliders in
+        dimension and analyzer (usually angle/momentum) axis, respectively.
+**b**   **Main energy slider**. The white and red curves represent the 
+        integrated and single-point energy distribution curves, respectively — 
+        the latter corresponding to the crossing point of the sliders in the 
+        **main image plot**. The slider allows you to change the energy slice 
+        displayed in the **main image plot**.
+**c**   Horizontal and vertical cuts taken along the sliders in
         **main image plot**. Vertical axes correspond to energy, horizontal to
         corresponing axes of **main image plot**.
-**c**   Slices taken along energy sliders of horizontal/vertical cuts.
-**d**   Utilities panel containing all image processing and analysis features,
+**d**   Slices taken along energy sliders of horizontal/vertical cuts.
+**e**   Utilities panel containing all image processing and analysis features,
         to large extent shared between :ref:`2D <sec-2d-viewer>`,
         :ref:`3D Viewer <sec-3d-viewer>` and :ref:`4D Viewer <sec-4d-viewer>`.
         Detailed description of all its options can be found
         :ref:`below <sec-utilities-panel>`.
-**e**   See description :ref:`here <sec-2d-viewer-table>`.
+**f**   See description (d) :ref:`here <sec-2d-viewer-table>`.
 =====   =======================================================================
 
 
@@ -298,7 +303,7 @@ open in JupyterLab            Create a new ``notebook`` file (*touch* button)
                               information.)
                               *start JL session* opens new
                               ``jupyter-lab`` server.
-open experimental logbook     Create new ``notebook`` file with an automated
+create experimental logbook   Create new ``notebook`` file with an automated
                               experimental logbook for selected beamline.
 ============================  =================================================
 

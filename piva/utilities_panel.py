@@ -257,7 +257,7 @@ class UtilitiesPanel(QWidget):
             self.image_curvature_a.setValue(0.1)
             self.image_curvature_a.setDecimals(6)
             self.image_curvature_a.setMaximumWidth(max_w)
-            self.image_curvature_button = QPushButton("Do it")
+            self.image_curvature_button = QPushButton("Do curvature")
 
             self.image_normalize_to.addItems(["maximum", "intensity sum"])
             self.image_normalize_along.addItems(["slit", "energy"])

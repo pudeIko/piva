@@ -5,15 +5,14 @@ Automated test for working_procedurec.py module.
 import numpy as np
 from scipy.optimize import curve_fit
 import os
-import pkg_resources
-from pkg_resources import resource_filename
+from importlib.resources import files
 import piva.working_procedures as wp
 import piva.data_loaders as dl
 import piva.constants as const
 import pickle
 
-TEST_DATA_PATH = os.path.join(resource_filename("piva", "tests"), "data")
-TEST_DATA_FILE = os.path.join(TEST_DATA_PATH, "wp_test_data.p")
+TEST_DATA_PATH = files("piva") / "tests" / "data"
+TEST_DATA_FILE = TEST_DATA_PATH / "wp_test_data.p"
 
 
 class TestWP:
@@ -49,17 +48,17 @@ class TestWP:
 
         # get one peak from MDC
         down_sample = 10
-        peak_x = self.mdc.data[400:][::down_sample]
-        peak_y = self.mdc.x[400:][::down_sample]
+        tmp_x = np.linspace(-10, 10, 200)
+        tmp_y = 1.0 * np.exp(-((tmp_x) ** 2) / (2 * 1.0**2))
 
         # simple fitting curves
-        popt, cov = curve_fit(wp.gaussian, peak_x, peak_y)
-        popt, cov = curve_fit(wp.two_gaussians, peak_x, peak_y)
-        popt, cov = curve_fit(wp.lorentzian, peak_x, peak_y)
-        # popt, cov = curve_fit(wp.two_lorentzians, peak_x, peak_y)
-        popt, cov = curve_fit(wp.asym_lorentzian, peak_x, peak_y)
+        popt, cov = curve_fit(wp.gaussian, tmp_x, tmp_y)
+        _ = wp.two_gaussians(tmp_x)
+        _ = wp.lorentzian(tmp_x, 1, 0, 1)
+        _ = wp.two_lorentzians(tmp_x, 1, 0, 1, 1, 0, 1)
+        _ = wp.asym_lorentzian(tmp_x, 1, 0, 1)
         wp.get_linear([[0, 1], [0, 1]])
-        wp.print_fit_results(popt, cov, ["a", "b", "c", "d", "e"])
+        wp.print_fit_results(popt, cov, ["a", "b", "c"])
 
         # xps fitting
         ta, ta_erg = wp.sum_XPS([self.xps, self.xps], crop=[-28, -21], plot=False)
@@ -105,7 +104,7 @@ class TestWP:
         def ek_tb(kx, ky=None, kz=0.0, t=1.0, mu=0.0):
             return -2 * t * (np.cos(kx) + np.cos(ky)) - mu
 
-        ek_kwargs = {"t": 1.0, "mu": 0.5}
+        ek_kwargs = {"t": 1.0e-9, "mu": 0.5}
         kx, qx = np.linspace(-np.pi, np.pi, 5), np.linspace(0.0, 0.4 * np.pi, 5)
         ky, kz, qy, qz = np.copy(kx), np.copy(kx), np.copy(qx), np.copy(qx)
         _ = wp.get_chi(
@@ -156,10 +155,12 @@ class TestWP:
 
         # extract step
         edc, erg = self.edc.data[150:250], self.edc.x[150:250] - 75.0 + 4.3
+        dec_edc = np.exp(-(np.linspace(-5, 5, 256) ** 2))
+        dec_erg = np.linspace(-5, 5, 256)
         _ = wp.dec_fermi_div(edc, erg, 10, 0.0, -0.5)
-        _ = wp.deconvolve_resolution(edc, erg, 10.0)
+        _ = wp.deconvolve_resolution(dec_edc, dec_erg, 2.0)
         _ = wp.detect_step(edc)
-        _ = wp.fit_fermi_dirac(erg, edc, 0.0)
+        _ = wp.fit_fermi_dirac(erg, edc, 0)
         _ = wp.find_mid_old(erg, edc)
         _ = wp.symmetrize_edc_around_Ef(edc, erg)
         self.ds = dl.load_data(os.path.join(TEST_DATA_PATH, "test_map.p"))
@@ -249,7 +250,7 @@ class TestWP:
 
 if __name__ == "__main__":
     import pytest
-    from pkg_resources import resource_filename
+    from importlib.resources import files, as_file
 
-    path = os.path.join(pkg_resources.resource_filename("piva", "tests"), "wp_test.py")
-    pytest.main(["-v", "-s", path])
+    with as_file(files("piva") / "tests" / "wp_test.py") as path:
+        pytest.main(["-v", "-s", str(path)])

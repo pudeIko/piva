@@ -1907,8 +1907,8 @@ def rotate_around_xy(init_guess: list, data_org: Any) -> object:
 
 def k_fac(
     energy: Union[float, np.ndarray],
-    Eb: float = 0,
-    hv: float = 0,
+    Eb: float = 0.001,
+    hv: float = 100,
     work_func: float = 4.5,
 ) -> float:
     """

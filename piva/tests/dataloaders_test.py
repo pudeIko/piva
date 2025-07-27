@@ -7,10 +7,9 @@ import piva.data_loaders as dl
 import argparse
 from pydantic import BaseModel
 import os
-import pkg_resources
+from importlib.resources import files
 
-# PATH = pkg_resources.resource_filename('piva', 'tests/data/')
-PATH = os.path.join(pkg_resources.resource_filename("piva", "tests"), "data")
+PATH = files("piva") / "tests" / "data"
 
 
 def test_dataloaders() -> None:
@@ -90,9 +89,7 @@ def test_dataloaders() -> None:
 
 if __name__ == "__main__":
     import pytest
+    from importlib.resources import files, as_file
 
-    # path = pkg_resources.resource_filename('piva', 'tests/dataloaders_test.py')
-    path = os.path.join(
-        pkg_resources.resource_filename("piva", "tests"), "dataloaders_test.py"
-    )
-    pytest.main(["-v", "-s", path])
+    with as_file(files("piva") / "tests" / "dataloaders_test.py") as path:
+        pytest.main(["-v", "-s", str(path)])

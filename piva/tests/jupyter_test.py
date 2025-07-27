@@ -7,7 +7,7 @@ from piva.data_viewer_3d import DataViewer3D
 from pyqtgraph.Qt.QtCore import Qt
 from PyQt5.QtTest import QTest
 from PyQt5.QtCore import QTimer
-from pkg_resources import resource_filename
+from importlib.resources import files
 from PyQt5.QtWidgets import QMessageBox
 import os
 import signal
@@ -15,7 +15,7 @@ from typing import Any
 
 USER = False
 
-PATH = os.path.join(resource_filename("piva", "tests"), "data")
+PATH = files("piva") / "tests" / "data"
 EXAMPLE = os.path.join(PATH, "test_map.p")
 BL, BL_IDX = "SIS", 1
 PORT = "56789"
@@ -150,7 +150,7 @@ class TestJupyterUtilities:
 
 if __name__ == "__main__":
     import pytest
-    from pkg_resources import resource_filename
+    from importlib.resources import files, as_file
 
-    path = os.path.join(resource_filename("piva", "tests"), "jupyter_test.py")
-    pytest.main(["-v", "-s", path])
+    with as_file(files("piva") / "tests" / "jupyter_test.py") as path:
+        pytest.main(["-v", "-s", str(path)])

@@ -8,8 +8,8 @@ Every 1D set of data displayed currently on **DataViewers** or **Fitters** can
 be imported and further processed to compare differences between results
 obtained under, *e.g*, different conditions.
 
-To open **PlotTool** window one can simply use a ``CTRL + P`` shortcut or
-access it from menu bar of the :ref:`DataBrowser <sec-db>`.
+To open **PlotTool** window one can simply use a ``CTRL + P`` (``CMD + P`` on 
+macOS) shortcut or access it from menu bar of the :ref:`DataBrowser <sec-db>`.
 
 Its overall layout is shown below.
 
@@ -33,7 +33,7 @@ Its overall layout is shown below.
 
 .. _sec-pt-up:
 
-Plot tool's Utilities Panel
+Plot Tool's Utilities Panel
 ---------------------------
 
 **Utilities panel** allows for managing datasets, editing their appearance
@@ -160,3 +160,63 @@ action buttons          - **add** new or **update** selected annotation,
     Many more options are embedded in :class:`pyqtgraph.PlotWidget` object and
     can be accessed by clicking on the panel with a right mouse button.
 
+
+
+.. _sec-pt-hts:
+
+How to start
+------------
+
+Adding curves
+^^^^^^^^^^^^^
+
+The **Add/Remove Data** tab in the **Utilities Panel** allows you to manage 
+the curves displayed in the **Plot Panel**.
+
+You can import and plot any 1D data currently shown in open **DataViewers** or 
+**Fitters**. To add a new curve, first specify its origin using the **source** 
+and **plot** dropdown menus.
+
+.. figure:: ../img/fitters_plottool/plottool-hts-add.png
+   :alt: Image not found.
+
+- The **source** menu lists all open **DataViewers** and **Fitters**. 
+  Note: This list reflects the state at initialization — click the **update** 
+  button to refresh it after loading new data files.
+- The **plot** menu displays the available 1D curves within the selected 
+  source. Its content depends on the type of viewer or fitter, *eg.*:
+
+    - In the case of a :ref:`2D Viewer <sec-2d-viewer>`, options include *edc* 
+      and *mdc*.
+    - For a :ref:`3D Viewer <sec-3d-viewer>`, options include *main edc*, 
+      *single-point edc*, *vertical (analyzer)*, and *horizontal (scanned)*.
+
+Once the desired data is selected, click the **add** button to display the 
+curve in the **Plot Panel**.
+
+Alternatively, you can add custom data. To do this, select **custom** from the 
+**source** dropdown menu (the **plot** menu will then be empty).
+Provide a **name** for your data entry and enter a list of **x** and **y** 
+values separated by a single space.
+
+.. figure:: ../img/fitters_plottool/plottool-hts-custom.png
+   :alt: Image not found.
+
+Click **add** as before to plot the curve.
+
+
+Removing and editing curves
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To remove a curve, first check the **Curves** dropdown menu on the left-hand 
+side, which lists all currently imported and plotted curves.
+Ensure the correct entry is selected, then click the **remove current** button.
+
+.. figure:: ../img/fitters_plottool/plottool-hts-remove.png
+   :alt: Image not found.
+
+Similarly, selecting a curve from the **Curves** list is required for editing 
+or adding markers, as it puts the curve into an "editable" state.
+Once selected, any changes made in the **Edit Curves** or **Markers** tabs 
+will apply to that specific curve, allowing you to modify the display of each 
+curve individually.

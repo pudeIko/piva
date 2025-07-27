@@ -121,7 +121,7 @@ following methods:
 Successful execution of the tests should give a message like::
 
     -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-    =============== 2 passed, 1 warning in 81.50s (0:01:21) ===============
+    ================ 4 passed, 7 warnings in 108.44s (0:01:48) ================
 
 .. note::
    Running on Linux with wayland.

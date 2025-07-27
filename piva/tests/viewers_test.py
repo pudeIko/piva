@@ -17,7 +17,9 @@ from PyQt5.QtTest import QTest
 
 # from PyQt5.QtWidgets import QMessageBox
 import numpy as np
-from pkg_resources import resource_filename
+
+# from pkg_resources import resource_filename
+from importlib.resources import files, as_file
 import os
 from typing import Any
 from unittest.mock import patch
@@ -37,8 +39,7 @@ CHECK_LINKING___ = True
 CHECK_K_SPC_CONV = True
 CHECK_4D_Viewer_ = True
 
-EXAMPLE_CUT = os.path.join(resource_filename("piva", "tests"), "data")
-EXAMPLE_CUT = os.path.join(EXAMPLE_CUT, "test_map.p")
+EXAMPLE_CUT = str(files("piva") / "tests" / "data" / "test_map.p")
 N_SLIDER_E, N_SLIDER_K, N_BINS_E = 20, 26, 3
 N_E, N_X, N_Y = 20, 14, 3
 K0_IDX = 83
@@ -429,9 +430,7 @@ class TestViewers:
 
         :param qtbot: object emulating a user
         """
-        msm_fname = os.path.join(
-            os.path.join(resource_filename("piva", "tests"), "data"), "pickle-cut.p"
-        )
+        msm_fname = str(files("piva") / "tests" / "data" / "pickle-cut.p")
         self.browser.open_dv(msm_fname)
         self._2dv_msm = self.browser.data_viewers[msm_fname]
         self.up_2dv_msm = self._2dv_msm.util_panel
@@ -824,9 +823,8 @@ class TestViewers:
 
         :param qtbot: object emulating a user
         """
-        _4dv_fname = os.path.join(
-            os.path.join(resource_filename("piva", "tests"), "data"), "pickle-raster.p"
-        )
+        _4dv_fname = str(files("piva") / "tests" / "data" / "pickle-raster.p")
+        self.browser.open_dv(_4dv_fname)
         self.browser.open_dv(_4dv_fname)
         self._4dv = self.browser.data_viewers[_4dv_fname]
         self.up_4dv = self._4dv.util_panel
@@ -1055,7 +1053,7 @@ def fill_text(bot: Any, widget: Any, text: str, time: int = SHORT_WT * 6) -> Non
 
 if __name__ == "__main__":
     import pytest
-    from pkg_resources import resource_filename
+    from importlib.resources import files, as_file
 
-    path = os.path.join(resource_filename("piva", "tests"), "viewers_test.py")
-    pytest.main(["-v", "-s", path])
+    with as_file(files("piva") / "tests" / "viewers_test.py") as path:
+        pytest.main(["-v", "-s", str(path)])
