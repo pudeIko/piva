@@ -1113,6 +1113,22 @@ class DataViewer2D(QtWidgets.QMainWindow):
         which has the benefit of providing a free-slicing ROI.
         """
 
+        info_box = QMessageBox()
+        info_box.setIcon(QMessageBox.Information)
+        info_box.setWindowTitle("K-space conversion.")
+        msg = (
+            "Note:\n"
+            "PIT is a third-party package and may not work "
+            "properly with Python versions above 3.8."
+        )
+        info_box.setText(msg)
+        info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+        choice = info_box.exec()
+        if choice == QMessageBox.Ok:
+            pass
+        elif choice == QMessageBox.Cancel:
+            return
+
         mw = pit.MainWindow()
         # Move the empty axis back
         data = np.moveaxis(self.data_set.data, 0, -1)

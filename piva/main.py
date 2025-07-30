@@ -1,4 +1,4 @@
-import pkg_resources
+import importlib.metadata
 import os
 import sys
 from PyQt5.QtWidgets import QApplication
@@ -9,7 +9,7 @@ os.environ["QT_MAC_WANTS_LAYER"] = "1"
 
 
 def db(start_event_loop=True):
-    version = pkg_resources.require("piva")[0].version
+    version = importlib.metadata.version("piva")
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
     print("  PIVA - Photoemission Interface for Visualization and Analysis  ")
     print(f"                        Version {version}                        ")

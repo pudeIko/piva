@@ -643,6 +643,16 @@ class PlotTool(QtWidgets.QMainWindow):
             y = self.ds_custom_y.text().split(" ")
             x = np.array([float(xi) for xi in x])
             y = np.array([float(yi) for yi in y])
+            if x.size != y.size:
+                x_y_mismatch_box = QMessageBox()
+                x_y_mismatch_box.setIcon(QMessageBox.Information)
+                x_y_mismatch_box.setWindowTitle(" ")
+                x_y_mismatch_box.setText(
+                    "Error: x and y must have the same number of points."
+                )
+                x_y_mismatch_box.setStandardButtons(QMessageBox.Ok)
+                if x_y_mismatch_box.exec() == QMessageBox.Ok:
+                    return
             data_item_lbl = plot
         else:
             if isinstance(dv, p2d.DataViewer2D):
