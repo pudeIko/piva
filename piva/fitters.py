@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import numpy as np
+import re
 from typing import TYPE_CHECKING, Any
 from PyQt5.QtWidgets import (
     QTabWidget,
@@ -764,7 +765,6 @@ class MDCFitter(Fitter):
         self.fitting_bgr_range_first.setRange(range_start, range_stop)
         self.fitting_bgr_range_second.setRange(range_start, range_stop)
 
-        # print(self.x_axis.shape, self.mdc.shape)
         mdc_plot.plot(self.x_axis, self.mdc, pen=mkPen("k", width=2))
         shadow_bottom = PlotDataItem(
             [range_start, range_stop], [-self.mdc.max(), -self.mdc.max()]
@@ -999,7 +999,7 @@ class MDCFitter(Fitter):
         if self.fit_result is None:
             no_fit_box = QMessageBox()
             no_fit_box.setIcon(QMessageBox.Information)
-            no_fit_box.setText("No result to save.")
+            no_fit_box.setText("No result to append.")
             no_fit_box.setStandardButtons(QMessageBox.Ok)
             if no_fit_box.exec() == QMessageBox.Ok:
                 return
@@ -1019,17 +1019,18 @@ class MDCFitter(Fitter):
         except AttributeError:
             pass
 
-        try:
+        if len(self.fit_results.shape) > 1:
             fit_points_k = np.array(
                 [wp.indexof(ki, self.x_axis) for ki in self.fit_results[:, 2]]
             )
             fit_points_e = np.array(
                 [wp.indexof(ei, self.y_axis) for ei in self.fit_results[:, 0]]
             )
-            self.fit_points = ScatterPlotItem(fit_points_k, fit_points_e, symbol="h")
-            self.cut_panel.addItem(self.fit_points)
-        except IndexError:
-            pass
+        else:
+            fit_points_k = np.array([wp.indexof(self.fit_results[2], self.x_axis)])
+            fit_points_e = np.array([wp.indexof(self.fit_results[0], self.y_axis)])
+        self.fit_points = ScatterPlotItem(fit_points_k, fit_points_e, symbol="h")
+        self.cut_panel.addItem(self.fit_points)
 
     def save_fit_results(self) -> None:
         """
@@ -1037,33 +1038,48 @@ class MDCFitter(Fitter):
         in the directory of the original file.
         """
 
-        fname = self.title[:-13] + "_mdc_fit_results.txt"
-        if os.path.exists(fname):
+        if self.fit_results is None:
             no_fit_box = QMessageBox()
             no_fit_box.setIcon(QMessageBox.Information)
-            no_fit_box.setText("File already exists, want to overwrite?")
-            no_fit_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            if no_fit_box.exec() == QMessageBox.Cancel:
+            no_fit_box.setText("No results to save.  Please append fit results before saving.")
+            no_fit_box.setStandardButtons(QMessageBox.Ok)
+            if no_fit_box.exec() == QMessageBox.Ok:
+                return
+            
+        # fname = self.title[:-13] + "_mdc_fit_results.txt"
+        fname = self.title.strip().split(".")[0] + "_mdc_fit_results.txt"
+        if os.path.exists(fname):
+            file_exists_box = QMessageBox()
+            file_exists_box.setIcon(QMessageBox.Information)
+            file_exists_box.setText("File already exists, want to overwrite?")
+            file_exists_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            if file_exists_box.exec() == QMessageBox.Cancel:
                 return
             else:
                 pass
 
-        f = open(fname, "w+")
-        line = (
-            "E [eV]\t\t\ta [a.u.] \t\t mu [1/A]\t\tgamma [1/A]\t\talpha\tbeta [a.u]\n"
-        )
-        f.write(line)
-        try:
+        lines = "E [eV]\t\t\ta [a.u.] \t\t mu [1/A]\t\tgamma [1/A]\t\talpha\tbeta [a.u]\n"
+        if len(self.fit_results.shape) > 1:
             for result in self.fit_results:
-                line = ""
                 for entry in result:
-                    line += str(entry) + "\t"
-                f.write(line + "\n")
-        except TypeError:
+                    lines += str(entry) + "\t"
+                lines += "\n"
+        else:
             for entry in self.fit_results:
-                line += str(entry) + "\t"
-            f.write(line + "\n")
-        f.close()
+                lines += str(entry) + "\t"
+            lines += "\n"
+
+        with open(fname, "w") as f:
+            f.writelines(re.sub(r'\t*(\n)\t*', r'\1', lines))
+        
+        saved_file_path = os.path.abspath(fname)
+        saved_box = QMessageBox()
+        saved_box.setIcon(QMessageBox.Information)
+        saved_box.setText(f"Results saved in: \n{saved_file_path}.\n\n" + 
+                          "Click \"Edit\" to open them in the text editor.")
+        saved_box.setStandardButtons(QMessageBox.Ok)
+        if saved_box.exec() == QMessageBox.Ok:
+            pass
 
     def edit_fit_results(self) -> None:
         """
@@ -1071,7 +1087,7 @@ class MDCFitter(Fitter):
         button. For convenience.
         """
 
-        fname = self.title[:-13] + "_mdc_fit_results.txt"
+        fname = self.title.strip().split(".")[0] + "_mdc_fit_results.txt"
         if not os.path.exists(fname):
             no_file_box = QMessageBox()
             no_file_box.setIcon(QMessageBox.Information)
@@ -1087,7 +1103,7 @@ class MDCFitter(Fitter):
         Load previously saved fit results form **\ *.txt** file.
         """
 
-        fname = self.title[:-13] + "_mdc_fit_results.txt"
+        fname = self.title.strip().split(".")[0] + "_mdc_fit_results.txt"
         if not os.path.exists(fname):
             no_file_box = QMessageBox()
             no_file_box.setIcon(QMessageBox.Information)
@@ -1131,7 +1147,7 @@ class MDCFitter(Fitter):
             )
             self.fit_points = ScatterPlotItem(fit_points_k, fit_points_e, symbol="h")
             self.cut_panel.addItem(self.fit_points)
-        except IndexError:
+        except (IndexError, TypeError):
             pass
 
 
