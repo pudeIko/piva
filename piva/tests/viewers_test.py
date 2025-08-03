@@ -146,7 +146,7 @@ class TestViewers:
 
     def check_3Dv_orient_tab(self, qtbot: Any) -> None:
         """
-        Check behavior of the features in **Orientate tab** in
+        Check behavior of the features in **Orient tab** in
         :class:`data_viewer_3d.DataViewer3D`.
 
         :param qtbot: object emulating a user
@@ -156,23 +156,21 @@ class TestViewers:
         self.up.tabs.setCurrentIndex(3)
         assert self.up.tabs.currentIndex() == 3
         qtbot.wait(LONG_WT)
-        qtbot.mouseClick(self.up.orientate_copy_coords, Qt.LeftButton)
+        qtbot.mouseClick(self.up.orient_copy_coords, Qt.LeftButton)
         qtbot.wait(LONG_WT)
-        qtbot.mouseClick(self.up.orientate_find_gamma, Qt.LeftButton)
+        qtbot.mouseClick(self.up.orient_find_gamma, Qt.LeftButton)
 
-        qtbot.mouseClick(self.up.orientate_hor_line, Qt.LeftButton)
-        qtbot.mouseClick(self.up.orientate_ver_line, Qt.LeftButton)
+        qtbot.mouseClick(self.up.orient_hor_line, Qt.LeftButton)
+        qtbot.mouseClick(self.up.orient_ver_line, Qt.LeftButton)
 
-        change_spinBox(
-            qtbot, self.up.orientate_angle, 181, Qt.Key_Up, time=SHORT_WT * 2
-        )
+        change_spinBox(qtbot, self.up.orient_angle, 181, Qt.Key_Up, time=SHORT_WT * 2)
         qtbot.wait(LONG_WT * 2)
-        qtbot.mouseClick(self.up.orientate_hor_line, Qt.LeftButton)
-        qtbot.mouseClick(self.up.orientate_ver_line, Qt.LeftButton)
-        assert self.up.orientate_hor_line.isChecked() is False
-        assert self.up.orientate_ver_line.isChecked() is False
+        qtbot.mouseClick(self.up.orient_hor_line, Qt.LeftButton)
+        qtbot.mouseClick(self.up.orient_ver_line, Qt.LeftButton)
+        assert self.up.orient_hor_line.isChecked() is False
+        assert self.up.orient_ver_line.isChecked() is False
 
-        qtbot.mouseClick(self.up.orientate_info_button, Qt.LeftButton)
+        qtbot.mouseClick(self.up.orient_info_button, Qt.LeftButton)
         qtbot.wait(QTest.qWaitForWindowExposed(self._3dv.info_box))
         qtbot.wait(LONG_WT)
         self._3dv.info_box.close()

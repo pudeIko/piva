@@ -37,6 +37,7 @@ import piva.working_procedures as wp
 from piva.data_loaders import Dataset
 from piva.cmaps import cmaps, my_cmaps
 from piva.image_panels import TracedVariable
+from piva.utilities_panel import dialog_message_box
 
 if TYPE_CHECKING:
     from piva.data_viewer_2d import DataViewer2D
@@ -997,11 +998,14 @@ class MDCFitter(Fitter):
         """
 
         if self.fit_result is None:
-            no_fit_box = QMessageBox()
-            no_fit_box.setIcon(QMessageBox.Information)
-            no_fit_box.setText("No result to append.")
-            no_fit_box.setStandardButtons(QMessageBox.Ok)
-            if no_fit_box.exec() == QMessageBox.Ok:
+            # no_fit_box = QMessageBox()
+            # no_fit_box.setIcon(QMessageBox.Information)
+            # no_fit_box.setText("No result to append.")
+            # no_fit_box.setStandardButtons(QMessageBox.Ok)
+            # if no_fit_box.exec() == QMessageBox.Ok:
+            #     return
+            # msg, butts = "No result to append.", [QMessageBox.Ok]
+            if dialog_message_box("No result to append.") == QMessageBox.Ok:
                 return
 
         if self.fit_results is None:
@@ -1039,26 +1043,40 @@ class MDCFitter(Fitter):
         """
 
         if self.fit_results is None:
-            no_fit_box = QMessageBox()
-            no_fit_box.setIcon(QMessageBox.Information)
-            no_fit_box.setText("No results to save.  Please append fit results before saving.")
-            no_fit_box.setStandardButtons(QMessageBox.Ok)
-            if no_fit_box.exec() == QMessageBox.Ok:
+            # no_fit_box = QMessageBox()
+            # no_fit_box.setIcon(QMessageBox.Information)
+            # no_fit_box.setText("No results to save.  Please append fit results before saving.")
+            # no_fit_box.setStandardButtons(QMessageBox.Ok)
+            # if no_fit_box.exec() == QMessageBox.Ok:
+            #     return
+            msg, butts = (
+                "No results to save.  Please append fit results before saving.",
+                [QMessageBox.Ok],
+            )
+            if dialog_message_box(msg, butts) == QMessageBox.Ok:
                 return
-            
+
         # fname = self.title[:-13] + "_mdc_fit_results.txt"
         fname = self.title.strip().split(".")[0] + "_mdc_fit_results.txt"
         if os.path.exists(fname):
-            file_exists_box = QMessageBox()
-            file_exists_box.setIcon(QMessageBox.Information)
-            file_exists_box.setText("File already exists, want to overwrite?")
-            file_exists_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            if file_exists_box.exec() == QMessageBox.Cancel:
+            # file_exists_box = QMessageBox()
+            # file_exists_box.setIcon(QMessageBox.Information)
+            # file_exists_box.setText("File already exists, want to overwrite?")
+            # file_exists_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            # if file_exists_box.exec() == QMessageBox.Cancel:
+            #     return
+            # else:
+            #     pass
+            msg, butts = (
+                "File already exists, want to overwrite?",
+                [QMessageBox.Ok, QMessageBox.Cancel],
+            )
+            if dialog_message_box(msg, butts) == QMessageBox.Cancel:
                 return
-            else:
-                pass
 
-        lines = "E [eV]\t\t\ta [a.u.] \t\t mu [1/A]\t\tgamma [1/A]\t\talpha\tbeta [a.u]\n"
+        lines = (
+            "E [eV]\t\t\ta [a.u.] \t\t mu [1/A]\t\tgamma [1/A]\t\talpha\tbeta [a.u]\n"
+        )
         if len(self.fit_results.shape) > 1:
             for result in self.fit_results:
                 for entry in result:
@@ -1070,15 +1088,21 @@ class MDCFitter(Fitter):
             lines += "\n"
 
         with open(fname, "w") as f:
-            f.writelines(re.sub(r'\t*(\n)\t*', r'\1', lines))
-        
+            f.writelines(re.sub(r"\t*(\n)\t*", r"\1", lines))
+
         saved_file_path = os.path.abspath(fname)
-        saved_box = QMessageBox()
-        saved_box.setIcon(QMessageBox.Information)
-        saved_box.setText(f"Results saved in: \n{saved_file_path}.\n\n" + 
-                          "Click \"Edit\" to open them in the text editor.")
-        saved_box.setStandardButtons(QMessageBox.Ok)
-        if saved_box.exec() == QMessageBox.Ok:
+        # saved_box = QMessageBox()
+        # saved_box.setIcon(QMessageBox.Information)
+        # saved_box.setText(f"Results saved in: \n{saved_file_path}.\n\n" +
+        #                   "Click \"Edit\" to open them in the text editor.")
+        # saved_box.setStandardButtons(QMessageBox.Ok)
+        # if saved_box.exec() == QMessageBox.Ok:
+        #     pass
+        msg = (
+            f"Results saved in: \n{saved_file_path}.\n\n"
+            + 'Click "Edit" to open them in the text editor.'
+        )
+        if dialog_message_box(msg) == QMessageBox.Ok:
             pass
 
     def edit_fit_results(self) -> None:
@@ -1089,11 +1113,14 @@ class MDCFitter(Fitter):
 
         fname = self.title.strip().split(".")[0] + "_mdc_fit_results.txt"
         if not os.path.exists(fname):
-            no_file_box = QMessageBox()
-            no_file_box.setIcon(QMessageBox.Information)
-            no_file_box.setText("File not found.")
-            no_file_box.setStandardButtons(QMessageBox.Ok)
-            if no_file_box.exec() == QMessageBox.Ok:
+            # no_file_box = QMessageBox()
+            # no_file_box.setIcon(QMessageBox.Information)
+            # no_file_box.setText("File not found.")
+            # no_file_box.setStandardButtons(QMessageBox.Ok)
+            # if no_file_box.exec() == QMessageBox.Ok:
+            #     return
+            # msg = "File not found."
+            if dialog_message_box("File not found.") == QMessageBox.Ok:
                 return
 
         os.system("open " + fname)
@@ -1105,21 +1132,29 @@ class MDCFitter(Fitter):
 
         fname = self.title.strip().split(".")[0] + "_mdc_fit_results.txt"
         if not os.path.exists(fname):
-            no_file_box = QMessageBox()
-            no_file_box.setIcon(QMessageBox.Information)
-            no_file_box.setText("File not found.")
-            no_file_box.setStandardButtons(QMessageBox.Ok)
-            if no_file_box.exec() == QMessageBox.Ok:
+            # no_file_box = QMessageBox()
+            # no_file_box.setIcon(QMessageBox.Information)
+            # no_file_box.setText("File not found.")
+            # no_file_box.setStandardButtons(QMessageBox.Ok)
+            # if no_file_box.exec() == QMessageBox.Ok:
+            #     return
+            if dialog_message_box("File not found.") == QMessageBox.Ok:
                 return
 
-        overwriting_box = QMessageBox()
-        overwriting_box.setIcon(QMessageBox.Question)
-        overwriting_box.setText("Fit results will be overwritten, sure to proceed?")
-        overwriting_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        if overwriting_box.exec() == QMessageBox.Cancel:
+        # overwriting_box = QMessageBox()
+        # overwriting_box.setIcon(QMessageBox.Question)
+        # overwriting_box.setText("Fit results will be overwritten, sure to proceed?")
+        # overwriting_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        # if overwriting_box.exec() == QMessageBox.Cancel:
+        #     return
+        # else:
+        #     pass
+        msg = "Fit results will be overwritten, sure to proceed?"
+        if (
+            dialog_message_box(msg, buttons=[QMessageBox.Ok, QMessageBox.Cancel])
+            == QMessageBox.Cancel
+        ):
             return
-        else:
-            pass
 
         f = open(fname)
         lines = f.readlines()
@@ -1293,11 +1328,12 @@ class EDCFitter(Fitter):
 
         if self.symmetrize_box.isChecked():
             if self.image_edc_range_start.value() > 0:
-                kin_erg_box = QMessageBox()
-                kin_erg_box.setIcon(QMessageBox.Information)
-                kin_erg_box.setText("Energy must be in binding")
-                kin_erg_box.setStandardButtons(QMessageBox.Ok)
-                if kin_erg_box.exec() == QMessageBox.Ok:
+                # kin_erg_box = QMessageBox()
+                # kin_erg_box.setIcon(QMessageBox.Information)
+                # kin_erg_box.setText("Energy must be in binding")
+                # kin_erg_box.setStandardButtons(QMessageBox.Ok)
+                if dialog_message_box("Energy must be in binding") == QMessageBox.Ok:
+                    # if kin_erg_box.exec() == QMessageBox.Ok:
                     self.symmetrize_box.setChecked(False)
                     self.edc, self.edc_erg_ax = wp.symmetrize_edc(
                         self.edc, self.edc_erg_ax

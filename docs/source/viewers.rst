@@ -37,7 +37,8 @@ Its layout and components are described below:
          - **EDC fitter** - open current dataset in :ref:`EDC Fitter
            <sec-edc-fitter>`
          - **open in PIT** - open current dataset with `data-slicer's PIT
-           <https://data-slicer.readthedocs.io/en/latest/quickstart.html>`_.
+           <https://data-slicer.readthedocs.io/en/latest/quickstart.html>`_. 
+           Refer to the note below for additional information.
 =====   =======================================================================
 
 .. note::
@@ -45,6 +46,16 @@ Its layout and components are described below:
     conversion but does not keep information on performed image processing
     like smoothing or curvature analysis.
 
+.. note::
+
+    PIT enables users to extract arbitrary cuts from multidimensional datasets. 
+    It is, however, part of an external package, :mod:`data_slicer`. While the 
+    core functionality is self-contained, deprecation warnings or 
+    compatibility issues may arise when used with newer versions of Python or 
+    third-party packages.
+    
+    For any critical issues, please contact the development team—preferably by 
+    `opening an issue on GitHub <https://github.com/pudeIko/piva/issues/new>`_.
 
 
 .. _sec-3d-viewer:
@@ -309,5 +320,5 @@ create experimental logbook   Create new ``notebook`` file with an automated
 
 .. note::
     Any changes in the metadata will only be saved to the pickle file 
-    generated/updated by hitting the *save* button in the top-righ.
+    generated/updated by hitting the *save* button in the top-right.
 

@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QMessageBox
 import piva.working_procedures as wp
 import piva.data_loaders as dl
 import piva.image_panels as ip
-from piva.utilities_panel import UtilitiesPanel
+from piva.utilities_panel import UtilitiesPanel, dialog_message_box
 from data_slicer import pit
 from piva.cmaps import cmaps
 from piva.fitters import MDCFitter, EDCFitter
@@ -881,18 +881,22 @@ class DataViewer2D(QtWidgets.QMainWindow):
         wf = self.util_panel.axes_energy_wf.value()
 
         if hv == 0 or wf == 0:
-            warning_box = QMessageBox()
-            warning_box.setIcon(QMessageBox.Information)
-            warning_box.setWindowTitle("Wrong conversion values.")
-            if hv == 0 and wf == 0:
-                msg = "Photon energy and work fonction values not given."
-            elif hv == 0:
-                msg = "Photon energy value not given."
-            elif wf == 0:
-                msg = "Work fonction value not given."
-            warning_box.setText(msg)
-            warning_box.setStandardButtons(QMessageBox.Ok)
-            if warning_box.exec() == QMessageBox.Ok:
+            # warning_box = QMessageBox()
+            # warning_box.setIcon(QMessageBox.Information)
+            # warning_box.setWindowTitle("Wrong conversion values.")
+            # if hv == 0 and wf == 0:
+            #     msg = "Photon energy and work function values not given."
+            # elif hv == 0:
+            #     msg = "Photon energy value not given."
+            # elif wf == 0:
+            #     msg = "Work fonction value not given."
+            # warning_box.setText(msg)
+            # warning_box.setStandardButtons(QMessageBox.Ok)
+            # if warning_box.exec() == QMessageBox.Ok:
+            #     return
+            msg = "Photon energy and/or work function values not given."
+            title, butts = "Wrong conversion values.", [QMessageBox.Ok]
+            if dialog_message_box(msg, butts, title) == QMessageBox.Ok:
                 return
 
         nma, erg = wp.angle2kspace(
@@ -942,11 +946,14 @@ class DataViewer2D(QtWidgets.QMainWindow):
         self.mdc_thread_lbl = title
 
         if title in self.data_viewers:
-            already_opened_box = QMessageBox()
-            already_opened_box.setIcon(QMessageBox.Information)
-            already_opened_box.setText("MDC viewer already opened.")
-            already_opened_box.setStandardButtons(QMessageBox.Ok)
-            if already_opened_box.exec() == QMessageBox.Ok:
+            # already_opened_box = QMessageBox()
+            # already_opened_box.setIcon(QMessageBox.Information)
+            # already_opened_box.setText("MDC viewer already opened.")
+            # already_opened_box.setStandardButtons(QMessageBox.Ok)
+            # if already_opened_box.exec() == QMessageBox.Ok:
+            #     return
+            # msg, butts = "MDC viewer already opened.", [QMessageBox.Ok]
+            if dialog_message_box("MDC viewer already opened.") == QMessageBox.Ok:
                 return
 
         if self.new_energy_axis is not None:
@@ -961,13 +968,16 @@ class DataViewer2D(QtWidgets.QMainWindow):
         try:
             self.data_viewers[title] = MDCFitter(self, self.data_set, axes, title)
         except Exception as e:
-            error_box = QMessageBox()
-            error_box.setIcon(QMessageBox.Information)
-            error_box.setText("Couldn't load data,  something went wrong.")
-            error_box.setStandardButtons(QMessageBox.Ok)
-            if error_box.exec() == QMessageBox.Ok:
+            # error_box = QMessageBox()
+            # error_box.setIcon(QMessageBox.Information)
+            # error_box.setText("Couldn't load data,  something went wrong.")
+            # error_box.setStandardButtons(QMessageBox.Ok)
+            # if error_box.exec() == QMessageBox.Ok:
+            #     raise e
+            #     return
+            msg = "Couldn't load data,  something went wrong."
+            if dialog_message_box(msg) == QMessageBox.Ok:
                 raise e
-                return
 
     def open_edc_fitter(self) -> None:
         """
@@ -979,11 +989,14 @@ class DataViewer2D(QtWidgets.QMainWindow):
         self.edc_thread_lbl = title
 
         if title in self.data_viewers:
-            already_opened_box = QMessageBox()
-            already_opened_box.setIcon(QMessageBox.Information)
-            already_opened_box.setText("EDC viewer already opened.")
-            already_opened_box.setStandardButtons(QMessageBox.Ok)
-            if already_opened_box.exec() == QMessageBox.Ok:
+            # already_opened_box = QMessageBox()
+            # already_opened_box.setIcon(QMessageBox.Information)
+            # already_opened_box.setText("EDC viewer already opened.")
+            # already_opened_box.setStandardButtons(QMessageBox.Ok)
+            # if already_opened_box.exec() == QMessageBox.Ok:
+            #     return
+            # msg, butts = "EDC viewer already opened.", [QMessageBox.Ok]
+            if dialog_message_box("EDC viewer already opened.") == QMessageBox.Ok:
                 return
 
         if self.new_energy_axis is not None:
@@ -1045,22 +1058,30 @@ class DataViewer2D(QtWidgets.QMainWindow):
             # check if there is no fname colosions
             # if fname in os.listdir(savedir):
             if fname in os.listdir(savedir) and (not settings.IS_TESTING):
-                fname_colision_box = QMessageBox()
-                fname_colision_box.setIcon(QMessageBox.Question)
-                fname_colision_box.setWindowTitle("File name already used.")
-                fname_colision_box.setText(
-                    "File {} already exists.\nDo you want to overwrite it?".format(
-                        fname
-                    )
+                # fname_colision_box = QMessageBox()
+                # fname_colision_box.setIcon(QMessageBox.Question)
+                # fname_colision_box.setWindowTitle("File name already used.")
+                # fname_colision_box.setText(
+                #     "File {} already exists.\nDo you want to overwrite it?".format(
+                #         fname
+                #     )
+                # )
+                # fname_colision_box.setStandardButtons(
+                #     QMessageBox.Ok | QMessageBox.Cancel
+                # )
+                # if fname_colision_box.exec() == QMessageBox.Ok:
+                #     file_selection = False
+                # else:
+                #     init_fname = fname
+                msg = f"File {fname} already exists.\nDo you want to overwrite it?"
+                title, butts = (
+                    "File name already used.",
+                    [QMessageBox.Ok, QMessageBox.Cancel],
                 )
-                fname_colision_box.setStandardButtons(
-                    QMessageBox.Ok | QMessageBox.Cancel
-                )
-                # if settings.IS_TESTING:
-                #     QTimer.singleShot(100, lambda: qtbot.mouseClick(
-                #         fname_colision_box.button(QMessageBox.Ok),
-                #         Qt.LeftButton))
-                if fname_colision_box.exec() == QMessageBox.Ok:
+                if (
+                    dialog_message_box(msg, butts, title, type=QMessageBox.Question)
+                    == QMessageBox.Ok
+                ):
                     file_selection = False
                 else:
                     init_fname = fname
@@ -1077,15 +1098,22 @@ class DataViewer2D(QtWidgets.QMainWindow):
 
         # if np.any(conditions):
         if np.any(conditions) and (not settings.IS_TESTING):
-            save_cor_box = QMessageBox()
-            save_cor_box.setIcon(QMessageBox.Question)
-            save_cor_box.setWindowTitle("Save data")
-            save_cor_box.setText("Do you want to save applied corrections?")
-            save_cor_box.setStandardButtons(
-                QMessageBox.No | QMessageBox.Ok | QMessageBox.Cancel
+            # save_cor_box = QMessageBox()
+            # save_cor_box.setIcon(QMessageBox.Question)
+            # save_cor_box.setWindowTitle("Save data")
+            # save_cor_box.setText("Do you want to save applied corrections?")
+            # save_cor_box.setStandardButtons(
+            #     QMessageBox.No | QMessageBox.Ok | QMessageBox.Cancel
+            # )
+            # box_return_value = save_cor_box.exec()
+            msg = "Do you want to save applied corrections?"
+            title, butts = (
+                "Save data",
+                [QMessageBox.No, QMessageBox.Ok, QMessageBox.Cancel],
             )
-
-            box_return_value = save_cor_box.exec()
+            box_return_value = dialog_message_box(
+                msg, butts, title, type=QMessageBox.Question
+            )
             if box_return_value == QMessageBox.Ok:
                 if up.axes_energy_Ef.value() != 0:
                     dataset.Ef = up.axes_energy_Ef.value()
@@ -1113,20 +1141,25 @@ class DataViewer2D(QtWidgets.QMainWindow):
         which has the benefit of providing a free-slicing ROI.
         """
 
-        info_box = QMessageBox()
-        info_box.setIcon(QMessageBox.Information)
-        info_box.setWindowTitle("K-space conversion.")
+        # info_box = QMessageBox()
+        # info_box.setIcon(QMessageBox.Information)
+        # info_box.setWindowTitle("K-space conversion.")
         msg = (
             "Note:\n"
             "PIT is a third-party package and may not work "
             "properly with Python versions above 3.8."
         )
-        info_box.setText(msg)
-        info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
-        choice = info_box.exec()
-        if choice == QMessageBox.Ok:
+        # info_box.setText(msg)
+        # info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+        # choice = info_box.exec()
+        # if choice == QMessageBox.Ok:
+        #     pass
+        # elif choice == QMessageBox.Cancel:
+        #     return
+        butts = [QMessageBox.Ok | QMessageBox.Cancel]
+        if dialog_message_box(msg, butts) == QMessageBox.Ok:
             pass
-        elif choice == QMessageBox.Cancel:
+        else:
             return
 
         mw = pit.MainWindow()

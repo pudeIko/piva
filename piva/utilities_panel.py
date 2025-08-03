@@ -172,7 +172,7 @@ class UtilitiesPanel(QWidget):
         self.set_image_tab()
         self.set_axes_tab()
         if self.dim == 3:
-            self.set_orientate_tab()
+            self.set_orient_tab()
         self.set_file_tab()
 
     def set_image_tab(self) -> None:
@@ -625,7 +625,7 @@ class UtilitiesPanel(QWidget):
         self.axes_slit_orient_lbl = QLabel("Slit:")
         self.axes_slit_orient = QComboBox()
         self.axes_slit_orient.addItems(["horizontal", "vertical"])
-        self.axes_copy_values = QPushButton("Copy from 'Orientate'")
+        self.axes_copy_values = QPushButton("Copy from 'Orient'")
         self.axes_do_kspace_conv = QPushButton("Convert")
         self.axes_reset_conv = QPushButton("Reset")
 
@@ -689,74 +689,74 @@ class UtilitiesPanel(QWidget):
         self.axes_tab.setLayout(atl)
         self.tabs.addTab(self.axes_tab, "Axes")
 
-    def set_orientate_tab(self) -> None:
+    def set_orient_tab(self) -> None:
         """
-        Create and align widgets in the **Orientate tab** of the utilities
+        Create and align widgets in the **Orient tab** of the utilities
         panel.
         """
 
-        self.orientate_tab = QWidget()
+        self.orient_tab = QWidget()
         otl = QtWidgets.QGridLayout()
 
-        self.orientate_init_cooradinates_lbl = QLabel("Give initial coordinates")
-        self.orientate_init_cooradinates_lbl.setFont(bold_font)
-        self.orientate_init_x_lbl = QLabel("scanned axis:")
-        self.orientate_init_x = QSpinBox()
-        self.orientate_init_x.setRange(0, 1000)
-        self.orientate_init_y_lbl = QLabel("slit axis:")
-        self.orientate_init_y = QSpinBox()
-        self.orientate_init_y.setRange(0, 1000)
+        self.orient_init_cooradinates_lbl = QLabel("Give initial coordinates")
+        self.orient_init_cooradinates_lbl.setFont(bold_font)
+        self.orient_init_x_lbl = QLabel("scanned axis:")
+        self.orient_init_x = QSpinBox()
+        self.orient_init_x.setRange(0, 1000)
+        self.orient_init_y_lbl = QLabel("slit axis:")
+        self.orient_init_y = QSpinBox()
+        self.orient_init_y.setRange(0, 1000)
 
-        self.orientate_find_gamma = QPushButton("Find \t \u0393")
-        self.orientate_copy_coords = QPushButton("Copy from 'Volume'")
+        self.orient_find_gamma = QPushButton("Find \t \u0393")
+        self.orient_copy_coords = QPushButton("Copy from 'Volume'")
 
-        self.orientate_find_gamma_message = QLineEdit(
+        self.orient_find_gamma_message = QLineEdit(
             "NOTE: algorithm will process the main plot image."
         )
-        self.orientate_find_gamma_message.setReadOnly(True)
+        self.orient_find_gamma_message.setReadOnly(True)
 
-        self.orientate_lines_lbl = QLabel("Show rotatable lines")
-        self.orientate_lines_lbl.setFont(bold_font)
-        self.orientate_hor_line = QCheckBox("horizontal line")
-        self.orientate_hor_line
-        self.orientate_ver_line = QCheckBox("vertical line")
-        self.orientate_angle_lbl = QLabel("rotation angle:")
-        self.orientate_angle = QDoubleSpinBox()
-        self.orientate_angle.setRange(-180, 180)
-        self.orientate_angle.setSingleStep(0.5)
+        self.orient_lines_lbl = QLabel("Show rotatable lines")
+        self.orient_lines_lbl.setFont(bold_font)
+        self.orient_hor_line = QCheckBox("horizontal line")
+        self.orient_hor_line
+        self.orient_ver_line = QCheckBox("vertical line")
+        self.orient_angle_lbl = QLabel("rotation angle:")
+        self.orient_angle = QDoubleSpinBox()
+        self.orient_angle.setRange(-180, 180)
+        self.orient_angle.setSingleStep(0.5)
 
-        self.orientate_info_lbl = QLabel("Orientations table:")
-        self.orientate_info_button = QPushButton("open")
+        self.orient_info_lbl = QLabel("Orientations table:")
+        self.orient_info_button = QPushButton("open")
 
         # addWidget(widget, row, column, rowSpan, columnSpan)
         row = 0
-        otl.addWidget(self.orientate_init_cooradinates_lbl, row, 0, 1, 2)
-        otl.addWidget(self.orientate_init_x_lbl, row + 1, 0)
-        otl.addWidget(self.orientate_init_x, row + 1, 1)
-        otl.addWidget(self.orientate_init_y_lbl, row + 1, 2)
-        otl.addWidget(self.orientate_init_y, row + 1, 3)
+        otl.addWidget(self.orient_init_cooradinates_lbl, row, 0, 1, 2)
+        otl.addWidget(self.orient_init_x_lbl, row + 1, 0)
+        otl.addWidget(self.orient_init_x, row + 1, 1)
+        otl.addWidget(self.orient_init_y_lbl, row + 1, 2)
+        otl.addWidget(self.orient_init_y, row + 1, 3)
 
         row = 2
-        otl.addWidget(self.orientate_find_gamma, row, 0, 1, 2)
-        otl.addWidget(self.orientate_copy_coords, row, 2, 1, 2)
-        otl.addWidget(self.orientate_find_gamma_message, row + 1, 0, 1, 4)
+        otl.addWidget(self.orient_find_gamma, row, 0, 1, 2)
+        otl.addWidget(self.orient_copy_coords, row, 2, 1, 2)
+        otl.addWidget(self.orient_find_gamma_message, row + 1, 0, 1, 4)
 
         col = 4
-        otl.addWidget(self.orientate_lines_lbl, 0, col, 1, 2)
-        otl.addWidget(self.orientate_hor_line, 1, col)
-        otl.addWidget(self.orientate_ver_line, 1, col + 1)
-        otl.addWidget(self.orientate_angle_lbl, 2, col)
-        otl.addWidget(self.orientate_angle, 2, col + 1)
-        otl.addWidget(self.orientate_info_lbl, 3, col)
-        otl.addWidget(self.orientate_info_button, 3, col + 1)
+        otl.addWidget(self.orient_lines_lbl, 0, col, 1, 2)
+        otl.addWidget(self.orient_hor_line, 1, col)
+        otl.addWidget(self.orient_ver_line, 1, col + 1)
+        otl.addWidget(self.orient_angle_lbl, 2, col)
+        otl.addWidget(self.orient_angle, 2, col + 1)
+        otl.addWidget(self.orient_info_lbl, 3, col)
+        otl.addWidget(self.orient_info_button, 3, col + 1)
 
         # dummy lbl
         dummy_lbl = QLabel("")
         otl.addWidget(dummy_lbl, 4, 0, 2, 8)
 
-        self.orientate_tab.layout = otl
-        self.orientate_tab.setLayout(otl)
-        self.tabs.addTab(self.orientate_tab, "Orient")
+        self.orient_tab.layout = otl
+        self.orient_tab.setLayout(otl)
+        self.tabs.addTab(self.orient_tab, "Orient")
 
         self.set_orientation_info_window()
 
@@ -885,11 +885,17 @@ class UtilitiesPanel(QWidget):
             if 1 in self.set_linking_status(
                 self.get_linked_windows(), get_statuses=True
             ):
-                two_parent_box = QMessageBox()
-                two_parent_box.setIcon(QMessageBox.Information)
-                two_parent_box.setText("Cannot link two parent viewers.")
-                two_parent_box.setStandardButtons(QMessageBox.Ok)
-                if two_parent_box.exec() == QMessageBox.Ok:
+                # two_parent_box = QMessageBox()
+                # two_parent_box.setIcon(QMessageBox.Information)
+                # two_parent_box.setText("Cannot link two parent viewers.")
+                # two_parent_box.setStandardButtons(QMessageBox.Ok)
+                # if two_parent_box.exec() == QMessageBox.Ok:
+                #     return
+                # msg, butts = "File already opened.", [QMessageBox.Ok]
+                if (
+                    dialog_message_box("Cannot link two parent viewers.")
+                    == QMessageBox.Ok
+                ):
                     return
             if self.get_linked_windows():
                 self.link_windows.setText("Update")
@@ -1285,11 +1291,13 @@ class UtilitiesPanel(QWidget):
 
         if not settings.IS_TESTING:
             if name == "":
-                empty_name_box = QMessageBox()
-                empty_name_box.setIcon(QMessageBox.Information)
-                empty_name_box.setText("Attribute's name not given.")
-                empty_name_box.setStandardButtons(QMessageBox.Ok)
-                if empty_name_box.exec() == QMessageBox.Ok:
+                # empty_name_box = QMessageBox()
+                # empty_name_box.setIcon(QMessageBox.Information)
+                # empty_name_box.setText("Attribute's name not given.")
+                # empty_name_box.setStandardButtons(QMessageBox.Ok)
+                # if empty_name_box.exec() == QMessageBox.Ok:
+                #     return
+                if dialog_message_box("Attribute's name not given.") == QMessageBox.Ok:
                     return
 
         message = (
@@ -1298,22 +1306,30 @@ class UtilitiesPanel(QWidget):
             )
         )
         if not settings.IS_TESTING:
-            sanity_check_box = QMessageBox()
-            sanity_check_box.setIcon(QMessageBox.Question)
-            sanity_check_box.setText(message)
-            sanity_check_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            if sanity_check_box.exec() == QMessageBox.Cancel:
+            # sanity_check_box = QMessageBox()
+            # sanity_check_box.setIcon(QMessageBox.Question)
+            # sanity_check_box.setText(message)
+            # sanity_check_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            # if sanity_check_box.exec() == QMessageBox.Cancel:
+            #     return
+            butts = [QMessageBox.Ok, QMessageBox.Cancel]
+            if dialog_message_box(message, butts) == QMessageBox.Cancel:
                 return
 
         if hasattr(self.mw.data_set, name) and (not settings.IS_TESTING):
             old = vars(self.mw.data_set)[name]
-            attr_conflict_box = QMessageBox()
-            attr_conflict_box.setIcon(QMessageBox.Question)
-            attr_conflict_box.setText(
-                f"Data set already has attribute '{name}'.  Overwrite?"
-            )
-            attr_conflict_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            if attr_conflict_box.exec() == QMessageBox.Ok:
+            # attr_conflict_box = QMessageBox()
+            # attr_conflict_box.setIcon(QMessageBox.Question)
+            # attr_conflict_box.setText(
+            #     f"Data set already has attribute '{name}'.  Overwrite?"
+            # )
+            # attr_conflict_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            # if attr_conflict_box.exec() == QMessageBox.Ok:
+            #     setattr(self.mw.data_set, name, value)
+            #     self.dp_add_edited_metadata_entry("updated", name, old, value)
+            msg = f"Data set already has attribute '{name}'.  Overwrite?"
+            butts = [QMessageBox.Ok, QMessageBox.Cancel]
+            if dialog_message_box(msg, butts) == QMessageBox.Ok:
                 setattr(self.mw.data_set, name, value)
                 self.dp_add_edited_metadata_entry("updated", name, old, value)
         else:
@@ -1328,30 +1344,40 @@ class UtilitiesPanel(QWidget):
         name = self.file_md_name.text()
 
         if not hasattr(self.mw.data_set, name):
-            no_attr_box = QMessageBox()
-            no_attr_box.setIcon(QMessageBox.Information)
-            no_attr_box.setText(f"Attribute '{name}' not found.")
-            no_attr_box.setStandardButtons(QMessageBox.Ok)
-            if no_attr_box.exec() == QMessageBox.Ok:
+            # no_attr_box = QMessageBox()
+            # no_attr_box.setIcon(QMessageBox.Information)
+            # no_attr_box.setText(f"Attribute '{name}' not found.")
+            # no_attr_box.setStandardButtons(QMessageBox.Ok)
+            # if no_attr_box.exec() == QMessageBox.Ok:
+            #     return
+            if dialog_message_box(f"Attribute '{name}' not found.") == QMessageBox.Ok:
                 return
 
         if name in ["data", "xscale", "yscale", "zscale"]:
-            essential_md_box = QMessageBox()
-            essential_md_box.setIcon(QMessageBox.Information)
-            essential_md_box.setText(
-                "Sorry, no can do. Data and axes cannot be removed."
-            )
-            essential_md_box.setStandardButtons(QMessageBox.Ok)
-            if essential_md_box.exec() == QMessageBox.Ok:
+            # essential_md_box = QMessageBox()
+            # essential_md_box.setIcon(QMessageBox.Information)
+            # essential_md_box.setText(
+            #     "Sorry, no can do. Data and axes cannot be removed."
+            # )
+            # essential_md_box.setStandardButtons(QMessageBox.Ok)
+            # if essential_md_box.exec() == QMessageBox.Ok:
+            #     return
+            if (
+                dialog_message_box("Sorry, no can do. Data and axes cannot be removed.")
+                == QMessageBox.Ok
+            ):
                 return
 
         message = "Sure to remove attribute '{}' from the data set?".format(name)
         if not settings.IS_TESTING:
-            sanity_check_box = QMessageBox()
-            sanity_check_box.setIcon(QMessageBox.Question)
-            sanity_check_box.setText(message)
-            sanity_check_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            if sanity_check_box.exec() == QMessageBox.Calcel:
+            # sanity_check_box = QMessageBox()
+            # sanity_check_box.setIcon(QMessageBox.Question)
+            # sanity_check_box.setText(message)
+            # sanity_check_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            # if sanity_check_box.exec() == QMessageBox.Cancel:
+            #     return
+            butts = [QMessageBox.Ok, QMessageBox.Cancel]
+            if dialog_message_box(message, butts) == QMessageBox.Cancel:
                 return
 
         value = vars(self.mw.data_set)[name]
@@ -1384,29 +1410,41 @@ class UtilitiesPanel(QWidget):
         try:
             new_dataset = dl.load_data(file_path)
         except FileNotFoundError:
-            no_file_box = QMessageBox()
-            no_file_box.setIcon(QMessageBox.Information)
-            no_file_box.setText("File not found.")
-            no_file_box.setStandardButtons(QMessageBox.Ok)
-            if no_file_box.exec() == QMessageBox.Ok:
+            # no_file_box = QMessageBox()
+            # no_file_box.setIcon(QMessageBox.Information)
+            # no_file_box.setText("File not found.")
+            # no_file_box.setStandardButtons(QMessageBox.Ok)
+            # if no_file_box.exec() == QMessageBox.Ok:
+            #     return
+            if dialog_message_box("File not found.") == QMessageBox.Ok:
                 return
 
         try:
             check_result = self.check_conflicts([org_dataset, new_dataset])
         except AttributeError:
-            error_box = QMessageBox()
-            error_box.setIcon(QMessageBox.Information)
-            error_box.setText("Aborted, datasets could not be compared.")
-            error_box.setStandardButtons(QMessageBox.Ok)
-            if error_box.exec() == QMessageBox.Ok:
+            # error_box = QMessageBox()
+            # error_box.setIcon(QMessageBox.Information)
+            # error_box.setText("Aborted, datasets could not be compared.")
+            # error_box.setStandardButtons(QMessageBox.Ok)
+            # if error_box.exec() == QMessageBox.Ok:
+            #     return
+            if (
+                dialog_message_box("Aborted, datasets could not be compared.")
+                == QMessageBox.Ok
+            ):
                 return
 
         if check_result == 0:
-            data_mismatch_box = QMessageBox()
-            data_mismatch_box.setIcon(QMessageBox.Information)
-            data_mismatch_box.setText("Aborted.\nData sets' shapes don't match.\n")
-            data_mismatch_box.setStandardButtons(QMessageBox.Ok)
-            if data_mismatch_box.exec() == QMessageBox.Ok:
+            # data_mismatch_box = QMessageBox()
+            # data_mismatch_box.setIcon(QMessageBox.Information)
+            # data_mismatch_box.setText("Aborted.\nData sets' shapes don't match.\n")
+            # data_mismatch_box.setStandardButtons(QMessageBox.Ok)
+            # if data_mismatch_box.exec() == QMessageBox.Ok:
+            #     return
+            if (
+                dialog_message_box("Aborted.\nData sets' shapes don't match.\n")
+                == QMessageBox.Ok
+            ):
                 return
 
         if not settings.IS_TESTING:
@@ -1434,21 +1472,32 @@ class UtilitiesPanel(QWidget):
         """
 
         if self.mw.org_dataset is None:
-            no_summing_yet_box = QMessageBox()
-            no_summing_yet_box.setIcon(QMessageBox.Information)
-            no_summing_yet_box.setText("No summing done yet.")
-            no_summing_yet_box.setStandardButtons(QMessageBox.Ok)
-            if no_summing_yet_box.exec() == QMessageBox.Ok:
+            # no_summing_yet_box = QMessageBox()
+            # no_summing_yet_box.setIcon(QMessageBox.Information)
+            # no_summing_yet_box.setText("No summing done yet.")
+            # no_summing_yet_box.setStandardButtons(QMessageBox.Ok)
+            # if no_summing_yet_box.exec() == QMessageBox.Ok:
+            #     return
+            if dialog_message_box("No summing done yet.") == QMessageBox.Ok:
                 return
 
         if not settings.IS_TESTING:
-            reset_summation_box = QMessageBox()
-            reset_summation_box.setMinimumWidth(600)
-            reset_summation_box.setMaximumWidth(1000)
-            reset_summation_box.setIcon(QMessageBox.Question)
-            reset_summation_box.setText("Want to reset summation?")
-            reset_summation_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            if reset_summation_box.exec() == QMessageBox.Cancel:
+            # reset_summation_box = QMessageBox()
+            # reset_summation_box.setMinimumWidth(600)
+            # reset_summation_box.setMaximumWidth(1000)
+            # reset_summation_box.setIcon(QMessageBox.Question)
+            # reset_summation_box.setText("Want to reset summation?")
+            # reset_summation_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            # if reset_summation_box.exec() == QMessageBox.Cancel:
+            #     return
+            msg, butts = (
+                "Want to reset summation?",
+                [QMessageBox.Ok, QMessageBox.Cancel],
+            )
+            if (
+                dialog_message_box(msg, butts, type=QMessageBox.Question)
+                == QMessageBox.Cancel
+            ):
                 return
 
         self.mw.data_set.data = self.mw.org_dataset.data
@@ -1465,19 +1514,32 @@ class UtilitiesPanel(QWidget):
         """
 
         if self.mw.db.jl_session_running:
-            jl_running_box = QMessageBox()
-            jl_running_box.setIcon(QMessageBox.Information)
-            jl_running_box.setText(
-                "JupyterLab session is already running.\nWant to start another one?"
-            )
-            jl_running_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            if jl_running_box.exec() == QMessageBox.Cancel:
+            # jl_running_box = QMessageBox()
+            # jl_running_box.setIcon(QMessageBox.Information)
+            # jl_running_box.setText(
+            #     "JupyterLab session is already running.\nWant to start another one?"
+            # )
+            # jl_running_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            # if jl_running_box.exec() == QMessageBox.Cancel:
+            #     return
+            msg = "JupyterLab session is already running.\nWant to start another one?"
+            if (
+                dialog_message_box(msg, [QMessageBox.Ok, QMessageBox.Cancel])
+                == QMessageBox.Cancel
+            ):
                 return
 
         if directory is None:
+            if (
+                dialog_message_box("Select the root directory for JupyterLab.")
+                == QMessageBox.Ok
+            ):
+                pass
             directory = str(
                 QtWidgets.QFileDialog.getExistingDirectory(
-                    self, "Select Directory", self.mw.fname[: -len(self.mw.title)]
+                    self,
+                    "Select the root directory for JupyterLab",
+                    self.mw.fname[: -len(self.mw.title)],
                 )
             )
 
@@ -1508,11 +1570,17 @@ class UtilitiesPanel(QWidget):
         fname = os.path.join(directory, self.file_jl_fname.text())
 
         if os.path.isfile(fname):
-            file_exists_box = QMessageBox()
-            file_exists_box.setIcon(QMessageBox.Information)
-            file_exists_box.setText("File already exists.\nOverwrite?")
-            file_exists_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            if file_exists_box.exec() == QMessageBox.Cancel:
+            # file_exists_box = QMessageBox()
+            # file_exists_box.setIcon(QMessageBox.Information)
+            # file_exists_box.setText("File already exists.\nOverwrite?")
+            # file_exists_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            # if file_exists_box.exec() == QMessageBox.Cancel:
+            #     return
+            msg = "File already exists.\nOverwrite?"
+            if (
+                dialog_message_box(msg, [QMessageBox.Ok, QMessageBox.Cancel])
+                == QMessageBox.Cancel
+            ):
                 return
         os.system("touch " + fname)
 
@@ -1547,6 +1615,8 @@ class UtilitiesPanel(QWidget):
             no_bealine_box.setStandardButtons(QMessageBox.Ok)
             if no_bealine_box.exec() == QMessageBox.Ok:
                 return
+            if dialog_message_box("Select a beamline.") == QMessageBox.Ok:
+                return
         else:
             if directory is None:
                 directory = str(
@@ -1558,11 +1628,17 @@ class UtilitiesPanel(QWidget):
             # fname = '{}/metadata-{}.ipynb'.format(directory, beamline)
 
         if os.path.isfile(fname):
-            file_exists_box = QMessageBox()
-            file_exists_box.setIcon(QMessageBox.Information)
-            file_exists_box.setText("File already exists.\nOverwrite?")
-            file_exists_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            if file_exists_box.exec() == QMessageBox.Cancel:
+            # file_exists_box = QMessageBox()
+            # file_exists_box.setIcon(QMessageBox.Information)
+            # file_exists_box.setText("File already exists.\nOverwrite?")
+            # file_exists_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            # if file_exists_box.exec() == QMessageBox.Cancel:
+            #     return
+            msg = "File already exists.\nOverwrite?"
+            if (
+                dialog_message_box(msg, [QMessageBox.Ok, QMessageBox.Cancel])
+                == QMessageBox.Cancel
+            ):
                 return
         os.system("touch " + fname)
 
@@ -2029,3 +2105,25 @@ class InfoWindow(QMainWindow):
         self.scroll_area.setWidget(self.central_widget)
         self.setCentralWidget(self.scroll_area)
         self.setWindowTitle(title)
+
+
+def dialog_message_box(
+    message, buttons=[QMessageBox.Ok], title="", type=QMessageBox.Information
+):
+    message_box = QMessageBox()
+    message_box.setIcon(type)
+    message_box.setText(message)
+    message_box.setWindowTitle(title)
+    if len(buttons) == 1:
+        message_box.setStandardButtons(buttons[0])
+    elif len(buttons) == 2:
+        message_box.setStandardButtons(buttons[0] | buttons[1])
+    elif len(buttons) == 3:
+        message_box.setStandardButtons(buttons[0] | buttons[1] | buttons[2])
+    return message_box.exec()
+
+
+# import operator
+# from functools import reduce
+
+# result = reduce(operator.or_, buttons)
