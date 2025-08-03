@@ -4,7 +4,7 @@ Plot Tool
 =========
 
 **PlotTool** is an utility allowing for plotting multiple curves together.
-Every 1D set of data displayed currently on **DataViewers** or **Fitters** can
+Every 1D set of data displayed currently on **DataViewers** can
 be imported and further processed to compare differences between results
 obtained under, *e.g*, different conditions.
 
@@ -54,7 +54,7 @@ Allows for general management over imported data.
 opened datasets         Select dataset to import:
 
                         - **source** - dropdown menu containing list of all
-                          currently opened **DataViewers** and **Fitters**.
+                          currently opened **DataViewers**.
                           Option *custom* allows to add *user defined points*.
                         - **plot** - dropdown menu containing a list of all
                           curves possible to import. Available options are
@@ -71,7 +71,7 @@ action buttons          - **add** data based on current **source** and
                           **plot** selection.
                         - **update** list of **source** dropdown menu. When
                           initializing **PlotTool** window, list contains all
-                          currently opened **DataViewers** and **Fitters**; if
+                          currently opened **DataViewers**; if
                           a new one is opened, **source** list needs to be
                           updated.
                         - **remove** curve based on the current selection of
@@ -173,18 +173,18 @@ Adding curves
 The **Add/Remove Data** tab in the **Utilities Panel** allows you to manage 
 the curves displayed in the **Plot Panel**.
 
-You can import and plot any 1D data currently shown in open **DataViewers** or 
-**Fitters**. To add a new curve, first specify its origin using the **source** 
+You can import and plot any 1D data currently shown in open **DataViewers**. 
+To add a new curve, first specify its origin using the **source** 
 and **plot** dropdown menus.
 
 .. figure:: ../img/fitters_plottool/plottool-hts-add.png
    :alt: Image not found.
 
-- The **source** menu lists all open **DataViewers** and **Fitters**. 
+- The **source** menu lists all open **DataViewers**. 
   Note: This list reflects the state at initialization — click the **update** 
   button to refresh it after loading new data files.
 - The **plot** menu displays the available 1D curves within the selected 
-  source. Its content depends on the type of viewer or fitter, *eg.*:
+  source. Its content depends on the type of viewer, *eg.*:
 
     - In the case of a :ref:`2D Viewer <sec-2d-viewer>`, options include *edc* 
       and *mdc*.

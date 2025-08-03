@@ -16,7 +16,7 @@ import piva.working_procedures as wp
 import piva.data_loaders as dl
 from piva.data_loaders import Dataset
 import piva.image_panels as ip
-from piva.utilities_panel import UtilitiesPanel, InfoWindow
+from piva.utilities_panel import UtilitiesPanel, InfoWindow, dialog_message_box
 from piva.data_viewer_2d import ORIENTLINES_LINECOLOR
 from piva.cmaps import cmaps
 from piva.config import settings
@@ -345,12 +345,8 @@ class DataViewer3D(QtWidgets.QMainWindow):
         self.util_panel.energy_vert.setRange(0, len(self.data_handler.axes[erg_ax]))
         self.util_panel.momentum_hor.setRange(0, len(self.data_handler.axes[slit_ax]))
         self.util_panel.momentum_vert.setRange(0, len(self.data_handler.axes[scan_ax]))
-        self.util_panel.orientate_init_x.setRange(
-            0, self.data_handler.axes[scan_ax].size
-        )
-        self.util_panel.orientate_init_y.setRange(
-            0, self.data_handler.axes[slit_ax].size
-        )
+        self.util_panel.orient_init_x.setRange(0, self.data_handler.axes[scan_ax].size)
+        self.util_panel.orient_init_y.setRange(0, self.data_handler.axes[slit_ax].size)
 
         # create a single point EDC at crossing point of momentum sliders
         self.sp_EDC = self.plot_z.plot()
@@ -457,33 +453,23 @@ class DataViewer3D(QtWidgets.QMainWindow):
         )
         self.util_panel.axes_conv_lc.valueChanged.connect(self.update_main_plot)
         self.util_panel.axes_copy_values.clicked.connect(
-            self.copy_values_orientate_to_axes
+            self.copy_values_orient_to_axes
         )
         self.util_panel.axes_do_kspace_conv.clicked.connect(self.convert_to_kspace)
         # self.util_panel.axes_reset_conv.clicked.connect(
         #     self.reset_kspace_conversion)
 
         # orientating options
-        self.util_panel.orientate_init_x.valueChanged.connect(
-            self.set_orientating_lines
+        self.util_panel.orient_init_x.valueChanged.connect(self.set_orientating_lines)
+        self.util_panel.orient_init_y.valueChanged.connect(self.set_orientating_lines)
+        self.util_panel.orient_find_gamma.clicked.connect(self.find_gamma)
+        self.util_panel.orient_copy_coords.clicked.connect(
+            self.copy_values_volume_to_orient
         )
-        self.util_panel.orientate_init_y.valueChanged.connect(
-            self.set_orientating_lines
-        )
-        self.util_panel.orientate_find_gamma.clicked.connect(self.find_gamma)
-        self.util_panel.orientate_copy_coords.clicked.connect(
-            self.copy_values_volume_to_orientate
-        )
-        self.util_panel.orientate_hor_line.stateChanged.connect(
-            self.set_orientating_lines
-        )
-        self.util_panel.orientate_ver_line.stateChanged.connect(
-            self.set_orientating_lines
-        )
-        self.util_panel.orientate_angle.valueChanged.connect(self.set_orientating_lines)
-        self.util_panel.orientate_info_button.clicked.connect(
-            self.show_orientation_info
-        )
+        self.util_panel.orient_hor_line.stateChanged.connect(self.set_orientating_lines)
+        self.util_panel.orient_ver_line.stateChanged.connect(self.set_orientating_lines)
+        self.util_panel.orient_angle.valueChanged.connect(self.set_orientating_lines)
+        self.util_panel.orient_info_button.clicked.connect(self.show_orientation_info)
 
         # Align all the gui elements
         self._align()
@@ -1444,36 +1430,34 @@ class DataViewer3D(QtWidgets.QMainWindow):
         """
 
         fs = self.image_data.T
-        x_init = self.util_panel.orientate_init_x.value()
-        y_init = self.util_panel.orientate_init_y.value()
+        x_init = self.util_panel.orient_init_x.value()
+        y_init = self.util_panel.orient_init_y.value()
         res = wp.find_gamma(fs, x_init, y_init)
         if res.success:
-            self.util_panel.orientate_find_gamma_message.setText(
-                "Success,  values found!"
-            )
-            self.util_panel.orientate_init_x.setValue(int(res.x[0]))
-            self.util_panel.orientate_init_y.setValue(int(res.x[1]))
+            self.util_panel.orient_find_gamma_message.setText("Success,  values found!")
+            self.util_panel.orient_init_x.setValue(int(res.x[0]))
+            self.util_panel.orient_init_y.setValue(int(res.x[1]))
         else:
-            self.util_panel.orientate_find_gamma_message.setText(
+            self.util_panel.orient_find_gamma_message.setText(
                 "Couldn't find center of rotation."
             )
 
-    def copy_values_volume_to_orientate(self) -> None:
+    def copy_values_volume_to_orient(self) -> None:
         """
         Copy found values for :math:`\Gamma` point to :class:`QSpinBox` of
-        **Orientate tab**.
+        **Orient tab**.
         """
 
-        self.util_panel.orientate_init_x.setValue(self.util_panel.momentum_vert.value())
-        self.util_panel.orientate_init_y.setValue(self.util_panel.momentum_hor.value())
+        self.util_panel.orient_init_x.setValue(self.util_panel.momentum_vert.value())
+        self.util_panel.orient_init_y.setValue(self.util_panel.momentum_hor.value())
 
-    def copy_values_orientate_to_axes(self) -> None:
+    def copy_values_orient_to_axes(self) -> None:
         """
         Copy for :math:`\Gamma` point to :class:`QSpinBox` of **Axes tab**.
         """
 
-        self.util_panel.axes_gamma_x.setValue(self.util_panel.orientate_init_x.value())
-        self.util_panel.axes_gamma_y.setValue(self.util_panel.orientate_init_y.value())
+        self.util_panel.axes_gamma_x.setValue(self.util_panel.orient_init_x.value())
+        self.util_panel.axes_gamma_y.setValue(self.util_panel.orient_init_y.value())
 
     def set_orientating_lines(self) -> None:
         """
@@ -1481,15 +1465,15 @@ class DataViewer3D(QtWidgets.QMainWindow):
         clockwise/counterclockwise (*azimuth*) rotation.
         """
 
-        x0 = self.util_panel.orientate_init_x.value()
-        y0 = self.util_panel.orientate_init_y.value()
+        x0 = self.util_panel.orient_init_x.value()
+        y0 = self.util_panel.orient_init_y.value()
 
         try:
             self.main_plot.removeItem(self.orient_hor_line)
         except AttributeError:
             pass
-        if self.util_panel.orientate_hor_line.isChecked():
-            angle = self.transform_angle(self.util_panel.orientate_angle.value())
+        if self.util_panel.orient_hor_line.isChecked():
+            angle = self.transform_angle(self.util_panel.orient_angle.value())
             if (-180 < angle < 90) and (angle != -90):
                 beta = np.deg2rad(angle)
                 if angle == 0:
@@ -1518,9 +1502,9 @@ class DataViewer3D(QtWidgets.QMainWindow):
             self.main_plot.removeItem(self.orient_ver_line)
         except AttributeError:
             pass
-        if self.util_panel.orientate_ver_line.isChecked():
+        if self.util_panel.orient_ver_line.isChecked():
             angle = self.transform_angle(
-                self.util_panel.orientate_angle.value(), orientation="vertical"
+                self.util_panel.orient_angle.value(), orientation="vertical"
             )
             if (-180 < angle < 90) and (angle != -90) and (angle != 90):
                 beta = 0.5 * np.pi - np.deg2rad(angle)
@@ -1586,20 +1570,26 @@ class DataViewer3D(QtWidgets.QMainWindow):
         new_dataset = deepcopy(ds)
 
         if not settings.IS_TESTING:
-            info_box = QMessageBox()
-            info_box.setIcon(QMessageBox.Information)
-            info_box.setWindowTitle("K-space conversion.")
+            # info_box = QMessageBox()
+            # info_box.setIcon(QMessageBox.Information)
+            # info_box.setWindowTitle("K-space conversion.")
             msg = (
                 "Conversion might take a while,  "
                 "depending on the dataset's size.\n"
                 "Make sure all parameters are correct and be patient.".format()
             )
-            info_box.setText(msg)
-            info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
-            choice = info_box.exec()
-            if choice == QMessageBox.Ok:
+            # info_box.setText(msg)
+            # info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+            # choice = info_box.exec()
+            # if choice == QMessageBox.Ok:
+            #     pass
+            # elif choice == QMessageBox.Cancel:
+            #     return
+
+            title, butts = "K-space conversion.", [QMessageBox.Ok | QMessageBox.Cancel]
+            if dialog_message_box(msg, butts, title) == QMessageBox.Ok:
                 pass
-            elif choice == QMessageBox.Cancel:
+            else:
                 return
 
         if self.util_panel.axes_transform_kz.isChecked():
@@ -1620,18 +1610,22 @@ class DataViewer3D(QtWidgets.QMainWindow):
             print("{:.4} s".format(time.time() - start_time))
         else:
             if hv == 0 or wf == 0:
-                warning_box = QMessageBox()
-                warning_box.setIcon(QMessageBox.Information)
-                warning_box.setWindowTitle("Wrong conversion values.")
-                if hv == 0 and wf == 0:
-                    msg = "Photon energy and work function values not given."
-                elif hv == 0:
-                    msg = "Photon energy value not given."
-                elif wf == 0:
-                    msg = "Work function value not given."
-                warning_box.setText(msg)
-                warning_box.setStandardButtons(QMessageBox.Ok)
-                if warning_box.exec() == QMessageBox.Ok:
+                # warning_box = QMessageBox()
+                # warning_box.setIcon(QMessageBox.Information)
+                # warning_box.setWindowTitle("Wrong conversion values.")
+                # if hv == 0 and wf == 0:
+                #     msg = "Photon energy and work function values not given."
+                # elif hv == 0:
+                #     msg = "Photon energy value not given."
+                # elif wf == 0:
+                #     msg = "Work function value not given."
+                # warning_box.setText(msg)
+                # warning_box.setStandardButtons(QMessageBox.Ok)
+                # if warning_box.exec() == QMessageBox.Ok:
+                #     return
+                msg = "Photon energy and/or work function values not given."
+                title, butts = "Wrong conversion values.", [QMessageBox.Ok]
+                if dialog_message_box(msg, butts, title) == QMessageBox.Ok:
                     return
             kx, ky = wp.angle2kspace(
                 scanned_ax,
@@ -1666,23 +1660,30 @@ class DataViewer3D(QtWidgets.QMainWindow):
                 self.db, data_set=new_dataset, index=new_idx
             )
         except Exception:
-            fail_box = QMessageBox()
-            fail_box.setIcon(QMessageBox.Information)
-            fail_box.setWindowTitle("K-space conversion.")
+            # fail_box = QMessageBox()
+            # fail_box.setIcon(QMessageBox.Information)
+            # fail_box.setWindowTitle("K-space conversion.")
             msg = "Something went wrong.<br>K-space conversion failed."
-            fail_box.setText(msg)
-            fail_box.setStandardButtons(QMessageBox.Ok)
-            if fail_box.exec() == QMessageBox.Ok:
+            # fail_box.setText(msg)
+            # fail_box.setStandardButtons(QMessageBox.Ok)
+            # if fail_box.exec() == QMessageBox.Ok:
+            #     return
+            # msg = "Photon energy and/or work function values not given."
+            title, butts = "K-space conversion.", [QMessageBox.Ok]
+            if dialog_message_box(msg, butts, title) == QMessageBox.Ok:
                 return
 
         if not settings.IS_TESTING:
-            success_box = QMessageBox()
-            success_box.setIcon(QMessageBox.Information)
-            success_box.setWindowTitle("Conversion succeed.")
+            # success_box = QMessageBox()
+            # success_box.setIcon(QMessageBox.Information)
+            # success_box.setWindowTitle("Conversion succeed.")
             msg = "K-space conversion succeed!<br>Make sure to save results."
-            success_box.setText(msg)
-            success_box.setStandardButtons(QMessageBox.Ok)
-            if success_box.exec() == QMessageBox.Ok:
+            # success_box.setText(msg)
+            # success_box.setStandardButtons(QMessageBox.Ok)
+            # if success_box.exec() == QMessageBox.Ok:
+            #     return
+            # title, butts = "Conversion succeed.", [QMessageBox.Ok]
+            if dialog_message_box(msg, title="Conversion succeed.") == QMessageBox.Ok:
                 return
         return
 
@@ -1726,21 +1727,32 @@ class DataViewer3D(QtWidgets.QMainWindow):
             return
 
         if (self.kx_axis is None) or (self.ky_axis is None):
-            warning_box = QMessageBox()
-            warning_box.setIcon(QMessageBox.Information)
-            warning_box.setText("Data must be converted to k-space.")
-            warning_box.setStandardButtons(QMessageBox.Ok)
-            if warning_box.exec() == QMessageBox.Ok:
+            # warning_box = QMessageBox()
+            # warning_box.setIcon(QMessageBox.Information)
+            # warning_box.setText("Data must be converted to k-space.")
+            # warning_box.setStandardButtons(QMessageBox.Ok)
+            # if warning_box.exec() == QMessageBox.Ok:
+            #     self.util_panel.image_show_BZ.setChecked(False)
+            #     return
+            # msg, butts = "Data must be converted to k-space.", [QMessageBox.Ok]
+            if (
+                dialog_message_box("Data must be converted to k-space.")
+                == QMessageBox.Ok
+            ):
                 self.util_panel.image_show_BZ.setChecked(False)
                 return
 
         symmetry = self.util_panel.image_symmetry.value()
         if not ((symmetry == 4) or (symmetry == 6)):
-            warning_box = QMessageBox()
-            warning_box.setIcon(QMessageBox.Information)
-            warning_box.setText("Only 4- and 6-fold symmetry supported.")
-            warning_box.setStandardButtons(QMessageBox.Ok)
-            if warning_box.exec() == QMessageBox.Ok:
+            # warning_box = QMessageBox()
+            # warning_box.setIcon(QMessageBox.Information)
+            # warning_box.setText("Only 4- and 6-fold symmetry supported.")
+            # warning_box.setStandardButtons(QMessageBox.Ok)
+            # if warning_box.exec() == QMessageBox.Ok:
+            #     self.util_panel.image_show_BZ.setChecked(False)
+            #     return
+            msg, butts = "Only 4- and 6-fold symmetry supported.", [QMessageBox.Ok]
+            if dialog_message_box(msg, butts) == QMessageBox.Ok:
                 self.util_panel.image_show_BZ.setChecked(False)
                 return
 
@@ -1793,20 +1805,25 @@ class DataViewer3D(QtWidgets.QMainWindow):
         which has the benefit of providing a free-slicing ROI.
         """
 
-        info_box = QMessageBox()
-        info_box.setIcon(QMessageBox.Information)
-        info_box.setWindowTitle("K-space conversion.")
+        # info_box = QMessageBox()
+        # info_box.setIcon(QMessageBox.Information)
+        # info_box.setWindowTitle("K-space conversion.")
         msg = (
             "Note:\n"
             "PIT is a third-party package and may not work "
             "properly with Python versions above 3.8."
         )
-        info_box.setText(msg)
-        info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
-        choice = info_box.exec()
-        if choice == QMessageBox.Ok:
+        # info_box.setText(msg)
+        # info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+        # choice = info_box.exec()
+        # if choice == QMessageBox.Ok:
+        #     pass
+        # elif choice == QMessageBox.Cancel:
+        #     return
+        butts = [QMessageBox.Ok | QMessageBox.Cancel]
+        if dialog_message_box(msg, butts) == QMessageBox.Ok:
             pass
-        elif choice == QMessageBox.Cancel:
+        else:
             return
 
         mw = pit.MainWindow()
@@ -1867,12 +1884,15 @@ class DataViewer3D(QtWidgets.QMainWindow):
             thread_idx += "_@{:.1}eV".format(dim_value)
 
         if thread_idx in self.db.data_viewers.keys():
-            thread_running_box = QMessageBox()
-            thread_running_box.setIcon(QMessageBox.Information)
-            thread_running_box.setWindowTitle("Doh.")
-            thread_running_box.setText("Same cut is already opened")
-            thread_running_box.setStandardButtons(QMessageBox.Ok)
-            if thread_running_box.exec() == QMessageBox.Ok:
+            # thread_running_box = QMessageBox()
+            # thread_running_box.setIcon(QMessageBox.Information)
+            # thread_running_box.setWindowTitle("Doh.")
+            # thread_running_box.setText("Same cut is already opened")
+            # thread_running_box.setStandardButtons(QMessageBox.Ok)
+            # if thread_running_box.exec() == QMessageBox.Ok:
+            #     return
+            # msg, butts = "Same cut is already opened", [QMessageBox.Ok]
+            if dialog_message_box("Same cut is already opened") == QMessageBox.Ok:
                 return
 
         try:
@@ -1883,12 +1903,12 @@ class DataViewer3D(QtWidgets.QMainWindow):
             )
         except Exception as e:
             raise e
-            error_box = QMessageBox()
-            error_box.setIcon(QMessageBox.Information)
-            error_box.setText("Couldn't load data,  something went wrong.")
-            error_box.setStandardButtons(QMessageBox.Ok)
-            if error_box.exec() == QMessageBox.Ok:
-                return
+            # error_box = QMessageBox()
+            # error_box.setIcon(QMessageBox.Information)
+            # error_box.setText("Couldn't load data,  something went wrong.")
+            # error_box.setStandardButtons(QMessageBox.Ok)
+            # if error_box.exec() == QMessageBox.Ok:
+            #     return
         # finally:
         #     self.thread_count += 1
 
@@ -1974,18 +1994,30 @@ class DataViewer3D(QtWidgets.QMainWindow):
 
             # check if there is no fname colosions
             if fname in os.listdir(savedir) and (not settings.IS_TESTING):
-                fname_colision_box = QMessageBox()
-                fname_colision_box.setIcon(QMessageBox.Question)
-                fname_colision_box.setWindowTitle("File name already used.")
-                fname_colision_box.setText(
-                    "File {} already exists.\nDo you want to overwrite it?".format(
-                        fname
-                    )
+                # fname_colision_box = QMessageBox()
+                # fname_colision_box.setIcon(QMessageBox.Question)
+                # fname_colision_box.setWindowTitle("File name already used.")
+                # fname_colision_box.setText(
+                #     "File {} already exists.\nDo you want to overwrite it?".format(
+                #         fname
+                #     )
+                # )
+                # fname_colision_box.setStandardButtons(
+                #     QMessageBox.Ok | QMessageBox.Cancel
+                # )
+                # if fname_colision_box.exec() == QMessageBox.Ok:
+                #     file_selection = False
+                # else:
+                #     init_fname = fname
+                msg = f"File {fname} already exists.\nDo you want to overwrite it?"
+                title, butts = (
+                    "File name already used.",
+                    [QMessageBox.Ok | QMessageBox.Cancel],
                 )
-                fname_colision_box.setStandardButtons(
-                    QMessageBox.Ok | QMessageBox.Cancel
-                )
-                if fname_colision_box.exec() == QMessageBox.Ok:
+                if (
+                    dialog_message_box(msg, butts, title, type=QMessageBox.Question)
+                    == QMessageBox.Ok
+                ):
                     file_selection = False
                 else:
                     init_fname = fname
@@ -2001,15 +2033,24 @@ class DataViewer3D(QtWidgets.QMainWindow):
         ]
 
         if np.any(conditions) and (not settings.IS_TESTING):
-            save_cor_box = QMessageBox()
-            save_cor_box.setIcon(QMessageBox.Question)
-            save_cor_box.setWindowTitle("Save data")
-            save_cor_box.setText("Do you want to save applied corrections?")
-            save_cor_box.setStandardButtons(
-                QMessageBox.No | QMessageBox.Ok | QMessageBox.Cancel
-            )
+            # save_cor_box = QMessageBox()
+            # save_cor_box.setIcon(QMessageBox.Question)
+            # save_cor_box.setWindowTitle("Save data")
+            # save_cor_box.setText("Do you want to save applied corrections?")
+            # save_cor_box.setStandardButtons(
+            #     QMessageBox.No | QMessageBox.Ok | QMessageBox.Cancel
+            # )
 
-            box_return_value = save_cor_box.exec()
+            # box_return_value = save_cor_box.exec()
+
+            msg = "Do you want to save applied corrections?"
+            title, butts = (
+                "Save data",
+                [QMessageBox.No | QMessageBox.Ok | QMessageBox.Cancel],
+            )
+            box_return_value = dialog_message_box(
+                msg, butts, title, type=QMessageBox.Question
+            )
             if box_return_value == QMessageBox.Ok:
                 if up.axes_energy_Ef.value() != 0:
                     dataset.Ef = up.axes_energy_Ef.value()

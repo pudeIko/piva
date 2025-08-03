@@ -20,6 +20,7 @@ import piva.data_viewer_2d as p2d
 import piva.data_viewer_3d as p3d
 import piva.data_viewer_4d as p4d
 import piva.plot_tool as pt
+from piva.utilities_panel import dialog_message_box
 from typing import Union
 
 
@@ -114,12 +115,15 @@ class DataBrowser(QMainWindow):
         fname = self.get_selected_path()
 
         if fname in self.data_viewers:
-            already_opened_box = QMessageBox()
-            already_opened_box.setIcon(QMessageBox.Information)
-            already_opened_box.setText("File already opened.")
-            already_opened_box.setStandardButtons(QMessageBox.Ok)
-            if already_opened_box.exec() == QMessageBox.Ok:
+            msg, butts = "File already opened.", [QMessageBox.Ok]
+            if dialog_message_box(msg, butts) == QMessageBox.Ok:
                 return
+            # already_opened_box = QMessageBox()
+            # already_opened_box.setIcon(QMessageBox.Information)
+            # already_opened_box.setText("File already opened.")
+            # already_opened_box.setStandardButtons(QMessageBox.Ok)
+            # if already_opened_box.exec() == QMessageBox.Ok:
+            #     return
 
         self.open_dv(fname)
 

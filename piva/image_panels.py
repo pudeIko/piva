@@ -249,7 +249,7 @@ class ImagePlot(pg.PlotWidget):
             self.name = name
         else:
             self.name = "Unnamed"
-        self.orientate()
+        self.orient()
 
         if image is not None:
             self.set_image(image)
@@ -305,7 +305,7 @@ class ImagePlot(pg.PlotWidget):
 
         self.sliders.set_bounds(xmin, xmax, ymin, ymax)
 
-    def orientate(self) -> None:
+    def orient(self) -> None:
         """
         Configure plot's layout depending on its orientation.
         """
@@ -697,7 +697,7 @@ class CurvePlot(pg.PlotWidget):
         self.change_width_enabled = False
 
         self.orientation = orientation
-        self.orientate()
+        self.orient()
         self.binning = False
         self.z_plot = z_plot
 
@@ -748,7 +748,7 @@ class CurvePlot(pg.PlotWidget):
         pdi = self.listDataItems()[0]
         return pdi.getData()
 
-    def orientate(self) -> None:
+    def orient(self) -> None:
         """
         Configure plot's layout depending on its orientation.
         """

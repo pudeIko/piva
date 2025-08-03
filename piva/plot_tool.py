@@ -31,6 +31,7 @@ import piva.data_viewer_2d as p2d
 import piva.data_viewer_3d as p3d
 from piva.image_panels import bold_font
 from piva.config import settings
+from piva.utilities_panel import dialog_message_box
 from typing import Union, Any
 import pickle
 
@@ -575,9 +576,9 @@ class PlotTool(QtWidgets.QMainWindow):
             self.ds_dv_plot.addItem("mdc")
             for key in dv.data_viewers.keys():
                 if "edc_viewer" in key:
-                    self.ds_dv_plot.addItem("edc_fitter")
+                    self.ds_dv_plot.addItem("edc fitter")
                 if "mdc_viewer" in key:
-                    self.ds_dv_plot.addItem("mdc_fitter")
+                    self.ds_dv_plot.addItem("mdc fitter")
         elif isinstance(dv, p3d.DataViewer3D):
             self.ds_dv_plot.addItem("main edc")
             self.ds_dv_plot.addItem("single point edc")
@@ -595,47 +596,71 @@ class PlotTool(QtWidgets.QMainWindow):
         try:
             dv_lbl = self.dv_list[idx]
         except AttributeError:
-            no_entries_box = QMessageBox()
-            no_entries_box.setIcon(QMessageBox.Information)
-            no_entries_box.setWindowTitle("Doh.")
-            no_entries_box.setText("No entries to add.  Make sure to update.")
-            no_entries_box.setStandardButtons(QMessageBox.Ok)
-            if no_entries_box.exec() == QMessageBox.Ok:
+            # no_entries_box = QMessageBox()
+            # no_entries_box.setIcon(QMessageBox.Information)
+            # no_entries_box.setWindowTitle("Doh.")
+            # no_entries_box.setText("No entries to add.  Make sure to update.")
+            # no_entries_box.setStandardButtons(QMessageBox.Ok)
+            # if no_entries_box.exec() == QMessageBox.Ok:
+            #     return
+            if (
+                dialog_message_box("No entries to add.  Make sure to update.")
+                == QMessageBox.Ok
+            ):
                 return
         except IndexError:
-            no_entries_box = QMessageBox()
-            no_entries_box.setIcon(QMessageBox.Information)
-            no_entries_box.setWindowTitle("Doh.")
-            no_entries_box.setText(
-                "Something went wrong.  Open new dataset and update."
-            )
-            no_entries_box.setStandardButtons(QMessageBox.Ok)
-            if no_entries_box.exec() == QMessageBox.Ok:
+            # no_entries_box = QMessageBox()
+            # no_entries_box.setIcon(QMessageBox.Information)
+            # no_entries_box.setWindowTitle("Doh.")
+            # no_entries_box.setText(
+            #     "Something went wrong.  Open new dataset and update."
+            # )
+            # no_entries_box.setStandardButtons(QMessageBox.Ok)
+            # if no_entries_box.exec() == QMessageBox.Ok:
+            #     return
+            if (
+                dialog_message_box(
+                    "Something went wrong.  Open new dataset and update."
+                )
+                == QMessageBox.Ok
+            ):
                 return
 
         if dv_lbl == "custom":
             plot = self.ds_custom_name.text()
             if plot == "":
-                no_name_box = QMessageBox()
-                no_name_box.setIcon(QMessageBox.Information)
-                no_name_box.setWindowTitle("Doh.")
-                no_name_box.setText("Need to specify dataset's name.")
-                no_name_box.setStandardButtons(QMessageBox.Ok)
-                if no_name_box.exec() == QMessageBox.Ok:
+                # no_name_box = QMessageBox()
+                # no_name_box.setIcon(QMessageBox.Information)
+                # no_name_box.setWindowTitle("Doh.")
+                # no_name_box.setText("Need to specify dataset's name.")
+                # no_name_box.setStandardButtons(QMessageBox.Ok)
+                # if no_name_box.exec() == QMessageBox.Ok:
+                #     return
+                if (
+                    dialog_message_box("Need to specify dataset's name.")
+                    == QMessageBox.Ok
+                ):
                     return
         else:
             try:
                 dv = self.data_browser.data_viewers[dv_lbl]
                 plot = self.ds_dv_plot.currentText()
             except KeyError:
-                no_dv_box = QMessageBox()
-                no_dv_box.setIcon(QMessageBox.Information)
-                no_dv_box.setWindowTitle("Doh.")
-                no_dv_box.setText(
-                    "It seems the dataset has been closed.  Make sure to update."
-                )
-                no_dv_box.setStandardButtons(QMessageBox.Ok)
-                if no_dv_box.exec() == QMessageBox.Ok:
+                # no_dv_box = QMessageBox()
+                # no_dv_box.setIcon(QMessageBox.Information)
+                # no_dv_box.setWindowTitle("Doh.")
+                # no_dv_box.setText(
+                #     "It seems the dataset has been closed.  Make sure to update."
+                # )
+                # no_dv_box.setStandardButtons(QMessageBox.Ok)
+                # if no_dv_box.exec() == QMessageBox.Ok:
+                #     return
+                if (
+                    dialog_message_box(
+                        "It seems the dataset has been closed.  Make sure to update."
+                    )
+                    == QMessageBox.Ok
+                ):
                     return
 
         if dv_lbl == "custom":
@@ -644,14 +669,21 @@ class PlotTool(QtWidgets.QMainWindow):
             x = np.array([float(xi) for xi in x])
             y = np.array([float(yi) for yi in y])
             if x.size != y.size:
-                x_y_mismatch_box = QMessageBox()
-                x_y_mismatch_box.setIcon(QMessageBox.Information)
-                x_y_mismatch_box.setWindowTitle(" ")
-                x_y_mismatch_box.setText(
-                    "Error: x and y must have the same number of points."
-                )
-                x_y_mismatch_box.setStandardButtons(QMessageBox.Ok)
-                if x_y_mismatch_box.exec() == QMessageBox.Ok:
+                # x_y_mismatch_box = QMessageBox()
+                # x_y_mismatch_box.setIcon(QMessageBox.Information)
+                # x_y_mismatch_box.setWindowTitle(" ")
+                # x_y_mismatch_box.setText(
+                #     "Error: x and y must have the same number of points."
+                # )
+                # x_y_mismatch_box.setStandardButtons(QMessageBox.Ok)
+                # if x_y_mismatch_box.exec() == QMessageBox.Ok:
+                #     return
+                if (
+                    dialog_message_box(
+                        "Error: x and y must have the same number of points."
+                    )
+                    == QMessageBox.Ok
+                ):
                     return
             data_item_lbl = plot
         else:
@@ -662,14 +694,23 @@ class PlotTool(QtWidgets.QMainWindow):
             data_item_lbl = dv_lbl.split("/")[-1] + " - " + plot
 
         if data_item_lbl in self.data_items.keys():
-            data_item_colision_box = QMessageBox()
-            data_item_colision_box.setIcon(QMessageBox.Question)
-            data_item_colision_box.setWindowTitle("Ooh.")
-            data_item_colision_box.setText(
+            # data_item_colision_box = QMessageBox()
+            # data_item_colision_box.setIcon(QMessageBox.Question)
+            # data_item_colision_box.setWindowTitle("Ooh.")
+            # data_item_colision_box.setText(
+            #     "Curve with this name already has been added.  Want to add another one?"
+            # )
+            # data_item_colision_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+
+            msg = (
                 "Curve with this name already has been added.  Want to add another one?"
             )
-            data_item_colision_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-            if data_item_colision_box.exec() == QMessageBox.Yes:
+            butts = [QMessageBox.Yes, QMessageBox.No]
+            if (
+                dialog_message_box(msg, butts, type=QMessageBox.Question)
+                == QMessageBox.Yes
+            ):
+                # if data_item_colision_box.exec() == QMessageBox.Yes:
                 lbl, lbl_return_val = QtWidgets.QInputDialog.getText(
                     self, "", "Then add specific label:", QLineEdit.Normal, "1"
                 )
@@ -751,12 +792,12 @@ class PlotTool(QtWidgets.QMainWindow):
 
         if plot == "edc":
             if dv.new_energy_axis is None:
-                return dv.data_handler.axes[0], dv.edc
+                return dv.data_handler.axes[1], dv.edc
             else:
                 return dv.new_energy_axis, dv.edc
         elif plot == "mdc":
             if dv.k_axis is None:
-                return dv.data_handler.axes[1], dv.mdc
+                return dv.data_handler.axes[0], dv.mdc
             else:
                 return dv.k_axis, dv.mdc
         elif plot == "edc_fitter":
@@ -1064,12 +1105,14 @@ class PlotTool(QtWidgets.QMainWindow):
 
         # check if there are any datasets
         if len(self.data_items.keys()) == 0:
-            no_data_item_box = QMessageBox()
-            no_data_item_box.setIcon(QMessageBox.Information)
-            no_data_item_box.setWindowTitle("Doh.")
-            no_data_item_box.setText("No dataset to dump marker on.")
-            no_data_item_box.setStandardButtons(QMessageBox.Ok)
-            if no_data_item_box.exec() == QMessageBox.Ok:
+            # no_data_item_box = QMessageBox()
+            # no_data_item_box.setIcon(QMessageBox.Information)
+            # no_data_item_box.setWindowTitle("Doh.")
+            # no_data_item_box.setText("No dataset to dump marker on.")
+            # no_data_item_box.setStandardButtons(QMessageBox.Ok)
+            # if no_data_item_box.exec() == QMessageBox.Ok:
+            #     return
+            if dialog_message_box("No dataset to dump marker on.") == QMessageBox.Ok:
                 return
 
         marker = marker
@@ -1148,12 +1191,15 @@ class PlotTool(QtWidgets.QMainWindow):
 
         name = self.ann_name.text()
         if name not in self.annotations.keys():
-            no_annotation_box = QMessageBox()
-            no_annotation_box.setIcon(QMessageBox.Information)
-            no_annotation_box.setWindowTitle("Doh.")
-            no_annotation_box.setText("No annotation to edit.")
-            no_annotation_box.setStandardButtons(QMessageBox.Ok)
-            if no_annotation_box.exec() == QMessageBox.Ok:
+            # no_annotation_box = QMessageBox()
+            # no_annotation_box.setIcon(QMessageBox.Information)
+            # no_annotation_box.setWindowTitle("Doh.")
+            # no_annotation_box.setText("No annotation to edit.")
+            # no_annotation_box.setStandardButtons(QMessageBox.Ok)
+            # if no_annotation_box.exec() == QMessageBox.Ok:
+            #     return
+            # msg, butts = "File already opened.", [QMessageBox.Ok]
+            if dialog_message_box("No annotation to edit.") == QMessageBox.Ok:
                 return
 
         cd = QColorDialog.getColor()
@@ -1169,12 +1215,14 @@ class PlotTool(QtWidgets.QMainWindow):
 
         name = self.ann_name.text()
         if name == "":
-            no_name_box = QMessageBox()
-            no_name_box.setIcon(QMessageBox.Information)
-            no_name_box.setWindowTitle("Doh.")
-            no_name_box.setText("Must specify name.")
-            no_name_box.setStandardButtons(QMessageBox.Ok)
-            if no_name_box.exec() == QMessageBox.Ok:
+            # no_name_box = QMessageBox()
+            # no_name_box.setIcon(QMessageBox.Information)
+            # no_name_box.setWindowTitle("Doh.")
+            # no_name_box.setText("Must specify name.")
+            # no_name_box.setStandardButtons(QMessageBox.Ok)
+            # if no_name_box.exec() == QMessageBox.Ok:
+            #     return
+            if dialog_message_box("Must specify name.") == QMessageBox.Ok:
                 return
 
         try:
@@ -1465,13 +1513,15 @@ class PlotTool(QtWidgets.QMainWindow):
         """
 
         if not settings.IS_TESTING:
-            warning_box = QMessageBox()
-            warning_box.setIcon(QMessageBox.Information)
-            warning_box.setWindowTitle("Load")
-            warning_box.setText("Current progress will be lost.  Sure to continue?")
-            warning_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
-            choice = warning_box.exec_()
-            if choice == QMessageBox.Ok:
+            # warning_box = QMessageBox()
+            # warning_box.setIcon(QMessageBox.Information)
+            # warning_box.setWindowTitle("Load")
+            # warning_box.setText("Current progress will be lost.  Sure to continue?")
+            # warning_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
+            # choice = warning_box.exec_()
+            msg = "Current progress will be lost.  Sure to continue?"
+            butts = "Save data", [QMessageBox.Cancel, QMessageBox.Ok]
+            if dialog_message_box(msg, butts, title="Load") == QMessageBox.Ok:
                 pass
             else:
                 return
