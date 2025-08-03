@@ -164,13 +164,21 @@ binning options  Apply integration window by enabling the respective *binning*
 linking options  Link different **DataViewers** (of the same type) to control
                  their sliders simultaneously.
 
-                 Functionality operates in a `parent`-`child` system, where
-                 one (`parent`) window controls all the others. `Parent`
-                 window is established as the window from which *Link*
+                 Functionality operates in a **parent** - **child** system, 
+                 where one (**parent**) window controls all the others. The 
+                 **parent** window is set as the window from which *Link*
                  button was clicked. All other windows receive status
-                 `child`. Windows added to existing linked combination will
-                 also receive status `child`.
+                 **child**. Windows added to existing linked combination will
+                 also receive status **child**.
 ===============  ==============================================================
+
+
+.. note::
+    To use the linking feature, two or more windows of the same dimensionality 
+    must be open. Upon clicking the dropdown menu, a list of all compatible 
+    viewers (*i.e.*, those with the same dimensionality, excluding the native 
+    viewer) will appear. The user can then select one or more viewers to link 
+    together.
 
 
 .. _sec-utilities-panel-image:
@@ -312,8 +320,11 @@ open in JupyterLab            Create a new ``notebook`` file (*touch* button)
                               analysis of the currently displayed image.
                               (See :ref:`analysis-notebook` for more
                               information.)
-                              *start JL session* opens new
-                              ``jupyter-lab`` server.
+                              
+                              *start JL session* opens a file browser window 
+                              for selecting the root directory where the new 
+                              ``jupyter-lab`` session should be launched, and 
+                              then starts the session.
 create experimental logbook   Create new ``notebook`` file with an automated
                               experimental logbook for selected beamline.
 ============================  =================================================

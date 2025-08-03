@@ -800,12 +800,12 @@ class PlotTool(QtWidgets.QMainWindow):
                 return dv.data_handler.axes[0], dv.mdc
             else:
                 return dv.k_axis, dv.mdc
-        elif plot == "edc_fitter":
-            edc_fitter = dv.data_viewers[dv_lbl + "_edc_viewer"]
-            return edc_fitter.edc_erg_ax, edc_fitter.edc
-        elif plot == "mdc_fitter":
-            mdc_fitter = dv.data_viewers[dv_lbl + "_mdc_viewer"]
-            return mdc_fitter.x_axis, mdc_fitter.mdc
+        # elif plot == "edc_fitter":
+        #     edc_fitter = dv.data_viewers[dv_lbl + "_edc_viewer"]
+        #     return edc_fitter.edc_erg_ax, edc_fitter.edc
+        # elif plot == "mdc_fitter":
+        #     mdc_fitter = dv.data_viewers[dv_lbl + "_mdc_viewer"]
+        #     return mdc_fitter.x_axis, mdc_fitter.mdc
 
     def get_data_from_3dviewer(self, dv_lbl: str, plot: str) -> tuple:
         """
