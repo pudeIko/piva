@@ -77,7 +77,6 @@ class DataHandler4D:
         :param axes: loaded list of axes
         """
 
-        # self.data = ip.TracedVariable(data, name='data')
         self.data = ip.CustomTracedVariable(data, name="data")
         self.axes = np.array(axes, dtype="object")
         self.norm_data = wp.normalize(self.data.get_value()[0, :, :].T).T
@@ -207,7 +206,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
         """
 
         super(DataViewer4D, self).__init__()
-        # self.title = index.split('/')[-1]
         self.title = os.path.split(index)[1]
         self.fname = index
         self.central_widget = QtWidgets.QWidget()
@@ -220,7 +218,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
         self.lut = None
         self.db = data_browser
         self.index = index
-        # self.slice = slice
         self.slider_pos = [0, 0]
         self.new_energy_axis = None
         self.k_axis = None
@@ -262,9 +259,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
         self.initUI()
 
         # # Set the loaded data
-        # if data_set is None:
-        #     print('Data set not defined.')
-        # else:
         D = data_set[0, 0]
         self.scan = data_set
 
@@ -346,7 +340,7 @@ class DataViewer4D(QtWidgets.QMainWindow):
         self.util_panel.close_button.clicked.connect(self.close)
         self.util_panel.save_button.clicked.connect(self.save_to_pickle)
 
-        # energy and k-space concersion
+        # energy and k-space conversion
         self.util_panel.axes_energy_Ef.valueChanged.connect(
             self.apply_energy_correction
         )
@@ -547,7 +541,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
             y = np.sum(data[:, start:stop], axis=1)
         x = np.arange(0, len(self.data_handler.axes[1]))
         self.edc = y
-        # xp.plot(x, y)
         xp.plot(x[~np.isnan(y)], y[~np.isnan(y)])
         self.util_panel.energy_vert.setValue(i_x)
 
@@ -563,16 +556,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
         if binning:
             self.plot_y.left_line.setValue(i_x - width)
             self.plot_y.right_line.setValue(i_x + width)
-
-        # if (self.util_panel.link_windows_status.currentIndex() == 1) and \
-        #         self.util_panel.get_linked_windows():
-        #     linked_windows = self.util_panel.get_linked_windows()
-        #     for dvi in self.db.data_viewers.keys():
-        #         if self.db.data_viewers[dvi].title in linked_windows:
-        #             pos_variable = self.db.data_viewers[dvi].bm_plot.pos[1]
-        #             matching_idx = self.get_matching_momentum_idx(
-        #                 i_x, self.db.data_viewers[dvi])
-        #             pos_variable.set_value(matching_idx)
 
     def update_plot_y(self) -> None:
         """
@@ -609,9 +592,7 @@ class DataViewer4D(QtWidgets.QMainWindow):
             stop = i_y + width
             y = np.sum(data[start:stop, :], axis=0)
         x = np.arange(0, len(self.data_handler.axes[2]))
-        # x = self.data_handler.ang_ax
         self.mdc = y[~np.isnan(y)]
-        # yp.plot(y, x)
         yp.plot(y[~np.isnan(y)], x[~np.isnan(y)])
         self.util_panel.momentum_hor.setValue(i_y)
 
@@ -627,16 +608,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
         if binning:
             self.plot_x.left_line.setValue(i_y - width)
             self.plot_x.right_line.setValue(i_y + width)
-
-        # if (self.util_panel.link_windows_status.currentIndex() == 1) and \
-        #         self.util_panel.get_linked_windows():
-        #     linked_windows = self.util_panel.get_linked_windows()
-        #     for dvi in self.db.data_viewers.keys():
-        #         if self.db.data_viewers[dvi].title in linked_windows:
-        #             pos_variable = self.db.data_viewers[dvi].bm_plot.pos[0]
-        #             matching_idx = self.get_matching_energy_idx(
-        #                 i_y, self.db.data_viewers[dvi])
-        #             pos_variable.set_value(matching_idx)
 
     def update_binning_lines(self) -> None:
         """
@@ -926,19 +897,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
         wf = self.util_panel.axes_energy_wf.value()
 
         if hv == 0 or wf == 0:
-            # warning_box = QMessageBox()
-            # warning_box.setIcon(QMessageBox.Information)
-            # warning_box.setWindowTitle("Wrong conversion values.")
-            # if hv == 0 and wf == 0:
-            #     msg = "Photon energy and work fonction values not given."
-            # elif hv == 0:
-            #     msg = "Photon energy value not given."
-            # elif wf == 0:
-            #     msg = "Work fonction value not given."
-            # warning_box.setText(msg)
-            # warning_box.setStandardButtons(QMessageBox.Ok)
-            # if warning_box.exec() == QMessageBox.Ok:
-            #     return
             msg = "Photon energy and/or work function values not given."
             title, butts = "Wrong conversion values.", [QMessageBox.Ok]
             if dialog_message_box(msg, butts, title) == QMessageBox.Ok:
@@ -962,7 +920,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
         self.util_panel.momentum_hor_value.setText(
             "({:.4f})".format(self.k_axis[self.bm_plot.pos[0].get_value()])
         )
-        # self.util_panel.dp_add_k_space_conversion_entry(self.data_set)
 
     def reset_kspace_conversion(self) -> None:
         """
@@ -978,7 +935,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
                 self.data_handler.axes[1][self.bm_plot.pos[0].get_value()]
             )
         )
-        # self.data_set.data_provenance['k_space_conv'] = []
 
     # general functionalities
     def open_2dviewer(self) -> None:
@@ -998,14 +954,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
         data_set.scan_dim = []
 
         if viewer_idx in self.db.data_viewers.keys():
-            # viewer_running_box = QMessageBox()
-            # viewer_running_box.setIcon(QMessageBox.Information)
-            # viewer_running_box.setWindowTitle("Doh.")
-            # viewer_running_box.setText("Same cut is already opened")
-            # viewer_running_box.setStandardButtons(QMessageBox.Ok)
-            # if viewer_running_box.exec() == QMessageBox.Ok:
-            #     return
-            # msg, butts = "Same cut is already opened", [QMessageBox.Ok]
             if dialog_message_box("Same cut is already opened") == QMessageBox.Ok:
                 return
 
@@ -1016,12 +964,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
             )
         except Exception as e:
             raise e
-            # error_box = QMessageBox()
-            # error_box.setIcon(QMessageBox.Information)
-            # error_box.setText("Couldn't load data,  something went wrong.")
-            # error_box.setStandardButtons(QMessageBox.Ok)
-            # if error_box.exec() == QMessageBox.Ok:
-            #     return
 
     def open_mdc_fitter(self) -> None:
         """
@@ -1033,13 +975,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
         self.mdc_thread_lbl = title
 
         if title in self.data_viewers:
-            # already_opened_box = QMessageBox()
-            # already_opened_box.setIcon(QMessageBox.Information)
-            # already_opened_box.setText("MDC viewer already opened.")
-            # already_opened_box.setStandardButtons(QMessageBox.Ok)
-            # if already_opened_box.exec() == QMessageBox.Ok:
-            #     return
-            # msg, butts = "MDC viewer already opened.", [QMessageBox.Ok]
             if dialog_message_box("MDC viewer already opened.") == QMessageBox.Ok:
                 return
 
@@ -1059,13 +994,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
         try:
             self.data_viewers[title] = MDCFitter(self, data_set, axes, title)
         except Exception as e:
-            # error_box = QMessageBox()
-            # error_box.setIcon(QMessageBox.Information)
-            # error_box.setText("Couldn't load data,  something went wrong.")
-            # error_box.setStandardButtons(QMessageBox.Ok)
-            # if error_box.exec() == QMessageBox.Ok:
-            #     raise e
-            #     # return
             msg, butts = "Couldn't load data,  something went wrong.", [QMessageBox.Ok]
             if dialog_message_box(msg, butts) == QMessageBox.Ok:
                 raise e
@@ -1080,13 +1008,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
         self.edc_thread_lbl = title
 
         if title in self.data_viewers:
-            # already_opened_box = QMessageBox()
-            # already_opened_box.setIcon(QMessageBox.Information)
-            # already_opened_box.setText("EDC viewer already opened.")
-            # already_opened_box.setStandardButtons(QMessageBox.Ok)
-            # if already_opened_box.exec() == QMessageBox.Ok:
-            #     return
-            # msg, butts = "EDC viewer already opened.", [QMessageBox.Ok]
             if dialog_message_box("EDC viewer already opened.") == QMessageBox.Ok:
                 return
 
@@ -1125,7 +1046,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
                 self, "Select Directory", self.fname[: -len(self.title)]
             )
         )
-        # savedir = self.fname[:-len(self.title)]
         if not savedir:
             return
 
@@ -1138,21 +1058,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
 
             # check if there is no fname colosions
             if fname in os.listdir(savedir):
-                # fname_colision_box = QMessageBox()
-                # fname_colision_box.setIcon(QMessageBox.Question)
-                # fname_colision_box.setWindowTitle("File name already used.")
-                # fname_colision_box.setText(
-                #     "File {} already exists.\nDo you want to overwrite it?".format(
-                #         fname
-                #     )
-                # )
-                # fname_colision_box.setStandardButtons(
-                #     QMessageBox.Ok | QMessageBox.Cancel
-                # )
-                # if fname_colision_box.exec() == QMessageBox.Ok:
-                #     file_selection = False
-                # else:
-                #     init_fname = fname
                 msg = f"File {fname} already exists.\nDo you want to overwrite it?"
                 title, butts = (
                     "File name already used.",
@@ -1176,5 +1081,4 @@ class DataViewer4D(QtWidgets.QMainWindow):
         :class:`~data_browser.DataBrowser`.
         """
 
-        # self.db.delete_viewer_from_linked_lists(self.title)
         del self.db.data_viewers[self.index]

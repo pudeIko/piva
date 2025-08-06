@@ -6,7 +6,6 @@ most of the functionalities.
 
 from piva.data_browser import DataBrowser
 
-# from piva.main import db
 from piva.data_viewer_3d import DataViewer3D
 from piva.data_viewer_2d import DataViewer2D
 from piva.fitters import MDCFitter, EDCFitter
@@ -15,16 +14,13 @@ from piva.working_procedures import get_step
 from pyqtgraph.Qt.QtCore import Qt
 from PyQt5.QtTest import QTest
 
-# from PyQt5.QtWidgets import QMessageBox
-import numpy as np
 
-# from pkg_resources import resource_filename
 from importlib.resources import files, as_file
 import os
+import numpy as np
 from typing import Any
 from unittest.mock import patch
 
-# from piva.utilities_panel import InfoWindow
 import piva.config
 
 piva.config.settings.IS_TESTING = True
@@ -295,7 +291,6 @@ class TestViewers:
 
         # normalize data set along different directions and bring colors
         qtbot.mouseClick(self.up_2dv.image_normalize, Qt.LeftButton)
-        # assert self.up_2dv.image_normalize.isChecked() is True
         qtbot.wait(LONG_WT * 2)
         qtbot.keyClicks(self.up_2dv.image_normalize_along, "energy")
         assert self.up_2dv.image_normalize_along.currentIndex() == 1
@@ -325,7 +320,6 @@ class TestViewers:
         qtbot.wait(LONG_WT * 2)
         qtbot.mouseClick(self.up_2dv.axes_gamma_x, Qt.LeftButton)
         qtbot.keyPress(self.up_2dv.axes_gamma_x, Qt.Key_Delete)
-        # QTest.keyClicks(up.axes_gamma_x, str(K0_IDX))
         fill_text(qtbot, self.up_2dv.axes_gamma_x, str(K0_IDX))
         qtbot.keyPress(self.up_2dv.axes_gamma_x, Qt.Key_Return)
         assert self.up_2dv.axes_gamma_x.value() == K0_IDX
@@ -483,7 +477,6 @@ class TestViewers:
         """
 
         # move sliders
-        # e_start_idx = self.mdc_viewer.image_y_pos.value()
         change_spinBox(
             qtbot,
             self.mdc_viewer.image_y_pos,
@@ -699,6 +692,7 @@ class TestViewers:
 
         :param qtbot: object emulating a user
         """
+        
         # load saved session to the newely opened window,
         # close it and remove the file
         try:
@@ -821,6 +815,7 @@ class TestViewers:
 
         :param qtbot: object emulating a user
         """
+
         _4dv_fname = str(files("piva") / "tests" / "data" / "pickle-raster.p")
         self.browser.open_dv(_4dv_fname)
         self.browser.open_dv(_4dv_fname)
@@ -833,6 +828,7 @@ class TestViewers:
 
         :param qtbot: object emulating a user
         """
+
         # move sliders
         qtbot.mouseClick(self.up_4dv.bin_y, Qt.LeftButton)
         qtbot.mouseClick(self.up_4dv.bin_z, Qt.LeftButton)
@@ -858,6 +854,7 @@ class TestViewers:
 
         :param qtbot: object emulating a user
         """
+
         # move to image and change colors and normalizations
         self.up_4dv.tabs.setCurrentIndex(1)
         assert self.up_4dv.tabs.currentIndex() == 1
@@ -887,6 +884,7 @@ class TestViewers:
 
         :param qtbot: object emulating a user
         """
+
         # move to AxesTab, change energy scales,
         # do k-space conversion and reset it
         self.up_4dv.tabs.setCurrentIndex(2)
@@ -907,7 +905,6 @@ class TestViewers:
         qtbot.keyClicks(self.up_4dv.axes_slit_orient, "vertical")
         qtbot.wait(LONG_WT * 2)
         qtbot.mouseClick(self.up_4dv.axes_do_kspace_conv, Qt.LeftButton)
-        # self.up_4dv.axes_do_kspace_conv.click()
         qtbot.wait(LONG_WT * 2)
         qtbot.mouseClick(self.up_4dv.axes_reset_conv, Qt.LeftButton)
 
@@ -917,6 +914,7 @@ class TestViewers:
 
         :param qtbot: object emulating a user
         """
+
         # move to FileTab, show provenance and metadata windows,
         # add/remove entries
         self.up_4dv.tabs.setCurrentIndex(3)

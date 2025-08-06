@@ -5,9 +5,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 from pyqtgraph.Qt import QtWidgets
 
-# from pyqtgraph.Qt.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox
-# from PyQt5.QtCore import QTimer
 
 import piva.working_procedures as wp
 import piva.data_loaders as dl
@@ -20,7 +18,6 @@ from piva.config import settings
 
 if TYPE_CHECKING:
     from piva.data_browser import DataBrowser
-    # from piva.data_viewer_3d import DataViewer3D
 
 app_style = """
 QMainWindow{background-color: rgb(64,64,64);}
@@ -82,7 +79,6 @@ class DataHandler2D:
         :param axes: loaded list of axes
         """
 
-        # self.data = ip.TracedVariable(data, name='data')
         self.data = ip.CustomTracedVariable(data, name="data")
         self.axes = np.array(axes, dtype="object")
         self.norm_data = wp.normalize(self.data.get_value()[0, :, :].T).T
@@ -134,7 +130,6 @@ class DataViewer2D(QtWidgets.QMainWindow):
         """
 
         super(DataViewer2D, self).__init__()
-        # self.title = index.split('/')[-1]
         self.title = os.path.split(index)[-1]
         self.fname = index
         self.central_widget = QtWidgets.QWidget()
@@ -205,7 +200,6 @@ class DataViewer2D(QtWidgets.QMainWindow):
             print("Old settings, corrections not loaded.")
             pass
 
-        # self.util_panel.set_metadata_window(self.data_set)
         self.set_sliders_initial_positions()
 
     # initialization methods
@@ -438,7 +432,6 @@ class DataViewer2D(QtWidgets.QMainWindow):
             y = np.sum(data[:, start:stop], axis=1)
         x = np.arange(0, len(self.data_handler.axes[1]))
         self.edc = y[~np.isnan(y)]
-        # xp.plot(x, y)
         xp.plot(x[~np.isnan(y)], y[~np.isnan(y)])
         self.util_panel.momentum_hor.setValue(i_x)
         if self.k_axis is None:
@@ -502,7 +495,6 @@ class DataViewer2D(QtWidgets.QMainWindow):
             y = np.sum(data[start:stop, :], axis=0)
         x = np.arange(0, len(self.data_handler.axes[0]))
         self.mdc = y[~np.isnan(y)]
-        # yp.plot(y, x)
         yp.plot(y[~np.isnan(y)], x[~np.isnan(y)])
         self.util_panel.energy_vert.setValue(i_y)
 
@@ -881,19 +873,6 @@ class DataViewer2D(QtWidgets.QMainWindow):
         wf = self.util_panel.axes_energy_wf.value()
 
         if hv == 0 or wf == 0:
-            # warning_box = QMessageBox()
-            # warning_box.setIcon(QMessageBox.Information)
-            # warning_box.setWindowTitle("Wrong conversion values.")
-            # if hv == 0 and wf == 0:
-            #     msg = "Photon energy and work function values not given."
-            # elif hv == 0:
-            #     msg = "Photon energy value not given."
-            # elif wf == 0:
-            #     msg = "Work fonction value not given."
-            # warning_box.setText(msg)
-            # warning_box.setStandardButtons(QMessageBox.Ok)
-            # if warning_box.exec() == QMessageBox.Ok:
-            #     return
             msg = "Photon energy and/or work function values not given."
             title, butts = "Wrong conversion values.", [QMessageBox.Ok]
             if dialog_message_box(msg, butts, title) == QMessageBox.Ok:
@@ -946,13 +925,6 @@ class DataViewer2D(QtWidgets.QMainWindow):
         self.mdc_thread_lbl = title
 
         if title in self.data_viewers:
-            # already_opened_box = QMessageBox()
-            # already_opened_box.setIcon(QMessageBox.Information)
-            # already_opened_box.setText("MDC viewer already opened.")
-            # already_opened_box.setStandardButtons(QMessageBox.Ok)
-            # if already_opened_box.exec() == QMessageBox.Ok:
-            #     return
-            # msg, butts = "MDC viewer already opened.", [QMessageBox.Ok]
             if dialog_message_box("MDC viewer already opened.") == QMessageBox.Ok:
                 return
 
@@ -968,13 +940,6 @@ class DataViewer2D(QtWidgets.QMainWindow):
         try:
             self.data_viewers[title] = MDCFitter(self, self.data_set, axes, title)
         except Exception as e:
-            # error_box = QMessageBox()
-            # error_box.setIcon(QMessageBox.Information)
-            # error_box.setText("Couldn't load data,  something went wrong.")
-            # error_box.setStandardButtons(QMessageBox.Ok)
-            # if error_box.exec() == QMessageBox.Ok:
-            #     raise e
-            #     return
             msg = "Couldn't load data,  something went wrong."
             if dialog_message_box(msg) == QMessageBox.Ok:
                 raise e
@@ -989,13 +954,6 @@ class DataViewer2D(QtWidgets.QMainWindow):
         self.edc_thread_lbl = title
 
         if title in self.data_viewers:
-            # already_opened_box = QMessageBox()
-            # already_opened_box.setIcon(QMessageBox.Information)
-            # already_opened_box.setText("EDC viewer already opened.")
-            # already_opened_box.setStandardButtons(QMessageBox.Ok)
-            # if already_opened_box.exec() == QMessageBox.Ok:
-            #     return
-            # msg, butts = "EDC viewer already opened.", [QMessageBox.Ok]
             if dialog_message_box("EDC viewer already opened.") == QMessageBox.Ok:
                 return
 
@@ -1035,7 +993,6 @@ class DataViewer2D(QtWidgets.QMainWindow):
                     self, "Select Directory", self.fname[: -len(self.title)]
                 )
             )
-        # savedir = self.fname[:-len(self.title)]
         if not savedir:
             return
 
@@ -1048,31 +1005,7 @@ class DataViewer2D(QtWidgets.QMainWindow):
                 )
             if not fname_return_value:
                 return
-            # fname, fname_return_value = \
-            #         QtWidgets.QInputDialog.getText(self, '', 'File name:',
-            #                                        QtWidgets.QLineEdit.Normal,
-            #                                        init_fname)
-            # if not fname_return_value:
-            #     return
-
-            # check if there is no fname colosions
-            # if fname in os.listdir(savedir):
             if fname in os.listdir(savedir) and (not settings.IS_TESTING):
-                # fname_colision_box = QMessageBox()
-                # fname_colision_box.setIcon(QMessageBox.Question)
-                # fname_colision_box.setWindowTitle("File name already used.")
-                # fname_colision_box.setText(
-                #     "File {} already exists.\nDo you want to overwrite it?".format(
-                #         fname
-                #     )
-                # )
-                # fname_colision_box.setStandardButtons(
-                #     QMessageBox.Ok | QMessageBox.Cancel
-                # )
-                # if fname_colision_box.exec() == QMessageBox.Ok:
-                #     file_selection = False
-                # else:
-                #     init_fname = fname
                 msg = f"File {fname} already exists.\nDo you want to overwrite it?"
                 title, butts = (
                     "File name already used.",
@@ -1096,16 +1029,7 @@ class DataViewer2D(QtWidgets.QMainWindow):
             up.axes_gamma_x.value() != 0,
         ]
 
-        # if np.any(conditions):
         if np.any(conditions) and (not settings.IS_TESTING):
-            # save_cor_box = QMessageBox()
-            # save_cor_box.setIcon(QMessageBox.Question)
-            # save_cor_box.setWindowTitle("Save data")
-            # save_cor_box.setText("Do you want to save applied corrections?")
-            # save_cor_box.setStandardButtons(
-            #     QMessageBox.No | QMessageBox.Ok | QMessageBox.Cancel
-            # )
-            # box_return_value = save_cor_box.exec()
             msg = "Do you want to save applied corrections?"
             title, butts = (
                 "Save data",
@@ -1141,21 +1065,11 @@ class DataViewer2D(QtWidgets.QMainWindow):
         which has the benefit of providing a free-slicing ROI.
         """
 
-        # info_box = QMessageBox()
-        # info_box.setIcon(QMessageBox.Information)
-        # info_box.setWindowTitle("K-space conversion.")
         msg = (
             "Note:\n"
             "PIT is a third-party package and may not work "
             "properly with Python versions above 3.8."
         )
-        # info_box.setText(msg)
-        # info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
-        # choice = info_box.exec()
-        # if choice == QMessageBox.Ok:
-        #     pass
-        # elif choice == QMessageBox.Cancel:
-        #     return
         butts = [QMessageBox.Ok | QMessageBox.Cancel]
         if dialog_message_box(msg, butts) == QMessageBox.Ok:
             pass

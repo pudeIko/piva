@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 import pyqtgraph as pg
 from typing import Any, Iterable
-from pyqtgraph.Qt import QtCore, QtGui  # , QtWidgets
+from pyqtgraph.Qt import QtCore, QtGui 
 from pyqtgraph.graphicsItems.ImageItem import ImageItem
 from data_slicer.imageplot import TracedVariable
 
@@ -61,8 +61,6 @@ class Sliders:
         self.orientation = orientation
 
         # Store the positions in TracedVariables
-        # self.hpos = TracedVariable(pos[1], name='hpos')
-        # self.vpos = TracedVariable(pos[0], name='vpos')
         self.hpos = CustomTracedVariable(pos[1], name="hpos")
         self.vpos = CustomTracedVariable(pos[0], name="vpos")
 
@@ -311,7 +309,7 @@ class ImagePlot(pg.PlotWidget):
         """
 
         if self.orientation == "horizontal":
-            # Show top and tight axes by default, but without ticklabels
+            # Show top and tight axes by default, but without tick labels
             self.showAxis("top")
             self.showAxis("right")
             self.getAxis("top").setStyle(showValues=False)
@@ -328,7 +326,7 @@ class ImagePlot(pg.PlotWidget):
             self.angle = 0
             self.slider_axis_index = 1
         elif self.orientation == "vertical":
-            # Show top and tight axes by default, but without ticklabels
+            # Show top and tight axes by default, but without tick labels
             self.showAxis("right")
             self.showAxis("top")
             self.getAxis("right").setStyle(showValues=False)
@@ -472,7 +470,6 @@ class ImagePlot(pg.PlotWidget):
         transform.translate(x0 / sx, y0 / sy)
         # Finally, apply the transformation to the imageItem
         self.image_item.setTransform(transform)
-        # self._update_transform_factors()
 
         if emit:
             self.sig_axes_changed.emit()
@@ -715,13 +712,10 @@ class CurvePlot(pg.PlotWidget):
 
         # The position of the sliders is stored with a TracedVariable
         initial_pos = 0
-        # pos = TracedVariable(initial_pos, name='pos')
         pos = CustomTracedVariable(initial_pos, name="pos")
         self.register_traced_variable(pos)
 
         # Set up the sliders
-        # self.slider_width = TracedVariable(
-        #     slider_width, name='{}.slider_width'.format(self.name))
         self.slider = pg.InfiniteLine(initial_pos, movable=True, angle=self.angle)
         self.set_slider_pen(color=BASE_LINECOLOR, width=slider_width)
 

@@ -318,7 +318,6 @@ class UtilitiesPanel(QWidget):
             self.image_raster_label.setFont(bold_font)
             self.image_raster_options = QComboBox()
             self.image_raster_options.addItems(["sum", "signal/noise", "sharpest edge"])
-            # self.image_raster_button = QPushButton('Do it')
 
             self.image_normalize_to.addItems(["maximum", "intensity sum"])
             self.image_normalize_along.addItems(["slit", "energy"])
@@ -345,7 +344,6 @@ class UtilitiesPanel(QWidget):
             row = 3
             itl.addWidget(self.image_raster_label, row, 0)
             itl.addWidget(self.image_raster_options, row, 1, 1, 2)
-            # itl.addWidget(self.image_raster_button,         row, 3)
 
             row = 4
             itl.addWidget(self.image_2dv_lbl, row, 0)
@@ -853,7 +851,6 @@ class UtilitiesPanel(QWidget):
         list = self.link_windows_list
         dv = self.mw.db.data_viewers
         for dvi in dv.keys():
-            # lbl = dv[dvi].index.split('/')[-1]
             lbl = os.path.split(dv[dvi].index)[1]
             if self.dim == dv[dvi].util_panel.dim:
                 list.addItem(lbl)
@@ -885,13 +882,6 @@ class UtilitiesPanel(QWidget):
             if 1 in self.set_linking_status(
                 self.get_linked_windows(), get_statuses=True
             ):
-                # two_parent_box = QMessageBox()
-                # two_parent_box.setIcon(QMessageBox.Information)
-                # two_parent_box.setText("Cannot link two parent viewers.")
-                # two_parent_box.setStandardButtons(QMessageBox.Ok)
-                # if two_parent_box.exec() == QMessageBox.Ok:
-                #     return
-                # msg, butts = "File already opened.", [QMessageBox.Ok]
                 if (
                     dialog_message_box("Cannot link two parent viewers.")
                     == QMessageBox.Ok
@@ -1291,12 +1281,6 @@ class UtilitiesPanel(QWidget):
 
         if not settings.IS_TESTING:
             if name == "":
-                # empty_name_box = QMessageBox()
-                # empty_name_box.setIcon(QMessageBox.Information)
-                # empty_name_box.setText("Attribute's name not given.")
-                # empty_name_box.setStandardButtons(QMessageBox.Ok)
-                # if empty_name_box.exec() == QMessageBox.Ok:
-                #     return
                 if dialog_message_box("Attribute's name not given.") == QMessageBox.Ok:
                     return
 
@@ -1306,27 +1290,12 @@ class UtilitiesPanel(QWidget):
             )
         )
         if not settings.IS_TESTING:
-            # sanity_check_box = QMessageBox()
-            # sanity_check_box.setIcon(QMessageBox.Question)
-            # sanity_check_box.setText(message)
-            # sanity_check_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            # if sanity_check_box.exec() == QMessageBox.Cancel:
-            #     return
             butts = [QMessageBox.Ok, QMessageBox.Cancel]
             if dialog_message_box(message, butts) == QMessageBox.Cancel:
                 return
 
         if hasattr(self.mw.data_set, name) and (not settings.IS_TESTING):
             old = vars(self.mw.data_set)[name]
-            # attr_conflict_box = QMessageBox()
-            # attr_conflict_box.setIcon(QMessageBox.Question)
-            # attr_conflict_box.setText(
-            #     f"Data set already has attribute '{name}'.  Overwrite?"
-            # )
-            # attr_conflict_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            # if attr_conflict_box.exec() == QMessageBox.Ok:
-            #     setattr(self.mw.data_set, name, value)
-            #     self.dp_add_edited_metadata_entry("updated", name, old, value)
             msg = f"Data set already has attribute '{name}'.  Overwrite?"
             butts = [QMessageBox.Ok, QMessageBox.Cancel]
             if dialog_message_box(msg, butts) == QMessageBox.Ok:
@@ -1344,24 +1313,10 @@ class UtilitiesPanel(QWidget):
         name = self.file_md_name.text()
 
         if not hasattr(self.mw.data_set, name):
-            # no_attr_box = QMessageBox()
-            # no_attr_box.setIcon(QMessageBox.Information)
-            # no_attr_box.setText(f"Attribute '{name}' not found.")
-            # no_attr_box.setStandardButtons(QMessageBox.Ok)
-            # if no_attr_box.exec() == QMessageBox.Ok:
-            #     return
             if dialog_message_box(f"Attribute '{name}' not found.") == QMessageBox.Ok:
                 return
 
         if name in ["data", "xscale", "yscale", "zscale"]:
-            # essential_md_box = QMessageBox()
-            # essential_md_box.setIcon(QMessageBox.Information)
-            # essential_md_box.setText(
-            #     "Sorry, no can do. Data and axes cannot be removed."
-            # )
-            # essential_md_box.setStandardButtons(QMessageBox.Ok)
-            # if essential_md_box.exec() == QMessageBox.Ok:
-            #     return
             if (
                 dialog_message_box("Sorry, no can do. Data and axes cannot be removed.")
                 == QMessageBox.Ok
@@ -1370,12 +1325,6 @@ class UtilitiesPanel(QWidget):
 
         message = "Sure to remove attribute '{}' from the data set?".format(name)
         if not settings.IS_TESTING:
-            # sanity_check_box = QMessageBox()
-            # sanity_check_box.setIcon(QMessageBox.Question)
-            # sanity_check_box.setText(message)
-            # sanity_check_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            # if sanity_check_box.exec() == QMessageBox.Cancel:
-            #     return
             butts = [QMessageBox.Ok, QMessageBox.Cancel]
             if dialog_message_box(message, butts) == QMessageBox.Cancel:
                 return
@@ -1410,24 +1359,12 @@ class UtilitiesPanel(QWidget):
         try:
             new_dataset = dl.load_data(file_path)
         except FileNotFoundError:
-            # no_file_box = QMessageBox()
-            # no_file_box.setIcon(QMessageBox.Information)
-            # no_file_box.setText("File not found.")
-            # no_file_box.setStandardButtons(QMessageBox.Ok)
-            # if no_file_box.exec() == QMessageBox.Ok:
-            #     return
             if dialog_message_box("File not found.") == QMessageBox.Ok:
                 return
 
         try:
             check_result = self.check_conflicts([org_dataset, new_dataset])
         except AttributeError:
-            # error_box = QMessageBox()
-            # error_box.setIcon(QMessageBox.Information)
-            # error_box.setText("Aborted, datasets could not be compared.")
-            # error_box.setStandardButtons(QMessageBox.Ok)
-            # if error_box.exec() == QMessageBox.Ok:
-            #     return
             if (
                 dialog_message_box("Aborted, datasets could not be compared.")
                 == QMessageBox.Ok
@@ -1435,12 +1372,6 @@ class UtilitiesPanel(QWidget):
                 return
 
         if check_result == 0:
-            # data_mismatch_box = QMessageBox()
-            # data_mismatch_box.setIcon(QMessageBox.Information)
-            # data_mismatch_box.setText("Aborted.\nData sets' shapes don't match.\n")
-            # data_mismatch_box.setStandardButtons(QMessageBox.Ok)
-            # if data_mismatch_box.exec() == QMessageBox.Ok:
-            #     return
             if (
                 dialog_message_box("Aborted.\nData sets' shapes don't match.\n")
                 == QMessageBox.Ok
@@ -1472,24 +1403,10 @@ class UtilitiesPanel(QWidget):
         """
 
         if self.mw.org_dataset is None:
-            # no_summing_yet_box = QMessageBox()
-            # no_summing_yet_box.setIcon(QMessageBox.Information)
-            # no_summing_yet_box.setText("No summing done yet.")
-            # no_summing_yet_box.setStandardButtons(QMessageBox.Ok)
-            # if no_summing_yet_box.exec() == QMessageBox.Ok:
-            #     return
             if dialog_message_box("No summing done yet.") == QMessageBox.Ok:
                 return
 
         if not settings.IS_TESTING:
-            # reset_summation_box = QMessageBox()
-            # reset_summation_box.setMinimumWidth(600)
-            # reset_summation_box.setMaximumWidth(1000)
-            # reset_summation_box.setIcon(QMessageBox.Question)
-            # reset_summation_box.setText("Want to reset summation?")
-            # reset_summation_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            # if reset_summation_box.exec() == QMessageBox.Cancel:
-            #     return
             msg, butts = (
                 "Want to reset summation?",
                 [QMessageBox.Ok, QMessageBox.Cancel],
@@ -1514,14 +1431,6 @@ class UtilitiesPanel(QWidget):
         """
 
         if self.mw.db.jl_session_running:
-            # jl_running_box = QMessageBox()
-            # jl_running_box.setIcon(QMessageBox.Information)
-            # jl_running_box.setText(
-            #     "JupyterLab session is already running.\nWant to start another one?"
-            # )
-            # jl_running_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            # if jl_running_box.exec() == QMessageBox.Cancel:
-            #     return
             msg = "JupyterLab session is already running.\nWant to start another one?"
             if (
                 dialog_message_box(msg, [QMessageBox.Ok, QMessageBox.Cancel])
@@ -1570,12 +1479,6 @@ class UtilitiesPanel(QWidget):
         fname = os.path.join(directory, self.file_jl_fname.text())
 
         if os.path.isfile(fname):
-            # file_exists_box = QMessageBox()
-            # file_exists_box.setIcon(QMessageBox.Information)
-            # file_exists_box.setText("File already exists.\nOverwrite?")
-            # file_exists_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            # if file_exists_box.exec() == QMessageBox.Cancel:
-            #     return
             msg = "File already exists.\nOverwrite?"
             if (
                 dialog_message_box(msg, [QMessageBox.Ok, QMessageBox.Cancel])
@@ -1609,12 +1512,6 @@ class UtilitiesPanel(QWidget):
 
         beamline = self.file_jl_explog.currentText()
         if beamline == "--beamline--":
-            no_bealine_box = QMessageBox()
-            no_bealine_box.setIcon(QMessageBox.Information)
-            no_bealine_box.setText("Select a beamline.")
-            no_bealine_box.setStandardButtons(QMessageBox.Ok)
-            if no_bealine_box.exec() == QMessageBox.Ok:
-                return
             if dialog_message_box("Select a beamline.") == QMessageBox.Ok:
                 return
         else:
@@ -1625,15 +1522,8 @@ class UtilitiesPanel(QWidget):
                     )
                 )
             fname = os.path.join(directory, "metadata-{}.ipynb".format(beamline))
-            # fname = '{}/metadata-{}.ipynb'.format(directory, beamline)
 
         if os.path.isfile(fname):
-            # file_exists_box = QMessageBox()
-            # file_exists_box.setIcon(QMessageBox.Information)
-            # file_exists_box.setText("File already exists.\nOverwrite?")
-            # file_exists_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            # if file_exists_box.exec() == QMessageBox.Cancel:
-            #     return
             msg = "File already exists.\nOverwrite?"
             if (
                 dialog_message_box(msg, [QMessageBox.Ok, QMessageBox.Cancel])
@@ -2121,9 +2011,3 @@ def dialog_message_box(
     elif len(buttons) == 3:
         message_box.setStandardButtons(buttons[0] | buttons[1] | buttons[2])
     return message_box.exec()
-
-
-# import operator
-# from functools import reduce
-
-# result = reduce(operator.or_, buttons)
