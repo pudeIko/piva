@@ -273,7 +273,7 @@ def fit_n_dublets(
     dmus = []
     dgammas = []
     as0 = []
-    # as1 = []
+
     if len(pars[0]) == 3:
         for i in range(len(pars)):
             mus.append(pars[i][1])
@@ -285,10 +285,7 @@ def fit_n_dublets(
         d = {
             "a0": np.array(as0),
             "mu_0, eV": mus,
-            # 'dmu_0, eV': dmus,
-            # 'mu_1, eV': mus2,
             "Gamma, eV": gammas,
-            # 'dGamma, eV': dgammas,
         }
     elif len(pars[0]) == 5:
         for i in range(len(pars)):
@@ -358,8 +355,6 @@ def shirley_calculate(
     # Locate the minima either side of maxidx.
     lmidx = abs(y[0:maxidx] - np.amin(y[0:maxidx])).argmin()
     rmidx = abs(y[maxidx:] - np.amin(y[maxidx:])).argmin() + maxidx
-    # xl = x[lmidx]
-    # xr = x[rmidx]
     yl = y[lmidx]
     yr = y[rmidx]
 
@@ -561,8 +556,6 @@ def find_vF_v2(
     def disp_kk_diff(vF, omega, km, kF, gamma):
         re_kk = kk_im2re(gamma, vF=vF).real
         re_disp = omega - vF * (-km + kF)
-        # re_disp = omega - vF * (km - kF)
-        # return np.sum(np.abs((re_kk[:re_disp.size] - re_disp)))
         return np.sum((re_kk[: re_disp.size] - re_disp) ** 2)
 
     res = minimize(
@@ -2010,14 +2003,10 @@ def angle2kspace(
         k0 *= a / np.pi
         if orientation == "horizontal":
             for kxi in range(nkx):
-                # kx[kxi] = np.ones(nky) * np.sin(scan_ax[kxi])
-                # ky[kxi] = np.cos(scan_ax[kxi]) * np.sin(ana_ax)
                 kx[kxi] = np.sin(scan_ax[kxi]) * np.cos(ana_ax)
                 ky[kxi] = np.sin(ana_ax)
         elif orientation == "vertical":
             for kxi in range(nkx):
-                # kx[kxi] = np.cos(ana_ax) * np.sin(scan_ax[kxi])
-                # ky[kxi] = np.sin(ana_ax)
                 kx[kxi] = np.cos(ana_ax - d_ana_ax) * np.sin(scan_ax[kxi])
                 ky[kxi] = np.sin(ana_ax - d_ana_ax) * np.cos(d_ana_ax) + np.cos(
                     ana_ax - d_ana_ax

@@ -17,11 +17,6 @@ def db(start_event_loop=True):
     app = QApplication(sys.argv)
     DataBrowser()
     sys.exit(app.exec_())
-    # browser = DataBrowser()
-
-    # if start_event_loop:
-    #     sys.exit(app.exec_())
-    # return browser  # allow use without blocking
 
 
 if __name__ == "__main__":

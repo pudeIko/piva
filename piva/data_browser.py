@@ -51,7 +51,6 @@ class DataBrowser(QMainWindow):
         print("loading packages: {:.3f} s".format(time_packages - START_TIME))
 
         self.thread_count = 0
-        # self.thread = {}
         self.data_viewers = {}
         self.plotting_tools = {}
         self.jupyter_servers = []
@@ -59,7 +58,6 @@ class DataBrowser(QMainWindow):
         self.model = None
         self.jl_session_running = False
         self.sb_timeout = 2500
-        # self.working_dir = self.add_slash(os.getcwd())
         self.working_dir = os.getcwd()
         self.set_file_explorer()
         self.set_menu_bar()
@@ -118,12 +116,6 @@ class DataBrowser(QMainWindow):
             msg, butts = "File already opened.", [QMessageBox.Ok]
             if dialog_message_box(msg, butts) == QMessageBox.Ok:
                 return
-            # already_opened_box = QMessageBox()
-            # already_opened_box.setIcon(QMessageBox.Information)
-            # already_opened_box.setText("File already opened.")
-            # already_opened_box.setStandardButtons(QMessageBox.Ok)
-            # if already_opened_box.exec() == QMessageBox.Ok:
-            #     return
 
         self.open_dv(fname)
 
@@ -152,7 +144,6 @@ class DataBrowser(QMainWindow):
         else:
             pass
         try:
-            # self.working_dir = self.add_slash(chosen_dir)
             self.working_dir = chosen_dir
             self.change_working_dir(self.working_dir)
             self.setWindowTitle("piva data browser - " + self.working_dir + "/")
@@ -612,7 +603,6 @@ class DataBrowser(QMainWindow):
 
         example_data = QAction("Example", self)
         example_data.setStatusTip("Example")
-        # print(EXAMPLE_DATA, type(EXAMPLE_DATA))
         example_data.triggered.connect(self.launch_example)
         open_menu.addAction(example_data)
 

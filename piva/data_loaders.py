@@ -7,15 +7,12 @@ import pickle
 import re
 import h5py
 
-# from igor import igorpy
 from igor2 import binarywave, packed
 import zipfile
 from argparse import Namespace
 from errno import ENOENT
 from warnings import catch_warnings, simplefilter
 
-# from PyQt5.QtWidgets import QDialog, QLabel, QComboBox, QDialogButtonBox, \
-#     QGridLayout
 from datetime import datetime
 from typing import Union, Any, List, Dict
 from pydantic import BaseModel, Field
@@ -151,7 +148,7 @@ class Dataset(BaseModel):
     FE: float | None = None
 
     scan_type: str | None = None
-    scan_dim: List[float] | None = None  # = Field(default_factory=list)
+    scan_dim: List[float] | None = None
 
     acq_mode: str | None = None
     lens_mode: str | None = None
@@ -172,7 +169,6 @@ class Dataset(BaseModel):
     model_config = {
         "arbitrary_types_allowed": True,
         "extra": "allow",
-        # "validate_assignment": True,
     }
 
     def add_org_file_entry(self, fname: str, dl: str) -> None:
@@ -475,76 +471,6 @@ class Dataloader(ABC):
                 elif tokens[0] == "Thetay_StepSize":
                     ns.__setattr__("scan_step", float(tokens[1].split()[0]))
 
-    # def _load_ses_pxt(self, filename: str, bl_md: list = None,
-    #                   metadata: bool = False) -> None:
-    #     """
-    #     This is a deprecated, equivalent to original :meth:`load_ses_pxt`
-    #     method, but based on not maintained anymore :mod:`igor` package.
-    #     Kept, because old version provided better API, but had dependencies
-    #     conflicts.
-
-    #     :param filename: absolute path to the file
-    #     :param bl_md: beamline specific metadata. Not used here, but required
-    #                   to mach format of other **Dataloaders**. See
-    #                   :meth:`load_ses_zip` for more info.
-    #     :param metadata: if :py:obj:`True`, read only metadata and size of the
-    #                      dataset. See :meth:`load_ses_zip` for more info.
-    #     """
-
-    #     ds = self.ds
-    #     pxt = 0#igorpy.load(filename)[0]
-
-    #     data = pxt.data.T
-    #     shape = data.shape
-
-    #     # if file contains single cut
-    #     if len(shape) == 2:
-    #         x = 1
-    #         y = pxt.axis[1].size
-    #         N_E = pxt.axis[0].size
-    #         # Make data 3D
-    #         data = data.reshape((1, y, N_E))
-    #         # Extract the limits
-    #         xlims = [1, 1]
-    #         xscale = start_step_n(*xlims, x)
-    #         yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
-    #         zscale = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
-    #     # if it contains multiple cuts, choose which one to load
-    #     else:
-    #         multiple_cuts_box = PXT_Dialog(shape[0])
-    #         box_return_value = multiple_cuts_box.exec()
-    #         selection = multiple_cuts_box.selection_box.currentIndex()
-    #         if box_return_value == 0:
-    #             return
-    #         data = data[selection, :, :]
-    #         x = 1
-    #         y = pxt.axis[1].size
-    #         N_E = pxt.axis[0].size
-    #         # Make data 3D
-    #         data = data.reshape((1, y, N_E))
-    #         # Extract the limits
-    #         xlims = [1, 1]
-    #         xscale = start_step_n(*xlims, x)
-    #         yscale = start_step_n(pxt.axis[1][-1], pxt.axis[1][0], y)
-    #         zscale = start_step_n(pxt.axis[0][-1], pxt.axis[0][0], N_E)
-
-    #     # set data and axes
-    #     ds.data = data
-    #     ds.xscale = xscale
-    #     ds.yscale = yscale
-    #     ds.zscale = zscale
-
-    #     # Convert `note`, which is a bytestring of ASCII characters that
-    #     # contains some metadata, to a list of strings
-    #     meta = pxt.notes.decode('ASCII').split('\r')
-    #     self.read_ses_metadata(ds, meta, bl_md=bl_md)
-
-    #     if ds.xscale.size == 1:
-    #         ds.scan_type = 'cut'
-    #     else:
-    #         ds.scan_dim = [ds.xscale[0], ds.xscale[-1],
-    #                        np.abs(ds.xscale[0] - ds.xscale[1])]
-
     @staticmethod
     def load_raster_scan(
         wave: Any, bl_md: list = None, metadata: bool = False
@@ -589,8 +515,6 @@ class Dataloader(ABC):
                 scan[xi, yi].yscale = yscale
                 scan[xi, yi].zscale = zscale
                 scan[xi, yi].scan_type = "raster scan"
-        # print(type(scan))
-        # print(isinstance(scan, np.ndarray))
         return scan
 
     def validate_at_return(self, filename: str):
@@ -1347,7 +1271,6 @@ class DataloaderMERLIN(Dataloader):
         PE = int(detector["Pass Energy"])
         exit_slit = round(float(source["Exit Slit"]), 2)
         FE = round(float(source["Entrance Slit"]), 2)
-        # ekin = energies + hv - wf
         lens_mode = detector["Lens Mode"]
         acq_mode = detector["Acq Mode"]
         n_sweeps = int(detector["Num of Sweeps"])
@@ -1776,34 +1699,6 @@ class DataloaderCASSIOPEE(Dataloader):
                             metadata.__setattr__(name, value)
         metadata_file.close()
         return metadata
-
-
-# class PXT_Dialog(QDialog):
-#     """
-#     Dialog window for choosing a specific cut from **\ *.pxt** files.
-#     """
-
-#     def __init__(self, n_cuts: int) -> None:
-#         super(PXT_Dialog, self).__init__()
-
-#         label = QLabel(f"Data file contains {n_cuts} slices.\n"
-#                        f"Choose the one to open.")
-#         combo = QComboBox()
-#         opts = [str(x + 1) for x in np.arange(n_cuts)]
-#         combo.addItems(opts)
-
-#         box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
-#                                centerButtons=True)
-#         box.accepted.connect(self.accept)
-#         box.rejected.connect(self.reject)
-#         self.buttons_box = box
-#         self.selection_box = combo
-
-#         lay = QGridLayout(self)
-#         lay.addWidget(label, 0, 0, 1, 2)
-#         lay.addWidget(self.selection_box, 1, 0, 1, 2)
-#         lay.addWidget(self.buttons_box, 2, 0, 1, 2)
-#         self.resize(240, 140)
 
 
 # +-------+ #

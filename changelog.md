@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic 
 Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [X.X.X]
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+
 ## [3.0.0]
 
 ### Added
@@ -21,13 +35,11 @@ ingestion and analysis
 ### Changed
 
 - `setup.py` to `pyproject.toml`
-- `Dataset` base calss from `argparse.Namespace` to `pydantic.BaseModel`
+- `Dataset` base class from `argparse.Namespace` to `pydantic.BaseModel`
 
 ### Deprecated
 
-- old files saved with piva<=2. won't open ndue to different base class
-
-### Removed
+- old files saved with piva<=2. won't open due to different base class
 
 ### Fixed
 

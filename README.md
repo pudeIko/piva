@@ -15,7 +15,7 @@
 [![Keep a Changelog](https://img.shields.io/badge/Keep%20a%20Changelog-v1.0.0-royalblue?logo=keepachangelog)](changelog.md)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?logo=contributorcovenant)](code_of_conduct.md)
 
-
+<!-- [![pyOpenSci Peer-Reviewed](https://pyopensci.org/badges/peer-reviewed.svg)](https://github.com/pyOpenSci/software-review/issues/231) -->
 
 
 PIVA is a graphical user interface (GUI) application built with `PyQt5` and 

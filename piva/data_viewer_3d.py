@@ -4,7 +4,6 @@ import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
-# import matplotlib.pyplot as plt
 import numpy as np
 from data_slicer import pit
 from PyQt5.QtWidgets import QMessageBox, QLineEdit
@@ -53,7 +52,6 @@ class DataHandler3D:
         # Indices of *data* that are displayed in the main plot
         self.displayed_axes = (0, 1)
         # Index along the z axis at which to produce a slice
-        # self.z = ip.TracedVariable(0, name='z')
         self.z = ip.CustomTracedVariable(0, name="z")
 
         # moved to get rid of warnings
@@ -95,7 +93,6 @@ class DataHandler3D:
         :param axes: loaded list of axes
         """
 
-        # self.data = ip.TracedVariable(data, name='data')
         self.data = ip.CustomTracedVariable(data, name="data")
         self.axes = np.array(axes, dtype="object")
         with warnings.catch_warnings():
@@ -164,7 +161,6 @@ class DataHandler3D:
         with warnings.catch_warnings():
             y = wp.normalize(self.integrated)
             ip.plot(y[~np.isnan(y)])
-            # ip.plot(wp.normalize(self.integrated))
 
         # Also display the actual data values in the top axis
         zscale = self.axes[erg_ax]
@@ -219,6 +215,7 @@ class DataHandler3D:
                           summed
         :return: 2D array of sliced data
         """
+
         # Find the dimensionality and the number of slices
         # along the specified dimension.
         shape = data.shape
@@ -393,8 +390,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
         self.util_panel.image_cmaps.currentIndexChanged.connect(self.set_cmap)
         self.util_panel.image_invert_colors.stateChanged.connect(self.set_cmap)
         self.util_panel.image_gamma.valueChanged.connect(self.set_gamma)
-        # self.util_panel.image_colorscale.valueChanged.connect(
-        #     self.set_colorscale)
         self.util_panel.image_normalize.stateChanged.connect(self.normalize_data)
         self.util_panel.image_normalize_to.currentIndexChanged.connect(
             self.normalize_data
@@ -456,10 +451,8 @@ class DataViewer3D(QtWidgets.QMainWindow):
             self.copy_values_orient_to_axes
         )
         self.util_panel.axes_do_kspace_conv.clicked.connect(self.convert_to_kspace)
-        # self.util_panel.axes_reset_conv.clicked.connect(
-        #     self.reset_kspace_conversion)
 
-        # orientating options
+        # orienting options
         self.util_panel.orient_init_x.valueChanged.connect(self.set_orientating_lines)
         self.util_panel.orient_init_y.valueChanged.connect(self.set_orientating_lines)
         self.util_panel.orient_find_gamma.clicked.connect(self.find_gamma)
@@ -595,7 +588,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
             y = self.data_handler.cut_x_data[:, i_x]
         x = np.arange(0, len(self.data_handler.axes[scan_ax]))
         self.plot_x_data = y[~np.isnan(y)]
-        # xp.plot(x, y)
         xp.plot(x[~np.isnan(y)], y[~np.isnan(y)])
         self.util_panel.energy_hor.setValue(i_x)
         if self.new_energy_axis is None:
@@ -650,7 +642,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
             y = self.data_handler.cut_y_data[i_x, :]
         x = np.arange(0, len(self.data_handler.axes[slit_ax]))
         self.plot_y_data = y[~np.isnan(y)]
-        # yp.plot(y, x)
         yp.plot(y[~np.isnan(y)], x[~np.isnan(y)])
         self.util_panel.energy_vert.setValue(i_x)
         if self.new_energy_axis is None:
@@ -1004,7 +995,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
             print(cmaps.keys())
         self.cmap_name = cmap
         # Since the cmap changed it forgot our settings for alpha and gamma
-        # self.cmap.set_alpha(self.alpha)
         self.cmap.set_gamma(self.util_panel.image_gamma.value())
         sliders_pos = self.get_sliders_positions()
         self.cmap_changed()
@@ -1570,21 +1560,11 @@ class DataViewer3D(QtWidgets.QMainWindow):
         new_dataset = deepcopy(ds)
 
         if not settings.IS_TESTING:
-            # info_box = QMessageBox()
-            # info_box.setIcon(QMessageBox.Information)
-            # info_box.setWindowTitle("K-space conversion.")
             msg = (
                 "Conversion might take a while,  "
                 "depending on the dataset's size.\n"
                 "Make sure all parameters are correct and be patient.".format()
             )
-            # info_box.setText(msg)
-            # info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
-            # choice = info_box.exec()
-            # if choice == QMessageBox.Ok:
-            #     pass
-            # elif choice == QMessageBox.Cancel:
-            #     return
 
             title, butts = "K-space conversion.", [QMessageBox.Ok | QMessageBox.Cancel]
             if dialog_message_box(msg, butts, title) == QMessageBox.Ok:
@@ -1610,19 +1590,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
             print("{:.4} s".format(time.time() - start_time))
         else:
             if hv == 0 or wf == 0:
-                # warning_box = QMessageBox()
-                # warning_box.setIcon(QMessageBox.Information)
-                # warning_box.setWindowTitle("Wrong conversion values.")
-                # if hv == 0 and wf == 0:
-                #     msg = "Photon energy and work function values not given."
-                # elif hv == 0:
-                #     msg = "Photon energy value not given."
-                # elif wf == 0:
-                #     msg = "Work function value not given."
-                # warning_box.setText(msg)
-                # warning_box.setStandardButtons(QMessageBox.Ok)
-                # if warning_box.exec() == QMessageBox.Ok:
-                #     return
                 msg = "Photon energy and/or work function values not given."
                 title, butts = "Wrong conversion values.", [QMessageBox.Ok]
                 if dialog_message_box(msg, butts, title) == QMessageBox.Ok:
@@ -1637,9 +1604,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
                 hv=hv,
                 work_func=wf,
             )
-            # kxx, kyy = np.meshgrid(kx[:, 0], ky[0, :])
-            # cut = self.main_plot.image_data
-            # plt.pcolormesh(kxx, kyy, cut.T)
             y_min, y_max, min_step = ky.min(), ky.max(), wp.get_step(ky[0, :])
             new_yscale = np.arange(y_min, y_max, min_step)
 
@@ -1660,62 +1624,16 @@ class DataViewer3D(QtWidgets.QMainWindow):
                 self.db, data_set=new_dataset, index=new_idx
             )
         except Exception:
-            # fail_box = QMessageBox()
-            # fail_box.setIcon(QMessageBox.Information)
-            # fail_box.setWindowTitle("K-space conversion.")
             msg = "Something went wrong.<br>K-space conversion failed."
-            # fail_box.setText(msg)
-            # fail_box.setStandardButtons(QMessageBox.Ok)
-            # if fail_box.exec() == QMessageBox.Ok:
-            #     return
-            # msg = "Photon energy and/or work function values not given."
             title, butts = "K-space conversion.", [QMessageBox.Ok]
             if dialog_message_box(msg, butts, title) == QMessageBox.Ok:
                 return
 
         if not settings.IS_TESTING:
-            # success_box = QMessageBox()
-            # success_box.setIcon(QMessageBox.Information)
-            # success_box.setWindowTitle("Conversion succeed.")
             msg = "K-space conversion succeed!<br>Make sure to save results."
-            # success_box.setText(msg)
-            # success_box.setStandardButtons(QMessageBox.Ok)
-            # if success_box.exec() == QMessageBox.Ok:
-            #     return
-            # title, butts = "Conversion succeed.", [QMessageBox.Ok]
             if dialog_message_box(msg, title="Conversion succeed.") == QMessageBox.Ok:
                 return
         return
-
-    # def reset_kspace_conversion(self) -> None:
-    #     """
-    #     Reset *k*-space conversion and bring analyzer axis back to [deg].
-    #     """
-
-    #     self.kx_axis = None
-    #     self.ky_axis = None
-    #     org_hor_range = [self.data_handler.axes[0][0],
-    #                      self.data_handler.axes[0][-1]]
-    #     org_ver_range = [self.data_handler.axes[1][0],
-    #                      self.data_handler.axes[1][-1]]
-    #     self.main_plot.plotItem.getAxis(
-    #         self.main_plot.main_xaxis).setRange(*org_hor_range)
-    #     self.main_plot.plotItem.getAxis(
-    #         self.main_plot.main_yaxis).setRange(*org_ver_range)
-    #     self.cut_x.plotItem.getAxis(
-    #         self.cut_x.main_xaxis).setRange(*org_hor_range)
-    #     self.cut_y.plotItem.getAxis(
-    #         self.cut_y.main_xaxis).setRange(*org_ver_range)
-    #     self.plot_x.plotItem.getAxis(
-    #         self.plot_x.main_xaxis).setRange(*org_hor_range)
-    #     self.plot_y.plotItem.getAxis(
-    #         self.plot_y.main_xaxis).setRange(*org_ver_range)
-    #     self.util_panel.momentum_hor_value.setText('({:.4f})'.format(
-    #         self.data_handler.axes[slit_ax][
-    #             self.main_plot.pos[1].get_value()]))
-    #     self.util_panel.momentum_vert_value.setText('({:.4f})'.format(
-    #         self.data_handler.axes[scan_ax][
-    #             self.main_plot.pos[0].get_value()]))
 
     def show_BZ_contour(self) -> None:
         """
@@ -1727,14 +1645,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
             return
 
         if (self.kx_axis is None) or (self.ky_axis is None):
-            # warning_box = QMessageBox()
-            # warning_box.setIcon(QMessageBox.Information)
-            # warning_box.setText("Data must be converted to k-space.")
-            # warning_box.setStandardButtons(QMessageBox.Ok)
-            # if warning_box.exec() == QMessageBox.Ok:
-            #     self.util_panel.image_show_BZ.setChecked(False)
-            #     return
-            # msg, butts = "Data must be converted to k-space.", [QMessageBox.Ok]
             if (
                 dialog_message_box("Data must be converted to k-space.")
                 == QMessageBox.Ok
@@ -1744,13 +1654,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
 
         symmetry = self.util_panel.image_symmetry.value()
         if not ((symmetry == 4) or (symmetry == 6)):
-            # warning_box = QMessageBox()
-            # warning_box.setIcon(QMessageBox.Information)
-            # warning_box.setText("Only 4- and 6-fold symmetry supported.")
-            # warning_box.setStandardButtons(QMessageBox.Ok)
-            # if warning_box.exec() == QMessageBox.Ok:
-            #     self.util_panel.image_show_BZ.setChecked(False)
-            #     return
             msg, butts = "Only 4- and 6-fold symmetry supported.", [QMessageBox.Ok]
             if dialog_message_box(msg, butts) == QMessageBox.Ok:
                 self.util_panel.image_show_BZ.setChecked(False)
@@ -1759,7 +1662,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
         a = self.util_panel.axes_conv_lc.value()
         if symmetry == 4:
             G = np.pi / a
-            # b = 2 * G / np.sqrt(3)
             raw_pts = np.array([[-G, G], [G, G], [G, -G], [-G, -G]])
         elif symmetry == 6:
             G = np.pi / a
@@ -1805,21 +1707,11 @@ class DataViewer3D(QtWidgets.QMainWindow):
         which has the benefit of providing a free-slicing ROI.
         """
 
-        # info_box = QMessageBox()
-        # info_box.setIcon(QMessageBox.Information)
-        # info_box.setWindowTitle("K-space conversion.")
         msg = (
             "Note:\n"
             "PIT is a third-party package and may not work "
             "properly with Python versions above 3.8."
         )
-        # info_box.setText(msg)
-        # info_box.setStandardButtons(QMessageBox.Cancel | QMessageBox.Ok)
-        # choice = info_box.exec()
-        # if choice == QMessageBox.Ok:
-        #     pass
-        # elif choice == QMessageBox.Cancel:
-        #     return
         butts = [QMessageBox.Ok | QMessageBox.Cancel]
         if dialog_message_box(msg, butts) == QMessageBox.Ok:
             pass
@@ -1884,14 +1776,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
             thread_idx += "_@{:.1}eV".format(dim_value)
 
         if thread_idx in self.db.data_viewers.keys():
-            # thread_running_box = QMessageBox()
-            # thread_running_box.setIcon(QMessageBox.Information)
-            # thread_running_box.setWindowTitle("Doh.")
-            # thread_running_box.setText("Same cut is already opened")
-            # thread_running_box.setStandardButtons(QMessageBox.Ok)
-            # if thread_running_box.exec() == QMessageBox.Ok:
-            #     return
-            # msg, butts = "Same cut is already opened", [QMessageBox.Ok]
             if dialog_message_box("Same cut is already opened") == QMessageBox.Ok:
                 return
 
@@ -1903,14 +1787,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
             )
         except Exception as e:
             raise e
-            # error_box = QMessageBox()
-            # error_box.setIcon(QMessageBox.Information)
-            # error_box.setText("Couldn't load data,  something went wrong.")
-            # error_box.setStandardButtons(QMessageBox.Ok)
-            # if error_box.exec() == QMessageBox.Ok:
-            #     return
-        # finally:
-        #     self.thread_count += 1
 
     @staticmethod
     def transform_points(pts: list, angle: float) -> list:
@@ -1978,7 +1854,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
                     self, "Select Directory", self.fname[: -len(self.title)]
                 )
             )
-            # savedir = self.fname[:-len(self.title)]
             if not savedir:
                 return
 
@@ -1994,21 +1869,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
 
             # check if there is no fname colosions
             if fname in os.listdir(savedir) and (not settings.IS_TESTING):
-                # fname_colision_box = QMessageBox()
-                # fname_colision_box.setIcon(QMessageBox.Question)
-                # fname_colision_box.setWindowTitle("File name already used.")
-                # fname_colision_box.setText(
-                #     "File {} already exists.\nDo you want to overwrite it?".format(
-                #         fname
-                #     )
-                # )
-                # fname_colision_box.setStandardButtons(
-                #     QMessageBox.Ok | QMessageBox.Cancel
-                # )
-                # if fname_colision_box.exec() == QMessageBox.Ok:
-                #     file_selection = False
-                # else:
-                #     init_fname = fname
                 msg = f"File {fname} already exists.\nDo you want to overwrite it?"
                 title, butts = (
                     "File name already used.",
@@ -2033,16 +1893,6 @@ class DataViewer3D(QtWidgets.QMainWindow):
         ]
 
         if np.any(conditions) and (not settings.IS_TESTING):
-            # save_cor_box = QMessageBox()
-            # save_cor_box.setIcon(QMessageBox.Question)
-            # save_cor_box.setWindowTitle("Save data")
-            # save_cor_box.setText("Do you want to save applied corrections?")
-            # save_cor_box.setStandardButtons(
-            #     QMessageBox.No | QMessageBox.Ok | QMessageBox.Cancel
-            # )
-
-            # box_return_value = save_cor_box.exec()
-
             msg = "Do you want to save applied corrections?"
             title, butts = (
                 "Save data",
