@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "piva"
-version = "2.3.2"
+version = "3.0.0"
 description = "PIVA - Photoemission Interface for Visualization and Analysis"
 readme = "README.md"
 license = "MIT"
