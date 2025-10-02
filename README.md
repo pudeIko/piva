@@ -16,6 +16,8 @@
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?logo=contributorcovenant)](code_of_conduct.md)
 
 [![pyOpenSci Peer-Reviewed](https://pyopensci.org/badges/peer-reviewed.svg)](https://github.com/pyOpenSci/software-review/issues/231)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16755506.svg)](https://doi.org/10.5281/zenodo.16755506)
+[![status](https://joss.theoj.org/papers/9e517456b7943a6d432337dc628886fb/status.svg)](https://joss.theoj.org/papers/9e517456b7943a6d432337dc628886fb)
 
 
 PIVA is a graphical user interface (GUI) application built with `PyQt5` and 
@@ -70,12 +72,12 @@ package.
 For more detailed information and examples, visit the project's 
 [documentation](https://piva.readthedocs.io/en/latest/) website, including:
 
-- [Getting Started](https://piva.readthedocs.io/en/latest/installation.html),
+- 🚀 [Getting Started](https://piva.readthedocs.io/en/latest/installation.html),
 to learn more about installation, opening example datasets, and running 
 automated tests,
-- [GUI Applications](https://piva.readthedocs.io/en/latest/db.html),
+- 🖥️ [GUI Applications](https://piva.readthedocs.io/en/latest/db.html),
 to explore the layout and functionalities of the interactive viewers, and
-- [Data Handling](https://piva.readthedocs.io/en/latest/dataloaders.html),
+- 📊 [Data Handling](https://piva.readthedocs.io/en/latest/dataloaders.html),
 to discover the supported file types and how PIVA manages data harmonization.
 
 
