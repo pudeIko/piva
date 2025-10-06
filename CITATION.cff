@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the following paper:"
+authors:
+  - family-names: Pudelko
+    given-names: Wojciech R.
+  - family-names: Kramer
+    given-names: Kevin
+  - family-names: Küspert
+    given-names: Julia
+  - family-names: Chang
+    given-names: Johan
+  - family-names: Plumb
+    given-names: Nicholas C.
+title: "PIVA: Photoemission Interface for Visualization and Analysis"
+doi: 10.21105/joss.09129
+date-released: 2025-10-02
+version: 1.0.0
+url: "https://github.com/yourusername/piva"
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Pudelko
+      given-names: Wojciech R.
+    - family-names: Kramer
+      given-names: Kevin
+    - family-names: Küspert
+      given-names: Julia
+    - family-names: Chang
+      given-names: Johan
+    - family-names: Plumb
+      given-names: Nicholas C.
+  title: "PIVA: Photoemission Interface for Visualization and Analysis"
+  journal: "Journal of Open Source Software"
+  year: 2025
+  volume: 10
+  issue: 114
+  start: 9129
+  doi: 10.21105/joss.09129
