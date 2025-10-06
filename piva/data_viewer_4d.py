@@ -234,8 +234,6 @@ class DataViewer4D(QtWidgets.QMainWindow):
         # Relative colormap maximum
         self.vmax = 1
 
-        # self.data_set = deepcopy(data_set)
-        # self.org_dataset = None
         self.data_handler = DataHandler4D(self)
 
         # raster xy map

@@ -1,5 +1,5 @@
 
-![](./docs/img/logo-readme.png)
+![](./docs/img/logo-readme-t.png)
 
 # Photoemission Interface for Visualization and Analysis
 
@@ -15,9 +15,9 @@
 [![Keep a Changelog](https://img.shields.io/badge/Keep%20a%20Changelog-v1.0.0-royalblue?logo=keepachangelog)](changelog.md)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?logo=contributorcovenant)](code_of_conduct.md)
 
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.09129/status.svg)](https://doi.org/10.21105/joss.09129)
 [![pyOpenSci Peer-Reviewed](https://pyopensci.org/badges/peer-reviewed.svg)](https://github.com/pyOpenSci/software-review/issues/231)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.16755506.svg)](https://doi.org/10.5281/zenodo.16755506)
-[![status](https://joss.theoj.org/papers/9e517456b7943a6d432337dc628886fb/status.svg)](https://joss.theoj.org/papers/9e517456b7943a6d432337dc628886fb)
 
 
 PIVA is a graphical user interface (GUI) application built with `PyQt5` and 
@@ -83,4 +83,19 @@ to discover the supported file types and how PIVA manages data harmonization.
 
 ## Citing
 
-TBD
+If you use the PIVA package in your research/project, please acknowledge it by citing the manuscript that describes the software:
+
+Pudelko et al., *PIVA: Photoemission Interface for Visualization and Analysis*. **Journal of Open Source Software**, **10**(114), 9129 (2025). https://doi.org/10.21105/joss.09129
+
+```
+@article{Pudelko2025, 
+    author = {Pudelko, Wojciech R. and Kramer, Kevin and Küspert, Julia and Chang, Johan and Plumb, Nicholas C.}, 
+    title = {PIVA: Photoemission Interface for Visualization and Analysis}, 
+    journal = {Journal of Open Source Software},
+    year = {2025},
+    volume = {10}, 
+    number = {114}, 
+    pages = {9129},
+    doi = {10.21105/joss.09129}
+}
+```

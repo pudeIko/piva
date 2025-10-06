@@ -1187,7 +1187,6 @@ def fit_fermi_dirac(
         * np.abs(energies[1] - energies[0])
     )
 
-    # res_func = lambda x: fit_func(x, *p)
     def res_func(x):
         return fit_func(x, *p)
 
@@ -1428,7 +1427,6 @@ def smooth_2d(x: np.ndarray, n_box: int = 5, recursion_level: int = 1) -> np.nda
 
     # Let numpy do the work
     smoothened = convolve2d(y, box, mode="valid")
-    # smoothened = _smooth_2d(y, box)
 
     # Do it again (enter next recursion level) or return the result
     if recursion_level == 1:
@@ -1683,14 +1681,6 @@ def curvature_1d(
 
     return -normalize(C_x).clip(max=clip_co)
 
-    # if C_x.min() < 0:
-    #     C_x -= C_x.min()
-    # else:
-    #     C_x += C_x.min()
-    # C_x = 1 / C_x
-    # C_x[C_x == np.inf] = np.max(C_x[np.isfinite(C_x)])
-    # return normalize(C_x).clip(min=clip_co)
-
 
 def curvature_2d(
     data: np.ndarray,
@@ -1735,10 +1725,6 @@ def curvature_2d(
     cx = a0 * (dx**2)
     cy = a0 * (dy**2)
 
-    # mdfdx, mdfdy = np.max(np.abs(dfdx)), np.max(np.abs(dfdy))
-    # cy = (dy / dx) * (mdfdx ** 2 + mdfdy ** 2) * a0
-    # cx = (dx / dy) * (mdfdx ** 2 + mdfdy ** 2) * a0
-
     num = (
         (1 + cx * np.power(dfdx, 2)) * cy * d2fdy2
         - 2 * cx * cy * dfdx * dfdy * d2fdxdy
@@ -1752,10 +1738,6 @@ def curvature_2d(
         ef = indexof(0, eaxis)
         C_xy[ef:, :] = 0
 
-    # if C_xy.min() < 0:
-    #     C_xy -= C_xy.min()
-    # else:
-    #     C_xy += C_xy.min()
     C_xy += 1e-20
     C_xy = 1 / C_xy
     C_xy[C_xy == np.inf] = np.max(C_xy[np.isfinite(C_xy)])
